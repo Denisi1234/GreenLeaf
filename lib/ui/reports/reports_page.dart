@@ -84,7 +84,7 @@ class ReportsPage extends StatelessWidget {
       iconColor: Color(0xFF2AA24F),
       iconBackground: Color(0xFFEAF8EE),
       title: 'Sale #1038',
-      subtitle: '2 items - Card Payment',
+      subtitle: '2 items • Card Payment',
       amount: '\$129.50',
       time: '10:24 AM',
     ),
@@ -93,7 +93,7 @@ class ReportsPage extends StatelessWidget {
       iconColor: Color(0xFF2E6EE8),
       iconBackground: Color(0xFFECF3FF),
       title: 'Sale #1037',
-      subtitle: '1 item - Cash Payment',
+      subtitle: '1 item • Cash Payment',
       amount: '\$45.00',
       time: '10:12 AM',
     ),
@@ -102,7 +102,7 @@ class ReportsPage extends StatelessWidget {
       iconColor: Color(0xFF9747FF),
       iconBackground: Color(0xFFF3EAFE),
       title: 'Sale #1036',
-      subtitle: '3 items - Card Payment',
+      subtitle: '3 items • Card Payment',
       amount: '\$199.99',
       time: '9:58 AM',
     ),
@@ -119,7 +119,7 @@ class ReportsPage extends StatelessWidget {
       iconColor: Color(0xFF2AA24F),
       iconBackground: Color(0xFFEAF8EE),
       title: 'Sale #1035',
-      subtitle: '1 item - Cash Payment',
+      subtitle: '1 item • Cash Payment',
       amount: '\$28.00',
       time: '9:33 AM',
     ),
@@ -133,75 +133,95 @@ class ReportsPage extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(child: BackdropGlow()),
-            CustomScrollView(
-              physics: BouncingScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(0, 10, 0, 6),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(14, 12, 14, 5),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Icon(
-                                  Icons.menu_rounded,
-                                  size: 27,
-                                  color: Color(0xFF5C677D),
-                                ),
-                              ),
-                              Column(
-                                children: [
-                                  Text(
-                                    'Store Overview',
-                                    style: TextStyle(
-                                      color: _ink,
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.7,
-                                    ),
-                                  ),
-                                  SizedBox(height: 1),
-                                  _DateRow(),
-                                ],
-                              ),
-                            ],
-                          ),
+            Column(
+              children: [
+                _ReportsHeader(),
+                Expanded(
+                  child: CustomScrollView(
+                    physics: BouncingScrollPhysics(),
+                    slivers: [
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(12, 0, 12, 10),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate.fixed([
+                            SizedBox(height: 1),
+                            _OverviewGrid(cards: _overviewCards),
+                            SizedBox(height: 14),
+                            _SectionTitle('Quick Actions'),
+                            SizedBox(height: 8),
+                            _QuickActionsRow(actions: _quickActions),
+                            SizedBox(height: 14),
+                            _RecentHeader(),
+                            SizedBox(height: 6),
+                            _RecentActivityCard(items: _activityItems),
+                            SizedBox(height: 16),
+                          ]),
                         ),
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: Color(0xFFE7EAF0),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(12, 0, 12, 10),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate.fixed([
-                      SizedBox(height: 1),
-                      _SectionTitle('Overview'),
-                      SizedBox(height: 8),
-                      _OverviewGrid(cards: _overviewCards),
-                      SizedBox(height: 14),
-                      _SectionTitle('Quick Actions'),
-                      SizedBox(height: 8),
-                      _QuickActionsRow(actions: _quickActions),
-                      SizedBox(height: 14),
-                      _RecentHeader(),
-                      SizedBox(height: 6),
-                      _RecentActivityCard(items: _activityItems),
-                      SizedBox(height: 16),
-                    ]),
+                      ),
+                    ],
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportsHeader extends StatelessWidget {
+  const _ReportsHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFFFFEFC),
+      child: const Padding(
+        padding: EdgeInsets.fromLTRB(0, 16, 0, 8),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(14, 16, 14, 9),
+              child: Stack(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.menu_rounded,
+                        size: 27,
+                        color: Color(0xFF5C677D),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 2),
+                          child: Text(
+                            'Store Overview',
+                            style: TextStyle(
+                              color: ReportsPage._ink,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.7,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Positioned(
+                    top: 0,
+                    right: 0,
+                    child: _DateRow(),
+                  ),
+                ],
+              ),
+            ),
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: Color(0xFFE7EAF0),
             ),
           ],
         ),
@@ -220,15 +240,15 @@ class _DateRow extends StatelessWidget {
       children: [
         Icon(
           Icons.calendar_month_outlined,
-          size: 18,
+          size: 16,
           color: Color(0xFF8A93A7),
         ),
-        SizedBox(width: 8),
+        SizedBox(width: 6),
         Text(
           'May 18, 2025 (Sun)',
           style: TextStyle(
             color: Color(0xFF7B859A),
-            fontSize: 12.5,
+            fontSize: 11.5,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -265,8 +285,10 @@ class _OverviewGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 8.0;
-        final itemWidth = (constraints.maxWidth - spacing) / 2;
+        const spacing = 10.0;
+        final columns = constraints.maxWidth > 560 ? 4 : 2;
+        final itemWidth =
+            (constraints.maxWidth - (spacing * (columns - 1))) / columns;
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
@@ -437,20 +459,28 @@ class _QuickActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 108,
-      child: Row(
-        children: List.generate(actions.length, (index) {
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(
-                right: index == actions.length - 1 ? 0 : 7,
-              ),
-              child: _QuickActionCard(action: actions[index]),
-            ),
-          );
-        }),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        final isCompact = constraints.maxWidth < 360;
+        final itemWidth = isCompact
+            ? constraints.maxWidth
+            : (constraints.maxWidth - (spacing * (actions.length - 1))) /
+                actions.length;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: actions
+              .map(
+                (action) => SizedBox(
+                  width: itemWidth,
+                  child: _QuickActionCard(action: action),
+                ),
+              )
+              .toList(),
+        );
+      },
     );
   }
 }
@@ -467,11 +497,12 @@ class _QuickActionCard extends StatelessWidget {
     final labelColor = action.foreground ?? ReportsPage._ink;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 10),
+      constraints: const BoxConstraints(minHeight: 108),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         gradient: action.background,
         color: action.background == null ? Colors.white : null,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         border: action.background == null
             ? Border.all(color: ReportsPage._border)
             : null,
@@ -501,7 +532,7 @@ class _QuickActionCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: labelColor,
-              fontSize: 10,
+              fontSize: 10.5,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
               height: 1.2,
@@ -518,7 +549,9 @@ class _RecentHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: const Row(
       children: [
         _SectionTitle('Recent Activity'),
         Spacer(),
@@ -537,7 +570,7 @@ class _RecentHeader extends StatelessWidget {
           size: 16,
         ),
       ],
-    );
+    ));
   }
 }
 
@@ -549,15 +582,16 @@ class _RecentActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: ReportsPage._border),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0A0E1726),
-            blurRadius: 8,
-            offset: Offset(0, 3),
+            color: Color(0x100E1726),
+            blurRadius: 16,
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -589,17 +623,17 @@ class _ActivityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 10, 7, 10),
+      padding: const EdgeInsets.fromLTRB(12, 14, 9, 14),
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: item.iconBackground,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(item.icon, color: item.iconColor, size: 17),
+            child: Icon(item.icon, color: item.iconColor, size: 18),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -610,16 +644,16 @@ class _ActivityTile extends StatelessWidget {
                   item.title,
                   style: const TextStyle(
                     color: ReportsPage._ink,
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 Text(
                   item.subtitle,
                   style: const TextStyle(
                     color: ReportsPage._muted,
-                    fontSize: 10,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -634,7 +668,7 @@ class _ActivityTile extends StatelessWidget {
                   item.amount!,
                   style: const TextStyle(
                     color: ReportsPage._ink,
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
