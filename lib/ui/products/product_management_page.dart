@@ -40,6 +40,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     return Scaffold(
+      drawer: const MarketAppDrawer(selectedItem: 'Products'),
       body: SafeArea(
         child: Stack(
           children: [
@@ -50,7 +51,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                   padding: EdgeInsets.fromLTRB(18, 18, 18, 8),
                   child: Row(
                     children: [
-                      MenuButtonLite(),
+                      DrawerMenuButton(),
                       SizedBox(width: 16),
                       Expanded(
                         child: Column(
@@ -367,6 +368,13 @@ class _ProductManagementCard extends StatelessWidget {
                     child: Image.file(
                       File(product.imagePath!),
                       fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Padding(
+                        padding: const EdgeInsets.all(9),
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: ProductArt(type: product.artType),
+                        ),
+                      ),
                     ),
                   )
                 : Padding(
@@ -462,46 +470,6 @@ class _ProductManagementCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class MenuButtonLite extends StatelessWidget {
-  const MenuButtonLite({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 44,
-      height: 44,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _MenuLine(width: 28),
-          SizedBox(height: 5),
-          _MenuLine(width: 22),
-          SizedBox(height: 5),
-          _MenuLine(width: 28),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuLine extends StatelessWidget {
-  const _MenuLine({required this.width});
-
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: 2.8,
-      decoration: BoxDecoration(
-        color: const Color(0xFF202938),
-        borderRadius: BorderRadius.circular(99),
       ),
     );
   }

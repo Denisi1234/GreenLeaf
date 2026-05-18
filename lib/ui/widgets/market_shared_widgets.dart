@@ -74,6 +74,66 @@ class ScrollHandle extends StatelessWidget {
   }
 }
 
+class DrawerMenuButton extends StatelessWidget {
+  const DrawerMenuButton({
+    super.key,
+    this.iconColor = const Color(0xFF202938),
+    this.backgroundColor = Colors.transparent,
+    this.borderColor = Colors.transparent,
+    this.shadowColor = Colors.transparent,
+  });
+
+  final Color iconColor;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color shadowColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (context) => InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Scaffold.of(context).openDrawer(),
+        child: SizedBox(
+          width: 40,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _DrawerMenuLine(width: 30, color: iconColor),
+              const SizedBox(height: 6),
+              _DrawerMenuLine(width: 24, color: iconColor),
+              const SizedBox(height: 6),
+              _DrawerMenuLine(width: 30, color: iconColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerMenuLine extends StatelessWidget {
+  const _DrawerMenuLine({
+    required this.width,
+    required this.color,
+  });
+
+  final double width;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 3,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(99),
+      ),
+    );
+  }
+}
+
 enum MarketNoticeType {
   success,
   warning,
@@ -246,6 +306,10 @@ class AnimatedCartToken extends StatelessWidget {
               child: Image.file(
                 File(imagePath!),
                 fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => FittedBox(
+                  fit: BoxFit.contain,
+                  child: ProductArt(type: type),
+                ),
               ),
             )
           : FittedBox(
@@ -284,6 +348,291 @@ class ProductArt extends StatelessWidget {
         return const _DetergentBagArt();
     }
   }
+}
+
+class MarketAppDrawer extends StatelessWidget {
+  const MarketAppDrawer({
+    super.key,
+    this.selectedItem = 'Reports',
+  });
+
+  final String selectedItem;
+
+  static const Color _drawerBlue = Color(0xFF2B6FE8);
+  static const Color _drawerIcon = Color(0xFF667085);
+
+  static const _primaryItems = [
+    _DrawerItemData('Dashboard', Icons.home_outlined),
+    _DrawerItemData('Sales', Icons.bar_chart_rounded),
+    _DrawerItemData('Products', Icons.inventory_2_outlined),
+    _DrawerItemData('Customers', Icons.people_outline_rounded),
+    _DrawerItemData('Reports', Icons.description_outlined),
+    _DrawerItemData('Settings', Icons.settings_outlined),
+  ];
+
+  static const _operationsItems = [
+    _DrawerItemData('Inventory Adjustment', Icons.assignment_outlined),
+    _DrawerItemData('Supplier Management', Icons.local_shipping_outlined),
+    _DrawerItemData('Discount Management', Icons.discount_outlined),
+    _DrawerItemData('Shift Management', Icons.access_time_rounded),
+    _DrawerItemData('Cash Management', Icons.payments_outlined),
+    _DrawerItemData('Loyalty Program', Icons.card_giftcard_outlined),
+    _DrawerItemData('Refund/Return', Icons.undo_rounded),
+  ];
+
+  static const _supportItems = [
+    _DrawerItemData('Hardware Setup', Icons.print_outlined),
+    _DrawerItemData('About/Help', Icons.help_outline_rounded),
+    _DrawerItemData('Offline/Sync', Icons.cloud_sync_outlined),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final drawerWidth = MediaQuery.of(context).size.width * 0.82;
+
+    return Drawer(
+      width: drawerWidth,
+      backgroundColor: const Color(0xFFFDFDFC),
+      shape: const RoundedRectangleBorder(),
+      child: SafeArea(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(22, 22, 22, 18),
+              child: _DrawerProfileHeader(),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DrawerSection(
+                      items: _primaryItems,
+                      selectedItem: selectedItem,
+                    ),
+                    const SizedBox(height: 10),
+                    const Divider(color: Color(0xFFE7EAF0), height: 1),
+                    const SizedBox(height: 14),
+                    _DrawerSection(
+                      items: _operationsItems,
+                      selectedItem: selectedItem,
+                    ),
+                    const SizedBox(height: 10),
+                    const Divider(color: Color(0xFFE7EAF0), height: 1),
+                    const SizedBox(height: 14),
+                    _DrawerSection(
+                      items: _supportItems,
+                      selectedItem: selectedItem,
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(color: Color(0xFFE7EAF0), height: 1),
+                    const SizedBox(height: 16),
+                    const _LogoutButton(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerProfileHeader extends StatelessWidget {
+  const _DrawerProfileHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        CircleAvatar(
+          radius: 52,
+          backgroundColor: Color(0xFFE8EEF8),
+          child: CircleAvatar(
+            radius: 48,
+            backgroundColor: Colors.white,
+            child: Icon(
+              Icons.person_rounded,
+              color: MarketAppDrawer._drawerBlue,
+              size: 54,
+            ),
+          ),
+        ),
+        SizedBox(width: 18),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Michael Anderson',
+                style: TextStyle(
+                  color: Color(0xFF1D2939),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Store Manager',
+                style: TextStyle(
+                  color: Color(0xFF667085),
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DrawerSection extends StatelessWidget {
+  const _DrawerSection({
+    required this.items,
+    required this.selectedItem,
+  });
+
+  final List<_DrawerItemData> items;
+  final String selectedItem;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: items
+          .map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _DrawerTile(
+                item: item,
+                isSelected: item.label == selectedItem,
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _DrawerTile extends StatelessWidget {
+  const _DrawerTile({
+    required this.item,
+    required this.isSelected,
+  });
+
+  final _DrawerItemData item;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        Navigator.of(context).pop();
+        if (!isSelected) {
+          showMarketNotice(
+            context,
+            title: item.label,
+            message: 'This menu action can be connected next.',
+          );
+        }
+      },
+      child: Container(
+        height: 62,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFF1F6FF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFE8F0FF) : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                item.icon,
+                color:
+                    isSelected ? MarketAppDrawer._drawerBlue : MarketAppDrawer._drawerIcon,
+                size: 27,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                item.label,
+                style: TextStyle(
+                  color: isSelected
+                      ? MarketAppDrawer._drawerBlue
+                      : const Color(0xFF344054),
+                  fontSize: 14.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutButton extends StatelessWidget {
+  const _LogoutButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        Navigator.of(context).pop();
+        showMarketNotice(
+          context,
+          title: 'Logged Out',
+          message: 'You can connect the real auth flow next',
+        );
+      },
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF4F2),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.logout_rounded,
+              color: Color(0xFFD92D20),
+              size: 26,
+            ),
+            SizedBox(width: 16),
+            Text(
+              'Logout',
+              style: TextStyle(
+                color: Color(0xFFD92D20),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerItemData {
+  const _DrawerItemData(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
 }
 
 class _BottleArt extends StatelessWidget {

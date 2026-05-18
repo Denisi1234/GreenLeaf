@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 import '../models/product_item.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -92,8 +94,11 @@ class _AddProductPageState extends State<AddProductPage> {
 
       if (image == null || !mounted) return;
 
+      final savedPath = await _persistSelectedImage(image);
+      if (!mounted) return;
+
       setState(() {
-        _selectedImagePath = image.path;
+        _selectedImagePath = savedPath;
       });
 
       showMarketNotice(
@@ -110,6 +115,21 @@ class _AddProductPageState extends State<AddProductPage> {
         type: MarketNoticeType.warning,
       );
     }
+  }
+
+  Future<String> _persistSelectedImage(XFile image) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final imagesDir = Directory(path.join(appDir.path, 'product_images'));
+    if (!await imagesDir.exists()) {
+      await imagesDir.create(recursive: true);
+    }
+
+    final extension = path.extension(image.path);
+    final safeName =
+        'product_${DateTime.now().millisecondsSinceEpoch}${extension.isEmpty ? '.png' : extension}';
+    final storedFile = File(path.join(imagesDir.path, safeName));
+    await File(image.path).copy(storedFile.path);
+    return storedFile.path;
   }
 
   InventoryStockState _deriveStockState(int stock) {

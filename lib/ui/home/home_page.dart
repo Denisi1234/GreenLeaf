@@ -15,6 +15,7 @@ class MarketHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
+      drawer: MarketAppDrawer(selectedItem: 'Dashboard'),
       body: MarketDashboardView(),
     );
   }
@@ -265,55 +266,16 @@ class TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Row(
         children: [
-          MenuButton(),
-          SizedBox(width: 12),
-          Expanded(child: BrandBlock()),
-          SizedBox(width: 6),
-          ProfileBlock(),
+          const DrawerMenuButton(),
+          const SizedBox(width: 12),
+          const Expanded(child: BrandBlock()),
+          const SizedBox(width: 6),
+          const ProfileBlock(),
         ],
-      ),
-    );
-  }
-}
-
-class MenuButton extends StatelessWidget {
-  const MenuButton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 40,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HamburgerLine(width: 30),
-          SizedBox(height: 6),
-          HamburgerLine(width: 24),
-          SizedBox(height: 6),
-          HamburgerLine(width: 30),
-        ],
-      ),
-    );
-  }
-}
-
-class HamburgerLine extends StatelessWidget {
-  const HamburgerLine({super.key, required this.width});
-
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: 3,
-      decoration: BoxDecoration(
-        color: const Color(0xFF293140),
-        borderRadius: BorderRadius.circular(99),
       ),
     );
   }
@@ -620,6 +582,8 @@ class ProductCard extends StatelessWidget {
                         child: Image.file(
                           File(product.imagePath!),
                           fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) =>
+                              ProductArt(type: product.type),
                         ),
                       )
                     : ProductArt(type: product.type),

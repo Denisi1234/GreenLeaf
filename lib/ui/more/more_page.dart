@@ -21,125 +21,138 @@ class MorePage extends StatelessWidget {
       _MoreMenuItem('About App', Icons.info_outline_rounded),
     ];
 
-    return SafeArea(
-      child: Stack(
-        children: [
-          const Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF1562E8), Color(0xFF1562E8), Color(0xFFF8F8F6)],
-                  stops: [0, 0.23, 0.23],
+    return Scaffold(
+      drawer: const MarketAppDrawer(selectedItem: 'Settings'),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF1562E8), Color(0xFF1562E8), Color(0xFFF8F8F6)],
+                    stops: [0, 0.23, 0.23],
+                  ),
                 ),
               ),
             ),
-          ),
-          Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(22, 18, 22, 16),
-                child: Center(
-                  child: Text(
-                    'More',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
-                  child: Column(
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+                  child: Row(
                     children: [
-                      const _ProfileSummaryCard(),
-                      const SizedBox(height: 18),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0E000000),
-                              blurRadius: 14,
-                              offset: Offset(0, 4),
+                      const DrawerMenuButton(
+                        iconColor: Colors.white,
+                      ),
+                      const Expanded(
+                        child: Center(
+                          child: Text(
+                            'More',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            ...items.asMap().entries.map(
-                              (entry) {
-                                final index = entry.key;
-                                final item = entry.value;
-                                return Column(
-                                  children: [
-                                    _MoreListTile(item: item),
-                                    if (index != items.length - 1)
-                                      const Padding(
-                                        padding: EdgeInsets.only(left: 78),
-                                        child: Divider(
-                                          height: 1,
-                                          color: Color(0xFFE8EBF0),
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              },
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
-                              child: GestureDetector(
-                                onTap: () {
-                                  showMarketNotice(
-                                    context,
-                                    title: 'Logged Out',
-                                    message: 'You can connect the real auth flow next',
-                                  );
-                                },
-                                child: Container(
-                                  height: 72,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(color: const Color(0xFFE65B5B)),
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.logout_rounded,
-                                        color: Color(0xFFE65B5B),
-                                        size: 24,
-                                      ),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        'Log Out',
-                                        style: TextStyle(
-                                          color: Color(0xFFE65B5B),
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 40),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+                    child: Column(
+                      children: [
+                        const _ProfileSummaryCard(),
+                        const SizedBox(height: 18),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x0E000000),
+                                blurRadius: 14,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              ...items.asMap().entries.map(
+                                (entry) {
+                                  final index = entry.key;
+                                  final item = entry.value;
+                                  return Column(
+                                    children: [
+                                      _MoreListTile(item: item),
+                                      if (index != items.length - 1)
+                                        const Padding(
+                                          padding: EdgeInsets.only(left: 78),
+                                          child: Divider(
+                                            height: 1,
+                                            color: Color(0xFFE8EBF0),
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                },
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    showMarketNotice(
+                                      context,
+                                      title: 'Logged Out',
+                                      message: 'You can connect the real auth flow next',
+                                    );
+                                  },
+                                  child: Container(
+                                    height: 72,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(color: const Color(0xFFE65B5B)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.logout_rounded,
+                                          color: Color(0xFFE65B5B),
+                                          size: 24,
+                                        ),
+                                        SizedBox(width: 10),
+                                        Text(
+                                          'Log Out',
+                                          style: TextStyle(
+                                            color: Color(0xFFE65B5B),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

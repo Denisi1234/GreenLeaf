@@ -127,20 +127,21 @@ class ReportsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Color(0xFFFFFEFC),
+      drawer: const MarketAppDrawer(selectedItem: 'Reports'),
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned.fill(child: BackdropGlow()),
+            const Positioned.fill(child: BackdropGlow()),
             Column(
               children: [
-                _ReportsHeader(),
+                const _ReportsHeader(),
                 Expanded(
                   child: CustomScrollView(
-                    physics: BouncingScrollPhysics(),
+                    physics: const BouncingScrollPhysics(),
                     slivers: [
-                      SliverPadding(
+                      const SliverPadding(
                         padding: EdgeInsets.fromLTRB(12, 0, 12, 10),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate.fixed([
@@ -175,9 +176,9 @@ class _ReportsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
       color: const Color(0xFFFFFEFC),
-      child: const Padding(
+      child: Padding(
         padding: EdgeInsets.fromLTRB(0, 16, 0, 8),
         child: Column(
           children: [
@@ -188,10 +189,8 @@ class _ReportsHeader extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.menu_rounded,
-                        size: 27,
-                        color: Color(0xFF5C677D),
+                      const DrawerMenuButton(
+                        iconColor: Color(0xFF5C677D),
                       ),
                       const SizedBox(width: 14),
                       const Expanded(
