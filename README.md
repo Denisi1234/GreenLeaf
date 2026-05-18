@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # POS System
 
 [![Apache 2.0](https://img.shields.io/github/license/nebula-plugins/gradle-netflixoss-project-plugin.svg)](http://www.apache.org/licenses/LICENSE-2.0)
@@ -47,3 +48,7 @@ It's also a great starting point for Flutter beginners!
 ## License
 
 Please refer to the [LICENSE](LICENSE).
+=======
+# GreenLeaf
+This is the pos system project  design to show the clean artecture 
+>>>>>>> c53fcf75c362e716ab9d2ad851a85978c5aa7c52

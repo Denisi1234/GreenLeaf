@@ -1,377 +1,418 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:provider/provider.dart';
 
-import '../../receipt_brand_data.dart';
-import '../../service/pos_order_models.dart';
-import '../../service/pos_local_store.dart';
 import '../widgets/market_shared_widgets.dart';
 
-enum ReportType {
-  salesByDate('Sales by Date'),
-  topProducts('Top Selling Products'),
-  revenueSummary('Revenue Summary');
-
-  const ReportType(this.label);
-  final String label;
-}
-
-class ReportsPage extends StatefulWidget {
+class ReportsPage extends StatelessWidget {
   const ReportsPage({super.key});
 
+  static const Color _ink = Color(0xFF162445);
+  static const Color _muted = Color(0xFF7A859C);
+  static const Color _border = Color(0xFFE8EBF1);
+  static const Color _blue = Color(0xFF2B6FE8);
+  static const Color _green = Color(0xFF30B05C);
+
+  static const List<_OverviewCardData> _overviewCards = [
+    _OverviewCardData(
+      icon: Icons.shopping_bag_outlined,
+      iconColor: Color(0xFF26A042),
+      iconBackground: Color(0xFFEAF8EE),
+      title: 'Total Sales Today',
+      value: '\$2,845.50',
+      delta: '12.5%',
+      footer: 'vs Yesterday',
+    ),
+    _OverviewCardData(
+      icon: Icons.shopping_cart_outlined,
+      iconColor: Color(0xFF2E6EE8),
+      iconBackground: Color(0xFFECF3FF),
+      title: 'Transactions',
+      value: '38',
+      delta: '8.6%',
+      footer: 'vs Yesterday',
+    ),
+    _OverviewCardData(
+      icon: Icons.sell_outlined,
+      iconColor: Color(0xFF9747FF),
+      iconBackground: Color(0xFFF3EAFE),
+      title: 'Avg. Transaction Value',
+      value: '\$74.88',
+      delta: '3.4%',
+      footer: 'vs Yesterday',
+    ),
+    _OverviewCardData(
+      icon: Icons.inventory_2_outlined,
+      iconColor: Color(0xFFC38A13),
+      iconBackground: Color(0xFFFEF5E3),
+      title: 'Top Selling Product',
+      value: 'Classic Denim Jacket',
+      footer: '12 sold',
+      badge: 'Best Seller',
+      highlightValue: true,
+    ),
+  ];
+
+  static const List<_QuickActionData> _quickActions = [
+    _QuickActionData(
+      icon: Icons.shopping_bag_outlined,
+      label: 'New Sale',
+      iconColor: _blue,
+      background: LinearGradient(
+        colors: [Color(0xFF2F6FDF), Color(0xFF265ECB)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      foreground: Colors.white,
+      emphasized: true,
+    ),
+    _QuickActionData(
+      icon: Icons.point_of_sale_outlined,
+      label: 'Open Cash Drawer',
+      iconColor: Color(0xFF2AA24F),
+      iconBackground: Color(0xFFE9F8ED),
+    ),
+    _QuickActionData(
+      icon: Icons.insert_chart_outlined_rounded,
+      label: 'View Reports',
+      iconColor: _blue,
+      iconBackground: Color(0xFFECF2FF),
+    ),
+  ];
+
+  static const List<_ActivityItemData> _activityItems = [
+    _ActivityItemData(
+      icon: Icons.shopping_cart_outlined,
+      iconColor: Color(0xFF2AA24F),
+      iconBackground: Color(0xFFEAF8EE),
+      title: 'Sale #1038',
+      subtitle: '2 items - Card Payment',
+      amount: '\$129.50',
+      time: '10:24 AM',
+    ),
+    _ActivityItemData(
+      icon: Icons.shopping_cart_outlined,
+      iconColor: Color(0xFF2E6EE8),
+      iconBackground: Color(0xFFECF3FF),
+      title: 'Sale #1037',
+      subtitle: '1 item - Cash Payment',
+      amount: '\$45.00',
+      time: '10:12 AM',
+    ),
+    _ActivityItemData(
+      icon: Icons.shopping_cart_outlined,
+      iconColor: Color(0xFF9747FF),
+      iconBackground: Color(0xFFF3EAFE),
+      title: 'Sale #1036',
+      subtitle: '3 items - Card Payment',
+      amount: '\$199.99',
+      time: '9:58 AM',
+    ),
+    _ActivityItemData(
+      icon: Icons.point_of_sale_outlined,
+      iconColor: Color(0xFFC38A13),
+      iconBackground: Color(0xFFFEF5E3),
+      title: 'Cash Drawer Opened',
+      subtitle: 'By Sarah Johnson',
+      time: '9:45 AM',
+    ),
+    _ActivityItemData(
+      icon: Icons.shopping_cart_outlined,
+      iconColor: Color(0xFF2AA24F),
+      iconBackground: Color(0xFFEAF8EE),
+      title: 'Sale #1035',
+      subtitle: '1 item - Cash Payment',
+      amount: '\$28.00',
+      time: '9:33 AM',
+    ),
+  ];
+
   @override
-  State<ReportsPage> createState() => _ReportsPageState();
-}
-
-class _ReportsPageState extends State<ReportsPage> {
-  late DateTime _selectedFromDate;
-  late DateTime _selectedToDate;
-  late DateTime _appliedFromDate;
-  late DateTime _appliedToDate;
-  ReportType _selectedReportType = ReportType.salesByDate;
-  ReportType _appliedReportType = ReportType.salesByDate;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    _selectedFromDate = DateTime(now.year, now.month, 1);
-    _selectedToDate = DateTime(now.year, now.month, now.day);
-    _appliedFromDate = _selectedFromDate;
-    _appliedToDate = _selectedToDate;
-  }
-
-  Future<void> _pickDate({
-    required bool isFrom,
-  }) async {
-    final initialDate = isFrom ? _selectedFromDate : _selectedToDate;
-    final firstDate = DateTime(2020, 1, 1);
-    final lastDate = DateTime.now().add(const Duration(days: 365));
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: firstDate,
-      lastDate: lastDate,
-    );
-    if (picked == null) return;
-
-    setState(() {
-      if (isFrom) {
-        _selectedFromDate = DateTime(picked.year, picked.month, picked.day);
-        if (_selectedFromDate.isAfter(_selectedToDate)) {
-          _selectedToDate = _selectedFromDate;
-        }
-      } else {
-        _selectedToDate = DateTime(picked.year, picked.month, picked.day);
-        if (_selectedToDate.isBefore(_selectedFromDate)) {
-          _selectedFromDate = _selectedToDate;
-        }
-      }
-    });
-  }
-
-  Future<void> _selectReportType() async {
-    final selected = await showModalBottomSheet<ReportType>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ReportType.values
-                .map(
-                  (type) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      type.label,
-                      style: const TextStyle(
-                        color: Color(0xFF202938),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFFFFFEFC),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(child: BackdropGlow()),
+            CustomScrollView(
+              physics: BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(0, 10, 0, 6),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(14, 12, 14, 5),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Icon(
+                                  Icons.menu_rounded,
+                                  size: 27,
+                                  color: Color(0xFF5C677D),
+                                ),
+                              ),
+                              Column(
+                                children: [
+                                  Text(
+                                    'Store Overview',
+                                    style: TextStyle(
+                                      color: _ink,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.7,
+                                    ),
+                                  ),
+                                  SizedBox(height: 1),
+                                  _DateRow(),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: Color(0xFFE7EAF0),
+                        ),
+                      ],
                     ),
-                    trailing: type == _selectedReportType
-                        ? const Icon(
-                            Icons.check_circle_rounded,
-                            color: Color(0xFF2B61C9),
-                          )
-                        : null,
-                    onTap: () => Navigator.of(context).pop(type),
                   ),
-                )
-                .toList(),
-          ),
-        );
-      },
-    );
-    if (selected == null) return;
-    setState(() => _selectedReportType = selected);
-  }
-
-  void _applyFilters() {
-    setState(() {
-      _appliedFromDate = _selectedFromDate;
-      _appliedToDate = _selectedToDate;
-      _appliedReportType = _selectedReportType;
-    });
-    showMarketNotice(
-      context,
-      title: 'Report Updated',
-      message:
-          '${_appliedReportType.label} from ${_formatDateLong(_appliedFromDate)} to ${_formatDateLong(_appliedToDate)}',
-    );
-  }
-
-  Future<void> _exportReport(_ReportData reportData) async {
-    try {
-      final regularFont = await PdfGoogleFonts.notoSansRegular();
-      final boldFont = await PdfGoogleFonts.notoSansBold();
-      final pdf = pw.Document();
-
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(28),
-          theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
-          build: (context) => [
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      ReceiptBrandData.storeName,
-                      style: pw.TextStyle(
-                        fontSize: 18,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 4),
-                    pw.Text(
-                      ReceiptBrandData.address,
-                      style: const pw.TextStyle(
-                        fontSize: 11,
-                        color: PdfColors.grey700,
-                      ),
-                    ),
-                    pw.Text(
-                      ReceiptBrandData.phone,
-                      style: const pw.TextStyle(
-                        fontSize: 11,
-                        color: PdfColors.grey700,
-                      ),
-                    ),
-                  ],
                 ),
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
-                  children: [
-                    pw.Text(
-                      _appliedReportType.label,
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 4),
-                    pw.Text(
-                      'Period: ${_formatDateLong(_appliedFromDate)} - ${_formatDateLong(_appliedToDate)}',
-                      style: const pw.TextStyle(
-                        fontSize: 11,
-                        color: PdfColors.grey700,
-                      ),
-                    ),
-                  ],
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(12, 0, 12, 10),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate.fixed([
+                      SizedBox(height: 1),
+                      _SectionTitle('Overview'),
+                      SizedBox(height: 8),
+                      _OverviewGrid(cards: _overviewCards),
+                      SizedBox(height: 14),
+                      _SectionTitle('Quick Actions'),
+                      SizedBox(height: 8),
+                      _QuickActionsRow(actions: _quickActions),
+                      SizedBox(height: 14),
+                      _RecentHeader(),
+                      SizedBox(height: 6),
+                      _RecentActivityCard(items: _activityItems),
+                      SizedBox(height: 16),
+                    ]),
+                  ),
                 ),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(16),
-              decoration: pw.BoxDecoration(
-                color: PdfColor.fromHex('#F8FAFD'),
-                borderRadius: pw.BorderRadius.circular(12),
-                border: pw.Border.all(color: PdfColor.fromHex('#DCE2EA')),
-              ),
-              child: pw.Row(
-                children: [
-                  pw.Expanded(
-                    child: _pdfMetric(
-                      'Total Sales',
-                      'TSH ${reportData.totalSales.toStringAsFixed(0)}',
-                    ),
-                  ),
-                  pw.Container(
-                    width: 1,
-                    height: 38,
-                    color: PdfColor.fromHex('#E5E7EB'),
-                  ),
-                  pw.Expanded(
-                    child: _pdfMetric(
-                      'Orders',
-                      '${reportData.orderCount}',
-                    ),
-                  ),
-                  pw.Container(
-                    width: 1,
-                    height: 38,
-                    color: PdfColor.fromHex('#E5E7EB'),
-                  ),
-                  pw.Expanded(
-                    child: _pdfMetric(
-                      'Top Product',
-                      reportData.topProducts.isEmpty
-                          ? 'No sales'
-                          : reportData.topProducts.first.name,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 20),
-            pw.Text(
-              'Daily Sales Overview',
-              style: pw.TextStyle(
-                fontSize: 15,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 10),
-            pw.Table(
-              border: pw.TableBorder.all(color: PdfColor.fromHex('#E5E7EB')),
-              columnWidths: const {
-                0: pw.FlexColumnWidth(2),
-                1: pw.FlexColumnWidth(3),
-              },
-              children: [
-                _pdfHeaderRow(['Day', 'Sales']),
-                ...reportData.dailySales.map(
-                  (entry) => _pdfBodyRow([
-                    _formatDateShort(entry.date),
-                    'TSH ${entry.amount.toStringAsFixed(0)}',
-                  ]),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-            pw.Text(
-              'Top Selling Products',
-              style: pw.TextStyle(
-                fontSize: 15,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 10),
-            pw.Table(
-              border: pw.TableBorder.all(color: PdfColor.fromHex('#E5E7EB')),
-              columnWidths: const {
-                0: pw.FixedColumnWidth(34),
-                1: pw.FlexColumnWidth(4),
-                2: pw.FlexColumnWidth(2),
-                3: pw.FlexColumnWidth(2),
-              },
-              children: [
-                _pdfHeaderRow(['#', 'Product', 'Qty Sold', 'Sales']),
-                ...reportData.topProducts.asMap().entries.map(
-                  (entry) => _pdfBodyRow([
-                    '${entry.key + 1}',
-                    entry.value.name,
-                    '${entry.value.quantity}',
-                    'TSH ${entry.value.amount.toStringAsFixed(0)}',
-                  ]),
-                ),
-                if (reportData.topProducts.isEmpty)
-                  _pdfBodyRow(['-', 'No products in this range', '-', '-']),
               ],
             ),
           ],
         ),
-      );
-
-      final bytes = await pdf.save();
-      if (!mounted) return;
-      await Printing.layoutPdf(
-        name:
-            'report_${_appliedReportType.name}_${_formatDateFile(_appliedFromDate)}_${_formatDateFile(_appliedToDate)}.pdf',
-        onLayout: (_) async => bytes,
-      );
-      if (!mounted) return;
-      showMarketNotice(
-        context,
-        title: 'Export Ready',
-        message: 'Report PDF opened in the print dialog',
-      );
-    } catch (_) {
-      if (!mounted) return;
-      showMarketNotice(
-        context,
-        title: 'Export Failed',
-        message: 'Could not generate the report PDF',
-        type: MarketNoticeType.warning,
-      );
-    }
+      ),
+    );
   }
+}
+
+class _DateRow extends StatelessWidget {
+  const _DateRow();
 
   @override
   Widget build(BuildContext context) {
-    final orders = context.watch<PosLocalStore>().orders;
-    final reportData = _ReportData.fromOrders(
-      orders: orders,
-      fromDate: _appliedFromDate,
-      toDate: _appliedToDate,
-      reportType: _appliedReportType,
+    return const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.calendar_month_outlined,
+          size: 18,
+          color: Color(0xFF8A93A7),
+        ),
+        SizedBox(width: 8),
+        Text(
+          'May 18, 2025 (Sun)',
+          style: TextStyle(
+            color: Color(0xFF7B859A),
+            fontSize: 12.5,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
+  }
+}
 
-    return SafeArea(
-      child: Stack(
-        children: [
-          const Positioned.fill(child: BackdropGlow()),
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
-                child: Row(
-                  children: [
-                    const _MenuButtonLite(),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Text(
-                        'Reports',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFF202938),
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                        ),
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: ReportsPage._ink,
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.4,
+      ),
+    );
+  }
+}
+
+class _OverviewGrid extends StatelessWidget {
+  const _OverviewGrid({required this.cards});
+
+  final List<_OverviewCardData> cards;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        final itemWidth = (constraints.maxWidth - spacing) / 2;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: cards
+              .map((card) => SizedBox(
+                    width: itemWidth,
+                    child: _OverviewCard(card: card),
+                  ))
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _OverviewCard extends StatelessWidget {
+  const _OverviewCard({required this.card});
+
+  final _OverviewCardData card;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 138,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(11, 10, 11, 9),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: ReportsPage._border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0C0E1726),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: card.iconBackground,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(card.icon, color: card.iconColor, size: 18),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    card.title,
+                    style: const TextStyle(
+                      color: ReportsPage._muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              card.value,
+              maxLines: card.highlightValue ? 2 : 1,
+              overflow: TextOverflow.visible,
+              style: TextStyle(
+                color: ReportsPage._ink,
+                fontSize: card.highlightValue ? 13 : 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+                height: 1.15,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (card.delta != null) ...[
+              Row(
+                children: [
+                  const Icon(
+                    Icons.arrow_upward_rounded,
+                    color: ReportsPage._green,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    card.delta!,
+                    style: const TextStyle(
+                      color: ReportsPage._green,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      card.footer,
+                      style: const TextStyle(
+                        color: ReportsPage._muted,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () => _exportReport(reportData),
-                      child: const Row(
+                  ),
+                ],
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  Text(
+                    card.footer,
+                    style: const TextStyle(
+                      color: ReportsPage._muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (card.badge != null) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF5E6),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.ios_share_rounded,
-                            color: Color(0xFF202938),
-                            size: 24,
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 11,
+                            color: Color(0xFFF2B437),
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 3),
                           Text(
-                            'Export',
-                            style: TextStyle(
-                              color: Color(0xFF202938),
-                              fontSize: 12.8,
+                            card.badge!,
+                            style: const TextStyle(
+                              color: Color(0xFFC78C17),
+                              fontSize: 9,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -379,810 +420,240 @@ class _ReportsPageState extends State<ReportsPage> {
                       ),
                     ),
                   ],
-                ),
-              ),
-              const Divider(height: 1, color: Color(0xFFE5E7EB)),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
-                  child: Column(
-                    children: [
-                      _ReportFilterCard(
-                        selectedReportType: _selectedReportType,
-                        fromDate: _selectedFromDate,
-                        toDate: _selectedToDate,
-                        onReportTypeTap: _selectReportType,
-                        onFromTap: () => _pickDate(isFrom: true),
-                        onToTap: () => _pickDate(isFrom: false),
-                        onGenerate: _applyFilters,
-                      ),
-                      const SizedBox(height: 16),
-                      _ReportSummaryStrip(reportData: reportData),
-                      const SizedBox(height: 16),
-                      _SalesOverviewCard(
-                        reportData: reportData,
-                        reportType: _appliedReportType,
-                      ),
-                      const SizedBox(height: 16),
-                      _TopProductsCard(products: reportData.topProducts),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReportSummaryStrip extends StatelessWidget {
-  const _ReportSummaryStrip({required this.reportData});
-
-  final _ReportData reportData;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _SummaryChip(
-            label: 'Orders',
-            value: '${reportData.orderCount}',
-            tint: const Color(0xFFEFF5FF),
-            accent: const Color(0xFF2B61C9),
-            icon: Icons.receipt_long_outlined,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _SummaryChip(
-            label: 'Days',
-            value: '${reportData.dailySales.length}',
-            tint: const Color(0xFFF3FAF4),
-            accent: const Color(0xFF2F8F5B),
-            icon: Icons.calendar_today_outlined,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _SummaryChip(
-            label: 'Top Products',
-            value: '${reportData.topProducts.length}',
-            tint: const Color(0xFFFFF7E8),
-            accent: const Color(0xFFB7791F),
-            icon: Icons.workspace_premium_outlined,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ReportFilterCard extends StatelessWidget {
-  const _ReportFilterCard({
-    required this.selectedReportType,
-    required this.fromDate,
-    required this.toDate,
-    required this.onReportTypeTap,
-    required this.onFromTap,
-    required this.onToTap,
-    required this.onGenerate,
-  });
-
-  final ReportType selectedReportType;
-  final DateTime fromDate;
-  final DateTime toDate;
-  final VoidCallback onReportTypeTap;
-  final VoidCallback onFromTap;
-  final VoidCallback onToTap;
-  final VoidCallback onGenerate;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ReportPanel(
-      tint: const Color(0xFFF8FBFF),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF5FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.tune_rounded,
-                  color: Color(0xFF2B61C9),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Report Filters',
-                      style: TextStyle(
-                        color: Color(0xFF202938),
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Select the report type and date range',
-                      style: TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 11.8,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _PickerField(
-            icon: Icons.bar_chart_rounded,
-            label: selectedReportType.label,
-            onTap: onReportTypeTap,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _DateField(
-                  title: 'From',
-                  value: _formatDateLong(fromDate),
-                  onTap: onFromTap,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _DateField(
-                  title: 'To',
-                  value: _formatDateLong(toDate),
-                  onTap: onToTap,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: onGenerate,
-            child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF2F67CF), Color(0xFF2558BE)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x1F2B61C9),
-                    blurRadius: 18,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.bar_chart_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                  SizedBox(width: 10),
-                  Text(
-                    'Generate Report',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SalesOverviewCard extends StatelessWidget {
-  const _SalesOverviewCard({
-    required this.reportData,
-    required this.reportType,
-  });
-
-  final _ReportData reportData;
-  final ReportType reportType;
-
-  @override
-  Widget build(BuildContext context) {
-    final heading = switch (reportType) {
-      ReportType.salesByDate => 'Sales Overview',
-      ReportType.topProducts => 'Sales Behind Top Products',
-      ReportType.revenueSummary => 'Revenue Summary',
-    };
-
-    return _ReportPanel(
-      tint: const Color(0xFFFFFCF7),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  heading,
-                  style: const TextStyle(
-                    color: Color(0xFF202938),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    'Total Sales',
-                    style: TextStyle(
-                      color: Color(0xFF636B78),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'TSH ${reportData.totalSales.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      color: Color(0xFF202938),
-                      fontSize: 21,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    reportData.comparisonText,
-                    style: TextStyle(
-                      color: reportData.comparisonColor,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ],
               ),
             ],
-          ),
-          const SizedBox(height: 14),
-          if (reportData.dailySales.isEmpty)
-            Container(
-              height: 210,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFEFB),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: const Text(
-                'No sales found in this date range',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFEFB),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFF0E7D8)),
-              ),
-              child: SizedBox(
-                height: 210,
-                child: _SalesBarChart(values: reportData.dailySales),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TopProductsCard extends StatelessWidget {
-  const _TopProductsCard({required this.products});
-
-  final List<_TopProductStat> products;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ReportPanel(
-      padding: EdgeInsets.zero,
-      tint: const Color(0xFFFCFCFD),
-      child: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 10),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Top Selling Products',
-                style: TextStyle(
-                  color: Color(0xFF202938),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF9FAFB),
-              border: Border(
-                top: BorderSide(color: Color(0xFFE8EBEF)),
-                bottom: BorderSide(color: Color(0xFFE8EBEF)),
-              ),
-            ),
-            child: const Row(
-              children: [
-                SizedBox(width: 24, child: Text('#', style: _tableHeaderStyle)),
-                Expanded(
-                  flex: 4,
-                  child: Text('PRODUCT', style: _tableHeaderStyle),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'QTY SOLD',
-                    textAlign: TextAlign.center,
-                    style: _tableHeaderStyle,
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'SALES',
-                    textAlign: TextAlign.right,
-                    style: _tableHeaderStyle,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (products.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'No products sold in this date range',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            )
-          else
-            ...products.asMap().entries.map(
-                  (entry) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Color(0xFFEFF2F5)),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 24,
-                          child: Text(
-                            '${entry.key + 1}',
-                            style: const TextStyle(
-                              color: Color(0xFF202938),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 4,
-                          child: Text(
-                            entry.value.name,
-                            style: const TextStyle(
-                              color: Color(0xFF202938),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            '${entry.value.quantity}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFF202938),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            'TSH ${entry.value.amount.toStringAsFixed(0)}',
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Color(0xFF202938),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReportPanel extends StatelessWidget {
-  const _ReportPanel({
-    required this.child,
-    this.padding = const EdgeInsets.all(16),
-    this.tint,
-  });
-
-  final Widget child;
-  final EdgeInsets padding;
-  final Color? tint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: padding,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            tint ?? Colors.white,
-            Colors.white,
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+    );
+  }
+}
+
+class _QuickActionsRow extends StatelessWidget {
+  const _QuickActionsRow({required this.actions});
+
+  final List<_QuickActionData> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 108,
+      child: Row(
+        children: List.generate(actions.length, (index) {
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: index == actions.length - 1 ? 0 : 7,
+              ),
+              child: _QuickActionCard(action: actions[index]),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard({required this.action});
+
+  final _QuickActionData action;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconBackground =
+        action.emphasized ? Colors.white : action.iconBackground!;
+    final labelColor = action.foreground ?? ReportsPage._ink;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: action.background,
+        color: action.background == null ? Colors.white : null,
+        borderRadius: BorderRadius.circular(14),
+        border: action.background == null
+            ? Border.all(color: ReportsPage._border)
+            : null,
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0D000000),
+            color: Color(0x140E1726),
             blurRadius: 18,
-            offset: Offset(0, 6),
+            offset: Offset(0, 8),
           ),
         ],
       ),
-      child: child,
-    );
-  }
-}
-
-class _PickerField extends StatelessWidget {
-  const _PickerField({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 54,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFDCE2EA)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF4FF),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: const Color(0xFF2B61C9), size: 20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: iconBackground,
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF202938),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            child: Icon(action.icon, color: action.iconColor, size: 22),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            action.label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: labelColor,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              height: 1.2,
             ),
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFF6B7280),
-              size: 24,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.title,
-    required this.value,
-    required this.onTap,
-  });
-
-  final String title;
-  final String value;
-  final VoidCallback onTap;
+class _RecentHeader extends StatelessWidget {
+  const _RecentHeader();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return const Row(
       children: [
+        _SectionTitle('Recent Activity'),
+        Spacer(),
         Text(
-          title,
-          style: const TextStyle(
-            color: Color(0xFF636B78),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+          'View All',
+          style: TextStyle(
+            color: ReportsPage._blue,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFDCE2EA)),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.calendar_today_outlined,
-                  color: Color(0xFF6B7280),
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      color: Color(0xFF202938),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        SizedBox(width: 2),
+        Icon(
+          Icons.chevron_right_rounded,
+          color: ReportsPage._blue,
+          size: 16,
         ),
       ],
     );
   }
 }
 
-class _SalesBarChart extends StatelessWidget {
-  const _SalesBarChart({required this.values});
+class _RecentActivityCard extends StatelessWidget {
+  const _RecentActivityCard({required this.items});
 
-  final List<_DailySalesPoint> values;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxValue = values.isEmpty
-        ? 1.0
-        : values.map((point) => point.amount).reduce(math.max);
-    final labels = _buildAxisLabels(values);
-
-    return Column(
-      children: [
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 4, right: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Peak', style: _axisLabelStyle),
-                    Text('Mid', style: _axisLabelStyle),
-                    Text('Low', style: _axisLabelStyle),
-                    Text('0', style: _axisLabelStyle),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: List.generate(
-                              4,
-                              (_) => const Divider(
-                                height: 1,
-                                color: Color(0xFFE9EDF3),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned.fill(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: values
-                                .map(
-                                  (point) => Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 2,
-                                      ),
-                                      child: Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: Container(
-                                          height: constraints.maxHeight *
-                                              (point.amount / maxValue),
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                              colors: [
-                                                Color(0xFF5A86DE),
-                                                Color(0xFF2B61C9),
-                                              ],
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(3),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.only(left: 48),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: labels
-                .map(
-                  (label) => Text(label, style: _axisLabelStyle),
-                )
-                .toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<String> _buildAxisLabels(List<_DailySalesPoint> points) {
-    if (points.isEmpty) return const ['-', '-', '-', '-', '-'];
-    final indexes = <int>{0, points.length ~/ 4, points.length ~/ 2, (points.length * 3) ~/ 4, points.length - 1}
-      ..removeWhere((index) => index < 0 || index >= points.length);
-    return indexes
-        .map((index) => _formatDateShort(points[index].date))
-        .toList();
-  }
-}
-
-class _SummaryChip extends StatelessWidget {
-  const _SummaryChip({
-    required this.label,
-    required this.value,
-    required this.tint,
-    required this.accent,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final Color tint;
-  final Color accent;
-  final IconData icon;
+  final List<_ActivityItemData> items;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: tint,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.14)),
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: ReportsPage._border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0E1726),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
+      child: Column(
+        children: List.generate(items.length, (index) {
+          final item = items[index];
+          return Column(
+            children: [
+              _ActivityTile(item: item),
+              if (index != items.length - 1)
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFE9ECF2),
+                ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _ActivityTile extends StatelessWidget {
+  const _ActivityTile({required this.item});
+
+  final _ActivityItemData item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 10, 7, 10),
       child: Row(
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              color: item.iconBackground,
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: accent, size: 18),
+            child: Icon(item.icon, color: item.iconColor, size: 17),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
+                  item.title,
                   style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    color: ReportsPage._ink,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
-                  value,
+                  item.subtitle,
                   style: const TextStyle(
-                    color: Color(0xFF202938),
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
+                    color: ReportsPage._muted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (item.amount != null)
+                Text(
+                  item.amount!,
+                  style: const TextStyle(
+                    color: ReportsPage._ink,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              if (item.amount != null) const SizedBox(height: 2),
+              Text(
+                item.time,
+                style: const TextStyle(
+                  color: ReportsPage._muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 3),
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: Color(0xFF7F889D),
+            size: 17,
           ),
         ],
       ),
@@ -1190,269 +661,66 @@ class _SummaryChip extends StatelessWidget {
   }
 }
 
-class _MenuButtonLite extends StatelessWidget {
-  const _MenuButtonLite();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: const Icon(
-        Icons.menu_rounded,
-        color: Color(0xFF202938),
-        size: 26,
-      ),
-    );
-  }
-}
-
-class _ReportData {
-  const _ReportData({
-    required this.totalSales,
-    required this.orderCount,
-    required this.dailySales,
-    required this.topProducts,
-    required this.comparisonText,
-    required this.comparisonColor,
+class _OverviewCardData {
+  const _OverviewCardData({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.title,
+    required this.value,
+    required this.footer,
+    this.delta,
+    this.badge,
+    this.highlightValue = false,
   });
 
-  final double totalSales;
-  final int orderCount;
-  final List<_DailySalesPoint> dailySales;
-  final List<_TopProductStat> topProducts;
-  final String comparisonText;
-  final Color comparisonColor;
-
-  factory _ReportData.fromOrders({
-    required List<CompletedOrder> orders,
-    required DateTime fromDate,
-    required DateTime toDate,
-    required ReportType reportType,
-  }) {
-    final start = DateTime(fromDate.year, fromDate.month, fromDate.day);
-    final end = DateTime(toDate.year, toDate.month, toDate.day, 23, 59, 59);
-
-    final filteredOrders = orders.where((order) {
-      final orderDate = DateTime.tryParse(order.dateTime);
-      if (orderDate == null) return false;
-      return !orderDate.isBefore(start) && !orderDate.isAfter(end);
-    }).toList();
-
-    final totalSales =
-        filteredOrders.fold<double>(0, (sum, order) => sum + order.total);
-    final productStats = <String, _TopProductStat>{};
-    final dailyMap = <DateTime, double>{};
-
-    for (var date = start;
-        !date.isAfter(DateTime(toDate.year, toDate.month, toDate.day));
-        date = date.add(const Duration(days: 1))) {
-      dailyMap[DateTime(date.year, date.month, date.day)] = 0;
-    }
-
-    for (final order in filteredOrders) {
-      final orderDate = DateTime.parse(order.dateTime);
-      final orderDay = DateTime(orderDate.year, orderDate.month, orderDate.day);
-      dailyMap.update(
-        orderDay,
-        (value) => value + order.total,
-        ifAbsent: () => order.total,
-      );
-
-      for (final line in order.lines) {
-        final existing = productStats[line.itemName];
-        if (existing == null) {
-          productStats[line.itemName] = _TopProductStat(
-            name: line.itemName,
-            quantity: line.quantity,
-            amount: line.lineTotal,
-          );
-        } else {
-          productStats[line.itemName] = _TopProductStat(
-            name: existing.name,
-            quantity: existing.quantity + line.quantity,
-            amount: existing.amount + line.lineTotal,
-          );
-        }
-      }
-    }
-
-    final periodLength = toDate.difference(fromDate).inDays + 1;
-    final previousStart = fromDate.subtract(Duration(days: periodLength));
-    final previousEnd = fromDate.subtract(const Duration(seconds: 1));
-    final previousTotal = orders.where((order) {
-      final orderDate = DateTime.tryParse(order.dateTime);
-      if (orderDate == null) return false;
-      return !orderDate.isBefore(previousStart) && !orderDate.isAfter(previousEnd);
-    }).fold<double>(0, (sum, order) => sum + order.total);
-
-    final comparison = _buildComparison(totalSales, previousTotal);
-    final tops = productStats.values.toList()
-      ..sort((a, b) => b.amount.compareTo(a.amount));
-
-    return _ReportData(
-      totalSales: totalSales,
-      orderCount: filteredOrders.length,
-      dailySales: dailyMap.entries
-          .map((entry) => _DailySalesPoint(entry.key, entry.value))
-          .toList(),
-      topProducts: tops.take(reportType == ReportType.topProducts ? 10 : 5).toList(),
-      comparisonText: comparison.$1,
-      comparisonColor: comparison.$2,
-    );
-  }
-
-  static (String, Color) _buildComparison(double current, double previous) {
-    if (previous <= 0 && current <= 0) {
-      return ('No sales in this period', const Color(0xFF6B7280));
-    }
-    if (previous <= 0) {
-      return ('New sales in selected period', const Color(0xFF3FA66B));
-    }
-    final delta = ((current - previous) / previous) * 100;
-    if (delta >= 0) {
-      return ('Up ${delta.toStringAsFixed(1)}% vs previous period', const Color(0xFF3FA66B));
-    }
-    return ('Down ${delta.abs().toStringAsFixed(1)}% vs previous period', const Color(0xFFB45309));
-  }
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String title;
+  final String value;
+  final String footer;
+  final String? delta;
+  final String? badge;
+  final bool highlightValue;
 }
 
-class _DailySalesPoint {
-  const _DailySalesPoint(this.date, this.amount);
-
-  final DateTime date;
-  final double amount;
-}
-
-class _TopProductStat {
-  const _TopProductStat({
-    required this.name,
-    required this.quantity,
-    required this.amount,
+class _QuickActionData {
+  const _QuickActionData({
+    required this.icon,
+    required this.label,
+    required this.iconColor,
+    this.background,
+    this.foreground,
+    this.iconBackground,
+    this.emphasized = false,
   });
 
-  final String name;
-  final int quantity;
-  final double amount;
+  final IconData icon;
+  final String label;
+  final Color iconColor;
+  final Gradient? background;
+  final Color? foreground;
+  final Color? iconBackground;
+  final bool emphasized;
 }
 
-const _axisLabelStyle = TextStyle(
-  color: Color(0xFF6B7280),
-  fontSize: 11.5,
-  fontWeight: FontWeight.w500,
-);
+class _ActivityItemData {
+  const _ActivityItemData({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    this.amount,
+  });
 
-const _tableHeaderStyle = TextStyle(
-  color: Color(0xFF7A8393),
-  fontSize: 11.5,
-  fontWeight: FontWeight.w700,
-);
-
-String _formatDateLong(DateTime date) {
-  const monthNames = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${monthNames[date.month - 1]} ${date.day.toString().padLeft(2, '0')}, ${date.year}';
-}
-
-String _formatDateShort(DateTime date) {
-  const monthNames = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${monthNames[date.month - 1]} ${date.day.toString().padLeft(2, '0')}';
-}
-
-String _formatDateFile(DateTime date) {
-  return '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
-}
-
-pw.Widget _pdfMetric(String label, String value) {
-  return pw.Padding(
-    padding: const pw.EdgeInsets.symmetric(horizontal: 12),
-    child: pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          label,
-          style: const pw.TextStyle(
-            fontSize: 10.5,
-            color: PdfColors.grey700,
-          ),
-        ),
-        pw.SizedBox(height: 4),
-        pw.Text(
-          value,
-          style: pw.TextStyle(
-            fontSize: 13,
-            fontWeight: pw.FontWeight.bold,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-pw.TableRow _pdfHeaderRow(List<String> values) {
-  return pw.TableRow(
-    decoration: pw.BoxDecoration(
-      color: PdfColor.fromHex('#F6F8FB'),
-    ),
-    children: values
-        .map(
-          (value) => pw.Padding(
-            padding: const pw.EdgeInsets.all(8),
-            child: pw.Text(
-              value,
-              style: pw.TextStyle(
-                fontSize: 10.5,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-          ),
-        )
-        .toList(),
-  );
-}
-
-pw.TableRow _pdfBodyRow(List<String> values) {
-  return pw.TableRow(
-    children: values
-        .map(
-          (value) => pw.Padding(
-            padding: const pw.EdgeInsets.all(8),
-            child: pw.Text(
-              value,
-              style: const pw.TextStyle(fontSize: 10.5),
-            ),
-          ),
-        )
-        .toList(),
-  );
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String title;
+  final String subtitle;
+  final String time;
+  final String? amount;
 }
