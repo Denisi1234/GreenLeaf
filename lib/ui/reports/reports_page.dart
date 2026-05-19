@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../home/home_page.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'reports_catalog_page.dart';
 
 class ReportsPage extends StatelessWidget {
   const ReportsPage({super.key});
@@ -128,7 +130,7 @@ class ReportsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFFEFC),
+      backgroundColor: const Color(0xFFFFFEFC),
       drawer: const MarketAppDrawer(selectedItem: 'Reports'),
       body: SafeArea(
         child: Stack(
@@ -179,9 +181,9 @@ class _ReportsHeader extends StatelessWidget {
     return Material(
       color: const Color(0xFFFFFEFC),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(0, 16, 0, 8),
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
         child: Column(
-          children: [
+          children: const [
             Padding(
               padding: EdgeInsets.fromLTRB(14, 16, 14, 9),
               child: Stack(
@@ -189,11 +191,11 @@ class _ReportsHeader extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const DrawerMenuButton(
+                      DrawerMenuButton(
                         iconColor: Color(0xFF5C677D),
                       ),
-                      const SizedBox(width: 14),
-                      const Expanded(
+                      SizedBox(width: 14),
+                      Expanded(
                         child: Padding(
                           padding: EdgeInsets.only(top: 2),
                           child: Text(
@@ -209,7 +211,7 @@ class _ReportsHeader extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const Positioned(
+                  Positioned(
                     top: 0,
                     right: 0,
                     child: _DateRow(),
@@ -308,143 +310,158 @@ class _OverviewCard extends StatelessWidget {
 
   final _OverviewCardData card;
 
+  void _openDetails(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => _OverviewDetailPage(card: card),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 138,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(11, 10, 11, 9),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: ReportsPage._border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0C0E1726),
-              blurRadius: 10,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: card.iconBackground,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(card.icon, color: card.iconColor, size: 18),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    card.title,
-                    style: const TextStyle(
-                      color: ReportsPage._muted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      height: 1.2,
-                    ),
-                  ),
+          onTap: () => _openDetails(context),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(11, 10, 11, 9),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: ReportsPage._border),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0C0E1726),
+                  blurRadius: 10,
+                  offset: Offset(0, 3),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              card.value,
-              maxLines: card.highlightValue ? 2 : 1,
-              overflow: TextOverflow.visible,
-              style: TextStyle(
-                color: ReportsPage._ink,
-                fontSize: card.highlightValue ? 13 : 18,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-                height: 1.15,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (card.delta != null) ...[
-              Row(
-                children: [
-                  const Icon(
-                    Icons.arrow_upward_rounded,
-                    color: ReportsPage._green,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    card.delta!,
-                    style: const TextStyle(
-                      color: ReportsPage._green,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: Text(
-                      card.footer,
-                      style: const TextStyle(
-                        color: ReportsPage._muted,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ] else ...[
-              Row(
-                children: [
-                  Text(
-                    card.footer,
-                    style: const TextStyle(
-                      color: ReportsPage._muted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (card.badge != null) ...[
-                    const SizedBox(width: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF5E6),
-                        borderRadius: BorderRadius.circular(9),
+                        color: card.iconBackground,
+                        shape: BoxShape.circle,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            size: 11,
-                            color: Color(0xFFF2B437),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            card.badge!,
-                            style: const TextStyle(
-                              color: Color(0xFFC78C17),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      child: Icon(card.icon, color: card.iconColor, size: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        card.title,
+                        style: const TextStyle(
+                          color: ReportsPage._muted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          height: 1.2,
+                        ),
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  card.value,
+                  maxLines: card.highlightValue ? 2 : 1,
+                  overflow: TextOverflow.visible,
+                  style: TextStyle(
+                    color: ReportsPage._ink,
+                    fontSize: card.highlightValue ? 13 : 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    height: 1.15,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (card.delta != null) ...[
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.arrow_upward_rounded,
+                        color: ReportsPage._green,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        card.delta!,
+                        style: const TextStyle(
+                          color: ReportsPage._green,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          card.footer,
+                          style: const TextStyle(
+                            color: ReportsPage._muted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Row(
+                    children: [
+                      Text(
+                        card.footer,
+                        style: const TextStyle(
+                          color: ReportsPage._muted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (card.badge != null) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF5E6),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 11,
+                                color: Color(0xFFF2B437),
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                card.badge!,
+                                style: const TextStyle(
+                                  color: Color(0xFFC78C17),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
-              ),
-            ],
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -489,55 +506,88 @@ class _QuickActionCard extends StatelessWidget {
 
   final _QuickActionData action;
 
+  void _handleTap(BuildContext context) {
+    switch (action.label) {
+      case 'New Sale':
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => const MarketHomePage(),
+          ),
+        );
+        break;
+      case 'Open Cash Drawer':
+        showMarketNotice(
+          context,
+          title: 'Cash Drawer',
+          message: 'Cash drawer opened successfully.',
+        );
+        break;
+      case 'View Reports':
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => const ReportsCatalogPage(),
+          ),
+        );
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final iconBackground =
         action.emphasized ? Colors.white : action.iconBackground!;
     final labelColor = action.foreground ?? ReportsPage._ink;
 
-    return Container(
-      constraints: const BoxConstraints(minHeight: 108),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: action.background,
-        color: action.background == null ? Colors.white : null,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        border: action.background == null
-            ? Border.all(color: ReportsPage._border)
-            : null,
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x140E1726),
-            blurRadius: 18,
-            offset: Offset(0, 8),
+        onTap: () => _handleTap(context),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 108),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: action.background,
+            color: action.background == null ? Colors.white : null,
+            borderRadius: BorderRadius.circular(18),
+            border: action.background == null
+                ? Border.all(color: ReportsPage._border)
+                : null,
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x140E1726),
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: iconBackground,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(action.icon, color: action.iconColor, size: 22),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: iconBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(action.icon, color: action.iconColor, size: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                action.label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: labelColor,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                  height: 1.2,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            action.label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: labelColor,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-              height: 1.2,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -546,30 +596,50 @@ class _QuickActionCard extends StatelessWidget {
 class _RecentHeader extends StatelessWidget {
   const _RecentHeader();
 
+  void _openAll(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => const _RecentActivityPage(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: const Row(
-      children: [
-        _SectionTitle('Recent Activity'),
-        Spacer(),
-        Text(
-          'View All',
-          style: TextStyle(
-            color: ReportsPage._blue,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w600,
+      child: Row(
+        children: [
+          const _SectionTitle('Recent Activity'),
+          const Spacer(),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _openAll(context),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Row(
+                children: [
+                  Text(
+                    'View All',
+                    style: TextStyle(
+                      color: ReportsPage._blue,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(width: 2),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: ReportsPage._blue,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        SizedBox(width: 2),
-        Icon(
-          Icons.chevron_right_rounded,
-          color: ReportsPage._blue,
-          size: 16,
-        ),
-      ],
-    ));
+        ],
+      ),
+    );
   }
 }
 
@@ -619,76 +689,313 @@ class _ActivityTile extends StatelessWidget {
 
   final _ActivityItemData item;
 
+  void _openDetails(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => _ActivityDetailPage(item: item),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 14, 9, 14),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: item.iconBackground,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Icon(item.icon, color: item.iconColor, size: 18),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    color: ReportsPage._ink,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  item.subtitle,
-                  style: const TextStyle(
-                    color: ReportsPage._muted,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openDetails(context),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 14, 9, 14),
+          child: Row(
             children: [
-              if (item.amount != null)
-                Text(
-                  item.amount!,
-                  style: const TextStyle(
-                    color: ReportsPage._ink,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: item.iconBackground,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(item.icon, color: item.iconColor, size: 18),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        color: ReportsPage._ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.subtitle,
+                      style: const TextStyle(
+                        color: ReportsPage._muted,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (item.amount != null)
+                    Text(
+                      item.amount!,
+                      style: const TextStyle(
+                        color: ReportsPage._ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  if (item.amount != null) const SizedBox(height: 2),
+                  Text(
+                    item.time,
+                    style: const TextStyle(
+                      color: ReportsPage._muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              if (item.amount != null) const SizedBox(height: 2),
-              Text(
-                item.time,
-                style: const TextStyle(
-                  color: ReportsPage._muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
+                ],
+              ),
+              const SizedBox(width: 3),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF7F889D),
+                size: 17,
               ),
             ],
           ),
-          const SizedBox(width: 3),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: Color(0xFF7F889D),
-            size: 17,
-          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OverviewDetailPage extends StatelessWidget {
+  const _OverviewDetailPage({required this.card});
+
+  final _OverviewCardData card;
+
+  String get _insight {
+    switch (card.title) {
+      case 'Total Sales Today':
+        return 'Sales are trending upward compared with yesterday, which suggests stronger conversion and basket size today.';
+      case 'Transactions':
+        return 'Transaction count is healthy and moving in the right direction for the current trading window.';
+      case 'Avg. Transaction Value':
+        return 'Average basket value is improving, which usually means customers are buying more items per visit.';
+      case 'Top Selling Product':
+        return 'This product is leading today and is a strong candidate for reorder checks and featured placement.';
+      default:
+        return 'This metric is available and ready for deeper reporting.';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFEFC),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFFEFC),
+        elevation: 0,
+        foregroundColor: ReportsPage._ink,
+        title: Text(card.title),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: ReportsPage._border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: card.iconBackground,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(card.icon, color: card.iconColor, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          card.value,
+                          style: const TextStyle(
+                            color: ReportsPage._ink,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          card.footer,
+                          style: const TextStyle(
+                            color: ReportsPage._muted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Overview',
+              style: TextStyle(
+                color: ReportsPage._ink,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _insight,
+              style: const TextStyle(
+                color: ReportsPage._muted,
+                fontSize: 14,
+                height: 1.6,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (card.delta != null) ...[
+              const SizedBox(height: 18),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF8EE),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.trending_up_rounded,
+                      color: ReportsPage._green,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '${card.delta} improvement ${card.footer.toLowerCase()}',
+                      style: const TextStyle(
+                        color: ReportsPage._green,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentActivityPage extends StatelessWidget {
+  const _RecentActivityPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFEFC),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFFEFC),
+        elevation: 0,
+        foregroundColor: ReportsPage._ink,
+        title: const Text('Recent Activity'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
+        children: const [
+          _RecentActivityCard(items: ReportsPage._activityItems),
         ],
+      ),
+    );
+  }
+}
+
+class _ActivityDetailPage extends StatelessWidget {
+  const _ActivityDetailPage({required this.item});
+
+  final _ActivityItemData item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFEFC),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFFEFC),
+        elevation: 0,
+        foregroundColor: ReportsPage._ink,
+        title: Text(item.title),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: ReportsPage._border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                item.subtitle,
+                style: const TextStyle(
+                  color: ReportsPage._muted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Time: ${item.time}',
+                style: const TextStyle(
+                  color: ReportsPage._ink,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (item.amount != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Amount: ${item.amount}',
+                  style: const TextStyle(
+                    color: ReportsPage._ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

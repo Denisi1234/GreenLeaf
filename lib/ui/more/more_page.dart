@@ -14,7 +14,8 @@ class MorePage extends StatelessWidget {
     const items = [
       _MoreMenuItem('Store Profile', Icons.storefront_outlined),
       _MoreMenuItem('Staff Management', Icons.groups_2_outlined),
-      _MoreMenuItem('Multi-Store Management', Icons.store_mall_directory_outlined),
+      _MoreMenuItem(
+          'Multi-Store Management', Icons.store_mall_directory_outlined),
       _MoreMenuItem('Tax & Discounts', Icons.sell_outlined),
       _MoreMenuItem('Subscription Plan', Icons.description_outlined),
       _MoreMenuItem('Help & Support', Icons.support_agent_outlined),
@@ -24,132 +25,144 @@ class MorePage extends StatelessWidget {
     return Scaffold(
       drawer: const MarketAppDrawer(selectedItem: 'Settings'),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF1562E8), Color(0xFF1562E8), Color(0xFFF8F8F6)],
-                    stops: [0, 0.23, 0.23],
-                  ),
-                ),
-              ),
-            ),
-            Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-                  child: Row(
-                    children: [
-                      const DrawerMenuButton(
-                        iconColor: Colors.white,
-                      ),
-                      const Expanded(
-                        child: Center(
-                          child: Text(
-                            'More',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
+            Material(
+              color: const Color(0xFFFFFEFC),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+                child: Row(
+                  children: [
+                    const DrawerMenuButton(
+                      iconColor: Color(0xFF5C677D),
+                    ),
+                    const Expanded(
+                      child: Center(
+                        child: Text(
+                          'More',
+                          style: TextStyle(
+                            color: Color(0xFF162445),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 40),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 40),
+                  ],
                 ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+              ),
+            ),
+            const Divider(
+              height: 1,
+              thickness: 1,
+              color: Color(0xFFE7EAF0),
+            ),
+            Expanded(
+              child: Stack(
+                children: [
+                  const Positioned.fill(child: BackdropGlow()),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
                     child: Column(
                       children: [
                         const _ProfileSummaryCard(),
-                        const SizedBox(height: 18),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x0E000000),
-                                blurRadius: 14,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              ...items.asMap().entries.map(
-                                (entry) {
-                                  final index = entry.key;
-                                  final item = entry.value;
-                                  return Column(
-                                    children: [
-                                      _MoreListTile(item: item),
-                                      if (index != items.length - 1)
-                                        const Padding(
-                                          padding: EdgeInsets.only(left: 78),
-                                          child: Divider(
-                                            height: 1,
-                                            color: Color(0xFFE8EBF0),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x0E000000),
+                                  blurRadius: 14,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                ...items.asMap().entries.map(
+                                  (entry) {
+                                    final index = entry.key;
+                                    final item = entry.value;
+                                    final isLowerSection =
+                                        index >= items.length - 2;
+                                    return Column(
+                                      children: [
+                                        Padding(
+                                          padding: EdgeInsets.only(
+                                            top: isLowerSection ? 10 : 0,
+                                            bottom: isLowerSection ? 10 : 0,
                                           ),
+                                          child: _MoreListTile(item: item),
                                         ),
-                                    ],
-                                  );
-                                },
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showMarketNotice(
-                                      context,
-                                      title: 'Logged Out',
-                                      message: 'You can connect the real auth flow next',
+                                        if (index != items.length - 1)
+                                          const Padding(
+                                            padding: EdgeInsets.only(left: 68),
+                                            child: Divider(
+                                              height: 1,
+                                              color: Color(0xFFE8EBF0),
+                                            ),
+                                          ),
+                                      ],
                                     );
                                   },
-                                  child: Container(
-                                    height: 72,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(color: const Color(0xFFE65B5B)),
-                                    ),
-                                    child: const Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.logout_rounded,
-                                          color: Color(0xFFE65B5B),
-                                          size: 24,
+                                ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(14, 48, 14, 14),
+                                child: GestureDetector(
+                                    onTap: () {
+                                      showMarketNotice(
+                                        context,
+                                        title: 'Logged Out',
+                                        message:
+                                            'You can connect the real auth flow next',
+                                      );
+                                    },
+                                    child: Container(
+                                      height: 58,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: const Color(0xFFE65B5B),
                                         ),
-                                        SizedBox(width: 10),
-                                        Text(
-                                          'Log Out',
-                                          style: TextStyle(
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.logout_rounded,
                                             color: Color(0xFFE65B5B),
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
+                                            size: 22,
                                           ),
-                                        ),
-                                      ],
+                                          SizedBox(width: 10),
+                                          Text(
+                                            'Log Out',
+                                            style: TextStyle(
+                                              color: Color(0xFFE65B5B),
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -163,115 +176,175 @@ class _ProfileSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 108,
-                height: 108,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F0FF),
-                  borderRadius: BorderRadius.circular(54),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: Color(0xFF1562E8),
-                  size: 70,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 380;
+
+        return Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 18,
+                offset: Offset(0, 8),
               ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+          ),
+          child: Column(
+            children: [
+              if (isNarrow)
+                const Column(
                   children: [
-                    Text(
-                      'John Smith',
-                      style: TextStyle(
-                        color: Color(0xFF202938),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Store Owner',
-                      style: TextStyle(
-                        color: Color(0xFF7A8393),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    _ProfileAvatar(),
                     SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.storefront_outlined,
-                          color: Color(0xFF1562E8),
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Downtown Outlet',
-                          style: TextStyle(
-                            color: Color(0xFF202938),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                    _ProfileDetails(centered: true),
+                  ],
+                )
+              else
+                const Row(
+                  children: [
+                    _ProfileAvatar(),
+                    SizedBox(width: 12),
+                    Expanded(child: _ProfileDetails()),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFF202938),
+                      size: 30,
                     ),
                   ],
                 ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF202938),
-                size: 30,
-              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: Color(0xFFE8EBF0)),
+              const SizedBox(height: 10),
+              if (isNarrow)
+                const Column(
+                  children: [
+                    _StatBlock(
+                      icon: Icons.receipt_long_outlined,
+                      label: 'Total Sales',
+                      value: 'TSH 61,401,250',
+                    ),
+                    SizedBox(height: 10),
+                    Divider(height: 1, color: Color(0xFFE8EBF0)),
+                    SizedBox(height: 10),
+                    _StatBlock(
+                      icon: Icons.calendar_today_outlined,
+                      label: 'Member Since',
+                      value: 'May 12, 2023',
+                    ),
+                  ],
+                )
+              else
+                const Row(
+                  children: [
+                    Expanded(
+                      child: _StatBlock(
+                        icon: Icons.receipt_long_outlined,
+                        label: 'Total Sales',
+                        value: 'TSH 61,401,250',
+                      ),
+                    ),
+                    SizedBox(
+                      height: 52,
+                      child: VerticalDivider(
+                        color: Color(0xFFE2E6EE),
+                        thickness: 1,
+                      ),
+                    ),
+                    Expanded(
+                      child: _StatBlock(
+                        icon: Icons.calendar_today_outlined,
+                        label: 'Member Since',
+                        value: 'May 12, 2023',
+                      ),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 12),
             ],
           ),
-          const SizedBox(height: 18),
-          const Divider(height: 1, color: Color(0xFFE8EBF0)),
-          const SizedBox(height: 14),
-          const Row(
-            children: [
-                Expanded(
-                child: _StatBlock(
-                  icon: Icons.receipt_long_outlined,
-                  label: 'Total Sales',
-                  value: 'TSH 61,401,250',
-                ),
-              ),
-              SizedBox(
-                height: 52,
-                child: VerticalDivider(color: Color(0xFFE2E6EE), thickness: 1),
-              ),
-              Expanded(
-                child: _StatBlock(
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Member Since',
-                  value: 'May 12, 2023',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
+        );
+      },
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 84,
+      height: 84,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F0FF),
+        borderRadius: BorderRadius.circular(42),
       ),
+      child: const Icon(
+        Icons.person,
+        color: Color(0xFF1562E8),
+        size: 54,
+      ),
+    );
+  }
+}
+
+class _ProfileDetails extends StatelessWidget {
+  const _ProfileDetails({this.centered = false});
+
+  final bool centered;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'John Smith',
+          style: TextStyle(
+            color: Color(0xFF202938),
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 2),
+        const Text(
+          'Store Owner',
+          style: TextStyle(
+            color: Color(0xFF7A8393),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: centered ? MainAxisSize.min : MainAxisSize.max,
+          children: const [
+            Icon(
+              Icons.storefront_outlined,
+              color: Color(0xFF1562E8),
+              size: 20,
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Downtown Outlet',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Color(0xFF202938),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -290,11 +363,12 @@ class _StatBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFF1562E8), size: 24),
-          const SizedBox(width: 12),
+          Icon(icon, color: const Color(0xFF1562E8), size: 20),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,16 +377,18 @@ class _StatBlock extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     color: Color(0xFF6F7887),
-                    fontSize: 12.8,
+                    fontSize: 11.8,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF1562E8),
-                    fontSize: 15.2,
+                    fontSize: 13.4,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -377,29 +453,29 @@ class _MoreListTile extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
         child: Row(
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5FF),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(
                 item.icon,
                 color: const Color(0xFF1562E8),
-                size: 28,
+                size: 22,
               ),
             ),
-            const SizedBox(width: 18),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 item.label,
                 style: const TextStyle(
                   color: Color(0xFF202938),
-                  fontSize: 16,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -407,7 +483,7 @@ class _MoreListTile extends StatelessWidget {
             const Icon(
               Icons.chevron_right_rounded,
               color: Color(0xFF6F7887),
-              size: 30,
+              size: 24,
             ),
           ],
         ),
