@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -38,10 +40,33 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
       )
       .toList();
 
+  double get _subtotal =>
+      widget.order.lines.fold(0, (sum, line) => sum + line.lineTotal);
+  double get _tax => 0;
+  int get _itemTypeCount => widget.order.lines.length;
+  int get _unitCount =>
+      widget.order.lines.fold<int>(0, (sum, line) => sum + line.quantity);
+
   @override
   void initState() {
     super.initState();
     _preparePdf();
+  }
+
+  String _money(double value) {
+    final fixed = value.toStringAsFixed(2);
+    final parts = fixed.split('.');
+    final whole = parts[0];
+    final decimal = parts[1];
+    final buffer = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      final remaining = whole.length - i;
+      buffer.write(whole[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+    return 'TSh${buffer.toString()}.$decimal';
   }
 
   Future<void> _preparePdf() async {
@@ -72,63 +97,76 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     }
   }
 
+  Future<File?> _ensurePdf(BuildContext context) async {
+    File? pdfFile = _preparedPdf;
+    if (pdfFile != null) return pdfFile;
+
+    if (_isPreparing) {
+      showMarketNotice(
+        context,
+        title: 'Preparing Receipt',
+        message: 'One moment while we finish the PDF...',
+      );
+      var attempts = 0;
+      while (_isPreparing && attempts < 10) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        attempts++;
+      }
+      pdfFile = _preparedPdf;
+    }
+
+    if (pdfFile != null) return pdfFile;
+
+    try {
+      pdfFile = await ReceiptPdfService.createReceiptPdf(
+        items: _pdfItems,
+        total: widget.order.total,
+        cashTendered: widget.order.cashTendered,
+        changeDue: widget.order.changeDue,
+        receiptNumber: widget.order.id,
+        cashier: widget.order.cashierName,
+        register: widget.order.register,
+        date: widget.order.date,
+        time: widget.order.time,
+      );
+      if (!mounted) return null;
+      setState(() => _preparedPdf = pdfFile);
+      return pdfFile;
+    } catch (_) {
+      if (!context.mounted) return null;
+      showMarketNotice(
+        context,
+        title: 'Receipt Error',
+        message: 'Receipt PDF could not be prepared',
+        type: MarketNoticeType.warning,
+      );
+      return null;
+    }
+  }
+
   String _buildWhatsAppMessage() {
     final buffer = StringBuffer()
       ..writeln(ReceiptBrandData.storeName)
       ..writeln('Receipt ${widget.order.id}')
-      ..writeln('Date: ${widget.order.date}')
-      ..writeln('Cashier: ${widget.order.cashierName}')
+      ..writeln('Date: ${widget.order.date} ${widget.order.time}')
       ..writeln('');
     for (final line in widget.order.lines) {
       buffer.writeln(
-        '${line.itemName} x${line.quantity} - TSH ${line.lineTotal.toStringAsFixed(0)}',
+        '${line.itemName} x${line.quantity} - ${_money(line.lineTotal)}',
       );
     }
     buffer
       ..writeln('')
-      ..writeln('Total: TSH ${widget.order.total.toStringAsFixed(0)}')
-      ..writeln(
-        'Cash Tendered: TSH ${widget.order.cashTendered.toStringAsFixed(0)}',
-      )
-      ..writeln('Change Due: TSH ${widget.order.changeDue.toStringAsFixed(0)}')
-      ..writeln('')
-      ..writeln('Thank you for shopping with us.');
+      ..writeln('Total: ${_money(widget.order.total)}')
+      ..writeln('Cash Received: ${_money(widget.order.cashTendered)}')
+      ..writeln('Change Amount: ${_money(widget.order.changeDue)}');
     return buffer.toString();
   }
 
   Future<void> _shareToWhatsApp(BuildContext context) async {
     try {
-      File? pdfFile = _preparedPdf;
-
-      if (pdfFile == null) {
-        if (_isPreparing) {
-          showMarketNotice(
-            context,
-            title: 'Preparing Receipt',
-            message: 'One moment while we finish the PDF...',
-          );
-          var attempts = 0;
-          while (_isPreparing && attempts < 10) {
-            await Future<void>.delayed(const Duration(milliseconds: 200));
-            attempts++;
-          }
-          pdfFile = _preparedPdf;
-        }
-
-        if (pdfFile == null) {
-          pdfFile = await ReceiptPdfService.createReceiptPdf(
-            items: _pdfItems,
-            total: widget.order.total,
-            cashTendered: widget.order.cashTendered,
-            changeDue: widget.order.changeDue,
-            receiptNumber: widget.order.id,
-            cashier: widget.order.cashierName,
-            register: widget.order.register,
-            date: widget.order.date,
-            time: widget.order.time,
-          );
-        }
-      }
+      final pdfFile = await _ensurePdf(context);
+      if (pdfFile == null) return;
 
       final message = _buildWhatsAppMessage();
 
@@ -152,21 +190,10 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         if (!context.mounted) return;
         showMarketNotice(
           context,
-          title: 'PDF Shared',
+          title: 'WhatsApp Ready',
           message: 'Receipt PDF opened in WhatsApp',
         );
         return;
-      }
-
-      try {
-        final pdfBytes = await pdfFile.readAsBytes();
-        await Printing.sharePdf(
-          bytes: pdfBytes,
-          filename:
-              'receipt_${widget.order.id.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_')}.pdf',
-        );
-      } catch (error) {
-        debugPrint('System PDF share failed: $error');
       }
 
       final webUri = Uri.parse(
@@ -177,7 +204,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         showMarketNotice(
           context,
           title: 'WhatsApp Opened',
-          message: 'WhatsApp opened with the receipt summary',
+          message: 'WhatsApp opened with receipt details',
         );
         return;
       }
@@ -194,18 +221,96 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
       showMarketNotice(
         context,
         title: 'Share Failed',
-        message: error.message ?? 'Receipt PDF could not be shared',
+        message: error.message ?? 'Receipt could not be shared',
         type: MarketNoticeType.warning,
+      );
+    }
+  }
+
+  Future<void> _sharePdf(BuildContext context) async {
+    final pdfFile = await _ensurePdf(context);
+    if (pdfFile == null) return;
+    final pdfBytes = await pdfFile.readAsBytes();
+    await Printing.sharePdf(
+      bytes: pdfBytes,
+      filename:
+          'receipt_${widget.order.id.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_')}.pdf',
+    );
+  }
+
+  Future<void> _printReceipt(BuildContext context) async {
+    final pdfFile = await _ensurePdf(context);
+    if (pdfFile == null) return;
+    final bytes = await pdfFile.readAsBytes();
+    await Printing.layoutPdf(onLayout: (_) async => bytes);
+  }
+
+  Future<void> _downloadReceipt(BuildContext context) async {
+    final pdfFile = await _ensurePdf(context);
+    if (pdfFile == null || !context.mounted) return;
+
+    try {
+      final targetFile = await _saveReceiptPdf(pdfFile, widget.order.id);
+      if (!context.mounted) return;
+      showMarketNotice(
+        context,
+        title: 'Receipt Downloaded',
+        message: 'Saved to ${targetFile.path}',
       );
     } catch (_) {
       if (!context.mounted) return;
       showMarketNotice(
         context,
-        title: 'Unexpected Error',
-        message: 'An error occurred while preparing the receipt',
+        title: 'Download Failed',
+        message: 'Receipt PDF could not be saved',
         type: MarketNoticeType.warning,
       );
     }
+  }
+
+  Future<File> _saveReceiptPdf(File sourceFile, String receiptNumber) async {
+    final safeName = receiptNumber.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+    final fileName = 'receipt_$safeName.pdf';
+
+    final targetDirectories = <Directory>[];
+
+    if (Platform.isAndroid) {
+      targetDirectories.add(Directory('/storage/emulated/0/Download'));
+    }
+
+    final downloadsDirectory = await getDownloadsDirectory();
+    if (downloadsDirectory != null) {
+      targetDirectories.add(downloadsDirectory);
+    }
+
+    final documentsDirectory = await getApplicationDocumentsDirectory();
+    targetDirectories.add(
+      Directory(path.join(documentsDirectory.path, 'downloaded_receipts')),
+    );
+
+    for (final directory in targetDirectories) {
+      try {
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        final targetFile = File(path.join(directory.path, fileName));
+        await sourceFile.copy(targetFile.path);
+        return targetFile;
+      } catch (_) {
+        continue;
+      }
+    }
+
+    throw const FileSystemException('No writable download directory found');
+  }
+
+  void _showPlaceholderAction(BuildContext context, String label) {
+    showMarketNotice(
+      context,
+      title: label,
+      message: '$label is not connected yet',
+      type: MarketNoticeType.warning,
+    );
   }
 
   void _startNewSale(BuildContext context) {
@@ -225,93 +330,170 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF2F2F2),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            const Positioned.fill(child: BackdropGlow()),
-            Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 10),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 44),
-                      const Expanded(
-                        child: Text(
-                          'Receipt Preview',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF202938),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(color: const Color(0xFFE3E6EB)),
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: Color(0xFF202938),
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 112),
-                    child: _ReceiptPaper(
-                      items: widget.order.lines,
-                      total: widget.order.total,
-                      cashTendered: widget.order.cashTendered,
-                      changeDue: widget.order.changeDue,
-                      receiptNumber: widget.order.id,
-                      cashier: widget.order.cashierName,
-                      register: widget.order.register,
-                      date: widget.order.date,
-                      time: widget.order.time,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Positioned(
-              left: 18,
-              right: 18,
-              bottom: 18,
+            Container(
+              height: 56,
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Row(
                 children: [
-                  Expanded(
-                    child: _ReceiptActionButton(
-                      label: 'New Sale',
-                      icon: Icons.add_shopping_cart_rounded,
-                      isPrimary: true,
-                      onTap: () => _startNewSale(context),
-                    ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back, color: Color(0xFF4C68D6)),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ReceiptActionButton(
-                      label: 'WhatsApp Receipt',
-                      icon: Icons.chat_bubble_outline_rounded,
-                      onTap: () => _shareToWhatsApp(context),
-                    ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => _sharePdf(context),
+                    icon: const Icon(Icons.share, color: Color(0xFF4C68D6)),
+                  ),
+                  IconButton(
+                    onPressed: () => _showPlaceholderAction(context, 'SMS'),
+                    icon: const Icon(Icons.sms, color: Color(0xFF4C68D6)),
+                  ),
+                  IconButton(
+                    onPressed: () => _shareToWhatsApp(context),
+                    icon: const Icon(Icons.chat, color: Color(0xFF4C68D6)),
+                  ),
+                  IconButton(
+                    onPressed: () => _downloadReceipt(context),
+                    icon: const Icon(Icons.download, color: Color(0xFF4C68D6)),
+                  ),
+                  IconButton(
+                    onPressed: () => _printReceipt(context),
+                    icon: const Icon(Icons.print, color: Color(0xFF4C68D6)),
+                  ),
+                  IconButton(
+                    onPressed: () => _showPlaceholderAction(context, 'More'),
+                    icon: const Icon(Icons.more_vert, color: Color(0xFF4C68D6)),
                   ),
                 ],
               ),
             ),
+            const Divider(height: 1, color: Color(0xFFD7D7D7)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 10, 6, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _TopActionButton(
+                    label: 'RETURN',
+                    color: const Color(0xFF476ADB),
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 6),
+                  _TopActionButton(
+                    label: 'DELETE',
+                    color: const Color(0xFFF24840),
+                    onTap: () => _showPlaceholderAction(context, 'Delete'),
+                  ),
+                  const SizedBox(width: 6),
+                  _TopActionButton(
+                    label: 'EDIT',
+                    color: const Color(0xFF476ADB),
+                    onTap: () => _showPlaceholderAction(context, 'Edit'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 94),
+                child: _ReceiptPaper(
+                  phone: ReceiptBrandData.phone,
+                  receiptNumber: widget.order.id,
+                  date: widget.order.date,
+                  time: widget.order.time,
+                  paymentMethod: widget.order.paymentMethod,
+                  itemTypes: _itemTypeCount,
+                  unitCount: _unitCount,
+                  amount: widget.order.total,
+                  items: widget.order.lines,
+                  subtotal: _subtotal,
+                  tax: _tax,
+                  grandTotal: widget.order.total,
+                  cashReceived: widget.order.cashTendered,
+                  changeAmount: widget.order.changeDue,
+                  money: _money,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 18),
+              child: GestureDetector(
+                onTap: () => _startNewSale(context),
+                child: Container(
+                  width: double.infinity,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF67BE68),
+                    borderRadius: BorderRadius.circular(2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x22000000),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'New Sale',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TopActionButton extends StatelessWidget {
+  const _TopActionButton({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 82,
+        height: 34,
+        decoration: BoxDecoration(
+          color: color,
+          border: Border.all(color: const Color(0xFFCFD3DE)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 3,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -320,415 +502,171 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
 
 class _ReceiptPaper extends StatelessWidget {
   const _ReceiptPaper({
-    required this.items,
-    required this.total,
-    required this.cashTendered,
-    required this.changeDue,
+    required this.phone,
     required this.receiptNumber,
-    required this.cashier,
-    required this.register,
     required this.date,
     required this.time,
+    required this.paymentMethod,
+    required this.itemTypes,
+    required this.unitCount,
+    required this.amount,
+    required this.items,
+    required this.subtotal,
+    required this.tax,
+    required this.grandTotal,
+    required this.cashReceived,
+    required this.changeAmount,
+    required this.money,
   });
 
-  final List<OrderLine> items;
-  final double total;
-  final double cashTendered;
-  final double changeDue;
+  final String phone;
   final String receiptNumber;
-  final String cashier;
-  final String register;
   final String date;
   final String time;
+  final String paymentMethod;
+  final int itemTypes;
+  final int unitCount;
+  final double amount;
+  final List<OrderLine> items;
+  final double subtotal;
+  final double tax;
+  final double grandTotal;
+  final double cashReceived;
+  final double changeAmount;
+  final String Function(double value) money;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 18,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
       child: Column(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 62,
-                height: 62,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF7F1),
-                  borderRadius: BorderRadius.circular(31),
-                ),
-                child: const Center(child: ReceiptBrandMark()),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      ReceiptBrandData.storeName,
-                      style: const TextStyle(
-                        color: Color(0xFF202938),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      ReceiptBrandData.address,
-                      style: const TextStyle(
-                        color: Color(0xFF636B78),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      ReceiptBrandData.phone,
-                      style: const TextStyle(
-                        color: Color(0xFF636B78),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(color: Color(0xFFE5E7EB)),
-          const SizedBox(height: 8),
-          _ReceiptMetaRow(label: 'Receipt #:', value: receiptNumber),
-          _ReceiptMetaRow(label: 'Date:', value: date),
-          _ReceiptMetaRow(label: 'Time:', value: time),
-          _ReceiptMetaRow(label: 'Cashier:', value: cashier),
-          _ReceiptMetaRow(label: 'Register:', value: register),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FB),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+          Text(
+            phone,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
-            child: const Row(
-              children: [
-                Expanded(
-                  flex: 6,
-                  child: Text(
-                    'Item',
-                    style: TextStyle(
-                      color: Color(0xFF202938),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Qty',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFF202938),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    'Price',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: Color(0xFF202938),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    'Subtotal',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: Color(0xFF202938),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 10, bottom: 100),
+            child: Divider(height: 1, color: Color(0xFFD7D7D7)),
+          ),
+          Text(
+            'Receipt# $receiptNumber',
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 2),
-          if (items.isEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    color: Color(0xFF7C8593),
-                    size: 22,
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'No items were passed to this receipt yet.',
-                      style: TextStyle(
-                        color: Color(0xFF5F6775),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ...items.map(
-              (line) => Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 6,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border:
-                                      Border.all(color: const Color(0xFFE5E7EB)),
-                                ),
-                                child: line.imagePath != null
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.file(
-                                          File(line.imagePath!),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              FittedBox(
-                                            fit: BoxFit.contain,
-                                            child: ProductArt(
-                                              type: line.artType,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : FittedBox(
-                                        fit: BoxFit.contain,
-                                        child: ProductArt(type: line.artType),
-                                      ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      line.itemName,
-                                      style: const TextStyle(
-                                        color: Color(0xFF202938),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      line.itemSize,
-                                      style: const TextStyle(
-                                        color: Color(0xFF6E7684),
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            '${line.quantity}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFF202938),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            'TSH ${line.unitPriceValue.toStringAsFixed(0)}',
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Color(0xFF202938),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            'TSH ${line.lineTotal.toStringAsFixed(0)}',
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Color(0xFF202938),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1, color: Color(0xFFE8EBEF)),
-                ],
-              ),
+          Text(
+            'Date : $date - $time',
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
             ),
-          const SizedBox(height: 10),
-          _ReceiptAmountRow(label: 'Subtotal', value: total),
-          const SizedBox(height: 6),
-          _ReceiptAmountRow(label: 'Cash Tendered', value: cashTendered),
-          const SizedBox(height: 6),
-          _ReceiptAmountRow(label: 'Change Due', value: changeDue),
+          ),
+          const SizedBox(height: 18),
+          const _TableHeader(
+            cells: ['P Mode', 'I#', 'U#', 'Amount'],
+            alignments: [
+              TextAlign.left,
+              TextAlign.center,
+              TextAlign.center,
+              TextAlign.right,
+            ],
+            flexes: [4, 2, 2, 4],
+          ),
+          _TableRow(
+            cells: [paymentMethod, '$itemTypes', '$unitCount', money(amount)],
+            alignments: const [
+              TextAlign.left,
+              TextAlign.center,
+              TextAlign.center,
+              TextAlign.right,
+            ],
+            flexes: const [4, 2, 2, 4],
+            isBold: true,
+          ),
+          const SizedBox(height: 18),
+          const _TableHeader(
+            cells: ['Name', 'Price', 'Qty', 'Total'],
+            alignments: [
+              TextAlign.left,
+              TextAlign.left,
+              TextAlign.center,
+              TextAlign.right,
+            ],
+            flexes: [4, 3, 2, 4],
+          ),
+          ...items.map(
+            (line) => _TableRow(
+              cells: [
+                line.itemName,
+                money(line.unitPriceValue),
+                '${line.quantity}',
+                money(line.lineTotal),
+              ],
+              alignments: const [
+                TextAlign.left,
+                TextAlign.left,
+                TextAlign.center,
+                TextAlign.right,
+              ],
+              flexes: const [4, 3, 2, 4],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Divider(height: 1, thickness: 2, color: Color(0xFF444444)),
+          ),
+          _SummaryLine(label: 'Subtotal', value: money(subtotal)),
+          const SizedBox(height: 4),
+          _SummaryLine(label: 'Tax (0%)', value: money(tax)),
+          const SizedBox(height: 4),
+          _SummaryLine(
+            label: 'Grand Total',
+            value: money(grandTotal),
+            isBold: true,
+          ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
-            child: Divider(height: 1, color: Color(0xFFD9DEE5)),
+            child: Divider(height: 1, color: Color(0xFFD7D7D7)),
           ),
-          _ReceiptAmountRow(
-            label: 'Total',
-            value: total,
-            isLarge: true,
+          _SummaryLine(
+            label: 'Cash Received',
+            value: money(cashReceived),
+            valueWidth: 160,
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7FBF7),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFDDECDD)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF7F1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.payments_outlined,
-                    color: Color(0xFF2A7A46),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Payment Method',
-                        style: TextStyle(
-                          color: Color(0xFF2A7A46),
-                          fontSize: 11.2,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Cash',
-                        style: TextStyle(
-                          color: Color(0xFF202938),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  'TSH ${total.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Color(0xFF202938),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 4),
+          _SummaryLine(
+            label: 'Change Amount',
+            value: money(changeAmount),
+            valueWidth: 160,
+          ),
+          const SizedBox(height: 26),
+          const Text(
+            'Thank You! Visit again!',
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 14),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: Color(0xFF2A7A46),
-                child: Icon(
-                  Icons.check_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
-              ),
-              SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Thank you for your purchase!',
-                    style: TextStyle(
-                      color: Color(0xFF2A7A46),
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'We appreciate your business.',
-                    style: TextStyle(
-                      color: Color(0xFF697180),
-                      fontSize: 11.8,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          const SizedBox(height: 4),
+          const Text(
+            'Powered By Zobaze',
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -736,159 +674,118 @@ class _ReceiptPaper extends StatelessWidget {
   }
 }
 
-class _ReceiptMetaRow extends StatelessWidget {
-  const _ReceiptMetaRow({
-    required this.label,
-    required this.value,
+class _TableHeader extends StatelessWidget {
+  const _TableHeader({
+    required this.cells,
+    required this.alignments,
+    required this.flexes,
   });
 
-  final String label;
-  final String value;
+  final List<String> cells;
+  final List<TextAlign> alignments;
+  final List<int> flexes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF0F0F0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Row(
+        children: List.generate(cells.length, (index) {
+          return Expanded(
+            flex: flexes[index],
+            child: Text(
+              cells[index],
+              textAlign: alignments[index],
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _TableRow extends StatelessWidget {
+  const _TableRow({
+    required this.cells,
+    required this.alignments,
+    required this.flexes,
+    this.isBold = false,
+  });
+
+  final List<String> cells;
+  final List<TextAlign> alignments;
+  final List<int> flexes;
+  final bool isBold;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
-        children: [
-          Expanded(
+        children: List.generate(cells.length, (index) {
+          return Expanded(
+            flex: flexes[index],
             child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF202938),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+              cells[index],
+              textAlign: alignments[index],
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: 13,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Color(0xFF202938),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
 }
 
-class _ReceiptAmountRow extends StatelessWidget {
-  const _ReceiptAmountRow({
+class _SummaryLine extends StatelessWidget {
+  const _SummaryLine({
     required this.label,
     required this.value,
-    this.isLarge = false,
+    this.isBold = false,
+    this.valueWidth = 140,
   });
 
   final String label;
-  final double value;
-  final bool isLarge;
+  final String value;
+  final bool isBold;
+  final double valueWidth;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: const Color(0xFF202938),
-              fontSize: isLarge ? 14.8 : 12.8,
-              fontWeight: isLarge ? FontWeight.w800 : FontWeight.w500,
-            ),
-          ),
-        ),
-        Text(
-          'TSH ${value.toStringAsFixed(0)}',
-          style: TextStyle(
-            color: const Color(0xFF202938),
-            fontSize: isLarge ? 14.8 : 12.8,
-            fontWeight: isLarge ? FontWeight.w800 : FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ReceiptActionButton extends StatelessWidget {
-  const _ReceiptActionButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.isPrimary = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isPrimary;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 58,
-        decoration: BoxDecoration(
-          color: isPrimary ? const Color(0xFF1E7A47) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF1E7A47)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x10000000),
-              blurRadius: 14,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isPrimary ? Colors.white : const Color(0xFF1E7A47),
-              size: 24,
-            ),
-            const SizedBox(width: 10),
-            Text(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: Text(
               label,
               style: TextStyle(
-                color: isPrimary ? Colors.white : const Color(0xFF1E7A47),
-                fontSize: 13.5,
-                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+                fontSize: 13,
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class ReceiptBrandMark extends StatelessWidget {
-  const ReceiptBrandMark({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        const Icon(
-          Icons.shopping_bag_outlined,
-          color: Color(0xFF2A7A46),
-          size: 30,
-        ),
-        Positioned(
-          bottom: 10,
-          child: Container(
-            width: 17,
-            height: 12,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFF2A7A46), width: 1.7),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
+        SizedBox(
+          width: valueWidth,
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 13,
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
         ),

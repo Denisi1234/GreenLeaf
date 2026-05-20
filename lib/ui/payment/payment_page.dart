@@ -1,13 +1,9 @@
-import 'dart:math' as math;
-
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
 import '../models/product_item.dart';
-import '../receipt/receipt_preview_page.dart';
+import '../receipt/receipt_success_page.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class PaymentPage extends StatefulWidget {
@@ -24,7 +20,7 @@ class PaymentPage extends StatefulWidget {
 
 class _PaymentPageState extends State<PaymentPage> {
   late final List<OrderLineItem> _orderLines;
-  String _tenderedInput = '';
+  bool _showScaleBanner = true;
 
   @override
   void initState() {
@@ -44,37 +40,24 @@ class _PaymentPageState extends State<PaymentPage> {
 
   double get _subtotal =>
       _orderLines.fold(0, (sum, line) => sum + line.totalPrice);
-  double get _totalDue => _subtotal;
-  double get _cashTendered =>
-      _tenderedInput.isEmpty ? 0 : double.tryParse(_tenderedInput) ?? 0;
-  double get _changeDue => math.max(0, _cashTendered - _totalDue);
-  double get _amountRemaining => math.max(0, _totalDue - _cashTendered);
+  double get _tax => 0;
+  double get _grandTotal => _subtotal + _tax;
+  int get _itemTypes => _orderLines.length;
+  int get _unitCount =>
+      _orderLines.fold(0, (sum, line) => sum + line.quantity);
   bool get _hasItems => _orderLines.isNotEmpty;
-  bool get _hasEnoughCash => _hasItems && _cashTendered >= _totalDue;
 
-  void _appendKey(String value) {
-    setState(() {
-      if (value == '.' && _tenderedInput.contains('.')) return;
-      if (_tenderedInput == '0' && value != '.') {
-        _tenderedInput = value;
-        return;
+  String _amount(double value) {
+    final whole = value.round().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      final remaining = whole.length - i;
+      buffer.write(whole[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
       }
-      _tenderedInput += value;
-    });
-  }
-
-  void _clearLast() {
-    if (_tenderedInput.isEmpty) return;
-    setState(() {
-      _tenderedInput = _tenderedInput.substring(0, _tenderedInput.length - 1);
-    });
-  }
-
-  void _addAmount(double amount) {
-    setState(() {
-      final next = _cashTendered + amount;
-      _tenderedInput = next.toStringAsFixed(next % 1 == 0 ? 0 : 2);
-    });
+    }
+    return buffer.toString();
   }
 
   void _increaseQuantity(OrderLineItem line) {
@@ -94,7 +77,8 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   void _decreaseQuantity(OrderLineItem line) {
-    final didRemove = context.read<PosLocalStore>().removeSingleFromCart(line.product);
+    final didRemove =
+        context.read<PosLocalStore>().removeSingleFromCart(line.product);
     if (!didRemove) return;
     setState(() {
       line.quantity -= 1;
@@ -104,23 +88,18 @@ class _PaymentPageState extends State<PaymentPage> {
     });
   }
 
+  Future<void> _clearCart() async {
+    await context.read<PosLocalStore>().clearCart();
+    if (!mounted) return;
+    setState(_orderLines.clear);
+  }
+
   Future<void> _confirmPayment() async {
     if (!_hasItems) {
       showMarketNotice(
         context,
         title: 'Cart Is Empty',
-        message: 'Add at least one product before confirming payment',
-        type: MarketNoticeType.warning,
-      );
-      return;
-    }
-
-    if (!_hasEnoughCash) {
-      showMarketNotice(
-        context,
-        title: 'Payment Incomplete',
-        message:
-            'Add TSH ${_amountRemaining.toStringAsFixed(0)} more to complete payment',
+        message: 'Add at least one product before charging this order',
         type: MarketNoticeType.warning,
       );
       return;
@@ -129,20 +108,15 @@ class _PaymentPageState extends State<PaymentPage> {
     try {
       final completedOrder = await context.read<PosLocalStore>().completeCashSale(
             items: _orderLines,
-            cashTendered: _cashTendered,
+            cashTendered: _grandTotal,
             cashierName: 'John Doe',
             registerName: 'POS-01',
           );
 
       if (!mounted) return;
-      showMarketNotice(
-        context,
-        title: 'Payment Confirmed',
-        message: 'Cash received for TSH ${completedOrder.total.toStringAsFixed(0)}',
-      );
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (context) => ReceiptPreviewPage(order: completedOrder),
+          builder: (context) => ReceiptSuccessPage(order: completedOrder),
         ),
       );
     } on StateError catch (error) {
@@ -156,134 +130,84 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
+  void _showComingSoon(String label) {
+    showMarketNotice(
+      context,
+      title: label,
+      message: '$label is not wired yet in this screen',
+      type: MarketNoticeType.warning,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFE8E8E8),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            const Positioned.fill(child: BackdropGlow()),
-            Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
-                  child: Row(
+            _CounterAppBar(onBack: () => Navigator.of(context).pop()),
+            if (_showScaleBanner)
+              _ScaleBanner(onClose: () => setState(() => _showScaleBanner = false)),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
+                children: [
+                  if (_hasItems)
+                    ..._orderLines.map(
+                      (line) => _CounterLineTile(
+                        line: line,
+                        amountText: _amount(line.totalPrice),
+                        onIncrease: () => _increaseQuantity(line),
+                        onDecrease: () => _decreaseQuantity(line),
+                      ),
+                    )
+                  else
+                    const _EmptyCounterState(),
+                  const SizedBox(height: 6),
+                  _CounterActionRow(
+                    onAddItem: () => Navigator.of(context).pop(),
+                    onScan: () => _showComingSoon('Scan Barcode'),
+                  ),
+                  const SizedBox(height: 6),
+                  _TotalsPanel(
+                    subtotal: _amount(_subtotal),
+                    tax: _amount(_tax),
+                    grandTotal: _amount(_grandTotal),
+                    itemTypes: _itemTypes,
+                    unitCount: _unitCount,
+                    onAddTax: () => _showComingSoon('Add Tax'),
+                    onAddDiscount: () => _showComingSoon('Add Discount'),
+                    onOtherCharges: () => _showComingSoon('Add Other Charges'),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
                     children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(
-                          Icons.arrow_back_rounded,
-                          color: Color(0xFF2A3140),
-                          size: 28,
+                      Expanded(
+                        child: _FooterActionButton(
+                          label: 'Clear',
+                          color: const Color(0xFFE66C73),
+                          onTap: _clearCart,
                         ),
                       ),
-                      const Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              'Payment',
-                              style: TextStyle(
-                                color: Color(0xFF2A3140),
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Order #12345',
-                              style: TextStyle(
-                                color: Color(0xFF7C8593),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(
-                          Icons.receipt_long_outlined,
-                          color: Color(0xFF2A3140),
-                          size: 26,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _FooterActionButton(
+                          label: 'Save for later',
+                          color: const Color(0xFFFFAF2E),
+                          onTap: () => _showComingSoon('Save for later'),
                         ),
                       ),
                     ],
                   ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 6, 18, 110),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _PaymentSummaryCard(
-                          items: _orderLines,
-                          subtotal: _subtotal,
-                          total: _totalDue,
-                          onIncrease: _increaseQuantity,
-                          onDecrease: _decreaseQuantity,
-                        ),
-                        const SizedBox(height: 18),
-                        CashTenderedPanel(
-                          tendered: _cashTendered,
-                          totalDue: _totalDue,
-                          onKeyTap: _appendKey,
-                          onBackspace: _clearLast,
-                          onQuickAdd: _addAmount,
-                        ),
-                        const SizedBox(height: 12),
-                        ChangeDueCard(
-                          changeDue: _changeDue,
-                          amountRemaining: _amountRemaining,
-                          hasEnoughCash: _hasEnoughCash,
-                          tendered: _cashTendered,
-                          hasItems: _hasItems,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-            Positioned(
-              left: 18,
-              right: 18,
-              bottom: 18,
-              child: GestureDetector(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+              child: _ChargeBar(
+                totalLabel: 'Charge: TSh${_amount(_grandTotal)}',
                 onTap: _confirmPayment,
-                child: Container(
-                  height: 68,
-                  decoration: BoxDecoration(
-                    color: _hasEnoughCash
-                        ? const Color(0xFF255CC5)
-                        : const Color(0xFFAEBAD6),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x221D4ED8),
-                        blurRadius: 18,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.lock_outline_rounded,
-                          color: Colors.white, size: 24),
-                      SizedBox(width: 12),
-                      Text(
-                        'Confirm Payment',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ),
           ],
@@ -293,216 +217,184 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 }
 
-class _PaymentSummaryCard extends StatelessWidget {
-  const _PaymentSummaryCard({
-    required this.items,
-    required this.subtotal,
-    required this.total,
-    required this.onIncrease,
-    required this.onDecrease,
+class _CounterAppBar extends StatelessWidget {
+  const _CounterAppBar({
+    required this.onBack,
   });
 
-  final List<OrderLineItem> items;
-  final double subtotal;
-  final double total;
-  final ValueChanged<OrderLineItem> onIncrease;
-  final ValueChanged<OrderLineItem> onDecrease;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 16,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
+      height: 56,
+      color: const Color(0xFF355BD8),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
         children: [
-          Row(
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(Icons.menu, color: Colors.white),
+          ),
+          const Expanded(
+            child: Text(
+              'Counter',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const Icon(Icons.group_add_outlined, color: Colors.white, size: 24),
+          const SizedBox(width: 14),
+          Stack(
+            clipBehavior: Clip.none,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F7FF),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Icon(
-                  Icons.shopping_bag_outlined,
-                  color: Color(0xFF2E6CCE),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Order Summary',
-                  style: TextStyle(
-                    color: Color(0xFF2A3140),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+              const Icon(Icons.mark_chat_unread_outlined,
+                  color: Colors.white, size: 24),
+              Positioned(
+                right: -4,
+                top: -5,
+                child: Container(
+                  width: 15,
+                  height: 15,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE54040),
+                    shape: BoxShape.circle,
                   ),
-                ),
-              ),
-              Text(
-                '${items.length} item types',
-                style: const TextStyle(
-                  color: Color(0xFF2E6CCE),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  alignment: Alignment.center,
+                  child: const Text(
+                    '1',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          ...items.map(
-            (line) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScaleBanner extends StatelessWidget {
+  const _ScaleBanner({
+    required this.onClose,
+  });
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF2F2FB),
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Expanded(
+            child: Text.rich(
+              TextSpan(
+                text:
+                    'We now support weighing scales. Plug in and start billing faster, ',
                 children: [
-                  Container(
-                    width: 54,
-                    height: 54,
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: line.product.imagePath != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              File(line.product.imagePath!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => FittedBox(
-                                fit: BoxFit.contain,
-                                child: ProductArt(type: line.product.type),
-                              ),
-                            ),
-                          )
-                        : FittedBox(
-                            fit: BoxFit.contain,
-                            child: ProductArt(type: line.product.type),
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            line.product.name,
-                            style: const TextStyle(
-                              color: Color(0xFF2A3140),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            line.product.size,
-                            style: const TextStyle(
-                              color: Color(0xFF7C8593),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _QuantityButton(
-                                icon: Icons.remove_rounded,
-                                onTap: () => onDecrease(line),
-                              ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 10),
-                                child: Text(
-                                  '${line.quantity}',
-                                  style: const TextStyle(
-                                    color: Color(0xFF2A3140),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              _QuantityButton(
-                                icon: Icons.add_rounded,
-                                onTap: () => onIncrease(line),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'TSH ${line.totalPrice.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            color: Color(0xFF2A3140),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${line.quantity} x TSH ${line.product.priceValue.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            color: Color(0xFF7C8593),
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                  TextSpan(
+                    text: 'Know More.',
+                    style: TextStyle(decoration: TextDecoration.underline),
                   ),
                 ],
               ),
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          const Divider(height: 24, color: Color(0xFFE5E7EB)),
-          _SummaryRow(label: 'Subtotal', value: subtotal),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Divider(height: 1, color: Color(0xFFD7DCE3)),
+          InkWell(
+            onTap: onClose,
+            child: const Padding(
+              padding: EdgeInsets.only(left: 8, top: 2),
+              child: Icon(Icons.close, color: Color(0xFF7080C2), size: 18),
+            ),
           ),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Total Due',
-                  style: TextStyle(
-                    color: Color(0xFF2A3140),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+        ],
+      ),
+    );
+  }
+}
+
+class _CounterLineTile extends StatelessWidget {
+  const _CounterLineTile({
+    required this.line,
+    required this.amountText,
+    required this.onIncrease,
+    required this.onDecrease,
+  });
+
+  final OrderLineItem line;
+  final String amountText;
+  final VoidCallback onIncrease;
+  final VoidCallback onDecrease;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 1),
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  line.product.name,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              Text(
-                'TSH ${total.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  color: Color(0xFF2A3140),
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
+                const SizedBox(height: 4),
+                Text(
+                  '${line.quantity} x ${line.product.price}',
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
+              ],
+            ),
+          ),
+          Text(
+            amountText,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            children: [
+              GestureDetector(
+                onTap: onIncrease,
+                child: const Icon(Icons.edit, color: Color(0xFF4D6ED8), size: 20),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: onDecrease,
+                child: const Icon(Icons.remove_circle_outline,
+                    color: Color(0xFFE66C73), size: 20),
               ),
             ],
           ),
@@ -512,35 +404,75 @@ class _PaymentSummaryCard extends StatelessWidget {
   }
 }
 
-class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({
-    required this.label,
-    required this.value,
+class _EmptyCounterState extends StatelessWidget {
+  const _EmptyCounterState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(24),
+      alignment: Alignment.center,
+      child: const Column(
+        children: [
+          Icon(Icons.remove_shopping_cart_outlined,
+              size: 36, color: Color(0xFF9CA3AF)),
+          SizedBox(height: 10),
+          Text(
+            'No items in this counter yet',
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CounterActionRow extends StatelessWidget {
+  const _CounterActionRow({
+    required this.onAddItem,
+    required this.onScan,
   });
 
-  final String label;
-  final double value;
+  final VoidCallback onAddItem;
+  final VoidCallback onScan;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF2A3140),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+          child: GestureDetector(
+            onTap: onAddItem,
+            child: Container(
+              height: 54,
+              alignment: Alignment.center,
+              color: Colors.white,
+              child: const Text(
+                'Add New Item',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ),
-        Text(
-          'TSH ${value.toStringAsFixed(0)}',
-          style: const TextStyle(
-            color: Color(0xFF2A3140),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: onScan,
+          child: Container(
+            width: 58,
+            height: 54,
+            color: Colors.white,
+            alignment: Alignment.center,
+            child: const Icon(Icons.qr_code_scanner,
+                color: Color(0xFF4D6ED8), size: 24),
           ),
         ),
       ],
@@ -548,148 +480,139 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
-class _QuantityButton extends StatelessWidget {
-  const _QuantityButton({
-    required this.icon,
-    required this.onTap,
+class _TotalsPanel extends StatelessWidget {
+  const _TotalsPanel({
+    required this.subtotal,
+    required this.tax,
+    required this.grandTotal,
+    required this.itemTypes,
+    required this.unitCount,
+    required this.onAddTax,
+    required this.onAddDiscount,
+    required this.onOtherCharges,
   });
 
-  final IconData icon;
-  final VoidCallback onTap;
+  final String subtotal;
+  final String tax;
+  final String grandTotal;
+  final int itemTypes;
+  final int unitCount;
+  final VoidCallback onAddTax;
+  final VoidCallback onAddDiscount;
+  final VoidCallback onOtherCharges;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 26,
-        height: 26,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF4F6F8),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE4E7EB)),
-        ),
-        child: Icon(icon, size: 16, color: const Color(0xFF2A3140)),
-      ),
+    const linkStyle = TextStyle(
+      color: Colors.black87,
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      decoration: TextDecoration.underline,
     );
-  }
-}
-
-class CashTenderedPanel extends StatelessWidget {
-  const CashTenderedPanel({
-    super.key,
-    required this.tendered,
-    required this.totalDue,
-    required this.onKeyTap,
-    required this.onBackspace,
-    required this.onQuickAdd,
-  });
-
-  final double tendered;
-  final double totalDue;
-  final ValueChanged<String> onKeyTap;
-  final VoidCallback onBackspace;
-  final ValueChanged<double> onQuickAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    const keys = [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
-      ['7', '8', '9'],
-      ['.', '0', '00'],
-    ];
-    const quickAdd = [10000.0, 20000.0, 50000.0];
 
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 14,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Expanded(
                 child: Text(
-                  'Cash Tendered',
+                  'Subtotal',
                   style: TextStyle(
-                    color: Color(0xFF2A3140),
-                    fontSize: 14,
+                    color: Colors.black87,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Text(
+                subtotal,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Tax - Not configured',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+              Text(
+                tax,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 22, color: Color(0xFF444444)),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Grand Total',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Text(
-                'TSH ${tendered.toStringAsFixed(0)}',
-                style: TextStyle(
-                  color: tendered >= totalDue
-                      ? const Color(0xFF3E915E)
-                      : const Color(0xFFB45309),
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
+                'TSh$grandTotal',
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 3,
-                child: Column(
-                  children: keys.map((row) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: row.map((key) {
-                          return Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.only(right: key == row.last ? 0 : 10),
-                              child: NumberPadButton(
-                                label: key,
-                                onTap: () => onKeyTap(key),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    );
-                  }).toList(),
+              GestureDetector(
+                onTap: onAddTax,
+                child: const Text('Add Tax', style: linkStyle),
+              ),
+              const Spacer(),
+              Text(
+                '$itemTypes Items | $unitCount Units',
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  children: [
-                    NumberPadButton(
-                      icon: Icons.backspace_outlined,
-                      isAccent: true,
-                      onTap: onBackspace,
-                    ),
-                    const SizedBox(height: 8),
-                    ...quickAdd.map(
-                      (amount) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: NumberPadButton(
-                          label: '+${amount.toInt()}',
-                          isAccent: true,
-                          onTap: () => onQuickAdd(amount),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: onAddDiscount,
+                child: const Text('Add Discount', style: linkStyle),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: onOtherCharges,
+                child: const Text('Add Other Charges', style: linkStyle),
               ),
             ],
           ),
@@ -699,18 +622,15 @@ class CashTenderedPanel extends StatelessWidget {
   }
 }
 
-class NumberPadButton extends StatelessWidget {
-  const NumberPadButton({
-    super.key,
-    this.label,
-    this.icon,
-    this.isAccent = false,
+class _FooterActionButton extends StatelessWidget {
+  const _FooterActionButton({
+    required this.label,
+    required this.color,
     required this.onTap,
   });
 
-  final String? label;
-  final IconData? icon;
-  final bool isAccent;
+  final String label;
+  final Color color;
   final VoidCallback onTap;
 
   @override
@@ -718,148 +638,51 @@ class NumberPadButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 58,
-        decoration: BoxDecoration(
-          color: isAccent ? const Color(0xFFF1FAF3) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isAccent ? const Color(0xFFE0F1E3) : const Color(0xFFE8EBF0),
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: color),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
           ),
-        ),
-        child: Center(
-          child: icon != null
-              ? Icon(icon, color: const Color(0xFF4C9466), size: 24)
-              : Text(
-                  label!,
-                  style: TextStyle(
-                    color: isAccent ? const Color(0xFF3E915E) : const Color(0xFF202938),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
         ),
       ),
     );
   }
 }
 
-class ChangeDueCard extends StatelessWidget {
-  const ChangeDueCard({
-    super.key,
-    required this.changeDue,
-    required this.amountRemaining,
-    required this.hasEnoughCash,
-    required this.tendered,
-    required this.hasItems,
+class _ChargeBar extends StatelessWidget {
+  const _ChargeBar({
+    required this.totalLabel,
+    required this.onTap,
   });
 
-  final double changeDue;
-  final double amountRemaining;
-  final bool hasEnoughCash;
-  final double tendered;
-  final bool hasItems;
+  final String totalLabel;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    if (!hasItems) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 48,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x10000000),
-              blurRadius: 14,
-              offset: Offset(0, 4),
-            ),
-          ],
+          color: const Color(0xFF68BE69),
+          borderRadius: BorderRadius.circular(4),
         ),
-        child: const Row(
-          children: [
-            Icon(
-              Icons.remove_shopping_cart_outlined,
-              color: Color(0xFFB45309),
-              size: 22,
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Add items to the order to continue',
-                style: TextStyle(
-                  color: Color(0xFF2A3140),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
+        alignment: Alignment.center,
+        child: Text(
+          totalLabel,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-      );
-    }
-
-    final isExact = hasEnoughCash && changeDue == 0 && tendered > 0;
-    final title = hasEnoughCash
-        ? (isExact ? 'Exact Cash' : 'Change Due')
-        : 'Amount Remaining';
-    final amount = hasEnoughCash ? changeDue : amountRemaining;
-    final accent = hasEnoughCash
-        ? const Color(0xFF3E915E)
-        : const Color(0xFFB45309);
-    final iconBg = hasEnoughCash
-        ? const Color(0xFFF1FAF3)
-        : const Color(0xFFFFF5E8);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 14,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              hasEnoughCash ? Icons.paid_outlined : Icons.error_outline_rounded,
-              color: accent,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Color(0xFF2A3140),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Text(
-            'TSH ${amount.toStringAsFixed(0)}',
-            style: TextStyle(
-              color: accent,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
       ),
     );
   }

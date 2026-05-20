@@ -175,46 +175,26 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
             children: [
               const TopBar(),
               const Divider(height: 1, thickness: 1, color: Color(0xFFE6E7EB)),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(
                   children: [
-                    const Row(
-                      children: [
-                        HeaderInfo(
-                          icon: Icons.calendar_today_outlined,
-                          label: 'May 18, 2025',
-                        ),
-                        Spacer(),
-                        HeaderInfo(
-                          icon: Icons.access_time,
-                          label: '10:24 AM',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Row(
-                      children: [
-                        Expanded(child: SearchBox()),
-                        SizedBox(width: 12),
-                        ScanButton(),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
+                    SearchBox(),
+                    SizedBox(height: 12),
                   ],
                 ),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 144),
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 144),
                   child: GridView.builder(
                     itemCount: displayProducts.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 0.66,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                      childAspectRatio: 0.86,
                     ),
                     itemBuilder: (context, index) {
                       final product = displayProducts[index];
@@ -266,15 +246,15 @@ class TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Row(
         children: [
-          const DrawerMenuButton(),
-          const SizedBox(width: 12),
-          const Expanded(child: BrandBlock()),
-          const SizedBox(width: 6),
-          const ProfileBlock(),
+          DrawerMenuButton(),
+          SizedBox(width: 12),
+          Expanded(child: BrandBlock()),
+          SizedBox(width: 6),
+          ProfileBlock(),
         ],
       ),
     );
@@ -417,36 +397,6 @@ class ProfileBlock extends StatelessWidget {
   }
 }
 
-class HeaderInfo extends StatelessWidget {
-  const HeaderInfo({
-    super.key,
-    required this.icon,
-    required this.label,
-  });
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20, color: const Color(0xFF394150)),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF4F5868),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class SearchBox extends StatelessWidget {
   const SearchBox({super.key});
 
@@ -487,45 +437,6 @@ class SearchBox extends StatelessWidget {
   }
 }
 
-class ScanButton extends StatelessWidget {
-  const ScanButton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 82,
-      height: 62,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE4E6EA)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF8EA06D), size: 25),
-          SizedBox(height: 1),
-          Text(
-            'Scan',
-            style: TextStyle(
-              color: Color(0xFF394150),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class ProductCard extends StatelessWidget {
   const ProductCard({
     super.key,
@@ -536,92 +447,130 @@ class ProductCard extends StatelessWidget {
   final ProductItem product;
   final ValueChanged<TapDownDetails> onTapDown;
 
+  String _money(double value) {
+    final whole = value.round().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      final remaining = whole.length - i;
+      buffer.write(whole[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+    return 'TSh$buffer';
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: onTapDown,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(9, 9, 9, 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x10000000),
-              blurRadius: 14,
-              offset: Offset(0, 4),
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(color: const Color(0xFFD3D3D3)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 76,
+              height: 76,
+              child: _DashboardTileArt(product: product),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                product.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                _money(product.priceValue),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE4E6EA)),
-                ),
-                child: const Icon(
-                  Icons.favorite_border_rounded,
-                  size: 16,
-                  color: Color(0xFF99A1AE),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: product.imagePath != null && product.imagePath!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Image.file(
-                          File(product.imagePath!),
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) =>
-                              ProductArt(type: product.type),
-                        ),
-                      )
-                    : ProductArt(type: product.type),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              product.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF2C3442),
-                fontSize: 11.8,
-                height: 1.1,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              product.size,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF7A8393),
-                fontSize: 10.2,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              product.price,
-              style: const TextStyle(
-                color: Color(0xFF2C3442),
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+      ),
+    );
+  }
+}
+
+class _DashboardTileArt extends StatelessWidget {
+  const _DashboardTileArt({
+    required this.product,
+  });
+
+  final ProductItem product;
+
+  @override
+  Widget build(BuildContext context) {
+    if (product.imagePath != null && product.imagePath!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.file(
+          File(product.imagePath!),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _DashboardFallbackArt(label: product.name),
+        ),
+      );
+    }
+    return _DashboardFallbackArt(label: product.name);
+  }
+}
+
+class _DashboardFallbackArt extends StatelessWidget {
+  const _DashboardFallbackArt({
+    required this.label,
+  });
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = label.trim().isEmpty ? '?' : label.trim()[0].toUpperCase();
+    final isCircle = label.length.isOdd;
+
+    return Center(
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(
+          color: label.toLowerCase().contains('g')
+              ? const Color(0xFFF2F2FD)
+              : const Color(0xFFFF4036),
+          shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
+          borderRadius: isCircle ? null : BorderRadius.circular(10),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          initials,
+          style: TextStyle(
+            color: label.toLowerCase().contains('g')
+                ? Colors.black87
+                : Colors.transparent,
+            fontSize: 26,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
