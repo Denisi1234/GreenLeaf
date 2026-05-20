@@ -8,14 +8,12 @@ import '../widgets/market_shared_widgets.dart';
 class StaffFormResult {
   const StaffFormResult({
     required this.fullName,
-    required this.email,
     required this.phone,
     required this.role,
     this.avatarPath,
   });
 
   final String fullName;
-  final String email;
   final String phone;
   final String role;
   final String? avatarPath;
@@ -31,7 +29,6 @@ class AddEditStaffPage extends StatefulWidget {
 class _AddEditStaffPageState extends State<AddEditStaffPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _picker = ImagePicker();
@@ -51,7 +48,6 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -124,7 +120,6 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     Navigator.of(context).pop(
       StaffFormResult(
         fullName: _nameController.text.trim(),
-        email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         role: role,
         avatarPath: _avatarFile?.path,
@@ -255,26 +250,6 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Full name is required';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          const _StaffFieldLabel('Email'),
-                          const SizedBox(height: 10),
-                          _StaffInputField(
-                            controller: _emailController,
-                            hintText: 'Enter email address',
-                            prefixIcon: Icons.mail_outline_rounded,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            validator: (value) {
-                              final email = value?.trim() ?? '';
-                              if (email.isEmpty) {
-                                return 'Email is required';
-                              }
-                              if (!email.contains('@') || !email.contains('.')) {
-                                return 'Enter a valid email address';
                               }
                               return null;
                             },

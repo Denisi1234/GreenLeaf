@@ -101,6 +101,68 @@ const _seedInventory = <InventoryProductItem>[
   ),
 ];
 
+class AppProfileData {
+  const AppProfileData({
+    required this.storeName,
+    required this.ownerName,
+    required this.roleTitle,
+    required this.businessCategory,
+    required this.contactNumber,
+    required this.emailAddress,
+    required this.physicalAddress,
+    required this.memberSince,
+    this.logoPath,
+  });
+
+  factory AppProfileData.empty() {
+    return const AppProfileData(
+      storeName: '',
+      ownerName: '',
+      roleTitle: '',
+      businessCategory: '',
+      contactNumber: '',
+      emailAddress: '',
+      physicalAddress: '',
+      memberSince: '',
+      logoPath: null,
+    );
+  }
+
+  final String storeName;
+  final String ownerName;
+  final String roleTitle;
+  final String businessCategory;
+  final String contactNumber;
+  final String emailAddress;
+  final String physicalAddress;
+  final String memberSince;
+  final String? logoPath;
+
+  AppProfileData copyWith({
+    String? storeName,
+    String? ownerName,
+    String? roleTitle,
+    String? businessCategory,
+    String? contactNumber,
+    String? emailAddress,
+    String? physicalAddress,
+    String? memberSince,
+    String? logoPath,
+  }) {
+    return AppProfileData(
+      storeName: storeName ?? this.storeName,
+      ownerName: ownerName ?? this.ownerName,
+      roleTitle: roleTitle ?? this.roleTitle,
+      businessCategory: businessCategory ?? this.businessCategory,
+      contactNumber: contactNumber ?? this.contactNumber,
+      emailAddress: emailAddress ?? this.emailAddress,
+      physicalAddress: physicalAddress ?? this.physicalAddress,
+      memberSince: memberSince ?? this.memberSince,
+      logoPath: logoPath ?? this.logoPath,
+    );
+  }
+}
+
 class PosLocalStore extends ChangeNotifier {
   PosLocalStore({PosLocalDatabase? database})
       : _database = database ?? PosLocalDatabase.instance;
@@ -111,6 +173,7 @@ class PosLocalStore extends ChangeNotifier {
   final List<ProductItem> _cartItems = <ProductItem>[];
   final List<CompletedOrder> _orders = <CompletedOrder>[];
   final List<InventoryProductItem> _allInventory = <InventoryProductItem>[];
+  AppProfileData _profile = AppProfileData.empty();
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
@@ -152,6 +215,21 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(await _database.loadOrders());
 
+    final storedProfile = await _database.loadAppProfile();
+    _profile = storedProfile == null
+        ? AppProfileData.empty()
+        : AppProfileData(
+            storeName: storedProfile['store_name'] as String,
+            ownerName: storedProfile['owner_name'] as String,
+            roleTitle: storedProfile['role_title'] as String,
+            businessCategory: storedProfile['business_category'] as String,
+            contactNumber: storedProfile['contact_number'] as String,
+            emailAddress: storedProfile['email_address'] as String,
+            physicalAddress: storedProfile['physical_address'] as String,
+            memberSince: storedProfile['member_since'] as String,
+            logoPath: storedProfile['logo_path'] as String?,
+          );
+
     _updateCartTotals();
     _isInitialized = true;
     notifyListeners();
@@ -161,6 +239,7 @@ class PosLocalStore extends ChangeNotifier {
   List<ProductItem> get cartItems => List.unmodifiable(_cartItems);
   List<CompletedOrder> get orders => List.unmodifiable(_orders);
   List<InventoryProductItem> get inventory => List.unmodifiable(_allInventory);
+  AppProfileData get profile => _profile;
 
   int _cartCount = 0;
   int get cartCount => _cartCount;
@@ -229,6 +308,28 @@ class PosLocalStore extends ChangeNotifier {
     return product;
   }
 
+  Future<void> applyInventoryAdjustments(
+    Map<String, int> adjustments,
+  ) async {
+    if (adjustments.isEmpty) return;
+
+    for (var index = 0; index < _allInventory.length; index++) {
+      final item = _allInventory[index];
+      final delta = adjustments[item.code];
+      if (delta == null || delta == 0) continue;
+
+      final nextStock = (item.stockCount + delta).clamp(0, 1 << 31).toInt();
+      _allInventory[index] = item.copyWith(
+        stockCount: nextStock,
+        stockState: _deriveStockState(nextStock),
+      );
+    }
+
+    _syncProductsFromInventory();
+    notifyListeners();
+    await _database.replaceInventory(_allInventory);
+  }
+
   Future<CompletedOrder> completeCashSale({
     required List<OrderLineItem> items,
     required double cashTendered,
@@ -263,7 +364,8 @@ class PosLocalStore extends ChangeNotifier {
     for (final line in normalized) {
       final inventoryIndex = _findInventoryIndex(line.product);
       if (inventoryIndex == -1) {
-        throw StateError('Product ${line.product.name} is no longer in inventory.');
+        throw StateError(
+            'Product ${line.product.name} is no longer in inventory.');
       }
       final inventoryItem = _allInventory[inventoryIndex];
       if (inventoryItem.stockCount < line.quantity) {
@@ -331,6 +433,22 @@ class PosLocalStore extends ChangeNotifier {
     await _database.replaceCart(_cartItems);
     await _database.insertOrder(order);
     return order;
+  }
+
+  Future<void> updateProfile(AppProfileData profile) async {
+    _profile = profile;
+    notifyListeners();
+    await _database.saveAppProfile(<String, Object?>{
+      'store_name': profile.storeName,
+      'owner_name': profile.ownerName,
+      'role_title': profile.roleTitle,
+      'business_category': profile.businessCategory,
+      'contact_number': profile.contactNumber,
+      'email_address': profile.emailAddress,
+      'physical_address': profile.physicalAddress,
+      'member_since': profile.memberSince,
+      'logo_path': profile.logoPath,
+    });
   }
 
   void _syncProductsFromInventory() {

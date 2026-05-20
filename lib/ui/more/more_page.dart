@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'about_app_page.dart';
 import 'help_support_page.dart';
 import 'multi_store_management_page.dart';
+import 'store_profile_page.dart';
 import 'staff_management_page.dart';
+import 'subscription_plan_page.dart';
+import '../../service/pos_local_store.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class MorePage extends StatelessWidget {
@@ -21,9 +27,20 @@ class MorePage extends StatelessWidget {
       _MoreMenuItem('Help & Support', Icons.support_agent_outlined),
       _MoreMenuItem('About App', Icons.info_outline_rounded),
     ];
+    final store = context.watch<PosLocalStore>();
+    final profile = store.profile;
+    final totalSales = store.orders.fold<double>(
+      0,
+      (sum, order) => sum + order.total,
+    );
+    final totalSalesLabel = totalSales <= 0
+        ? 'No sales yet'
+        : 'TSH ${totalSales.toStringAsFixed(0)}';
+    final memberSince =
+        profile.memberSince.isEmpty ? 'Not set' : profile.memberSince;
 
     return Scaffold(
-      drawer: const MarketAppDrawer(selectedItem: 'Settings'),
+      drawer: const MarketAppDrawer(selectedItem: ''),
       body: SafeArea(
         child: Column(
           children: [
@@ -35,23 +52,23 @@ class MorePage extends StatelessWidget {
                   padding: EdgeInsets.fromLTRB(18, 0, 18, 0),
                   child: Row(
                     children: [
-                    DrawerMenuButton(
-                      iconColor: Color(0xFF5C677D),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          'More',
-                          style: TextStyle(
-                            color: Color(0xFF162445),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
+                      DrawerMenuButton(
+                        iconColor: Color(0xFF5C677D),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'More',
+                            style: TextStyle(
+                              color: Color(0xFF162445),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: 40),
-                  ],
+                      SizedBox(width: 40),
+                    ],
                   ),
                 ),
               ),
@@ -69,7 +86,14 @@ class MorePage extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
                     child: Column(
                       children: [
-                        const _ProfileSummaryCard(),
+                        _ProfileSummaryCard(
+                          ownerName: profile.ownerName,
+                          roleTitle: profile.roleTitle,
+                          storeName: profile.storeName,
+                          logoPath: profile.logoPath,
+                          totalSales: totalSalesLabel,
+                          memberSince: memberSince,
+                        ),
                         const SizedBox(height: 12),
                         Expanded(
                           child: Container(
@@ -113,10 +137,10 @@ class MorePage extends StatelessWidget {
                                     );
                                   },
                                 ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(14, 48, 14, 14),
-                                child: GestureDetector(
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(14, 48, 14, 14),
+                                  child: GestureDetector(
                                     onTap: () {
                                       showMarketNotice(
                                         context,
@@ -175,7 +199,21 @@ class MorePage extends StatelessWidget {
 }
 
 class _ProfileSummaryCard extends StatelessWidget {
-  const _ProfileSummaryCard();
+  const _ProfileSummaryCard({
+    required this.ownerName,
+    required this.roleTitle,
+    required this.storeName,
+    required this.logoPath,
+    required this.totalSales,
+    required this.memberSince,
+  });
+
+  final String ownerName;
+  final String roleTitle;
+  final String storeName;
+  final String? logoPath;
+  final String totalSales;
+  final String memberSince;
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +222,7 @@ class _ProfileSummaryCard extends StatelessWidget {
         final isNarrow = constraints.maxWidth < 380;
 
         return Container(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(4),
@@ -199,20 +237,31 @@ class _ProfileSummaryCard extends StatelessWidget {
           child: Column(
             children: [
               if (isNarrow)
-                const Column(
+                Column(
                   children: [
-                    _ProfileAvatar(),
-                    SizedBox(height: 10),
-                    _ProfileDetails(centered: true),
+                    _ProfileAvatar(logoPath: logoPath),
+                    const SizedBox(height: 10),
+                    _ProfileDetails(
+                      centered: true,
+                      ownerName: ownerName,
+                      roleTitle: roleTitle,
+                      storeName: storeName,
+                    ),
                   ],
                 )
               else
-                const Row(
+                Row(
                   children: [
-                    _ProfileAvatar(),
-                    SizedBox(width: 12),
-                    Expanded(child: _ProfileDetails()),
-                    Icon(
+                    _ProfileAvatar(logoPath: logoPath),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ProfileDetails(
+                        ownerName: ownerName,
+                        roleTitle: roleTitle,
+                        storeName: storeName,
+                      ),
+                    ),
+                    const Icon(
                       Icons.chevron_right_rounded,
                       color: Color(0xFF202938),
                       size: 30,
@@ -223,34 +272,34 @@ class _ProfileSummaryCard extends StatelessWidget {
               const Divider(height: 1, color: Color(0xFFE8EBF0)),
               const SizedBox(height: 10),
               if (isNarrow)
-                const Column(
+                Column(
                   children: [
                     _StatBlock(
                       icon: Icons.receipt_long_outlined,
                       label: 'Total Sales',
-                      value: 'TSH 61,401,250',
+                      value: totalSales,
                     ),
-                    SizedBox(height: 10),
-                    Divider(height: 1, color: Color(0xFFE8EBF0)),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
+                    const Divider(height: 1, color: Color(0xFFE8EBF0)),
+                    const SizedBox(height: 10),
                     _StatBlock(
                       icon: Icons.calendar_today_outlined,
                       label: 'Member Since',
-                      value: 'May 12, 2023',
+                      value: memberSince,
                     ),
                   ],
                 )
               else
-                const Row(
+                Row(
                   children: [
                     Expanded(
                       child: _StatBlock(
                         icon: Icons.receipt_long_outlined,
                         label: 'Total Sales',
-                        value: 'TSH 61,401,250',
+                        value: totalSales,
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 52,
                       child: VerticalDivider(
                         color: Color(0xFFE2E6EE),
@@ -261,7 +310,7 @@ class _ProfileSummaryCard extends StatelessWidget {
                       child: _StatBlock(
                         icon: Icons.calendar_today_outlined,
                         label: 'Member Since',
-                        value: 'May 12, 2023',
+                        value: memberSince,
                       ),
                     ),
                   ],
@@ -276,7 +325,9 @@ class _ProfileSummaryCard extends StatelessWidget {
 }
 
 class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar();
+  const _ProfileAvatar({required this.logoPath});
+
+  final String? logoPath;
 
   @override
   Widget build(BuildContext context) {
@@ -287,19 +338,36 @@ class _ProfileAvatar extends StatelessWidget {
         color: const Color(0xFFE8F0FF),
         borderRadius: BorderRadius.circular(42),
       ),
-      child: const Icon(
-        Icons.person,
-        color: Color(0xFF1562E8),
-        size: 54,
-      ),
+      child: logoPath == null
+          ? const Icon(
+              Icons.person,
+              color: Color(0xFF1562E8),
+              size: 54,
+            )
+          : ClipOval(
+              child: Image.file(
+                File(logoPath!),
+                width: 84,
+                height: 84,
+                fit: BoxFit.cover,
+              ),
+            ),
     );
   }
 }
 
 class _ProfileDetails extends StatelessWidget {
-  const _ProfileDetails({this.centered = false});
+  const _ProfileDetails({
+    this.centered = false,
+    required this.ownerName,
+    required this.roleTitle,
+    required this.storeName,
+  });
 
   final bool centered;
+  final String ownerName;
+  final String roleTitle;
+  final String storeName;
 
   @override
   Widget build(BuildContext context) {
@@ -307,18 +375,18 @@ class _ProfileDetails extends StatelessWidget {
       crossAxisAlignment:
           centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
-        const Text(
-          'John Smith',
-          style: TextStyle(
+        Text(
+          ownerName.isEmpty ? 'Store profile not set' : ownerName,
+          style: const TextStyle(
             color: Color(0xFF202938),
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 2),
-        const Text(
-          'Store Owner',
-          style: TextStyle(
+        Text(
+          roleTitle.isEmpty ? 'Business Owner' : roleTitle,
+          style: const TextStyle(
             color: Color(0xFF7A8393),
             fontSize: 13,
             fontWeight: FontWeight.w500,
@@ -327,18 +395,18 @@ class _ProfileDetails extends StatelessWidget {
         const SizedBox(height: 6),
         Row(
           mainAxisSize: centered ? MainAxisSize.min : MainAxisSize.max,
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.storefront_outlined,
               color: Color(0xFF1562E8),
               size: 20,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Flexible(
               child: Text(
-                'Downtown Outlet',
+                storeName.isEmpty ? 'Set up store profile' : storeName,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Color(0xFF202938),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -413,6 +481,15 @@ class _MoreListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        if (item.label == 'Store Profile') {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const StoreProfilePage(),
+            ),
+          );
+          return;
+        }
+
         if (item.label == 'Staff Management') {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -435,6 +512,15 @@ class _MoreListTile extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const HelpSupportPage(),
+            ),
+          );
+          return;
+        }
+
+        if (item.label == 'Subscription Plan') {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const SubscriptionPlanPage(),
             ),
           );
           return;

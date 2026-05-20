@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/market_shared_widgets.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
+
+  static const _supportPhone = '0624105850';
+  static const _supportEmail = 'fm328432@gmail.com';
 
   @override
   Widget build(BuildContext context) {
@@ -36,14 +40,12 @@ class HelpSupportPage extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1562E8), Color(0xFF0F56D9)],
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE7EAF0)),
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
               ),
               child: Row(
                 children: [
@@ -54,8 +56,8 @@ class HelpSupportPage extends StatelessWidget {
                       height: 38,
                       child: Icon(
                         Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 30,
+                        color: Color(0xFF1E273A),
+                        size: 26,
                       ),
                     ),
                   ),
@@ -64,7 +66,7 @@ class HelpSupportPage extends StatelessWidget {
                       'Help & Support',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF1E273A),
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
@@ -140,7 +142,8 @@ class HelpSupportPage extends StatelessWidget {
                               children: [
                                 _SupportTile(item: item),
                                 if (index != supportItems.length - 1)
-                                  const Divider(height: 1, color: Color(0xFFE9EDF3)),
+                                  const Divider(
+                                      height: 1, color: Color(0xFFE9EDF3)),
                               ],
                             );
                           },
@@ -150,7 +153,8 @@ class HelpSupportPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 22),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 20),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(4),
@@ -197,37 +201,6 @@ class HelpSupportPage extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _HelpBottomNavItem(
-                    icon: Icons.home_outlined,
-                    label: 'Home',
-                  ),
-                  _HelpBottomNavItem(
-                    icon: Icons.sync_alt_rounded,
-                    label: 'Transactions',
-                  ),
-                  _HelpCenterNavItem(),
-                  _HelpBottomNavItem(
-                    icon: Icons.bar_chart_rounded,
-                    label: 'Reports',
-                  ),
-                  _HelpBottomNavItem(
-                    icon: Icons.more_horiz_rounded,
-                    label: 'More',
-                    active: true,
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -244,11 +217,44 @@ class _SupportTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        showMarketNotice(
-          context,
-          title: item.title,
-          message: '${item.title} can be connected to the live support flow next',
-        );
+        switch (item.title) {
+          case 'Chat with Us':
+          case 'Call Help Center':
+            launchUrl(
+              Uri.parse('tel:${HelpSupportPage._supportPhone}'),
+              mode: LaunchMode.externalApplication,
+            );
+            return;
+          case 'Email Support':
+            launchUrl(
+              Uri.parse('mailto:${HelpSupportPage._supportEmail}'),
+              mode: LaunchMode.externalApplication,
+            );
+            return;
+          case 'User Guide':
+            showDialog<void>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('User Guide'),
+                content: const Text(
+                    'The comprehensive user guide is being prepared. It will cover sales management, inventory tracking, and reporting in detail.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          default:
+            showMarketNotice(
+              context,
+              title: item.title,
+              message:
+                  '${item.title} can be connected to the live support flow next',
+            );
+        }
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
@@ -318,89 +324,6 @@ class _ShieldSupportIcon extends StatelessWidget {
         color: Color(0xFF1562E8),
         size: 34,
       ),
-    );
-  }
-}
-
-class _HelpBottomNavItem extends StatelessWidget {
-  const _HelpBottomNavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF1562E8) : const Color(0xFF6F7887);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          alignment: Alignment.center,
-          child: Icon(icon, color: color, size: 31),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 12.5,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HelpCenterNavItem extends StatelessWidget {
-  const _HelpCenterNavItem();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 74,
-          height: 74,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1562E8), Color(0xFF0F56D9)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x331562E8),
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.point_of_sale_outlined,
-            color: Colors.white,
-            size: 38,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Sale',
-          style: TextStyle(
-            color: Color(0xFF4C5A75),
-            fontSize: 12.5,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }

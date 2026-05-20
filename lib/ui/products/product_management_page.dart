@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_product_page.dart';
+import 'inventory_adjustment_page.dart';
 import 'inventory_product_item.dart';
 
 class ProductManagementPage extends StatefulWidget {
@@ -39,6 +40,11 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final filteredItems = store.inventory.where((product) {
+      if (_searchQuery.isEmpty) return true;
+      return product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          product.code.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
 
     return Scaffold(
       drawer: const MarketAppDrawer(selectedItem: 'Products'),
@@ -51,25 +57,58 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
               padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
               child: Row(
                 children: [
-                  const Expanded(child: _ItemsSearchBar()),
-                  const SizedBox(width: 8),
-                  _QuickActionButton(
-                    icon: Icons.qr_code_scanner,
-                    onTap: () => showMarketNotice(
-                      context,
-                      title: 'Scan',
-                      message: 'Barcode scanner is not connected yet',
-                      type: MarketNoticeType.warning,
+                  Expanded(
+                    child: _ItemsSearchBar(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),
                   _QuickActionButton(
-                    icon: Icons.bolt,
-                    onTap: () => showMarketNotice(
-                      context,
-                      title: 'Quick Action',
-                      message: 'Quick action is not connected yet',
-                      type: MarketNoticeType.warning,
+                    icon: Icons.qr_code_scanner,
+                    onTap: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Simulate Barcode Scan'),
+                          content: const Text(
+                              'In a real device, this would open the camera to scan a barcode. For this demo, we are simulating a successful scan.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                showMarketNotice(
+                                  context,
+                                  title: 'Scan Successful',
+                                  message: 'Product SKU: 890123456789 identified',
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4C68D6),
+                              ),
+                              child: const Text('Simulate Scan',
+                                  style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _QuickActionButton(
+                    icon: Icons.tune_rounded,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const InventoryAdjustmentPage(),
+                      ),
                     ),
                   ),
                 ],
@@ -78,7 +117,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
             Expanded(
               child: GridView.builder(
                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
-                itemCount: store.inventory.length + 1,
+                itemCount: filteredItems.length + 1,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   crossAxisSpacing: 3,
@@ -86,11 +125,11 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                   childAspectRatio: 0.86,
                 ),
                 itemBuilder: (context, index) {
-                  if (index == store.inventory.length) {
+                  if (index == filteredItems.length) {
                     return _NewItemTile(onTap: _openAddProductPage);
                   }
 
-                  final product = store.inventory[index];
+                  final product = filteredItems[index];
                   return _InventoryGridTile(product: product);
                 },
               ),
@@ -167,7 +206,13 @@ class _ItemsTopBar extends StatelessWidget {
 }
 
 class _ItemsSearchBar extends StatelessWidget {
-  const _ItemsSearchBar();
+  const _ItemsSearchBar({
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -185,17 +230,27 @@ class _ItemsSearchBar extends StatelessWidget {
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.search, size: 24, color: Color(0xFF4C68D6)),
-          SizedBox(width: 8),
+          const Icon(Icons.search, size: 24, color: Color(0xFF4C68D6)),
+          const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              'I want to sell...',
-              style: TextStyle(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              style: const TextStyle(
                 color: Color(0xFF202938),
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: 'I want to sell...',
+                hintStyle: TextStyle(
+                  color: Color(0xFFABB2BF),
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),

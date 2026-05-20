@@ -2,8 +2,18 @@ import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'app_design.dart';
 import '../models/product_item.dart';
+import '../home/home_page.dart';
+import '../more/customers_page.dart';
+import '../more/expenses_tracking_page.dart';
+import '../more/help_support_page.dart';
+import '../products/product_management_page.dart';
+import '../reports/reports_page.dart';
+import '../sales/order_history_page.dart';
+import '../../service/pos_local_store.dart';
 
 class BackdropGlow extends StatelessWidget {
   const BackdropGlow({super.key});
@@ -16,7 +26,7 @@ class BackdropGlow extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFFFEFC), Color(0xFFF8F7F3)],
+            colors: [Color(0xFFFFFEFC), AppColors.pageBackground],
           ),
         ),
         child: Stack(
@@ -66,7 +76,7 @@ class ScrollHandle extends StatelessWidget {
         width: 3,
         height: 118,
         decoration: BoxDecoration(
-          color: const Color(0xFFD2D7DE),
+          color: AppColors.divider,
           borderRadius: BorderRadius.circular(99),
         ),
       ),
@@ -77,7 +87,7 @@ class ScrollHandle extends StatelessWidget {
 class DrawerMenuButton extends StatelessWidget {
   const DrawerMenuButton({
     super.key,
-    this.iconColor = const Color(0xFF202938),
+    this.iconColor = AppColors.ink,
     this.backgroundColor = Colors.transparent,
     this.borderColor = Colors.transparent,
     this.shadowColor = Colors.transparent,
@@ -148,9 +158,8 @@ void showMarketNotice(
   final overlay = Overlay.of(context);
   late final OverlayEntry entry;
 
-  final accent = type == MarketNoticeType.success
-      ? const Color(0xFF1E7A47)
-      : const Color(0xFFB45309);
+  final accent =
+      type == MarketNoticeType.success ? AppColors.green : AppColors.warning;
   final iconBg = type == MarketNoticeType.success
       ? const Color(0xFFEFF8F2)
       : const Color(0xFFFFF5E8);
@@ -215,8 +224,8 @@ class _MarketNoticeCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            borderRadius: BorderRadius.circular(AppRadius.sharp),
+            border: Border.all(color: AppColors.border),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x22000000),
@@ -367,23 +376,14 @@ class MarketAppDrawer extends StatelessWidget {
     _DrawerItemData('Products', Icons.inventory_2_outlined),
     _DrawerItemData('Customers', Icons.people_outline_rounded),
     _DrawerItemData('Reports', Icons.description_outlined),
-    _DrawerItemData('Settings', Icons.settings_outlined),
   ];
 
   static const _operationsItems = [
-    _DrawerItemData('Inventory Adjustment', Icons.assignment_outlined),
-    _DrawerItemData('Supplier Management', Icons.local_shipping_outlined),
-    _DrawerItemData('Discount Management', Icons.discount_outlined),
-    _DrawerItemData('Shift Management', Icons.access_time_rounded),
-    _DrawerItemData('Cash Management', Icons.payments_outlined),
-    _DrawerItemData('Loyalty Program', Icons.card_giftcard_outlined),
-    _DrawerItemData('Refund/Return', Icons.undo_rounded),
+    _DrawerItemData('Expenses Tracking', Icons.receipt_long_outlined),
   ];
 
   static const _supportItems = [
-    _DrawerItemData('Hardware Setup', Icons.print_outlined),
     _DrawerItemData('About/Help', Icons.help_outline_rounded),
-    _DrawerItemData('Offline/Sync', Icons.cloud_sync_outlined),
   ];
 
   @override
@@ -445,42 +445,70 @@ class _DrawerProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    final profile = context.watch<PosLocalStore>().profile;
+    final storeName =
+        profile.storeName.isEmpty ? 'Set up store profile' : profile.storeName;
+    final ownerName =
+        profile.ownerName.isEmpty ? 'Store profile not set' : profile.ownerName;
+    final roleTitle =
+        profile.roleTitle.isEmpty ? 'Business Owner' : profile.roleTitle;
+
+    return Row(
       children: [
         CircleAvatar(
           radius: 52,
-          backgroundColor: Color(0xFFE8EEF8),
+          backgroundColor: const Color(0xFFE8EEF8),
           child: CircleAvatar(
             radius: 48,
             backgroundColor: Colors.white,
-            child: Icon(
-              Icons.person_rounded,
-              color: MarketAppDrawer._drawerBlue,
-              size: 54,
-            ),
+            child: profile.logoPath == null
+                ? const Icon(
+                    Icons.storefront_rounded,
+                    color: MarketAppDrawer._drawerBlue,
+                    size: 54,
+                  )
+                : ClipOval(
+                    child: Image.file(
+                      File(profile.logoPath!),
+                      width: 96,
+                      height: 96,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
           ),
         ),
-        SizedBox(width: 18),
+        const SizedBox(width: 18),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Michael Anderson',
-                style: TextStyle(
+                ownerName,
+                style: const TextStyle(
                   color: Color(0xFF1D2939),
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                'Store Manager',
-                style: TextStyle(
+                roleTitle,
+                style: const TextStyle(
                   color: Color(0xFF667085),
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                storeName,
+                style: const TextStyle(
+                  color: Color(0xFF2B6FE8),
+                  fontSize: 13.2,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -532,12 +560,12 @@ class _DrawerTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(4),
       onTap: () {
         Navigator.of(context).pop();
-        if (!isSelected) {
-          showMarketNotice(
-            context,
-            title: item.label,
-            message: 'This menu action can be connected next.',
-          );
+        if (isSelected) {
+          return;
+        }
+        final route = _routeForLabel(item.label);
+        if (route != null) {
+          Navigator.of(context).push(route);
         }
       },
       child: Container(
@@ -545,7 +573,7 @@ class _DrawerTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFF1F6FF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppRadius.sharp),
         ),
         child: Row(
           children: [
@@ -553,13 +581,15 @@ class _DrawerTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFE8F0FF) : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
+                color:
+                    isSelected ? const Color(0xFFE8F0FF) : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppRadius.sharp),
               ),
               child: Icon(
                 item.icon,
-                color:
-                    isSelected ? MarketAppDrawer._drawerBlue : MarketAppDrawer._drawerIcon,
+                color: isSelected
+                    ? MarketAppDrawer._drawerBlue
+                    : MarketAppDrawer._drawerIcon,
                 size: 27,
               ),
             ),
@@ -580,6 +610,41 @@ class _DrawerTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+Route<void>? _routeForLabel(String label) {
+  switch (label) {
+    case 'Dashboard':
+      return MaterialPageRoute<void>(
+        builder: (context) => const MarketHomePage(),
+      );
+    case 'Sales':
+      return MaterialPageRoute<void>(
+        builder: (context) => const OrderHistoryPage(),
+      );
+    case 'Products':
+      return MaterialPageRoute<void>(
+        builder: (context) => const ProductManagementPage(),
+      );
+    case 'Customers':
+      return MaterialPageRoute<void>(
+        builder: (context) => const CustomersPage(),
+      );
+    case 'Reports':
+      return MaterialPageRoute<void>(
+        builder: (context) => const ReportsPage(),
+      );
+    case 'Expenses Tracking':
+      return MaterialPageRoute<void>(
+        builder: (context) => const ExpensesTrackingPage(),
+      );
+    case 'About/Help':
+      return MaterialPageRoute<void>(
+        builder: (context) => const HelpSupportPage(),
+      );
+    default:
+      return null;
   }
 }
 
@@ -653,7 +718,7 @@ class _BottleArt extends StatelessWidget {
               height: 14,
               decoration: BoxDecoration(
                 color: const Color(0xFF2A6FD4),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.sharp),
               ),
             ),
           ),
@@ -744,7 +809,8 @@ class _CanArt extends StatelessWidget {
               height: 10,
               decoration: const BoxDecoration(
                 color: Color(0xFFD7D7D7),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(14)),
+                borderRadius:
+                    BorderRadius.vertical(bottom: Radius.circular(14)),
               ),
             ),
           ),
@@ -863,7 +929,8 @@ class _ChocolateArt extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(8),
           boxShadow: const [
-            BoxShadow(color: Color(0x12000000), blurRadius: 8, offset: Offset(0, 2)),
+            BoxShadow(
+                color: Color(0x12000000), blurRadius: 8, offset: Offset(0, 2)),
           ],
         ),
         child: Stack(

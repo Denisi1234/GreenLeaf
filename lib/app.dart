@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
 import 'ui/shell/app_shell.dart';
+import 'ui/widgets/app_design.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const baseInk = Color(0xFF162033);
+    const baseInk = AppColors.ink;
     final baseTextTheme = Typography.material2021().black.apply(
-      bodyColor: baseInk,
-      displayColor: baseInk,
-    );
+          bodyColor: baseInk,
+          displayColor: baseInk,
+        );
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -30,7 +31,7 @@ class App extends StatelessWidget {
           labelMedium: baseTextTheme.labelMedium?.copyWith(letterSpacing: 0),
           labelSmall: baseTextTheme.labelSmall?.copyWith(letterSpacing: 0),
         ),
-        scaffoldBackgroundColor: const Color(0xFFF8F7F3),
+        scaffoldBackgroundColor: AppColors.pageBackground,
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF90A86A),
           brightness: Brightness.light,
@@ -39,39 +40,39 @@ class App extends StatelessWidget {
           color: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
           ),
         ),
         dialogTheme: const DialogThemeData(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
           ),
         ),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
-            borderSide: BorderSide(color: Color(0xFFDCE2EA)),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
+            borderSide: BorderSide(color: AppColors.border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
-            borderSide: BorderSide(color: Color(0xFF2B6FF3), width: 1.2),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
+            borderSide: BorderSide(color: AppColors.primary, width: 1.2),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
-            borderSide: BorderSide(color: Color(0xFFEF4444), width: 1.1),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
+            borderSide: BorderSide(color: AppColors.danger, width: 1.1),
           ),
           focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
-            borderSide: BorderSide(color: Color(0xFFEF4444), width: 1.1),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
+            borderSide: BorderSide(color: AppColors.danger, width: 1.1),
           ),
         ),
         snackBarTheme: const SnackBarThemeData(
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
           ),
         ),
       ),

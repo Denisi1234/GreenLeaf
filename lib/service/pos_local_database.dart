@@ -18,7 +18,7 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE inventory_products (
@@ -76,9 +76,57 @@ class PosLocalDatabase {
             FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
           )
         ''');
+        await db.execute('''
+          CREATE TABLE app_profile (
+            id INTEGER PRIMARY KEY,
+            store_name TEXT NOT NULL,
+            owner_name TEXT NOT NULL,
+            role_title TEXT NOT NULL,
+            business_category TEXT NOT NULL,
+            contact_number TEXT NOT NULL,
+            email_address TEXT NOT NULL,
+            physical_address TEXT NOT NULL,
+            logo_path TEXT,
+            member_since TEXT NOT NULL
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS app_profile (
+              id INTEGER PRIMARY KEY,
+              store_name TEXT NOT NULL,
+              owner_name TEXT NOT NULL,
+              role_title TEXT NOT NULL,
+              business_category TEXT NOT NULL,
+              contact_number TEXT NOT NULL,
+              email_address TEXT NOT NULL,
+              physical_address TEXT NOT NULL,
+              logo_path TEXT,
+              member_since TEXT NOT NULL
+            )
+          ''');
+        }
       },
     );
     return _database!;
+  }
+
+  Future<Map<String, Object?>?> loadAppProfile() async {
+    final db = await database;
+    final rows = await db.query('app_profile', limit: 1);
+    if (rows.isEmpty) return null;
+    return rows.first;
+  }
+
+  Future<void> saveAppProfile(Map<String, Object?> profile) async {
+    final db = await database;
+    await db.insert(
+      'app_profile',
+      <String, Object?>{'id': 1, ...profile},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<List<InventoryProductItem>> loadInventory() async {
@@ -229,7 +277,8 @@ class PosLocalDatabase {
       purchasePrice: (map['purchase_price'] as num).toDouble(),
       sellingPrice: (map['selling_price'] as num).toDouble(),
       stockCount: (map['stock_count'] as num).toInt(),
-      stockState: InventoryStockState.values.byName(map['stock_state'] as String),
+      stockState:
+          InventoryStockState.values.byName(map['stock_state'] as String),
       artType: ProductArtType.values.byName(map['art_type'] as String),
       imagePath: map['image_path'] as String?,
     );

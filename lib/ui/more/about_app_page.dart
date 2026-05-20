@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'privacy_policy_page.dart';
+import 'terms_of_service_page.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class AboutAppPage extends StatelessWidget {
@@ -19,14 +21,12 @@ class AboutAppPage extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE7EAF0)),
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
               ),
               child: Row(
                 children: [
@@ -37,17 +37,17 @@ class AboutAppPage extends StatelessWidget {
                       height: 38,
                       child: Icon(
                         Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 30,
+                        color: Color(0xFF1E273A),
+                        size: 26,
                       ),
                     ),
                   ),
                   const Expanded(
                     child: Text(
-                      'About App',
+                      'App Info',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF1E273A),
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
@@ -59,40 +59,19 @@ class AboutAppPage extends StatelessWidget {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
                 child: Column(
                   children: [
-                    const SizedBox(height: 22),
-                    const _PayPointLogo(),
-                    const SizedBox(height: 18),
                     const Text(
-                      'PayPoint',
+                      'Green Leaf',
                       style: TextStyle(
                         color: Color(0xFF1554C8),
-                        fontSize: 40,
+                        fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.8,
+                        letterSpacing: -0.4,
                       ),
                     ),
-                    const Text(
-                      'POS',
-                      style: TextStyle(
-                        color: Color(0xFF1554C8),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 5,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: 46,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1554C8),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 8),
                     const Text(
                       'Version 2.4.1',
                       style: TextStyle(
@@ -105,7 +84,7 @@ class AboutAppPage extends StatelessWidget {
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
-                        'PayPoint POS empowers businesses to accept payments, manage sales, and grow with confidence anytime, anywhere.',
+                        'Green Leaf helps businesses manage sales, records, and daily operations with confidence anytime, anywhere.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Color(0xFF3D4B67),
@@ -115,7 +94,7 @@ class AboutAppPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 18),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -143,9 +122,9 @@ class AboutAppPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 28),
                     const Text(
-                      '© 2024 PayPoint. All rights reserved.',
+                      '© 2026 Green Leaf. All rights reserved.',
                       style: TextStyle(
                         color: Color(0xFF6F7887),
                         fontSize: 14.5,
@@ -173,6 +152,34 @@ class _AboutTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        if (item.label == 'Terms of Service') {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const TermsOfServicePage(),
+            ),
+          );
+          return;
+        }
+
+        if (item.label == 'Privacy Policy') {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const PrivacyPolicyPage(),
+            ),
+          );
+          return;
+        }
+
+        if (item.label == 'Licenses') {
+          showLicensePage(
+            context: context,
+            applicationName: 'Green Leaf',
+            applicationVersion: '2.4.1',
+            applicationLegalese: '© 2026 Green Leaf. All rights reserved.',
+          );
+          return;
+        }
+
         showMarketNotice(
           context,
           title: item.label,
@@ -211,93 +218,6 @@ class _AboutTile extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PayPointLogo extends StatelessWidget {
-  const _PayPointLogo();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 140,
-      height: 160,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            right: 18,
-            top: 24,
-            child: Transform.rotate(
-              angle: 0.08,
-              child: Container(
-                width: 70,
-                height: 118,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1554C8),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 30,
-            top: 12,
-            child: Transform.rotate(
-              angle: 0.04,
-              child: Container(
-                width: 74,
-                height: 126,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1554C8),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 26,
-            top: 6,
-            child: Transform.rotate(
-              angle: -0.08,
-              child: Container(
-                width: 84,
-                height: 136,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1554C8),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xFF1554C8),
-                          width: 2.4,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.wifi_tethering_rounded,
-                        color: Color(0xFF1554C8),
-                        size: 28,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

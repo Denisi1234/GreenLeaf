@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'add_edit_store_page.dart';
@@ -9,65 +7,82 @@ class MultiStoreManagementPage extends StatefulWidget {
   const MultiStoreManagementPage({super.key});
 
   @override
-  State<MultiStoreManagementPage> createState() => _MultiStoreManagementPageState();
+  State<MultiStoreManagementPage> createState() =>
+      _MultiStoreManagementPageState();
 }
 
 class _MultiStoreManagementPageState extends State<MultiStoreManagementPage> {
-  late final List<_StoreItem> _stores = [
-    const _StoreItem(
+  static const _branches = <_BranchItem>[
+    _BranchItem(
       name: 'Main Branch',
-      category: 'Retail',
-      address: '123 Business Ave, New York, NY 10001',
-      contactNumber: '0712 345 678',
-      taxId: '12-3456789',
-      sales: 'TSH 11,401,875',
-      transactions: '128',
-      avgOrder: 'TSH 89,075',
-      icon: Icons.storefront_rounded,
-      weekdayOpen: '09:00 AM',
-      weekdayClose: '09:00 PM',
-      saturdayOpen: '10:00 AM',
-      saturdayClose: '08:00 PM',
-      sundaySchedule: 'Closed',
-      open24Hours: false,
+      address: '123 Business Rd, Colombo 03, Sri Lanka',
+      code: 'CCB001',
+      phone: '+94 11 234 5678',
+      email: 'mainbranch@pos.com',
+      manager: 'Nimal Perera',
+      openingHours: 'Mon - Sun: 9:00 AM - 9:00 PM',
+      timezone: 'Asia/Colombo (GMT +5:30)',
+      statusLabel: 'Active',
+      statusBackground: Color(0xFFE9F8E8),
+      statusTextColor: Color(0xFF23863F),
+      icon: Icons.apartment_outlined,
+      iconBackground: Color(0xFFE8F0FF),
+      iconColor: Color(0xFF2B5FCE),
     ),
-    const _StoreItem(
-      name: 'Downtown Shop',
-      category: 'Restaurant',
-      address: '456 Market St, New York, NY 10013',
-      contactNumber: '0713 220 441',
-      taxId: '22-1456781',
-      sales: 'TSH 5,788,500',
-      transactions: '78',
-      avgOrder: 'TSH 74,200',
-      icon: Icons.store_mall_directory_rounded,
-      weekdayOpen: '09:00 AM',
-      weekdayClose: '09:00 PM',
-      saturdayOpen: '10:00 AM',
-      saturdayClose: '08:00 PM',
-      sundaySchedule: 'Closed',
-      open24Hours: false,
+    _BranchItem(
+      name: 'City Center Branch',
+      address: '45 Park Street, Colombo 02, Sri Lanka',
+      code: 'CCB001',
+      phone: '+94 11 234 5678',
+      email: 'citycenter@pos.com',
+      manager: 'Nimal Perera',
+      openingHours: 'Mon - Sun: 9:00 AM - 9:00 PM',
+      timezone: 'Asia/Colombo (GMT +5:30)',
+      statusLabel: 'Active',
+      statusBackground: Color(0xFFE9F8E8),
+      statusTextColor: Color(0xFF23863F),
+      icon: Icons.storefront_outlined,
+      iconBackground: Color(0xFFE7F7EA),
+      iconColor: Color(0xFF26A34A),
+      isExpanded: true,
     ),
-    const _StoreItem(
-      name: 'Warehouse',
-      category: 'Warehouse',
-      address: '789 Industrial Rd, Brooklyn, NY 11232',
-      contactNumber: '0715 908 332',
-      taxId: '33-2458710',
-      sales: 'TSH 4,725,500',
-      transactions: '54',
-      avgOrder: 'TSH 87,500',
-      icon: Icons.warehouse_rounded,
-      weekdayOpen: '09:00 AM',
-      weekdayClose: '09:00 PM',
-      saturdayOpen: '10:00 AM',
-      saturdayClose: '08:00 PM',
-      sundaySchedule: 'Closed',
-      open24Hours: false,
+    _BranchItem(
+      name: 'Kandy Branch',
+      address: 'No. 12, Peradeniya Road, Kandy, Sri Lanka',
+      code: 'KDB014',
+      phone: '+94 81 222 4455',
+      email: 'kandy@pos.com',
+      manager: 'Sanjeewa Kumara',
+      openingHours: 'Mon - Sun: 9:00 AM - 8:00 PM',
+      timezone: 'Asia/Colombo (GMT +5:30)',
+      statusLabel: 'Inactive',
+      statusBackground: Color(0xFFFFF1DB),
+      statusTextColor: Color(0xFFD68A00),
+      icon: Icons.store_outlined,
+      iconBackground: Color(0xFFFDF0D7),
+      iconColor: Color(0xFFD39A08),
+    ),
+    _BranchItem(
+      name: 'Negombo Branch',
+      address: '78 Lewis Place, Negombo, Sri Lanka',
+      code: 'NGB022',
+      phone: '+94 31 222 8899',
+      email: 'negombo@pos.com',
+      manager: 'Tharindu Silva',
+      openingHours: 'Mon - Sun: 9:00 AM - 9:00 PM',
+      timezone: 'Asia/Colombo (GMT +5:30)',
+      statusLabel: 'Active',
+      statusBackground: Color(0xFFE9F8E8),
+      statusTextColor: Color(0xFF23863F),
+      icon: Icons.store_outlined,
+      iconBackground: Color(0xFFF1ECFF),
+      iconColor: Color(0xFF7D5CE0),
     ),
   ];
 
-  Future<void> _openCreateStore() async {
+  int _expandedIndex = 1;
+
+  Future<void> _openAddBranch() async {
     final created = await Navigator.of(context).push<StoreFormResult>(
       MaterialPageRoute<StoreFormResult>(
         builder: (context) => const AddEditStorePage(),
@@ -78,395 +93,228 @@ class _MultiStoreManagementPageState extends State<MultiStoreManagementPage> {
       return;
     }
 
-    setState(() {
-      _stores.insert(0, _StoreItem.fromFormResult(created));
-    });
-
     showMarketNotice(
       context,
-      title: 'Store Added',
-      message: '${created.name} is now part of multi-store management',
+      title: 'Branch Added',
+      message: '${created.name} is now part of branch management',
     );
   }
 
-  Future<void> _openEditStore(int index) async {
-    final updated = await Navigator.of(context).push<StoreFormResult>(
-      MaterialPageRoute<StoreFormResult>(
-        builder: (context) => AddEditStorePage(
-          initialStore: _stores[index].toFormResult(),
+  void _toggleExpanded(int index) {
+    setState(() {
+      _expandedIndex = _expandedIndex == index ? -1 : index;
+    });
+  }
+
+  void _showFilterNotice() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Filter Branches'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text('Active Only'),
+              trailing: Icon(Icons.check_circle_outline),
+            ),
+            ListTile(
+              title: Text('Main Branches'),
+            ),
+            ListTile(
+              title: Text('Recent Activity'),
+            ),
+          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Apply'),
+          ),
+        ],
       ),
     );
+  }
 
-    if (updated == null || !mounted) {
-      return;
-    }
-
-    setState(() {
-      _stores[index] = _stores[index].copyWith(
-        name: updated.name,
-        category: updated.category,
-        address: updated.address,
-        contactNumber: updated.contactNumber,
-        taxId: updated.taxId,
-        weekdayOpen: updated.weekdayOpen,
-        weekdayClose: updated.weekdayClose,
-        saturdayOpen: updated.saturdayOpen,
-        saturdayClose: updated.saturdayClose,
-        sundaySchedule: updated.sundaySchedule,
-        open24Hours: updated.open24Hours,
-        logoPath: updated.logoPath,
-        icon: _StoreItem.iconForCategory(updated.category),
-      );
-    });
-
-    showMarketNotice(
-      context,
-      title: 'Store Updated',
-      message: '${updated.name} details were saved',
+  void _showSwitchNotice(String branchName) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Switch Branch?'),
+        content: Text('Are you sure you want to switch to $branchName? You will be logged into this branch\'s management system.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              showMarketNotice(
+                context,
+                title: 'Branch Switched',
+                message: 'Now managing $branchName',
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2B5FCE),
+            ),
+            child: const Text('Switch', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFD),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
+        bottom: false,
+        child: Stack(
           children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
-                ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const SizedBox(
-                      width: 38,
-                      height: 38,
-                      child: Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Text(
-                      'Multi-Store Management',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.store_mall_directory_outlined,
-                      color: Colors.white,
-                      size: 26,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-                children: [
-                  GestureDetector(
-                    onTap: _openCreateStore,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 22),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: const Color(0xFF2B6FF3),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: Color(0xFF1562E8),
-                            child: Icon(
-                              Icons.add_rounded,
-                              color: Colors.white,
-                              size: 30,
-                            ),
-                          ),
-                          SizedBox(width: 20),
-                          Text(
-                            'Add New Store',
-                            style: TextStyle(
-                              color: Color(0xFF1562E8),
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ..._stores.asMap().entries.map(
-                    (entry) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _StoreCard(
-                        store: entry.value,
-                        onEdit: () => _openEditStore(entry.key),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _StoreBottomItem(
-                    icon: Icons.pie_chart_outline_rounded,
-                    label: 'Dashboard',
-                  ),
-                  _StoreBottomItem(
-                    icon: Icons.shopping_cart_outlined,
-                    label: 'Sales',
-                  ),
-                  _StoreBottomItem(
-                    icon: Icons.storefront_rounded,
-                    label: 'Stores',
-                    active: true,
-                  ),
-                  _StoreBottomItem(
-                    icon: Icons.more_horiz_rounded,
-                    label: 'More',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StoreCard extends StatelessWidget {
-  const _StoreCard({
-    required this.store,
-    required this.onEdit,
-  });
-
-  final _StoreItem store;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onEdit,
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFE7EBF0)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 14,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+            Column(
               children: [
-                store.logoPath == null
-                    ? Container(
-                        width: 82,
-                        height: 82,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEAF0FF),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Icon(
-                          store.icon,
-                          color: const Color(0xFF1562E8),
-                          size: 50,
-                        ),
-                      )
-                    : Container(
-                        width: 82,
-                        height: 82,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18),
-                          image: DecorationImage(
-                            image: FileImage(File(store.logoPath!)),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
+                  child: Row(
                     children: [
-                      Text(
-                        store.name,
-                        style: const TextStyle(
-                          color: Color(0xFF202938),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
+                      _TopIconButton(
+                        icon: Icons.chevron_left_rounded,
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
+                      const Expanded(
+                        child: Text(
+                          'Branch Management',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF1E273A),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 1),
-                            child: Icon(
-                              Icons.location_on_outlined,
-                              color: Color(0xFF6F7887),
-                              size: 21,
-                            ),
+                      const SizedBox(width: 40),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 56,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFDDE2EA)),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              store.address,
-                              style: const TextStyle(
-                                color: Color(0xFF6F7887),
-                                fontSize: 13.8,
-                                fontWeight: FontWeight.w500,
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.search_rounded,
+                                color: Color(0xFF7A8393),
+                                size: 28,
                               ),
-                            ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Search branches...',
+                                  style: TextStyle(
+                                    color: Color(0xFFABB2BF),
+                                    fontSize: 15.2,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: _showFilterNotice,
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFDDE2EA)),
+                          ),
+                          child: const Icon(
+                            Icons.tune_rounded,
+                            color: Color(0xFF1E273A),
+                            size: 26,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 110),
+                    itemCount: _branches.length,
+                    itemBuilder: (context, index) {
+                      final branch = _branches[index];
+                      final isExpanded = _expandedIndex == index;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _BranchCard(
+                          branch: branch,
+                          isExpanded: isExpanded,
+                          onToggle: () => _toggleExpanded(index),
+                          onSwitch: () => _showSwitchNotice(branch.name),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              right: 16,
+              bottom: 84,
+              child: GestureDetector(
+                onTap: _openAddBranch,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEAF8EE),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Text(
-                        'Active',
-                        style: TextStyle(
-                          color: Color(0xFF2FA45B),
-                          fontSize: 12.8,
-                          fontWeight: FontWeight.w700,
+                      width: 86,
+                      height: 86,
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(14)),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF356BD8), Color(0xFF2B5FCE)],
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0x32356BD8),
+                            blurRadius: 18,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 42,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Icon(
-                      Icons.edit_outlined,
-                      color: Color(0xFF1562E8),
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            const Divider(height: 1, color: Color(0xFFE7EBF0)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _StoreMetricBlock(
-                    label: "TODAY'S SALES",
-                    value: store.sales,
-                  ),
-                ),
-                const SizedBox(
-                  height: 52,
-                  child: VerticalDivider(color: Color(0xFFE4E8EF)),
-                ),
-                Expanded(
-                  child: _StoreMetricBlock(
-                    label: 'TRANSACTIONS',
-                    value: store.transactions,
-                    valueIcon: Icons.receipt_long_outlined,
-                  ),
-                ),
-                const SizedBox(
-                  height: 52,
-                  child: VerticalDivider(color: Color(0xFFE4E8EF)),
-                ),
-                Expanded(
-                  child: _StoreMetricBlock(
-                    label: 'AVG ORDER',
-                    value: store.avgOrder,
-                    valueIcon: Icons.shopping_cart_outlined,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: () {
-                showMarketNotice(
-                  context,
-                  title: 'Store Switched',
-                  message: '${store.name} is ready to become the active branch',
-                );
-              },
-              child: Container(
-                height: 58,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.swap_horiz_rounded,
-                      color: Colors.white,
-                      size: 26,
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Switch to Store',
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Add New Branch',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.5,
+                        color: Color(0xFF2B5FCE),
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -481,221 +329,454 @@ class _StoreCard extends StatelessWidget {
   }
 }
 
-class _StoreMetricBlock extends StatelessWidget {
-  const _StoreMetricBlock({
-    required this.label,
-    required this.value,
-    this.valueIcon,
+class _BranchCard extends StatelessWidget {
+  const _BranchCard({
+    required this.branch,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.onSwitch,
   });
 
-  final String label;
-  final String value;
-  final IconData? valueIcon;
+  final _BranchItem branch;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final VoidCallback onSwitch;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF6F7887),
-            fontSize: 11.8,
-            fontWeight: FontWeight.w600,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE1E5EC)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
           ),
-        ),
-        const SizedBox(height: 10),
-        if (valueIcon == null)
-          Text(
-            value,
-            style: const TextStyle(
-              color: Color(0xFF111827),
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+        ],
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: branch.iconBackground,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      branch.icon,
+                      color: branch.iconColor,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          branch.name,
+                          style: const TextStyle(
+                            color: Color(0xFF1E273A),
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              color: Color(0xFF7A8393),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                branch.address,
+                                style: const TextStyle(
+                                  color: Color(0xFF7A8393),
+                                  fontSize: 13.7,
+                                  height: 1.3,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: branch.statusBackground,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          branch.statusLabel,
+                          style: TextStyle(
+                            color: branch.statusTextColor,
+                            fontSize: 12.8,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Icon(
+                        isExpanded
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: const Color(0xFF667085),
+                        size: 30,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          )
-        else
-          Row(
-            children: [
-              Icon(valueIcon, color: const Color(0xFF1562E8), size: 22),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  value,
-                  style: const TextStyle(
-                    color: Color(0xFF111827),
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: _BranchDetails(
+              branch: branch,
+              onSwitch: onSwitch,
+            ),
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeOutCubic,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BranchDetails extends StatelessWidget {
+  const _BranchDetails({
+    required this.branch,
+    required this.onSwitch,
+  });
+
+  final _BranchItem branch;
+  final VoidCallback onSwitch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFDFDFE),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE4E8EF)),
+        ),
+        child: Column(
+          children: [
+            _BranchDetailRow(
+              icon: Icons.apartment_outlined,
+              label: 'Branch Code',
+              value: branch.code,
+            ),
+            _BranchDetailRow(
+              icon: Icons.call_outlined,
+              label: 'Phone',
+              value: branch.phone,
+            ),
+            _BranchDetailRow(
+              icon: Icons.email_outlined,
+              label: 'Email',
+              value: branch.email,
+            ),
+            _BranchDetailRow(
+              icon: Icons.person_outline_rounded,
+              label: 'Manager',
+              value: branch.manager,
+            ),
+            _BranchHoursPanel(openingHours: branch.openingHours),
+            _BranchDetailRow(
+              icon: Icons.access_time_outlined,
+              label: 'Timezone',
+              value: branch.timezone,
+              isLast: true,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: GestureDetector(
+                onTap: onSwitch,
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2B5FCE),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x22356BD8),
+                        blurRadius: 12,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.swap_horiz_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        'Switch Branch',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-      ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _StoreBottomItem extends StatelessWidget {
-  const _StoreBottomItem({
+class _BranchHoursPanel extends StatelessWidget {
+  const _BranchHoursPanel({required this.openingHours});
+
+  final String openingHours;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE7EAF0)),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7FAFF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE4E8EF)),
+              ),
+              child: const Icon(
+                Icons.calendar_month_outlined,
+                color: Color(0xFF6F7887),
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FBFF),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE6ECF5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Store Hours',
+                      style: TextStyle(
+                        color: Color(0xFF7A8393),
+                        fontSize: 13.2,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      openingHours,
+                      style: const TextStyle(
+                        color: Color(0xFF1E273A),
+                        fontSize: 14.4,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Standard weekly schedule',
+                      style: TextStyle(
+                        color: Color(0xFF9AA3B2),
+                        fontSize: 11.8,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BranchDetailRow extends StatelessWidget {
+  const _BranchDetailRow({
     required this.icon,
     required this.label,
-    this.active = false,
+    required this.value,
+    this.isLast = false,
   });
 
   final IconData icon;
   final String label;
-  final bool active;
+  final String value;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF1562E8) : const Color(0xFF6B7280);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 28),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 12.8,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: isLast
+              ? BorderSide.none
+              : const BorderSide(color: Color(0xFFE7EAF0)),
         ),
-      ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE4E8EF)),
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xFF6F7887),
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              flex: 4,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF7A8393),
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 6,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  color: Color(0xFF1E273A),
+                  fontSize: 14.3,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _StoreItem {
-  const _StoreItem({
-    required this.name,
-    required this.category,
-    required this.address,
-    required this.contactNumber,
-    required this.taxId,
-    required this.sales,
-    required this.transactions,
-    required this.avgOrder,
+class _TopIconButton extends StatelessWidget {
+  const _TopIconButton({
     required this.icon,
-    required this.weekdayOpen,
-    required this.weekdayClose,
-    required this.saturdayOpen,
-    required this.saturdayClose,
-    required this.sundaySchedule,
-    required this.open24Hours,
-    this.logoPath,
+    required this.onTap,
   });
 
-  factory _StoreItem.fromFormResult(StoreFormResult result) {
-    return _StoreItem(
-      name: result.name,
-      category: result.category,
-      address: result.address,
-      contactNumber: result.contactNumber,
-      taxId: result.taxId,
-      sales: 'TSH 0',
-      transactions: '0',
-      avgOrder: 'TSH 0',
-      icon: iconForCategory(result.category),
-      weekdayOpen: result.weekdayOpen,
-      weekdayClose: result.weekdayClose,
-      saturdayOpen: result.saturdayOpen,
-      saturdayClose: result.saturdayClose,
-      sundaySchedule: result.sundaySchedule,
-      open24Hours: result.open24Hours,
-      logoPath: result.logoPath,
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Icon(
+          icon,
+          color: const Color(0xFF667085),
+          size: 30,
+        ),
+      ),
     );
   }
+}
+
+class _BranchItem {
+  const _BranchItem({
+    required this.name,
+    required this.address,
+    required this.code,
+    required this.phone,
+    required this.email,
+    required this.manager,
+    required this.openingHours,
+    required this.timezone,
+    required this.statusLabel,
+    required this.statusBackground,
+    required this.statusTextColor,
+    required this.icon,
+    required this.iconBackground,
+    required this.iconColor,
+    this.isExpanded = false,
+  });
 
   final String name;
-  final String category;
   final String address;
-  final String contactNumber;
-  final String taxId;
-  final String sales;
-  final String transactions;
-  final String avgOrder;
+  final String code;
+  final String phone;
+  final String email;
+  final String manager;
+  final String openingHours;
+  final String timezone;
+  final String statusLabel;
+  final Color statusBackground;
+  final Color statusTextColor;
   final IconData icon;
-  final String weekdayOpen;
-  final String weekdayClose;
-  final String saturdayOpen;
-  final String saturdayClose;
-  final String sundaySchedule;
-  final bool open24Hours;
-  final String? logoPath;
-
-  StoreFormResult toFormResult() {
-    return StoreFormResult(
-      name: name,
-      category: category,
-      address: address,
-      contactNumber: contactNumber,
-      taxId: taxId,
-      weekdayOpen: weekdayOpen,
-      weekdayClose: weekdayClose,
-      saturdayOpen: saturdayOpen,
-      saturdayClose: saturdayClose,
-      sundaySchedule: sundaySchedule,
-      open24Hours: open24Hours,
-      logoPath: logoPath,
-    );
-  }
-
-  _StoreItem copyWith({
-    String? name,
-    String? category,
-    String? address,
-    String? contactNumber,
-    String? taxId,
-    String? sales,
-    String? transactions,
-    String? avgOrder,
-    IconData? icon,
-    String? weekdayOpen,
-    String? weekdayClose,
-    String? saturdayOpen,
-    String? saturdayClose,
-    String? sundaySchedule,
-    bool? open24Hours,
-    String? logoPath,
-  }) {
-    return _StoreItem(
-      name: name ?? this.name,
-      category: category ?? this.category,
-      address: address ?? this.address,
-      contactNumber: contactNumber ?? this.contactNumber,
-      taxId: taxId ?? this.taxId,
-      sales: sales ?? this.sales,
-      transactions: transactions ?? this.transactions,
-      avgOrder: avgOrder ?? this.avgOrder,
-      icon: icon ?? this.icon,
-      weekdayOpen: weekdayOpen ?? this.weekdayOpen,
-      weekdayClose: weekdayClose ?? this.weekdayClose,
-      saturdayOpen: saturdayOpen ?? this.saturdayOpen,
-      saturdayClose: saturdayClose ?? this.saturdayClose,
-      sundaySchedule: sundaySchedule ?? this.sundaySchedule,
-      open24Hours: open24Hours ?? this.open24Hours,
-      logoPath: logoPath ?? this.logoPath,
-    );
-  }
-
-  static IconData iconForCategory(String category) {
-    switch (category) {
-      case 'Warehouse':
-        return Icons.warehouse_rounded;
-      case 'Restaurant':
-        return Icons.store_mall_directory_rounded;
-      case 'Pharmacy':
-        return Icons.local_hospital_outlined;
-      case 'Electronics':
-        return Icons.devices_other_rounded;
-      case 'Supermarket':
-        return Icons.shopping_basket_rounded;
-      default:
-        return Icons.storefront_rounded;
-    }
-  }
+  final Color iconBackground;
+  final Color iconColor;
+  final bool isExpanded;
 }

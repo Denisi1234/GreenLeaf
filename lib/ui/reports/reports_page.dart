@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../home/home_page.dart';
+import '../../service/pos_local_store.dart';
+import '../../service/pos_order_models.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'reports_catalog_page.dart';
 
@@ -12,46 +15,6 @@ class ReportsPage extends StatelessWidget {
   static const Color _border = Color(0xFFE8EBF1);
   static const Color _blue = Color(0xFF2B6FE8);
   static const Color _green = Color(0xFF30B05C);
-
-  static const List<_OverviewCardData> _overviewCards = [
-    _OverviewCardData(
-      icon: Icons.shopping_bag_outlined,
-      iconColor: Color(0xFF26A042),
-      iconBackground: Color(0xFFEAF8EE),
-      title: 'Total Sales Today',
-      value: '\$2,845.50',
-      delta: '12.5%',
-      footer: 'vs Yesterday',
-    ),
-    _OverviewCardData(
-      icon: Icons.shopping_cart_outlined,
-      iconColor: Color(0xFF2E6EE8),
-      iconBackground: Color(0xFFECF3FF),
-      title: 'Transactions',
-      value: '38',
-      delta: '8.6%',
-      footer: 'vs Yesterday',
-    ),
-    _OverviewCardData(
-      icon: Icons.sell_outlined,
-      iconColor: Color(0xFF9747FF),
-      iconBackground: Color(0xFFF3EAFE),
-      title: 'Avg. Transaction Value',
-      value: '\$74.88',
-      delta: '3.4%',
-      footer: 'vs Yesterday',
-    ),
-    _OverviewCardData(
-      icon: Icons.inventory_2_outlined,
-      iconColor: Color(0xFFC38A13),
-      iconBackground: Color(0xFFFEF5E3),
-      title: 'Top Selling Product',
-      value: 'Classic Denim Jacket',
-      footer: '12 sold',
-      badge: 'Best Seller',
-      highlightValue: true,
-    ),
-  ];
 
   static const List<_QuickActionData> _quickActions = [
     _QuickActionData(
@@ -127,37 +90,178 @@ class ReportsPage extends StatelessWidget {
     ),
   ];
 
+  static List<_OverviewCardData> _buildOverviewCards(PosLocalStore store) {
+    final today = DateTime.now();
+    final todayOrders = store.orders.where((order) {
+      final orderDate = DateTime.tryParse(order.dateTime);
+      return orderDate != null &&
+          orderDate.year == today.year &&
+          orderDate.month == today.month &&
+          orderDate.day == today.day;
+    }).toList();
+    final yesterday = today.subtract(const Duration(days: 1));
+    final yesterdayOrders = store.orders.where((order) {
+      final orderDate = DateTime.tryParse(order.dateTime);
+      return orderDate != null &&
+          orderDate.year == yesterday.year &&
+          orderDate.month == yesterday.month &&
+          orderDate.day == yesterday.day;
+    }).toList();
+
+    final totalSales = todayOrders.fold<double>(
+      0,
+      (sum, order) => sum + order.total,
+    );
+    final yesterdaySales = yesterdayOrders.fold<double>(
+      0,
+      (sum, order) => sum + order.total,
+    );
+    final transactionCount = todayOrders.length;
+    final averageValue =
+        transactionCount == 0 ? 0 : totalSales / transactionCount;
+
+    final productTotals = <String, int>{};
+    for (final order in todayOrders) {
+      for (final line in order.lines) {
+        productTotals[line.itemName] =
+            (productTotals[line.itemName] ?? 0) + line.quantity;
+      }
+    }
+
+    final topProductEntry = productTotals.entries.isEmpty
+        ? null
+        : productTotals.entries.reduce(
+            (a, b) => a.value >= b.value ? a : b,
+          );
+
+    return [
+      _OverviewCardData(
+        icon: Icons.shopping_bag_outlined,
+        iconColor: const Color(0xFF26A042),
+        iconBackground: const Color(0xFFEAF8EE),
+        title: 'Total Sales Today',
+        value: 'TSH ${totalSales.toStringAsFixed(0)}',
+        delta: yesterdaySales <= 0
+            ? null
+            : '${(((totalSales - yesterdaySales) / yesterdaySales) * 100).abs().toStringAsFixed(0)}% vs yesterday',
+        footer: 'Live today',
+      ),
+      _OverviewCardData(
+        icon: Icons.shopping_cart_outlined,
+        iconColor: const Color(0xFF2E6EE8),
+        iconBackground: const Color(0xFFECF3FF),
+        title: 'Transactions',
+        value: transactionCount.toString(),
+        badge: 'Live',
+        footer: 'Live today',
+      ),
+      _OverviewCardData(
+        icon: Icons.sell_outlined,
+        iconColor: const Color(0xFF9747FF),
+        iconBackground: const Color(0xFFF3EAFE),
+        title: 'Avg. Transaction Value',
+        value: 'TSH ${averageValue.toStringAsFixed(0)}',
+        footer: 'Live today',
+      ),
+      _OverviewCardData(
+        icon: Icons.inventory_2_outlined,
+        iconColor: const Color(0xFFC38A13),
+        iconBackground: const Color(0xFFFEF5E3),
+        title: 'Top Selling Product',
+        value: topProductEntry?.key ?? 'No sales yet',
+        footer: topProductEntry == null
+            ? 'No items sold yet'
+            : '${topProductEntry.value} sold today',
+        highlightValue: true,
+      ),
+    ];
+  }
+
+  static List<_ActivityItemData> _buildActivityItems(
+    List<CompletedOrder> orders,
+  ) {
+    return orders.take(5).map((order) {
+      final itemCount = order.lines.fold<int>(
+        0,
+        (sum, line) => sum + line.quantity,
+      );
+      return _ActivityItemData(
+        icon: Icons.shopping_cart_outlined,
+        iconColor: const Color(0xFF2AA24F),
+        iconBackground: const Color(0xFFEAF8EE),
+        title: 'Sale ${order.id}',
+        subtitle:
+            '$itemCount item${itemCount == 1 ? '' : 's'} • ${order.paymentMethod} Payment',
+        amount: 'TSH ${order.total.toStringAsFixed(0)}',
+        time: order.time,
+      );
+    }).toList();
+  }
+
+  static String _formatToday() {
+    const monthNames = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const weekdayNames = <String>[
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun',
+    ];
+    final now = DateTime.now();
+    return '${monthNames[now.month - 1]} ${now.day}, ${now.year} (${weekdayNames[now.weekday - 1]})';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFFFFEFC),
-      drawer: MarketAppDrawer(selectedItem: 'Reports'),
+    final store = context.watch<PosLocalStore>();
+    final overviewCards = _buildOverviewCards(store);
+    final activityItems = _buildActivityItems(store.orders);
+    final todayLabel = _formatToday();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFEFC),
+      drawer: const MarketAppDrawer(selectedItem: 'Reports'),
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned.fill(child: BackdropGlow()),
+            const Positioned.fill(child: BackdropGlow()),
             Column(
               children: [
-                _ReportsHeader(),
+                _ReportsHeader(dateLabel: todayLabel),
                 Expanded(
                   child: CustomScrollView(
-                    physics: BouncingScrollPhysics(),
+                    physics: const BouncingScrollPhysics(),
                     slivers: [
                       SliverPadding(
-                        padding: EdgeInsets.fromLTRB(12, 0, 12, 10),
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate.fixed([
-                            SizedBox(height: 1),
-                            _OverviewGrid(cards: _overviewCards),
-                            SizedBox(height: 14),
-                            _SectionTitle('Quick Actions'),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 1),
+                            _OverviewGrid(cards: overviewCards),
+                            const SizedBox(height: 14),
+                            const _SectionTitle('Quick Actions'),
+                            const SizedBox(height: 8),
                             _QuickActionsRow(actions: _quickActions),
-                            SizedBox(height: 14),
-                            _RecentHeader(),
-                            SizedBox(height: 6),
-                            _RecentActivityCard(items: _activityItems),
-                            SizedBox(height: 16),
+                            const SizedBox(height: 14),
+                            const _RecentHeader(),
+                            const SizedBox(height: 6),
+                            _RecentActivityCard(items: activityItems),
+                            const SizedBox(height: 16),
                           ]),
                         ),
                       ),
@@ -174,11 +278,13 @@ class ReportsPage extends StatelessWidget {
 }
 
 class _ReportsHeader extends StatelessWidget {
-  const _ReportsHeader();
+  const _ReportsHeader({required this.dateLabel});
+
+  final String dateLabel;
 
   @override
   Widget build(BuildContext context) {
-    return const Material(
+    return Material(
       color: Color(0xFFFFFEFC),
       child: SizedBox(
         height: 72,
@@ -216,7 +322,7 @@ class _ReportsHeader extends StatelessWidget {
                     Positioned(
                       top: 0,
                       right: 0,
-                      child: _DateRow(),
+                      child: _DateRow(dateLabel: dateLabel),
                     ),
                   ],
                 ),
@@ -235,22 +341,24 @@ class _ReportsHeader extends StatelessWidget {
 }
 
 class _DateRow extends StatelessWidget {
-  const _DateRow();
+  const _DateRow({required this.dateLabel});
+
+  final String dateLabel;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
+        const Icon(
           Icons.calendar_month_outlined,
           size: 16,
           color: Color(0xFF8A93A7),
         ),
-        SizedBox(width: 6),
+        const SizedBox(width: 6),
         Text(
-          'May 18, 2025 (Sun)',
-          style: TextStyle(
+          dateLabel,
+          style: const TextStyle(
             color: Color(0xFF7B859A),
             fontSize: 11.5,
             fontWeight: FontWeight.w500,
@@ -816,13 +924,13 @@ class _OverviewDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: ReportsPage._border),
-                ),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: ReportsPage._border),
+              ),
               child: Row(
                 children: [
                   Container(

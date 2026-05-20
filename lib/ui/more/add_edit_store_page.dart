@@ -64,26 +64,6 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
     'Supermarket',
   ];
 
-  static const _timeOptions = [
-    '06:00 AM',
-    '07:00 AM',
-    '08:00 AM',
-    '09:00 AM',
-    '10:00 AM',
-    '11:00 AM',
-    '12:00 PM',
-    '01:00 PM',
-    '02:00 PM',
-    '03:00 PM',
-    '04:00 PM',
-    '05:00 PM',
-    '06:00 PM',
-    '07:00 PM',
-    '08:00 PM',
-    '09:00 PM',
-    '10:00 PM',
-  ];
-
   String? _selectedCategory;
   String _weekdayOpen = '09:00 AM';
   String _weekdayClose = '09:00 PM';
@@ -105,10 +85,18 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
       _contactController.text = initial.contactNumber;
       _taxIdController.text = initial.taxId;
       _selectedCategory = initial.category;
-      _weekdayOpen = initial.weekdayOpen == 'Open 24 Hours' ? '09:00 AM' : initial.weekdayOpen;
-      _weekdayClose = initial.weekdayClose == 'Open 24 Hours' ? '09:00 PM' : initial.weekdayClose;
-      _saturdayOpen = initial.saturdayOpen == 'Open 24 Hours' ? '10:00 AM' : initial.saturdayOpen;
-      _saturdayClose = initial.saturdayClose == 'Open 24 Hours' ? '08:00 PM' : initial.saturdayClose;
+      _weekdayOpen = initial.weekdayOpen == 'Open 24 Hours'
+          ? '09:00 AM'
+          : initial.weekdayOpen;
+      _weekdayClose = initial.weekdayClose == 'Open 24 Hours'
+          ? '09:00 PM'
+          : initial.weekdayClose;
+      _saturdayOpen = initial.saturdayOpen == 'Open 24 Hours'
+          ? '10:00 AM'
+          : initial.saturdayOpen;
+      _saturdayClose = initial.saturdayClose == 'Open 24 Hours'
+          ? '08:00 PM'
+          : initial.saturdayClose;
       _sundaySchedule = initial.sundaySchedule;
       _open24Hours = initial.open24Hours;
       _initialLogoPath = initial.logoPath;
@@ -207,10 +195,9 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
             Container(
               padding: const EdgeInsets.fromLTRB(18, 20, 18, 24),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Color(0xFFE7EAF0)),
                 ),
               ),
               child: Row(
@@ -222,7 +209,7 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                       height: 40,
                       child: Icon(
                         Icons.arrow_back_rounded,
-                        color: Colors.white,
+                        color: Color(0xFF1E273A),
                         size: 32,
                       ),
                     ),
@@ -232,7 +219,7 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                       'Add/Edit Store',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF1E273A),
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
@@ -282,7 +269,8 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                                         image: imagePath == null
                                             ? null
                                             : DecorationImage(
-                                                image: FileImage(File(imagePath)),
+                                                image:
+                                                    FileImage(File(imagePath)),
                                                 fit: BoxFit.cover,
                                               ),
                                       ),
@@ -316,7 +304,8 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                                 const SizedBox(width: 26),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'Upload Store Logo',
@@ -352,9 +341,11 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                                         ),
                                         style: OutlinedButton.styleFrom(
                                           minimumSize: const Size(0, 56),
-                                          side: const BorderSide(color: Color(0xFF1562E8)),
+                                          side: const BorderSide(
+                                              color: Color(0xFF1562E8)),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
                                           ),
                                         ),
                                       ),
@@ -388,9 +379,10 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                               child: _StoreTextField(
                                 controller: _nameController,
                                 hintText: 'Enter store name',
-                                validator: (value) => (value == null || value.trim().isEmpty)
-                                    ? 'Store name is required'
-                                    : null,
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? 'Store name is required'
+                                        : null,
                               ),
                             ),
                             const SizedBox(height: 14),
@@ -416,9 +408,10 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                                 controller: _addressController,
                                 hintText: 'Enter store address',
                                 maxLines: 2,
-                                validator: (value) => (value == null || value.trim().isEmpty)
-                                    ? 'Address is required'
-                                    : null,
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? 'Address is required'
+                                        : null,
                               ),
                             ),
                             const SizedBox(height: 14),
@@ -428,9 +421,10 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                               child: _StoreTextField(
                                 controller: _contactController,
                                 hintText: 'Enter contact number',
-                                validator: (value) => (value == null || value.trim().isEmpty)
-                                    ? 'Contact number is required'
-                                    : null,
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? 'Contact number is required'
+                                        : null,
                               ),
                             ),
                             const SizedBox(height: 14),
@@ -440,202 +434,11 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                               child: _StoreTextField(
                                 controller: _taxIdController,
                                 hintText: 'Enter tax ID (e.g., 12-3456789)',
-                                validator: (value) => (value == null || value.trim().isEmpty)
-                                    ? 'Tax ID is required'
-                                    : null,
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? 'Tax ID is required'
+                                        : null,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0A000000),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.access_time_rounded,
-                                  color: Color(0xFF1562E8),
-                                  size: 28,
-                                ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Text(
-                                    'Store Hours',
-                                    style: TextStyle(
-                                      color: Color(0xFF21395F),
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  _open24Hours
-                                      ? Icons.keyboard_arrow_down_rounded
-                                      : Icons.keyboard_arrow_up_rounded,
-                                  color: const Color(0xFF1562E8),
-                                  size: 28,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
-                            _StoreHoursRow(
-                              label: 'Monday - Friday',
-                              disabled: _open24Hours,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _StoreDropdownField<String>(
-                                      value: _weekdayOpen,
-                                      items: _timeOptions,
-                                      onChanged: _open24Hours
-                                          ? null
-                                          : (value) {
-                                              if (value == null) return;
-                                              setState(() {
-                                                _weekdayOpen = value;
-                                              });
-                                            },
-                                    ),
-                                  ),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 10),
-                                    child: Text(
-                                      '-',
-                                      style: TextStyle(
-                                        color: Color(0xFF5B6474),
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: _StoreDropdownField<String>(
-                                      value: _weekdayClose,
-                                      items: _timeOptions,
-                                      onChanged: _open24Hours
-                                          ? null
-                                          : (value) {
-                                              if (value == null) return;
-                                              setState(() {
-                                                _weekdayClose = value;
-                                              });
-                                            },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            _StoreHoursRow(
-                              label: 'Saturday',
-                              disabled: _open24Hours,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _StoreDropdownField<String>(
-                                      value: _saturdayOpen,
-                                      items: _timeOptions,
-                                      onChanged: _open24Hours
-                                          ? null
-                                          : (value) {
-                                              if (value == null) return;
-                                              setState(() {
-                                                _saturdayOpen = value;
-                                              });
-                                            },
-                                    ),
-                                  ),
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 10),
-                                    child: Text(
-                                      '-',
-                                      style: TextStyle(
-                                        color: Color(0xFF5B6474),
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: _StoreDropdownField<String>(
-                                      value: _saturdayClose,
-                                      items: _timeOptions,
-                                      onChanged: _open24Hours
-                                          ? null
-                                          : (value) {
-                                              if (value == null) return;
-                                              setState(() {
-                                                _saturdayClose = value;
-                                              });
-                                            },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            _StoreHoursRow(
-                              label: 'Sunday',
-                              disabled: _open24Hours,
-                              child: _StoreDropdownField<String>(
-                                value: _sundaySchedule,
-                                items: const ['Closed', ..._timeOptions],
-                                onChanged: _open24Hours
-                                    ? null
-                                    : (value) {
-                                        if (value == null) return;
-                                        setState(() {
-                                          _sundaySchedule = value;
-                                        });
-                                      },
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 28,
-                                  height: 28,
-                                  child: Checkbox(
-                                    value: _open24Hours,
-                                    activeColor: const Color(0xFF1562E8),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _open24Hours = value ?? false;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                const Text(
-                                  'Open 24 hours',
-                                  style: TextStyle(
-                                    color: Color(0xFF21395F),
-                                    fontSize: 15.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                const Icon(
-                                  Icons.info_outline_rounded,
-                                  color: Color(0xFF7B8494),
-                                  size: 20,
-                                ),
-                              ],
                             ),
                           ],
                         ),
@@ -734,41 +537,6 @@ class _StoreFormRow extends StatelessWidget {
   }
 }
 
-class _StoreHoursRow extends StatelessWidget {
-  const _StoreHoursRow({
-    required this.label,
-    required this.child,
-    this.disabled = false,
-  });
-
-  final String label;
-  final Widget child;
-  final bool disabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: disabled ? 0.58 : 1,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 188,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF21395F),
-                fontSize: 15.8,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-}
-
 class _StoreTextField extends StatelessWidget {
   const _StoreTextField({
     required this.controller,
@@ -802,7 +570,8 @@ class _StoreTextField extends StatelessWidget {
         ),
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
         border: _storeBorder(),
         enabledBorder: _storeBorder(),
         focusedBorder: _storeBorder(const Color(0xFFB7C7EA)),

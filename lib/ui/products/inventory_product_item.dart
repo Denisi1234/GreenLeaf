@@ -24,6 +24,30 @@ class InventoryProductItem {
   final String? imagePath;
 
   String get sellingPriceLabel => 'TSH ${sellingPrice.toStringAsFixed(0)}';
+
+  InventoryProductItem copyWith({
+    String? code,
+    String? name,
+    String? category,
+    double? purchasePrice,
+    double? sellingPrice,
+    int? stockCount,
+    InventoryStockState? stockState,
+    ProductArtType? artType,
+    String? imagePath,
+  }) {
+    return InventoryProductItem(
+      code: code ?? this.code,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      purchasePrice: purchasePrice ?? this.purchasePrice,
+      sellingPrice: sellingPrice ?? this.sellingPrice,
+      stockCount: stockCount ?? this.stockCount,
+      stockState: stockState ?? this.stockState,
+      artType: artType ?? this.artType,
+      imagePath: imagePath ?? this.imagePath,
+    );
+  }
 }
 
 enum InventoryStockState {

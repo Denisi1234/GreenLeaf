@@ -1,5 +1,3 @@
-## Issue
-
 - enter your issue number here (with the hashtag `#`)
 
 ## Altered code
