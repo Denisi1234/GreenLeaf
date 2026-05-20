@@ -247,7 +247,7 @@ class TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(
         children: [
           DrawerMenuButton(),
@@ -273,7 +273,7 @@ class BrandBlock extends StatelessWidget {
           height: 52,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(color: const Color(0xFF8EA06D), width: 1.5),
           ),
           child: const BrandMark(),
@@ -359,7 +359,8 @@ class ProfileBlock extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             color: const Color(0xFFF0F2F4),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: const Color(0xFFE0E5EC)),
           ),
           child: const Icon(Icons.person, color: Color(0xFF293140), size: 28),
         ),
@@ -403,30 +404,30 @@ class SearchBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 62,
+      height: 56,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE4E6EA)),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFFD8DDE6)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+            color: Color(0x10000000),
+            blurRadius: 5,
+            offset: Offset(0, 2),
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: const Row(
         children: [
-          Icon(Icons.search_rounded, size: 30, color: Color(0xFF7E8695)),
-          SizedBox(width: 12),
+          Icon(Icons.search_rounded, size: 24, color: Color(0xFF7E8695)),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               'Search products by name or SKU',
               style: TextStyle(
                 color: Color(0xFFB2B8C2),
-                fontSize: 13,
+                fontSize: 12.8,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -594,15 +595,15 @@ class CheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFF202938),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(4),
         boxShadow: const [
           BoxShadow(
             color: Color(0x32000000),
-            blurRadius: 24,
-            offset: Offset(0, 12),
+            blurRadius: 8,
+            offset: Offset(0, 3),
           ),
         ],
       ),
@@ -617,7 +618,7 @@ class CheckoutBar extends StatelessWidget {
                 height: 58,
                 decoration: BoxDecoration(
                   color: const Color(0xFF8EA06D),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Icon(
                   Icons.shopping_cart_outlined,
@@ -633,7 +634,7 @@ class CheckoutBar extends StatelessWidget {
                   height: 24,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Center(
                     child: Text(
@@ -711,7 +712,7 @@ class CheckoutBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 color: const Color(0xFF8EA06D),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: const Row(
                 children: [

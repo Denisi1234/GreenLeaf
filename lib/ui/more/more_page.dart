@@ -27,29 +27,32 @@ class MorePage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            Material(
-              color: const Color(0xFFFFFEFC),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
-                child: Row(
-                  children: [
-                    const DrawerMenuButton(
+            const Material(
+              color: Color(0xFFFFFEFC),
+              child: SizedBox(
+                height: 56,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(18, 0, 18, 0),
+                  child: Row(
+                    children: [
+                    DrawerMenuButton(
                       iconColor: Color(0xFF5C677D),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Center(
                         child: Text(
                           'More',
                           style: TextStyle(
                             color: Color(0xFF162445),
                             fontSize: 20,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 40),
+                    SizedBox(width: 40),
                   ],
+                  ),
                 ),
               ),
             ),
@@ -72,12 +75,12 @@ class MorePage extends StatelessWidget {
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(4),
                               boxShadow: const [
                                 BoxShadow(
                                   color: Color(0x0E000000),
-                                  blurRadius: 14,
-                                  offset: Offset(0, 4),
+                                  blurRadius: 6,
+                                  offset: Offset(0, 2),
                                 ),
                               ],
                             ),
@@ -126,7 +129,7 @@ class MorePage extends StatelessWidget {
                                       height: 58,
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
+                                        borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
                                           color: const Color(0xFFE65B5B),
                                         ),
@@ -184,12 +187,12 @@ class _ProfileSummaryCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(26),
+            borderRadius: BorderRadius.circular(4),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x14000000),
-                blurRadius: 18,
-                offset: Offset(0, 8),
+                blurRadius: 6,
+                offset: Offset(0, 2),
               ),
             ],
           ),
@@ -453,7 +456,7 @@ class _MoreListTile extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
         child: Row(
           children: [
             Container(
@@ -461,7 +464,7 @@ class _MoreListTile extends StatelessWidget {
               height: 42,
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5FF),
-                borderRadius: BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Icon(
                 item.icon,

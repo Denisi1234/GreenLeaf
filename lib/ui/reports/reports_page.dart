@@ -129,21 +129,21 @@ class ReportsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFFEFC),
-      drawer: const MarketAppDrawer(selectedItem: 'Reports'),
+    return const Scaffold(
+      backgroundColor: Color(0xFFFFFEFC),
+      drawer: MarketAppDrawer(selectedItem: 'Reports'),
       body: SafeArea(
         child: Stack(
           children: [
-            const Positioned.fill(child: BackdropGlow()),
+            Positioned.fill(child: BackdropGlow()),
             Column(
               children: [
-                const _ReportsHeader(),
+                _ReportsHeader(),
                 Expanded(
                   child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: BouncingScrollPhysics(),
                     slivers: [
-                      const SliverPadding(
+                      SliverPadding(
                         padding: EdgeInsets.fromLTRB(12, 0, 12, 10),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate.fixed([
@@ -178,53 +178,56 @@ class _ReportsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFFFFEFC),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
-        child: Column(
-          children: const [
-            Padding(
-              padding: EdgeInsets.fromLTRB(14, 16, 14, 9),
-              child: Stack(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      DrawerMenuButton(
-                        iconColor: Color(0xFF5C677D),
-                      ),
-                      SizedBox(width: 14),
-                      Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.only(top: 2),
-                          child: Text(
-                            'Store Overview',
-                            style: TextStyle(
-                              color: ReportsPage._ink,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.7,
+    return const Material(
+      color: Color(0xFFFFFEFC),
+      child: SizedBox(
+        height: 72,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(0, 8, 0, 8),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(14, 12, 14, 9),
+                child: Stack(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DrawerMenuButton(
+                          iconColor: Color(0xFF5C677D),
+                        ),
+                        SizedBox(width: 14),
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Text(
+                              'Store Overview',
+                              style: TextStyle(
+                                color: ReportsPage._ink,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: _DateRow(),
-                  ),
-                ],
+                      ],
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: _DateRow(),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: Color(0xFFE7EAF0),
-            ),
-          ],
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFE7EAF0),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -325,19 +328,19 @@ class _OverviewCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(4),
           onTap: () => _openDetails(context),
           child: Container(
             padding: const EdgeInsets.fromLTRB(11, 10, 11, 9),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(4),
               border: Border.all(color: ReportsPage._border),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x0C0E1726),
-                  blurRadius: 10,
-                  offset: Offset(0, 3),
+                  blurRadius: 5,
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
@@ -351,7 +354,7 @@ class _OverviewCard extends StatelessWidget {
                       height: 34,
                       decoration: BoxDecoration(
                         color: card.iconBackground,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Icon(card.icon, color: card.iconColor, size: 18),
                     ),
@@ -433,7 +436,7 @@ class _OverviewCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF5E6),
-                            borderRadius: BorderRadius.circular(9),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -541,7 +544,7 @@ class _QuickActionCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(4),
         onTap: () => _handleTap(context),
         child: Container(
           constraints: const BoxConstraints(minHeight: 108),
@@ -549,15 +552,15 @@ class _QuickActionCard extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: action.background,
             color: action.background == null ? Colors.white : null,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(4),
             border: action.background == null
                 ? Border.all(color: ReportsPage._border)
                 : null,
             boxShadow: const [
               BoxShadow(
                 color: Color(0x140E1726),
-                blurRadius: 18,
-                offset: Offset(0, 8),
+                blurRadius: 6,
+                offset: Offset(0, 2),
               ),
             ],
           ),
@@ -569,7 +572,7 @@ class _QuickActionCard extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: iconBackground,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Icon(action.icon, color: action.iconColor, size: 22),
               ),
@@ -613,7 +616,7 @@ class _RecentHeader extends StatelessWidget {
           const _SectionTitle('Recent Activity'),
           const Spacer(),
           InkWell(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(4),
             onTap: () => _openAll(context),
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -654,13 +657,13 @@ class _RecentActivityCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: ReportsPage._border),
         boxShadow: const [
           BoxShadow(
             color: Color(0x100E1726),
-            blurRadius: 16,
-            offset: Offset(0, 6),
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -712,7 +715,7 @@ class _ActivityTile extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: item.iconBackground,
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Icon(item.icon, color: item.iconColor, size: 18),
               ),
@@ -813,13 +816,13 @@ class _OverviewDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: ReportsPage._border),
-              ),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: ReportsPage._border),
+                ),
               child: Row(
                 children: [
                   Container(
@@ -827,7 +830,7 @@ class _OverviewDetailPage extends StatelessWidget {
                     height: 54,
                     decoration: BoxDecoration(
                       color: card.iconBackground,
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Icon(card.icon, color: card.iconColor, size: 28),
                   ),
@@ -885,7 +888,7 @@ class _OverviewDetailPage extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEAF8EE),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
                   children: [
@@ -958,7 +961,7 @@ class _ActivityDetailPage extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(color: ReportsPage._border),
           ),
           child: Column(

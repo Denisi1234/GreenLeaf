@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../products/product_management_page.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/market_shared_widgets.dart';
 
@@ -28,6 +27,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               customerPhone: '',
               paymentMethod: o.paymentMethod,
               paidAmount: 'TSH ${o.cashTendered.toStringAsFixed(0)}',
+              isExpanded: false,
               lines: o.lines
                   .map(
                     (l) => _OrderLine(
@@ -58,7 +58,11 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 padding: EdgeInsets.fromLTRB(18, 18, 18, 10),
                 child: Row(
                   children: [
-                    MenuButtonLite(),
+                    Icon(
+                      Icons.menu,
+                      color: Color(0xFF202938),
+                      size: 28,
+                    ),
                     SizedBox(width: 16),
                     Expanded(
                       child: Text(
@@ -123,7 +127,7 @@ class _OrderSearchBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: const Color(0xFFE3E7ED)),
       ),
       child: const Row(
@@ -162,7 +166,7 @@ class _OrderActionChip extends StatelessWidget {
       height: 64,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: const Color(0xFFE3E7ED)),
       ),
       child: Column(
@@ -194,7 +198,7 @@ class _SalesMetricButton extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         color: const Color(0xFFF7F9FD),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: const Icon(
         Icons.bar_chart_rounded,
@@ -216,13 +220,13 @@ class _OrderCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: const Color(0xFFDCE7F6)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
-            blurRadius: 14,
-            offset: Offset(0, 4),
+            blurRadius: 6,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -235,7 +239,7 @@ class _OrderCard extends StatelessWidget {
                 height: 54,
                 decoration: BoxDecoration(
                   color: order.accentColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Icon(
                   Icons.shopping_bag_outlined,
@@ -282,7 +286,7 @@ class _OrderCard extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: order.statusBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   order.status,
@@ -299,7 +303,7 @@ class _OrderCard extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF7F9FD),
-                  borderRadius: BorderRadius.circular(21),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Icon(
                   order.isExpanded
@@ -316,7 +320,7 @@ class _OrderCard extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFFBFCFF),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(4),
                 border: Border.all(color: const Color(0xFFE4E8EF)),
               ),
               child: Column(
@@ -330,7 +334,7 @@ class _OrderCard extends StatelessWidget {
                           height: 40,
                           decoration: BoxDecoration(
                             color: const Color(0xFFF3F6FA),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Icon(
                             Icons.person_outline_rounded,
@@ -523,7 +527,7 @@ class _OrderCard extends StatelessWidget {
                           height: 42,
                           decoration: BoxDecoration(
                             color: const Color(0xFFEAF2FF),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Icon(
                             Icons.credit_card_rounded,

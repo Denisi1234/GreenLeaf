@@ -215,13 +215,13 @@ class _MarketNoticeCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(color: const Color(0xFFE5E7EB)),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x22000000),
-                blurRadius: 20,
-                offset: Offset(0, 8),
+                blurRadius: 6,
+                offset: Offset(0, 2),
               ),
             ],
           ),
@@ -232,7 +232,7 @@ class _MarketNoticeCard extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: iconBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Icon(icon, color: accent, size: 24),
               ),
@@ -291,18 +291,18 @@ class AnimatedCartToken extends StatelessWidget {
       padding: hasImage ? EdgeInsets.zero : EdgeInsets.all(compact ? 4 : 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 10 : 14),
+        borderRadius: BorderRadius.circular(4),
         boxShadow: const [
           BoxShadow(
             color: Color(0x18000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+            blurRadius: 5,
+            offset: Offset(0, 2),
           ),
         ],
       ),
       child: hasImage
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(compact ? 10 : 14),
+              borderRadius: BorderRadius.circular(4),
               child: Image.file(
                 File(imagePath!),
                 fit: BoxFit.cover,
@@ -529,7 +529,7 @@ class _DrawerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(4),
       onTap: () {
         Navigator.of(context).pop();
         if (!isSelected) {
@@ -545,7 +545,7 @@ class _DrawerTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFF1F6FF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
           children: [
@@ -554,7 +554,7 @@ class _DrawerTile extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: isSelected ? const Color(0xFFE8F0FF) : Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Icon(
                 item.icon,
@@ -589,7 +589,7 @@ class _LogoutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(4),
       onTap: () {
         Navigator.of(context).pop();
         showMarketNotice(
@@ -603,7 +603,7 @@ class _LogoutButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF4F2),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(4),
         ),
         child: const Row(
           children: [

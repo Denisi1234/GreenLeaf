@@ -92,7 +92,7 @@ class HelpSupportPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 18),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: const Color(0xFFE1E6EF)),
                     ),
                     child: const Row(
@@ -120,13 +120,13 @@ class HelpSupportPage extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: const Color(0xFFE7EBF0)),
                       boxShadow: const [
                         BoxShadow(
                           color: Color(0x0A000000),
-                          blurRadius: 14,
-                          offset: Offset(0, 4),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
@@ -153,13 +153,13 @@ class HelpSupportPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: const Color(0xFFE7EBF0)),
                       boxShadow: const [
                         BoxShadow(
                           color: Color(0x08000000),
-                          blurRadius: 12,
-                          offset: Offset(0, 4),
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
@@ -311,7 +311,7 @@ class _ShieldSupportIcon extends StatelessWidget {
       height: 64,
       decoration: BoxDecoration(
         color: const Color(0xFFF1F6FF),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: const Icon(
         Icons.shield_outlined,
@@ -380,8 +380,8 @@ class _HelpCenterNavItem extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: Color(0x331562E8),
-                blurRadius: 18,
-                offset: Offset(0, 8),
+                blurRadius: 6,
+                offset: Offset(0, 2),
               ),
             ],
           ),

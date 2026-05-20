@@ -371,7 +371,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                               child: Container(
                                 height: 74,
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(4),
                                   gradient: const LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -383,8 +383,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                                   boxShadow: const [
                                     BoxShadow(
                                       color: Color(0x291562E8),
-                                      blurRadius: 20,
-                                      offset: Offset(0, 8),
+                                      blurRadius: 6,
+                                      offset: Offset(0, 2),
                                     ),
                                   ],
                                 ),
@@ -539,7 +539,7 @@ class _StaffDropdownField extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: const Color(0xFFDDE2EA)),
       ),
       child: Row(
@@ -565,7 +565,7 @@ class _StaffDropdownField extends StatelessWidget {
                 ),
                 isExpanded: true,
                 dropdownColor: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(4),
                 style: const TextStyle(
                   color: Color(0xFF202938),
                   fontSize: 15.5,
@@ -591,7 +591,7 @@ class _StaffDropdownField extends StatelessWidget {
 
 OutlineInputBorder _staffInputBorder([Color color = const Color(0xFFDDE2EA)]) {
   return OutlineInputBorder(
-    borderRadius: BorderRadius.circular(18),
+    borderRadius: BorderRadius.circular(4),
     borderSide: BorderSide(color: color),
   );
 }

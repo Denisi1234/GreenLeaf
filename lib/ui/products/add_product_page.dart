@@ -218,13 +218,13 @@ class _AddProductPageState extends State<AddProductPage> {
                         padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: const Color(0xFFE8ECF1)),
                           boxShadow: const [
                             BoxShadow(
                               color: Color(0x10000000),
-                              blurRadius: 16,
-                              offset: Offset(0, 6),
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
                             ),
                           ],
                         ),
@@ -479,21 +479,21 @@ class _TextInputField extends StatelessWidget {
         filled: true,
         fillColor: Colors.white,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(4),
           borderSide: const BorderSide(color: Color(0xFFDCE2EA)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(4),
           borderSide:
               const BorderSide(color: Color(0xFF2B6FF3), width: 1.2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(4),
           borderSide:
               const BorderSide(color: Color(0xFFEF4444), width: 1.1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(4),
           borderSide:
               const BorderSide(color: Color(0xFFEF4444), width: 1.1),
         ),
@@ -520,16 +520,16 @@ class _DropdownInputField extends FormField<String> {
                 filled: true,
                 fillColor: Colors.white,
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(4),
                   borderSide: const BorderSide(color: Color(0xFFDCE2EA)),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(4),
                   borderSide:
                       const BorderSide(color: Color(0xFF2B6FF3), width: 1.2),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(4),
                   borderSide:
                       const BorderSide(color: Color(0xFFEF4444), width: 1.1),
                 ),
@@ -538,7 +538,7 @@ class _DropdownInputField extends FormField<String> {
                 child: DropdownButton<String>(
                   value: field.value,
                   isExpanded: true,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(4),
                   hint: Text(
                     hint,
                     style: const TextStyle(
@@ -594,14 +594,14 @@ class _UploadBox extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFFF9FBFF),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: const Color(0xFFC8D2E4),
         ),
       ),
       child: hasImage
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(4),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -711,7 +711,7 @@ class _ActionButton extends StatelessWidget {
         height: 64,
         decoration: BoxDecoration(
           color: isPrimary ? const Color(0xFF2B6FF3) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(
             color: isPrimary
                 ? const Color(0xFF2B6FF3)

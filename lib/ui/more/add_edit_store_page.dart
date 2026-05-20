@@ -253,7 +253,7 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: const Color(0xFFE2E7EF)),
                         ),
                         child: Column(
@@ -354,7 +354,7 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                                           minimumSize: const Size(0, 56),
                                           side: const BorderSide(color: Color(0xFF1562E8)),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(14),
+                                            borderRadius: BorderRadius.circular(4),
                                           ),
                                         ),
                                       ),
@@ -371,12 +371,12 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius: BorderRadius.circular(4),
                           boxShadow: const [
                             BoxShadow(
                               color: Color(0x0A000000),
-                              blurRadius: 14,
-                              offset: Offset(0, 4),
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
                             ),
                           ],
                         ),
@@ -453,12 +453,12 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius: BorderRadius.circular(4),
                           boxShadow: const [
                             BoxShadow(
                               color: Color(0x0A000000),
-                              blurRadius: 14,
-                              offset: Offset(0, 4),
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
                             ),
                           ],
                         ),
@@ -652,7 +652,7 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
                               ),
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -837,7 +837,7 @@ class _StoreDropdownField<T> extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: const Color(0xFFDDE2EA)),
       ),
       child: DropdownButtonHideUnderline(
@@ -881,7 +881,7 @@ class _StoreDropdownField<T> extends StatelessWidget {
 
 OutlineInputBorder _storeBorder([Color color = const Color(0xFFDDE2EA)]) {
   return OutlineInputBorder(
-    borderRadius: BorderRadius.circular(14),
+    borderRadius: BorderRadius.circular(4),
     borderSide: BorderSide(color: color),
   );
 }

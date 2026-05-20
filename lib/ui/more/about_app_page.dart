@@ -119,7 +119,7 @@ class AboutAppPage extends StatelessWidget {
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: const Color(0xFFE4E8EF)),
                       ),
                       child: Column(
@@ -237,7 +237,7 @@ class _PayPointLogo extends StatelessWidget {
                 height: 118,
                 decoration: BoxDecoration(
                   color: const Color(0xFF1554C8),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
@@ -252,7 +252,7 @@ class _PayPointLogo extends StatelessWidget {
                 height: 126,
                 decoration: BoxDecoration(
                   color: const Color(0xFF1554C8),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
@@ -268,12 +268,12 @@ class _PayPointLogo extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1554C8),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Center(
                     child: Container(
