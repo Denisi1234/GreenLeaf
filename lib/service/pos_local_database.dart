@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -18,7 +20,7 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE inventory_products (
@@ -90,6 +92,25 @@ class PosLocalDatabase {
             member_since TEXT NOT NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE staff_roles (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            subtitle TEXT NOT NULL,
+            permissions_json TEXT NOT NULL,
+            sort_order INTEGER NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE staff_members (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            role_id TEXT NOT NULL,
+            created_at TEXT NOT NULL
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -105,6 +126,27 @@ class PosLocalDatabase {
               physical_address TEXT NOT NULL,
               logo_path TEXT,
               member_since TEXT NOT NULL
+            )
+          ''');
+        }
+        if (oldVersion < 3) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS staff_roles (
+              id TEXT PRIMARY KEY,
+              title TEXT NOT NULL,
+              subtitle TEXT NOT NULL,
+              permissions_json TEXT NOT NULL,
+              sort_order INTEGER NOT NULL
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS staff_members (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              email TEXT NOT NULL,
+              phone TEXT NOT NULL,
+              role_id TEXT NOT NULL,
+              created_at TEXT NOT NULL
             )
           ''');
         }
@@ -126,6 +168,68 @@ class PosLocalDatabase {
       'app_profile',
       <String, Object?>{'id': 1, ...profile},
       conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<Map<String, Object?>>> loadStaffRoles() async {
+    final db = await database;
+    return db.query(
+      'staff_roles',
+      orderBy: 'sort_order ASC, title ASC',
+    );
+  }
+
+  Future<void> replaceStaffRoles(List<Map<String, Object?>> roles) async {
+    final db = await database;
+    final batch = db.batch();
+    batch.delete('staff_roles');
+    for (final role in roles) {
+      batch.insert(
+        'staff_roles',
+        role,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<Map<String, Object?>>> loadStaffMembers() async {
+    final db = await database;
+    return db.query(
+      'staff_members',
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<void> replaceStaffMembers(List<Map<String, Object?>> members) async {
+    final db = await database;
+    final batch = db.batch();
+    batch.delete('staff_members');
+    for (final member in members) {
+      batch.insert(
+        'staff_members',
+        member,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> saveStaffMember(Map<String, Object?> member) async {
+    final db = await database;
+    await db.insert(
+      'staff_members',
+      member,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> deleteStaffMember(String id) async {
+    final db = await database;
+    await db.delete(
+      'staff_members',
+      where: 'id = ?',
+      whereArgs: <Object?>[id],
     );
   }
 
@@ -320,5 +424,17 @@ class PosLocalDatabase {
       artType: ProductArtType.values.byName(map['art_type'] as String),
       imagePath: map['image_path'] as String?,
     );
+  }
+
+  String encodeJson(List<String> values) {
+    return jsonEncode(values);
+  }
+
+  List<String> decodeStringList(String value) {
+    final decoded = jsonDecode(value);
+    if (decoded is! List) {
+      return const <String>[];
+    }
+    return decoded.map((item) => item.toString()).toList();
   }
 }

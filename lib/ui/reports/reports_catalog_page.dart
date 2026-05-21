@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class ReportsCatalogPage extends StatelessWidget {
   const ReportsCatalogPage({super.key});
 
-  static const Color _ink = Color(0xFF1E2430);
+  static const Color _ink = AppColors.ink;
   static const Color _muted = Color(0xFF6C7483);
   static const Color _border = Color(0xFFE7EAF0);
   static const Color _blue = Color(0xFF2D6CEA);

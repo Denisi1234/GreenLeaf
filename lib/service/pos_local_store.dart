@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
@@ -101,6 +102,51 @@ const _seedInventory = <InventoryProductItem>[
   ),
 ];
 
+const _staffPermissionCatalog = <String>[
+  'View Sales',
+  'View Reports',
+  'Process Returns',
+  'Discounts',
+  'Manage Inventory',
+  'Manage Staff',
+  'Manage Payments',
+  'System Settings',
+];
+
+const _seedStaffRoles = <StaffRoleData>[
+  StaffRoleData(
+    id: 'role-admin',
+    title: 'Admin',
+    subtitle: 'Super full access',
+    permissions: _staffPermissionCatalog,
+    sortOrder: 0,
+  ),
+  StaffRoleData(
+    id: 'role-manager',
+    title: 'Manager',
+    subtitle: 'Store management access',
+    permissions: <String>[
+      'View Sales',
+      'View Reports',
+      'Process Returns',
+      'Discounts',
+      'Manage Inventory',
+      'Manage Staff',
+    ],
+    sortOrder: 1,
+  ),
+  StaffRoleData(
+    id: 'role-cashier',
+    title: 'Cashier',
+    subtitle: 'Limited access for front counter',
+    permissions: <String>[
+      'View Sales',
+      'Process Returns',
+    ],
+    sortOrder: 2,
+  ),
+];
+
 class AppProfileData {
   const AppProfileData({
     required this.storeName,
@@ -163,6 +209,88 @@ class AppProfileData {
   }
 }
 
+class StaffRoleData {
+  const StaffRoleData({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.permissions,
+    required this.sortOrder,
+  });
+
+  final String id;
+  final String title;
+  final String subtitle;
+  final List<String> permissions;
+  final int sortOrder;
+
+  StaffRoleData copyWith({
+    String? id,
+    String? title,
+    String? subtitle,
+    List<String>? permissions,
+    int? sortOrder,
+  }) {
+    return StaffRoleData(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      permissions: permissions ?? this.permissions,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+}
+
+class StaffMemberData {
+  const StaffMemberData({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.roleId,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String name;
+  final String email;
+  final String phone;
+  final String roleId;
+  final String createdAt;
+
+  String get initials {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return 'ST';
+    if (parts.length == 1) {
+      final value = parts.first;
+      return value.substring(0, value.length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+  }
+
+  StaffMemberData copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phone,
+    String? roleId,
+    String? createdAt,
+  }) {
+    return StaffMemberData(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      roleId: roleId ?? this.roleId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+}
+
 class PosLocalStore extends ChangeNotifier {
   PosLocalStore({PosLocalDatabase? database})
       : _database = database ?? PosLocalDatabase.instance;
@@ -173,6 +301,8 @@ class PosLocalStore extends ChangeNotifier {
   final List<ProductItem> _cartItems = <ProductItem>[];
   final List<CompletedOrder> _orders = <CompletedOrder>[];
   final List<InventoryProductItem> _allInventory = <InventoryProductItem>[];
+  final List<StaffRoleData> _staffRoles = <StaffRoleData>[];
+  final List<StaffMemberData> _staffMembers = <StaffMemberData>[];
   AppProfileData _profile = AppProfileData.empty();
 
   bool _isInitialized = false;
@@ -215,6 +345,25 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(await _database.loadOrders());
 
+    final storedRoles = await _database.loadStaffRoles();
+    if (storedRoles.isEmpty) {
+      _staffRoles
+        ..clear()
+        ..addAll(_seedStaffRoles);
+      await _database.replaceStaffRoles(
+        _staffRoles.map(_staffRoleToMap).toList(),
+      );
+    } else {
+      _staffRoles
+        ..clear()
+        ..addAll(storedRoles.map(_staffRoleFromMap));
+    }
+
+    final storedMembers = await _database.loadStaffMembers();
+    _staffMembers
+      ..clear()
+      ..addAll(storedMembers.map(_staffMemberFromMap));
+
     final storedProfile = await _database.loadAppProfile();
     _profile = storedProfile == null
         ? AppProfileData.empty()
@@ -239,6 +388,8 @@ class PosLocalStore extends ChangeNotifier {
   List<ProductItem> get cartItems => List.unmodifiable(_cartItems);
   List<CompletedOrder> get orders => List.unmodifiable(_orders);
   List<InventoryProductItem> get inventory => List.unmodifiable(_allInventory);
+  List<StaffRoleData> get staffRoles => List.unmodifiable(_staffRoles);
+  List<StaffMemberData> get staffMembers => List.unmodifiable(_staffMembers);
   AppProfileData get profile => _profile;
 
   int _cartCount = 0;
@@ -306,6 +457,23 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     unawaited(_database.replaceInventory(_allInventory));
     return product;
+  }
+
+  void updateProduct(InventoryProductItem product) {
+    final index = _allInventory.indexWhere((item) => item.code == product.code);
+    if (index != -1) {
+      _allInventory[index] = product;
+      _syncProductsFromInventory();
+      notifyListeners();
+      unawaited(_database.replaceInventory(_allInventory));
+    }
+  }
+
+  void removeProduct(String code) {
+    _allInventory.removeWhere((item) => item.code == code);
+    _syncProductsFromInventory();
+    notifyListeners();
+    unawaited(_database.replaceInventory(_allInventory));
   }
 
   Future<void> applyInventoryAdjustments(
@@ -451,6 +619,111 @@ class PosLocalStore extends ChangeNotifier {
     });
   }
 
+  StaffRoleData? staffRoleById(String roleId) {
+    for (final role in _staffRoles) {
+      if (role.id == roleId) return role;
+    }
+    return null;
+  }
+
+  StaffRoleData? staffRoleByTitle(String title) {
+    for (final role in _staffRoles) {
+      if (role.title == title) return role;
+    }
+    return null;
+  }
+
+  List<StaffMemberData> staffMembersForRole(String roleId) {
+    return _staffMembers.where((staff) => staff.roleId == roleId).toList();
+  }
+
+  Future<StaffRoleData> saveStaffRole(StaffRoleData role) async {
+    final existingIndex = _staffRoles.indexWhere((item) => item.id == role.id);
+    final nextRole = existingIndex == -1
+        ? role.copyWith(sortOrder: _staffRoles.length)
+        : role.copyWith(sortOrder: _staffRoles[existingIndex].sortOrder);
+    if (existingIndex == -1) {
+      _staffRoles.add(nextRole);
+    } else {
+      _staffRoles[existingIndex] = nextRole;
+    }
+    _staffRoles.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    notifyListeners();
+    await _database.replaceStaffRoles(
+      _staffRoles.map(_staffRoleToMap).toList(),
+    );
+    return nextRole;
+  }
+
+  Future<void> updateStaffRolePermissions(
+    String roleId,
+    List<String> permissions,
+  ) async {
+    final index = _staffRoles.indexWhere((role) => role.id == roleId);
+    if (index == -1) return;
+    _staffRoles[index] = _staffRoles[index].copyWith(
+      permissions: List<String>.from(permissions),
+    );
+    notifyListeners();
+    await _database.replaceStaffRoles(
+      _staffRoles.map(_staffRoleToMap).toList(),
+    );
+  }
+
+  Future<StaffMemberData> saveStaffMember(StaffMemberData staff) async {
+    final existingIndex =
+        _staffMembers.indexWhere((item) => item.id == staff.id);
+    final nextStaff = existingIndex == -1
+        ? staff
+        : staff.copyWith(createdAt: _staffMembers[existingIndex].createdAt);
+    if (existingIndex == -1) {
+      _staffMembers.insert(0, nextStaff);
+    } else {
+      _staffMembers[existingIndex] = nextStaff;
+    }
+    notifyListeners();
+    await _database.replaceStaffMembers(
+      _staffMembers.map(_staffMemberToMap).toList(),
+    );
+    return nextStaff;
+  }
+
+  Future<StaffMemberData> addStaffMember({
+    required String name,
+    required String email,
+    required String phone,
+    required String roleId,
+  }) async {
+    return saveStaffMember(
+      StaffMemberData(
+        id: 'staff-${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        email: email,
+        phone: phone,
+        roleId: roleId,
+        createdAt: DateTime.now().toIso8601String(),
+      ),
+    );
+  }
+
+  Future<void> updateStaffMemberRole(String staffId, String roleId) async {
+    final index = _staffMembers.indexWhere((staff) => staff.id == staffId);
+    if (index == -1) return;
+    _staffMembers[index] = _staffMembers[index].copyWith(roleId: roleId);
+    notifyListeners();
+    await _database.replaceStaffMembers(
+      _staffMembers.map(_staffMemberToMap).toList(),
+    );
+  }
+
+  Future<void> deleteStaffMember(String staffId) async {
+    _staffMembers.removeWhere((staff) => staff.id == staffId);
+    notifyListeners();
+    await _database.replaceStaffMembers(
+      _staffMembers.map(_staffMemberToMap).toList(),
+    );
+  }
+
   void _syncProductsFromInventory() {
     _products
       ..clear()
@@ -545,5 +818,49 @@ class PosLocalStore extends ChangeNotifier {
             : dateTime.hour;
     final suffix = dateTime.hour >= 12 ? 'PM' : 'AM';
     return '$hour:${dateTime.minute.toString().padLeft(2, '0')} $suffix';
+  }
+
+  Map<String, Object?> _staffRoleToMap(StaffRoleData role) {
+    return <String, Object?>{
+      'id': role.id,
+      'title': role.title,
+      'subtitle': role.subtitle,
+      'permissions_json': jsonEncode(role.permissions),
+      'sort_order': role.sortOrder,
+    };
+  }
+
+  StaffRoleData _staffRoleFromMap(Map<String, Object?> map) {
+    final permissions =
+        jsonDecode(map['permissions_json'] as String) as List<dynamic>;
+    return StaffRoleData(
+      id: map['id'] as String,
+      title: map['title'] as String,
+      subtitle: map['subtitle'] as String,
+      permissions: permissions.map((item) => item.toString()).toList(),
+      sortOrder: (map['sort_order'] as num).toInt(),
+    );
+  }
+
+  Map<String, Object?> _staffMemberToMap(StaffMemberData staff) {
+    return <String, Object?>{
+      'id': staff.id,
+      'name': staff.name,
+      'email': staff.email,
+      'phone': staff.phone,
+      'role_id': staff.roleId,
+      'created_at': staff.createdAt,
+    };
+  }
+
+  StaffMemberData _staffMemberFromMap(Map<String, Object?> map) {
+    return StaffMemberData(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      email: map['email'] as String,
+      phone: map['phone'] as String,
+      roleId: map['role_id'] as String,
+      createdAt: map['created_at'] as String,
+    );
   }
 }

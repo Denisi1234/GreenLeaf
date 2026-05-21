@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../widgets/app_design.dart';
 import '../models/product_item.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'inventory_product_item.dart';
@@ -13,9 +15,11 @@ class AddProductPage extends StatefulWidget {
   const AddProductPage({
     super.key,
     required this.nextCode,
+    this.product,
   });
 
   final String nextCode;
+  final InventoryProductItem? product;
 
   @override
   State<AddProductPage> createState() => _AddProductPageState();
@@ -23,10 +27,10 @@ class AddProductPage extends StatefulWidget {
 
 class _AddProductPageState extends State<AddProductPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _purchasePriceController = TextEditingController();
-  final _sellingPriceController = TextEditingController();
-  final _stockController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _purchasePriceController;
+  late final TextEditingController _sellingPriceController;
+  late final TextEditingController _stockController;
   final _imagePicker = ImagePicker();
 
   String? _selectedCategory;
@@ -41,6 +45,23 @@ class _AddProductPageState extends State<AddProductPage> {
     'Groceries',
     'Household',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.product?.name);
+    _purchasePriceController = TextEditingController(
+      text: widget.product?.purchasePrice.toStringAsFixed(0),
+    );
+    _sellingPriceController = TextEditingController(
+      text: widget.product?.sellingPrice.toStringAsFixed(0),
+    );
+    _stockController = TextEditingController(
+      text: widget.product?.stockCount.toString(),
+    );
+    _selectedCategory = widget.product?.category;
+    _selectedImagePath = widget.product?.imagePath;
+  }
 
   @override
   void dispose() {
@@ -68,17 +89,18 @@ class _AddProductPageState extends State<AddProductPage> {
     final stock = int.parse(_stockController.text.trim());
 
     final product = InventoryProductItem(
-      code: widget.nextCode,
+      code: widget.product?.code ?? widget.nextCode,
       name: _nameController.text.trim(),
       category: _selectedCategory!,
       purchasePrice: purchasePrice,
       sellingPrice: sellingPrice,
       stockCount: stock,
       stockState: _deriveStockState(stock),
-      artType: _deriveArtType(
-        _nameController.text.trim(),
-        _selectedCategory!,
-      ),
+      artType: widget.product?.artType ??
+          _deriveArtType(
+            _nameController.text.trim(),
+            _selectedCategory!,
+          ),
       imagePath: _selectedImagePath,
     );
 
@@ -170,205 +192,192 @@ class _AddProductPageState extends State<AddProductPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            const Positioned.fill(child: BackdropGlow()),
-            Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: const SizedBox(
-                          width: 42,
-                          height: 42,
-                          child: Icon(
-                            Icons.arrow_back_rounded,
-                            color: Color(0xFF202938),
-                            size: 30,
+    final baseTheme = Theme.of(context);
+    final interTheme = baseTheme.copyWith(
+      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+    );
+
+    return Theme(
+      data: interTheme,
+      child: Scaffold(
+        backgroundColor: AppColors.pageBackground,
+        body: Stack(
+        children: [
+          const Positioned.fill(child: BackdropGlow()),
+          Column(
+            children: [
+              MarketPageHeader(
+                title: widget.product == null ? 'Add Product' : 'Edit Product',
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 112),
+                  child: Form(
+                    key: _formKey,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.divider),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x0C0E1726),
+                            blurRadius: 5,
+                            offset: Offset(0, 2),
                           ),
-                        ),
+                        ],
                       ),
-                      const Expanded(
-                        child: Text(
-                          'Add New Product',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF111827),
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _FieldLabel(
+                            'Product Name',
+                            requiredField: true,
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 42),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1, color: Color(0xFFE6EAF0)),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 112),
-                    child: Form(
-                      key: _formKey,
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFFE8ECF1)),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x10000000),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const _FieldLabel('Product Name',
-                                requiredField: true),
-                            const SizedBox(height: 10),
-                            _TextInputField(
-                              controller: _nameController,
-                              hint: 'Enter product name',
-                              trailingIcon: Icons.sell_outlined,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Product name is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 22),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const _FieldLabel('Purchase Price',
-                                          requiredField: true),
-                                      const SizedBox(height: 10),
-                                      _TextInputField(
-                                        controller: _purchasePriceController,
-                                        hint: '0.00',
-                                        leadingText: 'TSH ',
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                          decimal: true,
-                                        ),
-                                        validator: _validateMoney,
+                          const SizedBox(height: 8),
+                          _TextInputField(
+                            controller: _nameController,
+                            hint: 'Enter product name',
+                            trailingIcon: Icons.sell_outlined,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Product name is required';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                      const _FieldLabel(
+                                        'Purchase Price',
+                                        requiredField: true,
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const _FieldLabel('Selling Price',
-                                          requiredField: true),
-                                      const SizedBox(height: 10),
-                                      _TextInputField(
-                                        controller: _sellingPriceController,
-                                        hint: '0.00',
-                                        leadingText: 'TSH ',
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                          decimal: true,
-                                        ),
-                                        validator: _validateMoney,
+                                    const SizedBox(height: 8),
+                                    _TextInputField(
+                                      controller: _purchasePriceController,
+                                      hint: '0.00',
+                                      leadingText: 'TSH ',
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                        decimal: true,
                                       ),
-                                    ],
-                                  ),
+                                      validator: _validateMoney,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 22),
-                            const _FieldLabel('Category', requiredField: true),
-                            const SizedBox(height: 10),
-                            _DropdownInputField(
-                              value: _selectedCategory,
-                              hint: 'Select category',
-                              items: _categories,
-                              onChanged: (value) {
-                                setState(() => _selectedCategory = value);
-                              },
-                              validator: (value) =>
-                                  value == null ? 'Category is required' : null,
-                            ),
-                            const SizedBox(height: 22),
-                            const _FieldLabel('Stock Quantity',
-                                requiredField: true),
-                            const SizedBox(height: 10),
-                            _TextInputField(
-                              controller: _stockController,
-                              hint: 'Enter stock quantity',
-                              trailingIcon: Icons.inventory_2_outlined,
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Stock quantity is required';
-                                }
-                                final parsed = int.tryParse(value.trim());
-                                if (parsed == null || parsed < 0) {
-                                  return 'Enter a valid stock quantity';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 24),
-                            const _FieldLabel('Product Image'),
-                            const SizedBox(height: 12),
-                            GestureDetector(
-                              onTap: _pickImage,
-                              child: _UploadBox(
-                                imagePath: _selectedImagePath,
                               ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                      const _FieldLabel(
+                                        'Selling Price',
+                                        requiredField: true,
+                                      ),
+                                    const SizedBox(height: 8),
+                                    _TextInputField(
+                                      controller: _sellingPriceController,
+                                      hint: '0.00',
+                                      leadingText: 'TSH ',
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                      validator: _validateMoney,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          const _FieldLabel('Category', requiredField: true),
+                          const SizedBox(height: 8),
+                          _DropdownInputField(
+                            value: _selectedCategory,
+                            hint: 'Select category',
+                            items: _categories,
+                            onChanged: (value) {
+                              setState(() => _selectedCategory = value);
+                            },
+                            validator: (value) =>
+                              value == null ? 'Category is required' : null,
+                          ),
+                          const SizedBox(height: 18),
+                          const _FieldLabel(
+                            'Stock Quantity',
+                            requiredField: true,
+                          ),
+                          const SizedBox(height: 8),
+                          _TextInputField(
+                            controller: _stockController,
+                            hint: 'Enter stock quantity',
+                            trailingIcon: Icons.inventory_2_outlined,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Stock quantity is required';
+                              }
+                              final parsed = int.tryParse(value.trim());
+                              if (parsed == null || parsed < 0) {
+                                return 'Enter a valid stock quantity';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          const _FieldLabel('Product Image'),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: _pickImage,
+                            child: _UploadBox(
+                              imagePath: _selectedImagePath,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ActionButton(
+                    label: 'Cancel',
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: _ActionButton(
+                    label: 'Save',
+                    icon: Icons.save_outlined,
+                    isPrimary: true,
+                    onTap: _saveProduct,
                   ),
                 ),
               ],
             ),
-            Positioned(
-              left: 18,
-              right: 18,
-              bottom: 18,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'Cancel',
-                      onTap: () => Navigator.of(context).pop(),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'Save',
-                      icon: Icons.save_outlined,
-                      isPrimary: true,
-                      onTap: _saveProduct,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
       ),
     );
   }
@@ -398,9 +407,9 @@ class _FieldLabel extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Color(0xFF2B3343),
-            fontSize: 14.5,
-            fontWeight: FontWeight.w700,
+            color: Color(0xFF7B8598),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
           ),
         ),
         if (requiredField)
@@ -408,7 +417,7 @@ class _FieldLabel extends StatelessWidget {
             ' *',
             style: TextStyle(
               color: Color(0xFFEF4444),
-              fontSize: 14.5,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -441,15 +450,15 @@ class _TextInputField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       style: const TextStyle(
-        color: Color(0xFF202938),
+        color: Color(0xFF33363F),
         fontSize: 14,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(
-          color: Color(0xFFB0B7C3),
-          fontSize: 13.8,
+          color: Color(0xFF8A93A7),
+          fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
         prefixIcon: leadingText != null
@@ -458,8 +467,8 @@ class _TextInputField extends StatelessWidget {
                 child: Text(
                   leadingText!,
                   style: const TextStyle(
-                    color: Color(0xFF4B5563),
-                    fontSize: 16,
+                    color: Color(0xFF7B8598),
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -470,32 +479,29 @@ class _TextInputField extends StatelessWidget {
         suffixIcon: trailingIcon != null
             ? Icon(
                 trailingIcon,
-                color: const Color(0xFF7F8898),
-                size: 24,
+                color: const Color(0xFF5B8CFF),
+                size: 20,
               )
             : null,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Colors.white.withValues(alpha: 0.92),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Color(0xFFDCE2EA)),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFE7EAF0)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide:
-              const BorderSide(color: Color(0xFF2B6FF3), width: 1.2),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF5B8CFF), width: 1.2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide:
-              const BorderSide(color: Color(0xFFEF4444), width: 1.1),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide:
-              const BorderSide(color: Color(0xFFEF4444), width: 1.1),
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.1),
         ),
       ),
     );
@@ -516,20 +522,20 @@ class _DropdownInputField extends FormField<String> {
             return InputDecorator(
               decoration: InputDecoration(
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Colors.white.withValues(alpha: 0.92),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
-                  borderSide: const BorderSide(color: Color(0xFFDCE2EA)),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFE7EAF0)),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(8),
                   borderSide:
-                      const BorderSide(color: Color(0xFF2B6FF3), width: 1.2),
+                      const BorderSide(color: Color(0xFF5B8CFF), width: 1.2),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(8),
                   borderSide:
                       const BorderSide(color: Color(0xFFEF4444), width: 1.1),
                 ),
@@ -538,18 +544,18 @@ class _DropdownInputField extends FormField<String> {
                 child: DropdownButton<String>(
                   value: field.value,
                   isExpanded: true,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(8),
                   hint: Text(
                     hint,
                     style: const TextStyle(
-                      color: Color(0xFFB0B7C3),
-                      fontSize: 13.8,
+                      color: Color(0xFF8A93A7),
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   icon: const Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xFF7F8898),
+                    color: Color(0xFF5B8CFF),
                     size: 24,
                   ),
                   items: items
@@ -559,7 +565,7 @@ class _DropdownInputField extends FormField<String> {
                           child: Text(
                             item,
                             style: const TextStyle(
-                              color: Color(0xFF202938),
+                              color: Color(0xFF33363F),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -593,15 +599,20 @@ class _UploadBox extends StatelessWidget {
       height: 206,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FBFF),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: const Color(0xFFC8D2E4),
-        ),
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE7EAF0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0C0E1726),
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: hasImage
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(8),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -618,7 +629,7 @@ class _UploadBox extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.92),
+                        color: Colors.white.withValues(alpha: 0.96),
                         borderRadius: BorderRadius.circular(99),
                       ),
                       child: const Row(
@@ -650,10 +661,10 @@ class _UploadBox extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 34,
-                  backgroundColor: Color(0xFFEAF0FF),
+                  backgroundColor: Color(0xFFEAF3FF),
                   child: Icon(
                     Icons.photo_camera_outlined,
-                    color: Color(0xFF4169E1),
+                    color: Color(0xFF5B8CFF),
                     size: 32,
                   ),
                 ),
@@ -661,16 +672,16 @@ class _UploadBox extends StatelessWidget {
                 Text(
                   'Upload product image',
                   style: TextStyle(
-                    color: Color(0xFF2B3343),
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF33363F),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 SizedBox(height: 8),
                 Text(
                   'Tap to choose image from gallery',
                   style: TextStyle(
-                    color: Color(0xFF6B7280),
+                    color: Color(0xFF7B8598),
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                   ),
@@ -679,7 +690,7 @@ class _UploadBox extends StatelessWidget {
                 Text(
                   'JPG, PNG up to 5MB',
                   style: TextStyle(
-                    color: Color(0xFF9AA3B2),
+                    color: Color(0xFF8A93A7),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -710,19 +721,21 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         height: 64,
         decoration: BoxDecoration(
-          color: isPrimary ? const Color(0xFF2B6FF3) : Colors.white,
-          borderRadius: BorderRadius.circular(4),
+          color: isPrimary
+              ? const Color(0xFF5B8CFF)
+              : Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isPrimary
-                ? const Color(0xFF2B6FF3)
-                : const Color(0xFFCCD4E0),
+                ? const Color(0xFF5B8CFF)
+                : const Color(0xFFE7EAF0),
           ),
           boxShadow: isPrimary
               ? const [
                   BoxShadow(
-                    color: Color(0x222B6FF3),
-                    blurRadius: 16,
-                    offset: Offset(0, 6),
+                    color: Color(0x225B8CFF),
+                    blurRadius: 14,
+                    offset: Offset(0, 5),
                   ),
                 ]
               : null,
@@ -741,8 +754,8 @@ class _ActionButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isPrimary ? Colors.white : const Color(0xFF111827),
-                fontSize: 16,
+                color: isPrimary ? Colors.white : AppColors.ink,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
             ),

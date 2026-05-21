@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../service/pos_order_models.dart';
+import '../widgets/app_design.dart';
 import 'receipt_preview_page.dart';
 
 class ReceiptSuccessPage extends StatelessWidget {
@@ -83,7 +84,7 @@ class ReceiptSuccessPage extends StatelessWidget {
                     Text(
                       'TSH${_amount(order.total)}',
                       style: const TextStyle(
-                        color: Colors.black87,
+                        color: AppColors.ink,
                         fontSize: 28,
                         fontWeight: FontWeight.w500,
                       ),
@@ -95,7 +96,7 @@ class ReceiptSuccessPage extends StatelessWidget {
                           child: Text(
                             'RECEIPT ID: ${order.id}',
                             style: const TextStyle(
-                              color: Colors.black87,
+                              color: AppColors.ink,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -104,7 +105,7 @@ class ReceiptSuccessPage extends StatelessWidget {
                         Text(
                           'ITEM COUNT: $_itemCount',
                           style: const TextStyle(
-                            color: Colors.black87,
+                            color: AppColors.ink,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),

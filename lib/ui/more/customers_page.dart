@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'create_customer_page.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'create_customer_page.dart';
 
 class CustomersPage extends StatelessWidget {
   const CustomersPage({super.key});
@@ -50,164 +51,130 @@ class CustomersPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: const SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: Icon(
-                            Icons.chevron_left_rounded,
-                            color: Color(0xFF1E273A),
-                            size: 30,
-                          ),
-                        ),
-                      ),
-                      const Expanded(
-                        child: Text(
-                          'Customers',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF1E273A),
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) => const CreateCustomerPage(),
-                          ),
-                        ),
-                        child: const SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: Icon(
-                            Icons.person_add_alt_1_rounded,
-                            color: Color(0xFF1E273A),
-                            size: 26,
-                          ),
-                        ),
-                      ),
-                    ],
+            MarketPageHeader(
+              title: 'Customers',
+              actions: [
+                IconButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const CreateCustomerPage(),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 6, 18, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 56,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFDDE2EA)),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(
-                                Icons.search_rounded,
-                                color: Color(0xFF7A8393),
-                                size: 28,
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Search customers...',
-                                  style: TextStyle(
-                                    color: Color(0xFFABB2BF),
-                                    fontSize: 15.2,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () => showMarketNotice(
-                          context,
-                          title: 'Filter',
-                          message: 'Customer filters can be connected next',
-                        ),
-                        child: Container(
-                          height: 56,
-                          width: 56,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFDDE2EA)),
-                          ),
-                          child: const Icon(
-                            Icons.tune_rounded,
-                            color: Color(0xFF1E273A),
-                            size: 26,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFD),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE2E7EF)),
-                        ),
-                        child: const Row(
-                          children: [
-                            Expanded(
-                              child: _CustomerStat(
-                                label: 'Total Customers',
-                                value: '1,248',
-                              ),
-                            ),
-                            _StatDivider(),
-                            Expanded(
-                              child: _CustomerStat(
-                                label: 'VIP Customers',
-                                value: '84',
-                              ),
-                            ),
-                            _StatDivider(),
-                            Expanded(
-                              child: _CustomerStat(
-                                label: 'New This Month',
-                                value: '37',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      ..._customers.map(
-                        (customer) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _CustomerCard(customer: customer),
-                        ),
-                      ),
-                    ],
+                  icon: const Icon(
+                    Icons.person_add_alt_1_rounded,
+                    color: AppColors.ink,
+                    size: 26,
                   ),
                 ),
               ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFDDE2EA)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.search_rounded,
+                            color: Color(0xFF7A8393),
+                            size: 28,
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Search customers...',
+                              style: TextStyle(
+                                color: Color(0xFFABB2BF),
+                                fontSize: 15.2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () => showMarketNotice(
+                      context,
+                      title: 'Filter',
+                      message: 'Customer filters can be connected next',
+                    ),
+                    child: Container(
+                      height: 56,
+                      width: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFDDE2EA)),
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: Color(0xFF1E273A),
+                        size: 26,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFD),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE2E7EF)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Expanded(
+                          child: _CustomerStat(
+                            label: 'Total Customers',
+                            value: '1,248',
+                          ),
+                        ),
+                        _StatDivider(),
+                        Expanded(
+                          child: _CustomerStat(
+                            label: 'VIP Customers',
+                            value: '84',
+                          ),
+                        ),
+                        _StatDivider(),
+                        Expanded(
+                          child: _CustomerStat(
+                            label: 'New This Month',
+                            value: '37',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ..._customers.map(
+                    (customer) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _CustomerCard(customer: customer),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -260,7 +227,7 @@ class _CustomerCard extends StatelessWidget {
                   customer.name,
                   style: const TextStyle(
                     color: Color(0xFF1E273A),
-                    fontSize: 15.5,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -268,18 +235,16 @@ class _CustomerCard extends StatelessWidget {
                 Text(
                   customer.email,
                   style: const TextStyle(
-                    color: Color(0xFF667085),
+                    color: Color(0xFF717B8C),
                     fontSize: 13.2,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   customer.phone,
                   style: const TextStyle(
-                    color: Color(0xFF8A93A3),
-                    fontSize: 12.8,
-                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF717B8C),
+                    fontSize: 13.2,
                   ),
                 ),
               ],
@@ -288,27 +253,22 @@ class _CustomerCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF2FF),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  customer.statusLabel,
-                  style: const TextStyle(
-                    color: Color(0xFF2B5FCE),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
+              _StatusChip(label: customer.statusLabel),
+              const SizedBox(height: 10),
+              Text(
+                customer.totalOrders,
+                style: const TextStyle(
+                  color: Color(0xFF1E273A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 12),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF667085),
-                size: 28,
+              Text(
+                customer.totalSpent,
+                style: const TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontSize: 12.8,
+                ),
               ),
             ],
           ),
@@ -319,10 +279,7 @@ class _CustomerCard extends StatelessWidget {
 }
 
 class _CustomerStat extends StatelessWidget {
-  const _CustomerStat({
-    required this.label,
-    required this.value,
-  });
+  const _CustomerStat({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -333,20 +290,20 @@ class _CustomerStat extends StatelessWidget {
       children: [
         Text(
           value,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             color: Color(0xFF1E273A),
             fontSize: 18,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           label,
           textAlign: TextAlign.center,
           style: const TextStyle(
-            color: Color(0xFF667085),
-            fontSize: 13.2,
-            fontWeight: FontWeight.w500,
+            color: Color(0xFF6B7280),
+            fontSize: 12.5,
           ),
         ),
       ],
@@ -361,9 +318,45 @@ class _StatDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 1,
-      height: 52,
+      height: 34,
       margin: const EdgeInsets.symmetric(horizontal: 10),
       color: const Color(0xFFE2E7EF),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final background = switch (label) {
+      'VIP' => const Color(0xFFE8F4FF),
+      'New' => const Color(0xFFF3EAFE),
+      _ => const Color(0xFFEAF7EE),
+    };
+    final foreground = switch (label) {
+      'VIP' => const Color(0xFF2B5FCE),
+      'New' => const Color(0xFF7A4BD8),
+      _ => const Color(0xFF2D6B42),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: foreground,
+          fontSize: 12.2,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
@@ -388,8 +381,11 @@ class _CustomerItem {
   final Color avatarColor;
 
   String get initials {
-    final parts = name.split(' ').where((part) => part.isNotEmpty).toList();
-    if (parts.isEmpty) return '?';
-    return parts.take(2).map((part) => part[0].toUpperCase()).join();
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts.first.substring(0, 1)}${parts[1].substring(0, 1)}'
+          .toUpperCase();
+    }
+    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
   }
 }

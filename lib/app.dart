@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'ui/shell/app_shell.dart';
 import 'ui/widgets/app_design.dart';
@@ -19,8 +20,8 @@ class App extends StatelessWidget {
       title: 'GreenLeaf Market',
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'Roboto',
-        textTheme: baseTextTheme.copyWith(
+        fontFamily: GoogleFonts.inter().fontFamily,
+        textTheme: GoogleFonts.interTextTheme(baseTextTheme).copyWith(
           bodyLarge: baseTextTheme.bodyLarge?.copyWith(letterSpacing: 0),
           bodyMedium: baseTextTheme.bodyMedium?.copyWith(letterSpacing: 0),
           bodySmall: baseTextTheme.bodySmall?.copyWith(letterSpacing: 0),

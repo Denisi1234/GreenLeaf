@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/market_shared_widgets.dart';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
-import '../widgets/market_shared_widgets.dart';
 
 class AboutAppPage extends StatelessWidget {
   const AboutAppPage({super.key});
@@ -17,127 +17,88 @@ class AboutAppPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFD),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE7EAF0)),
-                ),
-              ),
-              child: Row(
+      body: Column(
+        children: [
+          const MarketPageHeader(title: 'App Info'),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+              child: Column(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const SizedBox(
-                      width: 38,
-                      height: 38,
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Color(0xFF1E273A),
-                        size: 26,
-                      ),
+                  const Text(
+                    'Green Leaf',
+                    style: TextStyle(
+                      color: Color(0xFF1554C8),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
                     ),
                   ),
-                  const Expanded(
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Version 2.4.1',
+                    style: TextStyle(
+                      color: Color(0xFF3D4B67),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
-                      'App Info',
+                      'Green Leaf helps businesses manage sales, records, and daily operations with confidence anytime, anywhere.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(0xFF1E273A),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF3D4B67),
+                        fontSize: 16,
+                        height: 1.9,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 38),
+                  const SizedBox(height: 18),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFFE4E8EF)),
+                    ),
+                    child: Column(
+                      children: [
+                        ...items.asMap().entries.map(
+                          (entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+                            return Column(
+                              children: [
+                                _AboutTile(item: item),
+                                if (index != items.length - 1)
+                                  const Divider(
+                                    height: 1,
+                                    color: Color(0xFFE7EBF0),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  const Text(
+                    '© 2026 Green Leaf. All rights reserved.',
+                    style: TextStyle(
+                      color: Color(0xFF6F7887),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Green Leaf',
-                      style: TextStyle(
-                        color: Color(0xFF1554C8),
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Version 2.4.1',
-                      style: TextStyle(
-                        color: Color(0xFF3D4B67),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        'Green Leaf helps businesses manage sales, records, and daily operations with confidence anytime, anywhere.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFF3D4B67),
-                          fontSize: 16,
-                          height: 1.9,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: const Color(0xFFE4E8EF)),
-                      ),
-                      child: Column(
-                        children: [
-                          ...items.asMap().entries.map(
-                            (entry) {
-                              final index = entry.key;
-                              final item = entry.value;
-                              return Column(
-                                children: [
-                                  _AboutTile(item: item),
-                                  if (index != items.length - 1)
-                                    const Divider(
-                                      height: 1,
-                                      color: Color(0xFFE7EBF0),
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    const Text(
-                      '© 2026 Green Leaf. All rights reserved.',
-                      style: TextStyle(
-                        color: Color(0xFF6F7887),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -190,10 +151,9 @@ class _AboutTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
         child: Row(
           children: [
-            Container(
+            SizedBox(
               width: 46,
               height: 46,
-              alignment: Alignment.center,
               child: Icon(
                 item.icon,
                 color: const Color(0xFF1554C8),

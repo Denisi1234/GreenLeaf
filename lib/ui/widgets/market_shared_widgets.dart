@@ -149,6 +149,161 @@ enum MarketNoticeType {
   warning,
 }
 
+class MarketPageHeader extends StatelessWidget {
+  const MarketPageHeader({
+    super.key,
+    required this.title,
+    this.showBackButton = true,
+    this.actions,
+    this.isGradient = false,
+  });
+
+  final String title;
+  final bool showBackButton;
+  final List<Widget>? actions;
+  final bool isGradient;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
+      decoration: BoxDecoration(
+        color: isGradient ? null : Colors.white,
+        gradient: isGradient
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
+              )
+            : null,
+        borderRadius: isGradient
+            ? const BorderRadius.vertical(bottom: Radius.circular(28))
+            : null,
+        border: isGradient
+            ? null
+            : const Border(bottom: BorderSide(color: AppColors.divider)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            if (showBackButton)
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isGradient ? Colors.white.withOpacity(0.15) : Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isGradient ? Colors.white.withOpacity(0.2) : AppColors.border,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: isGradient ? Colors.white : AppColors.ink,
+                    size: 20,
+                  ),
+                ),
+              )
+            else
+              const SizedBox(width: 40),
+            Expanded(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isGradient ? Colors.white : AppColors.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+            if (actions != null)
+              Row(mainAxisSize: MainAxisSize.min, children: actions!)
+            else
+              const SizedBox(width: 40),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MarketButton extends StatelessWidget {
+  const MarketButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.isPrimary = true,
+    this.isFullWidth = true,
+    this.color,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final IconData? icon;
+  final bool isPrimary;
+  final bool isFullWidth;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = color ?? (isPrimary ? AppColors.primary : Colors.white);
+    
+    final button = GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          color: effectiveColor,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
+          border: isPrimary ? null : Border.all(color: AppColors.border),
+          boxShadow: isPrimary
+              ? [
+                  BoxShadow(
+                    color: effectiveColor.withOpacity(0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                color: isPrimary ? Colors.white : AppColors.ink,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isPrimary ? Colors.white : AppColors.ink,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (isFullWidth) return button;
+    return Center(child: button);
+  }
+}
+
 void showMarketNotice(
   BuildContext context, {
   required String title,

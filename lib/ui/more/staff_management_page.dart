@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'add_edit_staff_page.dart';
+import '../../service/pos_local_store.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'add_edit_staff_page.dart';
 
 class StaffManagementPage extends StatefulWidget {
   const StaffManagementPage({super.key});
@@ -11,153 +13,50 @@ class StaffManagementPage extends StatefulWidget {
 }
 
 class _StaffManagementPageState extends State<StaffManagementPage> {
-  static const _roles = <_StaffRoleCardData>[
-    _StaffRoleCardData(
-      title: 'Admin',
-      subtitle: 'Super full access',
-      icon: Icons.workspace_premium_outlined,
-      iconBackground: Color(0xFFEAF1FF),
-      iconColor: Color(0xFF2B4E93),
-    ),
-    _StaffRoleCardData(
-      title: 'Manager',
-      subtitle: 'Store management access',
-      icon: Icons.work_outline_rounded,
-      iconBackground: Color(0xFFEAF7EE),
-      iconColor: Color(0xFF2D6B42),
-    ),
-    _StaffRoleCardData(
-      title: 'Cashier',
-      subtitle: 'Limited access for front counter',
-      icon: Icons.point_of_sale_outlined,
-      iconBackground: Color(0xFFFFF4D9),
-      iconColor: Color(0xFF8D6A12),
-    ),
+  String? _expandedRoleId;
+
+  static const List<String> _permissionCatalog = <String>[
+    'View Sales',
+    'View Reports',
+    'Process Returns',
+    'Discounts',
+    'Manage Inventory',
+    'Manage Staff',
+    'Manage Payments',
+    'System Settings',
   ];
 
-  static const _permissions = <_PermissionData>[
-    _PermissionData('View Sales', Icons.sell_outlined),
-    _PermissionData('View Reports', Icons.description_outlined),
-    _PermissionData('Process Returns', Icons.shopping_cart_outlined),
-    _PermissionData('Discounts', Icons.local_offer_outlined),
-    _PermissionData('Manage Inventory', Icons.inventory_2_outlined),
-    _PermissionData('Manage Staff', Icons.groups_outlined),
-    _PermissionData('Manage Payments', Icons.credit_card_outlined),
-    _PermissionData('System Settings', Icons.settings_outlined),
-  ];
-
-  static const _assignedStaff = <_AssignedStaffData>[
-    _AssignedStaffData(
-      name: 'Emma Johnson',
-      email: 'emma.johnson@example.com',
-      initials: 'EJ',
-      avatarBackground: Color(0xFFF2D9D2),
-    ),
-    _AssignedStaffData(
-      name: 'Liam Smith',
-      email: 'liam.smith@example.com',
-      initials: 'LS',
-      avatarBackground: Color(0xFFD9E8F7),
-    ),
-  ];
-
-  late final List<bool> _checkedPermissions = List<bool>.filled(
-    _permissions.length,
-    false,
-  );
-
-  int _expandedIndex = -1;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkedPermissions[0] = true;
-    _checkedPermissions[1] = true;
-    _checkedPermissions[2] = true;
-    _checkedPermissions[4] = true;
-  }
-
-  void _toggleExpanded(int index) {
+  void _toggleExpanded(String roleId) {
     setState(() {
-      _expandedIndex = _expandedIndex == index ? -1 : index;
+      _expandedRoleId = _expandedRoleId == roleId ? null : roleId;
     });
   }
 
   void _showAddRole() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => const AddEditStaffPage(),
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _AddRoleSheet(
+        permissionCatalog: _permissionCatalog,
       ),
     );
   }
 
-  void _showManageStaff() {
+  Future<void> _showManageStaff(StaffRoleData role) async {
     showModalBottomSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Manage Staff',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2A44),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Select staff members to assign to this role:',
-              style: TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
-            ),
-            const SizedBox(height: 24),
-            _StaffAssignmentTile(
-              name: 'Emma Johnson',
-              email: 'emma.johnson@example.com',
-              assigned: true,
-            ),
-            _StaffAssignmentTile(
-              name: 'Liam Smith',
-              email: 'liam.smith@example.com',
-              assigned: true,
-            ),
-            _StaffAssignmentTile(
-              name: 'Noah Williams',
-              email: 'noah.williams@example.com',
-              assigned: false,
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2B5FCE),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Update Assignments',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ManageStaffSheet(role: role),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    final roles = store.staffRoles;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -249,24 +148,56 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
                 child: Column(
                   children: [
-                    for (var index = 0; index < _roles.length; index++)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _RoleCard(
-                          data: _roles[index],
-                          isExpanded: _expandedIndex == index,
-                          permissions: _permissions,
-                          checkedPermissions: _checkedPermissions,
-                          assignedStaff: _assignedStaff,
-                          onToggle: () => _toggleExpanded(index),
-                          onPermissionChanged: (permissionIndex, value) {
-                            setState(() {
-                              _checkedPermissions[permissionIndex] = value;
-                            });
-                          },
-                          onManageStaff: _showManageStaff,
+                    if (roles.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE1E5EC)),
                         ),
-                      ),
+                        child: const Text(
+                          'No roles available yet. Add a role to start managing permissions.',
+                          style: TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontSize: 14.5,
+                            height: 1.35,
+                          ),
+                        ),
+                      )
+                    else
+                      for (var index = 0; index < roles.length; index++)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _RoleCard(
+                            role: roles[index],
+                            visual: _visualForRole(roles[index]),
+                            isExpanded: _expandedRoleId == roles[index].id,
+                            permissions: roles[index].permissions,
+                            checkedPermissions:
+                                roles[index].permissions.toSet(),
+                            assignedStaff: store.staffMembersForRole(
+                              roles[index].id,
+                            ),
+                            onToggle: () => _toggleExpanded(roles[index].id),
+                            onPermissionChanged: (permission, value) {
+                              final current = roles[index].permissions.toSet();
+                              if (value) {
+                                current.add(permission);
+                              } else {
+                                current.remove(permission);
+                              }
+                              context
+                                  .read<PosLocalStore>()
+                                  .updateStaffRolePermissions(
+                                    roles[index].id,
+                                    current.toList(),
+                                  );
+                            },
+                            onManageStaff: () => _showManageStaff(roles[index]),
+                          ),
+                        ),
                     const SizedBox(height: 6),
                   ],
                 ),
@@ -277,11 +208,41 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
       ),
     );
   }
+
+  _StaffRoleVisual _visualForRole(StaffRoleData role) {
+    switch (role.title.toLowerCase()) {
+      case 'admin':
+        return const _StaffRoleVisual(
+          icon: Icons.workspace_premium_outlined,
+          background: Color(0xFFEAF1FF),
+          color: Color(0xFF2B4E93),
+        );
+      case 'manager':
+        return const _StaffRoleVisual(
+          icon: Icons.work_outline_rounded,
+          background: Color(0xFFEAF7EE),
+          color: Color(0xFF2D6B42),
+        );
+      case 'cashier':
+        return const _StaffRoleVisual(
+          icon: Icons.point_of_sale_outlined,
+          background: Color(0xFFFFF4D9),
+          color: Color(0xFF8D6A12),
+        );
+      default:
+        return const _StaffRoleVisual(
+          icon: Icons.groups_outlined,
+          background: Color(0xFFEFEAFF),
+          color: Color(0xFF5A4DB2),
+        );
+    }
+  }
 }
 
 class _RoleCard extends StatelessWidget {
   const _RoleCard({
-    required this.data,
+    required this.role,
+    required this.visual,
     required this.isExpanded,
     required this.permissions,
     required this.checkedPermissions,
@@ -291,13 +252,14 @@ class _RoleCard extends StatelessWidget {
     required this.onManageStaff,
   });
 
-  final _StaffRoleCardData data;
+  final StaffRoleData role;
+  final _StaffRoleVisual visual;
   final bool isExpanded;
-  final List<_PermissionData> permissions;
-  final List<bool> checkedPermissions;
-  final List<_AssignedStaffData> assignedStaff;
+  final List<String> permissions;
+  final Set<String> checkedPermissions;
+  final List<StaffMemberData> assignedStaff;
   final VoidCallback onToggle;
-  final void Function(int permissionIndex, bool value) onPermissionChanged;
+  final void Function(String permission, bool value) onPermissionChanged;
   final VoidCallback onManageStaff;
 
   @override
@@ -328,14 +290,10 @@ class _RoleCard extends StatelessWidget {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: data.iconBackground,
+                      color: visual.background,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      data.icon,
-                      color: data.iconColor,
-                      size: 30,
-                    ),
+                    child: Icon(visual.icon, color: visual.color, size: 30),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -343,7 +301,7 @@ class _RoleCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          data.title,
+                          role.title,
                           style: const TextStyle(
                             color: Color(0xFF1F2A44),
                             fontSize: 17.5,
@@ -353,7 +311,7 @@ class _RoleCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          data.subtitle,
+                          role.subtitle,
                           style: const TextStyle(
                             color: Color(0xFF697385),
                             fontSize: 13.8,
@@ -404,10 +362,10 @@ class _ExpandedRoleContent extends StatelessWidget {
     required this.onManageStaff,
   });
 
-  final List<_PermissionData> permissions;
-  final List<bool> checkedPermissions;
-  final List<_AssignedStaffData> assignedStaff;
-  final void Function(int permissionIndex, bool value) onPermissionChanged;
+  final List<String> permissions;
+  final Set<String> checkedPermissions;
+  final List<StaffMemberData> assignedStaff;
+  final void Function(String permission, bool value) onPermissionChanged;
   final VoidCallback onManageStaff;
 
   @override
@@ -440,11 +398,12 @@ class _ExpandedRoleContent extends StatelessWidget {
               mainAxisSpacing: 12,
             ),
             itemBuilder: (context, index) {
+              final permission = permissions[index];
               return _PermissionTile(
-                data: permissions[index],
-                checked: checkedPermissions[index],
+                data: _permissionData(permission),
+                checked: checkedPermissions.contains(permission),
                 onChanged: (value) {
-                  onPermissionChanged(index, value ?? false);
+                  onPermissionChanged(permission, value ?? false);
                 },
               );
             },
@@ -456,7 +415,7 @@ class _ExpandedRoleContent extends StatelessWidget {
             children: [
               const Expanded(
                 child: Text(
-                  'Assigned Staff (2)',
+                  'Assigned Staff',
                   style: TextStyle(
                     color: Color(0xFF1F2A44),
                     fontSize: 16.5,
@@ -478,17 +437,70 @@ class _ExpandedRoleContent extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          ...assignedStaff.map(
-            (staff) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _AssignedStaffTile(data: staff),
+          if (assignedStaff.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7FAFF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE4EBF7)),
+              ),
+              child: const Text(
+                'No staff assigned yet.',
+                style: TextStyle(
+                  color: Color(0xFF5C667A),
+                  fontSize: 13.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            )
+          else
+            ...assignedStaff.map(
+              (staff) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _AssignedStaffTile(data: staff),
+              ),
             ),
-          ),
           const SizedBox(height: 2),
           const _PermissionNote(),
         ],
       ),
     );
+  }
+
+  _PermissionData _permissionData(String label) {
+    switch (label) {
+      case 'View Sales':
+        return const _PermissionData('View Sales', Icons.sell_outlined);
+      case 'View Reports':
+        return const _PermissionData(
+            'View Reports', Icons.description_outlined);
+      case 'Process Returns':
+        return const _PermissionData(
+          'Process Returns',
+          Icons.shopping_cart_outlined,
+        );
+      case 'Discounts':
+        return const _PermissionData('Discounts', Icons.local_offer_outlined);
+      case 'Manage Inventory':
+        return const _PermissionData(
+          'Manage Inventory',
+          Icons.inventory_2_outlined,
+        );
+      case 'Manage Staff':
+        return const _PermissionData('Manage Staff', Icons.groups_outlined);
+      case 'Manage Payments':
+        return const _PermissionData(
+          'Manage Payments',
+          Icons.credit_card_outlined,
+        );
+      case 'System Settings':
+      default:
+        return const _PermissionData(
+            'System Settings', Icons.settings_outlined);
+    }
   }
 }
 
@@ -549,10 +561,11 @@ class _PermissionTile extends StatelessWidget {
 class _AssignedStaffTile extends StatelessWidget {
   const _AssignedStaffTile({required this.data});
 
-  final _AssignedStaffData data;
+  final StaffMemberData data;
 
   @override
   Widget build(BuildContext context) {
+    final avatarColor = _avatarColorForName(data.name);
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
       decoration: BoxDecoration(
@@ -564,7 +577,7 @@ class _AssignedStaffTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 25,
-            backgroundColor: data.avatarBackground,
+            backgroundColor: avatarColor,
             child: Text(
               data.initials,
               style: const TextStyle(
@@ -593,6 +606,15 @@ class _AssignedStaffTile extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF717B8C),
                     fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  data.phone,
+                  style: const TextStyle(
+                    color: Color(0xFF8A93A7),
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -686,20 +708,537 @@ class _HeaderIconButton extends StatelessWidget {
   }
 }
 
-class _StaffRoleCardData {
-  const _StaffRoleCardData({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.iconBackground,
-    required this.iconColor,
+class _AddRoleSheet extends StatefulWidget {
+  const _AddRoleSheet({required this.permissionCatalog});
+
+  final List<String> permissionCatalog;
+
+  @override
+  State<_AddRoleSheet> createState() => _AddRoleSheetState();
+}
+
+class _AddRoleSheetState extends State<_AddRoleSheet> {
+  final _titleController = TextEditingController();
+  final _subtitleController = TextEditingController();
+  final Set<String> _selectedPermissions = <String>{};
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _subtitleController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveRole() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      showMarketNotice(
+        context,
+        title: 'Role Required',
+        message: 'Enter a role name before saving.',
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+    });
+
+    final store = context.read<PosLocalStore>();
+    await store.saveStaffRole(
+      StaffRoleData(
+        id: 'role-${DateTime.now().millisecondsSinceEpoch}',
+        title: title,
+        subtitle: _subtitleController.text.trim().isEmpty
+            ? 'Custom role'
+            : _subtitleController.text.trim(),
+        permissions: _selectedPermissions.isEmpty
+            ? widget.permissionCatalog.take(1).toList()
+            : _selectedPermissions.toList(),
+        sortOrder: store.staffRoles.length,
+      ),
+    );
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    showMarketNotice(
+      context,
+      title: 'Role Saved',
+      message: '$title was added to staff roles.',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.72,
+      minChildSize: 0.5,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (context, controller) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+          ),
+          child: ListView(
+            controller: controller,
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            children: [
+              Center(
+                child: Container(
+                  width: 46,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD9DEE8),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Add New Role',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1F2A44),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'Role Name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _subtitleController,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Permissions',
+                style: TextStyle(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2A44),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ...widget.permissionCatalog.map(
+                (permission) => CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _selectedPermissions.contains(permission),
+                  onChanged: (value) {
+                    setState(() {
+                      if (value ?? false) {
+                        _selectedPermissions.add(permission);
+                      } else {
+                        _selectedPermissions.remove(permission);
+                      }
+                    });
+                  },
+                  title: Text(permission),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _saveRole,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2B5FCE),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(_saving ? 'Saving...' : 'Save Role'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ManageStaffSheet extends StatelessWidget {
+  const _ManageStaffSheet({required this.role});
+
+  final StaffRoleData role;
+
+  Future<void> _showMoveDialog(
+    BuildContext context,
+    PosLocalStore store,
+    StaffMemberData staff,
+  ) async {
+    final otherRoles =
+        store.staffRoles.where((item) => item.id != role.id).toList();
+    if (otherRoles.isEmpty) {
+      showMarketNotice(
+        context,
+        title: 'No Other Roles',
+        message: 'Create another role before moving staff.',
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+
+    var selectedRoleId = otherRoles.first.id;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Move Staff Member'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return DropdownButtonFormField<String>(
+                initialValue: selectedRoleId,
+                items: otherRoles
+                    .map(
+                      (item) => DropdownMenuItem<String>(
+                        value: item.id,
+                        child: Text(item.title),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    selectedRoleId = value;
+                  });
+                },
+                decoration: const InputDecoration(labelText: 'Target role'),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await store.updateStaffMemberRole(staff.id, selectedRoleId);
+                if (context.mounted) {
+                  Navigator.of(dialogContext).pop();
+                  showMarketNotice(
+                    context,
+                    title: 'Staff Updated',
+                    message: '${staff.name} was moved to another role.',
+                  );
+                }
+              },
+              child: const Text('Move'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _addStaff(BuildContext context) async {
+    final store = context.read<PosLocalStore>();
+    final result = await Navigator.of(context).push<StaffFormResult>(
+      MaterialPageRoute<StaffFormResult>(
+        builder: (context) => AddEditStaffPage(
+          availableRoles: store.staffRoles.map((role) => role.title).toList(),
+          initialRole: role.title,
+        ),
+      ),
+    );
+    if (result == null || !context.mounted) return;
+
+    final selectedRole = store.staffRoleByTitle(result.role);
+    if (selectedRole == null) {
+      showMarketNotice(
+        context,
+        title: 'Role Missing',
+        message: 'The selected role no longer exists.',
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+
+    await store.addStaffMember(
+      name: result.fullName,
+      email:
+          '${result.fullName.toLowerCase().replaceAll(' ', '.')}@example.com',
+      phone: result.phone,
+      roleId: selectedRole.id,
+    );
+    if (!context.mounted) return;
+    showMarketNotice(
+      context,
+      title: 'Staff Added',
+      message: '${result.fullName} was added to ${selectedRole.title}.',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    final assignedStaff = store.staffMembersForRole(role.id);
+    final otherStaff =
+        store.staffMembers.where((staff) => staff.roleId != role.id).toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.8,
+      minChildSize: 0.55,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, controller) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+          ),
+          child: ListView(
+            controller: controller,
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            children: [
+              Center(
+                child: Container(
+                  width: 46,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD9DEE8),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                '${role.title} Staff',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1F2A44),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add staff members to this role or move existing staff between roles.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: const Color(0xFF6B7280).withValues(alpha: 0.96),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _addStaff(context),
+                  icon: const Icon(Icons.person_add_alt_1_rounded),
+                  label: const Text('Add Staff to Role'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2B5FCE),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Assigned Staff',
+                style: TextStyle(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2A44),
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (assignedStaff.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFD),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE4E8EF)),
+                  ),
+                  child: const Text(
+                    'No staff assigned to this role yet.',
+                    style: TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 14,
+                    ),
+                  ),
+                )
+              else
+                ...assignedStaff.map(
+                  (staff) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _StaffMemberTile(
+                      staff: staff,
+                      onMove: () => _showMoveDialog(context, store, staff),
+                      onDelete: () async {
+                        await store.deleteStaffMember(staff.id);
+                        if (context.mounted) {
+                          showMarketNotice(
+                            context,
+                            title: 'Staff Removed',
+                            message: '${staff.name} was removed from staff.',
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              if (otherStaff.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Other Staff (${otherStaff.length})',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F2A44),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...otherStaff.map(
+                  (staff) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _StaffMemberTile(
+                      staff: staff,
+                      onMove: () => _showMoveDialog(context, store, staff),
+                      onDelete: () async {
+                        await store.deleteStaffMember(staff.id);
+                        if (context.mounted) {
+                          showMarketNotice(
+                            context,
+                            title: 'Staff Removed',
+                            message: '${staff.name} was removed from staff.',
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StaffMemberTile extends StatelessWidget {
+  const _StaffMemberTile({
+    required this.staff,
+    required this.onMove,
+    required this.onDelete,
   });
 
-  final String title;
-  final String subtitle;
+  final StaffMemberData staff;
+  final VoidCallback onMove;
+  final Future<void> Function() onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarColor = _avatarColorForName(staff.name);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E7EF)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 25,
+            backgroundColor: avatarColor,
+            child: Text(
+              staff.initials,
+              style: const TextStyle(
+                color: Color(0xFF1F2A44),
+                fontSize: 14.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  staff.name,
+                  style: const TextStyle(
+                    color: Color(0xFF1F2A44),
+                    fontSize: 15.2,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  staff.email,
+                  style: const TextStyle(
+                    color: Color(0xFF717B8C),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  staff.phone,
+                  style: const TextStyle(
+                    color: Color(0xFF8A93A7),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(
+              Icons.more_vert_rounded,
+              color: Color(0xFF7A8393),
+            ),
+            onSelected: (value) {
+              if (value == 'move') {
+                onMove();
+              } else if (value == 'delete') {
+                onDelete();
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'move',
+                child: Text('Move to another role'),
+              ),
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Text('Remove staff'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StaffRoleVisual {
+  const _StaffRoleVisual({
+    required this.icon,
+    required this.background,
+    required this.color,
+  });
+
   final IconData icon;
-  final Color iconBackground;
-  final Color iconColor;
+  final Color background;
+  final Color color;
 }
 
 class _PermissionData {
@@ -709,73 +1248,14 @@ class _PermissionData {
   final IconData icon;
 }
 
-class _AssignedStaffData {
-  const _AssignedStaffData({
-    required this.name,
-    required this.email,
-    required this.initials,
-    required this.avatarBackground,
-  });
-
-  final String name;
-  final String email;
-  final String initials;
-  final Color avatarBackground;
-}
-
-class _StaffAssignmentTile extends StatefulWidget {
-  const _StaffAssignmentTile({
-    required this.name,
-    required this.email,
-    required this.assigned,
-  });
-
-  final String name;
-  final String email;
-  final bool assigned;
-
-  @override
-  State<_StaffAssignmentTile> createState() => _StaffAssignmentTileState();
-}
-
-class _StaffAssignmentTileState extends State<_StaffAssignmentTile> {
-  late bool _assigned = widget.assigned;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2A44),
-                  ),
-                ),
-                Text(
-                  widget.email,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6B7280),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: _assigned,
-            onChanged: (value) => setState(() => _assigned = value),
-            activeColor: const Color(0xFF2B5FCE),
-          ),
-        ],
-      ),
-    );
-  }
+Color _avatarColorForName(String name) {
+  const colors = <Color>[
+    Color(0xFFF2D9D2),
+    Color(0xFFD9E8F7),
+    Color(0xFFE5F4D8),
+    Color(0xFFFDE8D7),
+    Color(0xFFE7E2FB),
+  ];
+  final index = name.hashCode.abs() % colors.length;
+  return colors[index];
 }

@@ -22,7 +22,7 @@ class MarketBottomNav extends StatelessWidget {
     const items = [
       _NavItem(MarketTab.dashboard, 'Dashboard', Icons.grid_view_rounded),
       _NavItem(MarketTab.products, 'Products', Icons.shopping_bag_outlined),
-      _NavItem(MarketTab.reports, 'Overview', Icons.bar_chart_rounded),
+      _NavItem(MarketTab.reports, 'Reports', Icons.bar_chart_rounded),
       _NavItem(MarketTab.more, 'More', Icons.more_horiz_rounded),
     ];
 

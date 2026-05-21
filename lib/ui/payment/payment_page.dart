@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
 import '../models/product_item.dart';
+import '../widgets/app_design.dart';
 import '../receipt/receipt_success_page.dart';
 import '../widgets/market_shared_widgets.dart';
 
@@ -311,7 +312,7 @@ class _ScaleBanner extends StatelessWidget {
                 ],
               ),
               style: TextStyle(
-                color: Colors.black87,
+                color: AppColors.ink,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -358,7 +359,7 @@ class _CounterLineTile extends StatelessWidget {
                 Text(
                   line.product.name,
                   style: const TextStyle(
-                    color: Colors.black87,
+                    color: AppColors.ink,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -367,7 +368,7 @@ class _CounterLineTile extends StatelessWidget {
                 Text(
                   '${line.quantity} x ${line.product.price}',
                   style: const TextStyle(
-                    color: Colors.black87,
+                    color: AppColors.ink,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -378,7 +379,7 @@ class _CounterLineTile extends StatelessWidget {
           Text(
             amountText,
             style: const TextStyle(
-              color: Colors.black87,
+              color: AppColors.ink,
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -421,7 +422,7 @@ class _EmptyCounterState extends StatelessWidget {
           Text(
             'No items in this counter yet',
             style: TextStyle(
-              color: Colors.black87,
+              color: AppColors.ink,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -455,7 +456,7 @@ class _CounterActionRow extends StatelessWidget {
               child: const Text(
                 'Add New Item',
                 style: TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.ink,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -504,7 +505,7 @@ class _TotalsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const linkStyle = TextStyle(
-      color: Colors.black87,
+      color: AppColors.ink,
       fontSize: 13,
       fontWeight: FontWeight.w500,
       decoration: TextDecoration.underline,
@@ -522,7 +523,7 @@ class _TotalsPanel extends StatelessWidget {
                 child: Text(
                   'Subtotal',
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: AppColors.ink,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
@@ -531,7 +532,7 @@ class _TotalsPanel extends StatelessWidget {
               Text(
                 subtotal,
                 style: const TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.ink,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -545,7 +546,7 @@ class _TotalsPanel extends StatelessWidget {
                 child: Text(
                   'Tax - Not configured',
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: AppColors.ink,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w400,
                   ),
@@ -554,7 +555,7 @@ class _TotalsPanel extends StatelessWidget {
               Text(
                 tax,
                 style: const TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.ink,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
                 ),
@@ -568,7 +569,7 @@ class _TotalsPanel extends StatelessWidget {
                 child: Text(
                   'Grand Total',
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: AppColors.ink,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -577,7 +578,7 @@ class _TotalsPanel extends StatelessWidget {
               Text(
                 'TSh$grandTotal',
                 style: const TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.ink,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -595,7 +596,7 @@ class _TotalsPanel extends StatelessWidget {
               Text(
                 '$itemTypes Items | $unitCount Units',
                 style: const TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.ink,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w400,
                 ),

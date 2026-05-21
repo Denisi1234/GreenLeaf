@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../receipt_brand_data.dart';
 import '../../service/pos_order_models.dart';
 import '../models/product_item.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'receipt_pdf_service.dart';
 
@@ -546,7 +547,7 @@ class _ReceiptPaper extends StatelessWidget {
           Text(
             phone,
             style: const TextStyle(
-              color: Colors.black87,
+              color: AppColors.ink,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -558,7 +559,7 @@ class _ReceiptPaper extends StatelessWidget {
           Text(
             'Receipt# $receiptNumber',
             style: const TextStyle(
-              color: Colors.black87,
+              color: AppColors.ink,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -567,7 +568,7 @@ class _ReceiptPaper extends StatelessWidget {
           Text(
             'Date : $date - $time',
             style: const TextStyle(
-              color: Colors.black87,
+              color: AppColors.ink,
               fontSize: 13,
               fontWeight: FontWeight.w400,
             ),
@@ -654,7 +655,7 @@ class _ReceiptPaper extends StatelessWidget {
           const Text(
             'Thank You! Visit again!',
             style: TextStyle(
-              color: Colors.black87,
+              color: AppColors.ink,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -663,7 +664,7 @@ class _ReceiptPaper extends StatelessWidget {
           const Text(
             'Powered By Zobaze',
             style: TextStyle(
-              color: Colors.black87,
+              color: AppColors.ink,
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
             ),
@@ -698,7 +699,7 @@ class _TableHeader extends StatelessWidget {
               cells[index],
               textAlign: alignments[index],
               style: const TextStyle(
-                color: Colors.black87,
+                color: AppColors.ink,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
@@ -735,7 +736,7 @@ class _TableRow extends StatelessWidget {
               cells[index],
               textAlign: alignments[index],
               style: TextStyle(
-                color: Colors.black87,
+                color: AppColors.ink,
                 fontSize: 13,
                 fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
               ),
@@ -770,7 +771,7 @@ class _SummaryLine extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.black87,
+                color: AppColors.ink,
                 fontSize: 13,
                 fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
               ),
@@ -783,7 +784,7 @@ class _SummaryLine extends StatelessWidget {
             value,
             textAlign: TextAlign.right,
             style: TextStyle(
-              color: Colors.black87,
+              color: AppColors.ink,
               fontSize: 13,
               fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
             ),

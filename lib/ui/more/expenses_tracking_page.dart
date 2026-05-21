@@ -507,36 +507,12 @@ class _ExpensesFooter extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
-          child: GestureDetector(
+          child: MarketButton(
+            label: 'Add Expense',
+            icon: Icons.add_rounded,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const AddExpensePage(),
-              ),
-            ),
-            child: Container(
-              height: 58,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF356BD8), Color(0xFF2B5FCE)],
-                ),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_rounded, color: Colors.white, size: 28),
-                  SizedBox(width: 10),
-                  Text(
-                    'Add Expense',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
               ),
             ),
           ),

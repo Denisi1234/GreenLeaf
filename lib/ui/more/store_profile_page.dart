@@ -396,47 +396,12 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      GestureDetector(
-                        onTap: _isSaving ? null : _saveProfile,
-                        child: AnimatedOpacity(
-                          opacity: _isSaving ? 0.8 : 1,
-                          duration: const Duration(milliseconds: 160),
-                          child: Container(
-                            height: 60,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              gradient: const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFF356BD8),
-                                  Color(0xFF1F5FD7),
-                                ],
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _isSaving
-                                      ? Icons.hourglass_top_rounded
-                                      : Icons.save_outlined,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  _isSaving ? 'Saving...' : 'Save Changes',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      MarketButton(
+                        label: _isSaving ? 'Saving...' : 'Save Changes',
+                        icon: _isSaving
+                            ? Icons.hourglass_top_rounded
+                            : Icons.save_outlined,
+                        onTap: _isSaving ? () {} : _saveProfile,
                       ),
                     ],
                   ),

@@ -20,7 +20,14 @@ class StaffFormResult {
 }
 
 class AddEditStaffPage extends StatefulWidget {
-  const AddEditStaffPage({super.key});
+  const AddEditStaffPage({
+    super.key,
+    this.availableRoles = const <String>[],
+    this.initialRole,
+  });
+
+  final List<String> availableRoles;
+  final String? initialRole;
 
   @override
   State<AddEditStaffPage> createState() => _AddEditStaffPageState();
@@ -38,19 +45,23 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
   XFile? _avatarFile;
   bool _isSaving = false;
 
-  static const _roles = [
-    'Administrator',
-    'Manager',
-    'Cashier',
-    'Sales Associate',
-  ];
-
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final roles = widget.availableRoles;
+    if (widget.initialRole != null && roles.contains(widget.initialRole)) {
+      _selectedRole = widget.initialRole;
+    } else if (roles.isNotEmpty) {
+      _selectedRole = roles.first;
+    }
   }
 
   Future<void> _pickAvatar() async {
@@ -277,7 +288,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                             value: _selectedRole,
                             hintText: 'Select a role',
                             prefixIcon: Icons.shield_outlined,
-                            items: _roles,
+                            items: widget.availableRoles,
                             onChanged: (value) {
                               setState(() {
                                 _selectedRole = value;
