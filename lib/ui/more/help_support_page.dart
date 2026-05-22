@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class HelpSupportPage extends StatelessWidget {
@@ -34,174 +36,172 @@ class HelpSupportPage extends StatelessWidget {
       ),
     ];
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFD),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  bottom: BorderSide(color: Color(0xFFE7EAF0)),
+    final baseTheme = Theme.of(context);
+    final interTheme = baseTheme.copyWith(
+      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+    );
+
+    return Theme(
+      data: interTheme,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.border),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.ink,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Help & Support',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.ink,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 36),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const SizedBox(
-                      width: 38,
-                      height: 38,
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Color(0xFF1E273A),
-                        size: 26,
-                      ),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Help & Support',
-                      textAlign: TextAlign.center,
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                  children: [
+                    const Text(
+                      'Find answers fast',
                       style: TextStyle(
-                        color: Color(0xFF1E273A),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 38),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                children: [
-                  const Text(
-                    'Find answers fast',
-                    style: TextStyle(
-                      color: Color(0xFF20345F),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Container(
-                    height: 74,
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFFE1E6EF)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.search_rounded,
-                          color: Color(0xFF253A68),
-                          size: 34,
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            'Search FAQs',
-                            style: TextStyle(
-                              color: Color(0xFFA3ACBB),
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.w500,
+                    const SizedBox(height: 20),
+                    Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.pageBackground,
+                        borderRadius: BorderRadius.circular(AppRadius.rounded),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.search_rounded,
+                            color: AppColors.ink,
+                            size: 22,
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Search FAQs',
+                              style: TextStyle(
+                                color: AppColors.mutedText,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 22),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFFE7EBF0)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x0A000000),
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        ...supportItems.asMap().entries.map(
-                          (entry) {
-                            final index = entry.key;
-                            final item = entry.value;
-                            return Column(
-                              children: [
-                                _SupportTile(item: item),
-                                if (index != supportItems.length - 1)
-                                  const Divider(
-                                      height: 1, color: Color(0xFFE9EDF3)),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.rounded),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        children: [
+                          ...supportItems.asMap().entries.map(
+                            (entry) {
+                              final index = entry.key;
+                              final item = entry.value;
+                              return Column(
+                                children: [
+                                  _SupportTile(item: item),
+                                  if (index != supportItems.length - 1)
+                                    const Divider(
+                                        height: 1, color: AppColors.divider),
                               ],
                             );
                           },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFFE7EBF0)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x08000000),
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      children: [
-                        _ShieldSupportIcon(),
-                        SizedBox(width: 18),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'We are here to help',
-                                style: TextStyle(
-                                  color: Color(0xFF1D376C),
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              SizedBox(height: 5),
-                              Text(
-                                'Your satisfaction is our priority.',
-                                style: TextStyle(
-                                  color: Color(0xFF7B8494),
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.pageBackground,
+                        borderRadius: BorderRadius.circular(AppRadius.rounded),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Row(
+                        children: [
+                          _ShieldSupportIcon(),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'We are here to help',
+                                  style: TextStyle(
+                                    color: AppColors.ink,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Your satisfaction is our priority.',
+                                  style: TextStyle(
+                                    color: AppColors.mutedText,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -257,19 +257,20 @@ class _SupportTile extends StatelessWidget {
         }
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: Row(
           children: [
             Container(
-              width: 74,
-              height: 74,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F6FF),
-                borderRadius: BorderRadius.circular(37),
+                color: AppColors.pageBackground,
+                borderRadius: BorderRadius.circular(AppRadius.standard),
+                border: Border.all(color: AppColors.border),
               ),
-              child: Icon(item.icon, color: const Color(0xFF1562E8), size: 40),
+              child: Icon(item.icon, color: AppColors.ink, size: 20),
             ),
-            const SizedBox(width: 18),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,17 +278,18 @@ class _SupportTile extends StatelessWidget {
                   Text(
                     item.title,
                     style: const TextStyle(
-                      color: Color(0xFF132F66),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.1,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     item.subtitle,
                     style: const TextStyle(
-                      color: Color(0xFF7B8494),
-                      fontSize: 14.6,
+                      color: AppColors.mutedText,
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -297,8 +299,8 @@ class _SupportTile extends StatelessWidget {
             const SizedBox(width: 8),
             const Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF132F66),
-              size: 34,
+              color: AppColors.mutedText,
+              size: 20,
             ),
           ],
         ),
@@ -313,16 +315,17 @@ class _ShieldSupportIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 64,
-      height: 64,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F6FF),
-        borderRadius: BorderRadius.circular(4),
+        color: AppColors.pageBackground,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: AppColors.border),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.shield_outlined,
-        color: Color(0xFF1562E8),
-        size: 34,
+        color: AppColors.ink,
+        size: 22,
       ),
     );
   }

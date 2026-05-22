@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/product_item.dart';
@@ -167,75 +168,83 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final displayProducts = store.products;
-    return SafeArea(
-      child: Stack(
-        children: [
-          const Positioned.fill(child: BackdropGlow()),
-          Column(
-            children: [
-              const TopBar(),
-              const Divider(height: 1, thickness: 1, color: Color(0xFFE6E7EB)),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Column(
-                  children: [
-                    SearchBox(),
-                    SizedBox(height: 12),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 144),
-                  child: GridView.builder(
-                    itemCount: displayProducts.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 3,
-                      crossAxisSpacing: 3,
-                      childAspectRatio: 0.86,
-                    ),
-                    itemBuilder: (context, index) {
-                      final product = displayProducts[index];
-                      return ProductCard(
-                        product: product,
-                        onTapDown: (details) => _handleProductTap(product, details),
-                      );
-                    },
+    final baseTheme = Theme.of(context);
+    final interTheme = baseTheme.copyWith(
+      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+    );
+    return Theme(
+      data: interTheme,
+      child: SafeArea(
+        child: Stack(
+          children: [
+            const Positioned.fill(child: BackdropGlow()),
+            Column(
+              children: [
+                const TopBar(),
+                const Divider(height: 1, thickness: 1, color: Color(0xFFE6E7EB)),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Column(
+                    children: [
+                      SearchBox(),
+                      SizedBox(height: 12),
+                    ],
                   ),
                 ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 144),
+                    child: GridView.builder(
+                      itemCount: displayProducts.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 3,
+                        crossAxisSpacing: 3,
+                        childAspectRatio: 0.86,
+                      ),
+                      itemBuilder: (context, index) {
+                        final product = displayProducts[index];
+                        return ProductCard(
+                          product: product,
+                          onTapDown: (details) => _handleProductTap(product, details),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_successMessage != null)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 102,
+                child: SuccessMessageBanner(
+                  message: _successMessage!,
+                  type: _lastAddedType ?? ProductArtType.aquafina,
+                  imagePath: _lastAddedImagePath,
+                ),
               ),
-            ],
-          ),
-          if (_successMessage != null)
             Positioned(
-              left: 16,
-              right: 16,
-              bottom: 102,
-              child: SuccessMessageBanner(
-                message: _successMessage!,
-                type: _lastAddedType ?? ProductArtType.aquafina,
-                imagePath: _lastAddedImagePath,
+              left: 14,
+              right: 14,
+              bottom: 12,
+              child: CheckoutBar(
+                cartKey: _cartKey,
+                itemCount: store.cartCount,
+                total: store.cartTotal,
+                onCheckout: _openPaymentScreen,
               ),
             ),
-          Positioned(
-            left: 14,
-            right: 14,
-            bottom: 12,
-            child: CheckoutBar(
-              cartKey: _cartKey,
-              itemCount: store.cartCount,
-              total: store.cartTotal,
-              onCheckout: _openPaymentScreen,
+            const Positioned(
+              right: 6,
+              top: 300,
+              child: ScrollHandle(),
             ),
-          ),
-          const Positioned(
-            right: 6,
-            top: 300,
-            child: ScrollHandle(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -252,96 +261,20 @@ class TopBar extends StatelessWidget {
         children: [
           DrawerMenuButton(),
           SizedBox(width: 12),
-          Expanded(child: BrandBlock()),
-          SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Dashboard',
+              style: TextStyle(
+                color: Color(0xFF33363F),
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ),
           ProfileBlock(),
         ],
       ),
-    );
-  }
-}
-
-class BrandBlock extends StatelessWidget {
-  const BrandBlock({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: const Color(0xFF8EA06D), width: 1.5),
-          ),
-          child: const BrandMark(),
-        ),
-        const SizedBox(width: 10),
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'GreenLeaf',
-              style: TextStyle(
-                fontSize: 21,
-                height: 1,
-                color: Color(0xFF2C3442),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'M a r k e t',
-              style: TextStyle(
-                fontSize: 10.5,
-                letterSpacing: 4.1,
-                color: Color(0xFF8EA06D),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class BrandMark extends StatelessWidget {
-  const BrandMark({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        const Icon(
-          Icons.shopping_bag_outlined,
-          color: Color(0xFF8EA06D),
-          size: 34,
-        ),
-        Positioned(
-          bottom: 11,
-          child: Container(
-            width: 17,
-            height: 12,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFF8EA06D), width: 1.7),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
-            ),
-          ),
-        ),
-        const Positioned(
-          bottom: 10,
-          child: Icon(
-            Icons.home_outlined,
-            color: Color(0xFF8EA06D),
-            size: 14,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -372,7 +305,7 @@ class ProfileBlock extends StatelessWidget {
             Text(
               'John Doe',
               style: TextStyle(
-                color: Color(0xFF2C3442),
+                color: Color(0xFF33363F),
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
@@ -380,7 +313,7 @@ class ProfileBlock extends StatelessWidget {
             Text(
               'Cashier',
               style: TextStyle(
-                color: Color(0xFF7A8393),
+                color: Color(0xFF7B859A),
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -426,9 +359,9 @@ class SearchBox extends StatelessWidget {
             child: Text(
               'Search products by name or SKU',
               style: TextStyle(
-                color: Color(0xFFB2B8C2),
+                color: Color(0xFF7A859C),
                 fontSize: 12.8,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -467,45 +400,87 @@ class ProductCard extends StatelessWidget {
       onTapDown: onTapDown,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(2),
-          border: Border.all(color: const Color(0xFFD3D3D3)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 76,
-              height: 76,
-              child: _DashboardTileArt(product: product),
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE7EAF0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0C0E1726),
+              blurRadius: 5,
+              offset: Offset(0, 2),
             ),
-            const SizedBox(height: 10),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                product.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: _DashboardTileArt(product: product),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF33363F),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      _money(product.priceValue),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF7A859C),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                _money(product.priceValue),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.96),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE7EAF0)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x140E1726),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Color(0xFF2B6FF3),
+                  size: 18,
                 ),
               ),
             ),
@@ -527,7 +502,7 @@ class _DashboardTileArt extends StatelessWidget {
   Widget build(BuildContext context) {
     if (product.imagePath != null && product.imagePath!.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(14),
         child: Image.file(
           File(product.imagePath!),
           fit: BoxFit.cover,
@@ -560,7 +535,7 @@ class _DashboardFallbackArt extends StatelessWidget {
               ? const Color(0xFFF2F2FD)
               : const Color(0xFFFF4036),
           shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
-          borderRadius: isCircle ? null : BorderRadius.circular(10),
+          borderRadius: isCircle ? null : BorderRadius.circular(14),
         ),
         alignment: Alignment.center,
         child: Text(
@@ -658,11 +633,11 @@ class CheckoutBar extends StatelessWidget {
               children: [
                 Text(
                   '$itemCount Items',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const SizedBox(height: 2),
                 const Text(
@@ -690,7 +665,7 @@ class CheckoutBar extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 2),
@@ -714,16 +689,16 @@ class CheckoutBar extends StatelessWidget {
                 color: const Color(0xFF8EA06D),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Row(
-                children: [
-                  Text(
-                    'Checkout',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+                child: const Row(
+                  children: [
+                    Text(
+                      'Checkout',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
+                    ),
                   SizedBox(width: 10),
                   Icon(Icons.arrow_forward_rounded, color: Colors.white),
                 ],
