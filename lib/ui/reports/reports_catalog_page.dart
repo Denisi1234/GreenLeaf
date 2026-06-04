@@ -72,7 +72,7 @@ class ReportsCatalogPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFFEFC),
-      drawer: const MarketAppDrawer(selectedItem: 'Reports'),
+      drawer: const MarketAppDrawer(selectedItem: 'Dashboard'),
       body: SafeArea(
         child: Column(
           children: [

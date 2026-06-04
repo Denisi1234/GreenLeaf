@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
+import 'daftari_recovery_models.dart';
+import 'myduka_ai_service.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
 
@@ -303,7 +305,13 @@ class PosLocalStore extends ChangeNotifier {
   final List<InventoryProductItem> _allInventory = <InventoryProductItem>[];
   final List<StaffRoleData> _staffRoles = <StaffRoleData>[];
   final List<StaffMemberData> _staffMembers = <StaffMemberData>[];
+  final List<DaftariRecoverySession> _daftariSessions = <DaftariRecoverySession>[];
+  final List<DaftariLearningRule> _daftariLearningRules =
+      <DaftariLearningRule>[];
+  final List<MyDukaAiThread> _myDukaAiThreads = <MyDukaAiThread>[];
+  final List<MyDukaAiMessage> _myDukaAiMessages = <MyDukaAiMessage>[];
   AppProfileData _profile = AppProfileData.empty();
+  String? _activeMyDukaAiThreadId;
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
@@ -379,6 +387,47 @@ class PosLocalStore extends ChangeNotifier {
             logoPath: storedProfile['logo_path'] as String?,
           );
 
+    _daftariSessions
+      ..clear()
+      ..addAll(await _database.loadDaftariSessions());
+    _daftariLearningRules
+      ..clear()
+      ..addAll(await _database.loadDaftariLearningRules());
+    _myDukaAiThreads
+      ..clear()
+      ..addAll(await _database.loadMyDukaAiThreads());
+
+    if (_myDukaAiThreads.isEmpty) {
+      final now = DateTime.now().toIso8601String();
+    final defaultThread = MyDukaAiThread(
+        id: 'thread-default',
+        title: 'MyDuka AI',
+        preview: '',
+        createdAt: now,
+        updatedAt: now,
+      );
+      _myDukaAiThreads.add(defaultThread);
+      await _database.upsertMyDukaAiThread(defaultThread);
+    }
+
+    _activeMyDukaAiThreadId = _myDukaAiThreads.first.id;
+    _myDukaAiMessages
+      ..clear()
+      ..addAll(await _database.loadMyDukaAiMessages(_activeMyDukaAiThreadId!));
+    if (_myDukaAiMessages.isEmpty) {
+      _myDukaAiMessages.add(
+        const MyDukaAiMessage(
+          role: 'assistant',
+          content:
+              'Hi, I am MYDUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
+        ),
+      );
+      await _database.replaceMyDukaAiMessages(
+        _activeMyDukaAiThreadId!,
+        _myDukaAiMessages,
+      );
+    }
+
     _updateCartTotals();
     _isInitialized = true;
     notifyListeners();
@@ -390,7 +439,43 @@ class PosLocalStore extends ChangeNotifier {
   List<InventoryProductItem> get inventory => List.unmodifiable(_allInventory);
   List<StaffRoleData> get staffRoles => List.unmodifiable(_staffRoles);
   List<StaffMemberData> get staffMembers => List.unmodifiable(_staffMembers);
+  List<DaftariRecoverySession> get daftariSessions =>
+      List.unmodifiable(_daftariSessions);
+  List<DaftariLearningRule> get daftariLearningRules =>
+      List.unmodifiable(_daftariLearningRules);
+  List<MyDukaAiThread> get myDukaAiThreads =>
+      List.unmodifiable(_myDukaAiThreads);
+  List<MyDukaAiMessage> get myDukaAiMessages =>
+      List.unmodifiable(_myDukaAiMessages);
+  String get activeMyDukaAiThreadId =>
+      _activeMyDukaAiThreadId ?? _myDukaAiThreads.first.id;
+  MyDukaAiThread? get activeMyDukaAiThread {
+    final activeId = _activeMyDukaAiThreadId;
+    if (activeId == null) return _myDukaAiThreads.isEmpty ? null : _myDukaAiThreads.first;
+    for (final thread in _myDukaAiThreads) {
+      if (thread.id == activeId) return thread;
+    }
+    return _myDukaAiThreads.isEmpty ? null : _myDukaAiThreads.first;
+  }
   AppProfileData get profile => _profile;
+  DaftariRecoverySession? get latestDaftariSession =>
+      _daftariSessions.isEmpty ? null : _daftariSessions.first;
+
+  DaftariRecoverySession? daftariSessionById(String id) {
+    for (final session in _daftariSessions) {
+      if (session.id == id) return session;
+    }
+    return null;
+  }
+
+  Map<String, List<String>> get daftariLearningAliases {
+    final aliases = <String, List<String>>{};
+    for (final rule in _daftariLearningRules) {
+      aliases.putIfAbsent(rule.targetProductCode, () => <String>[]);
+      aliases[rule.targetProductCode]!.add(rule.sourceText);
+    }
+    return aliases;
+  }
 
   int _cartCount = 0;
   int get cartCount => _cartCount;
@@ -412,6 +497,25 @@ class PosLocalStore extends ChangeNotifier {
     return true;
   }
 
+  bool addToCartQuantity(ProductItem product, int quantity) {
+    if (quantity <= 0) return false;
+
+    final availableStock = _availableStockForProduct(product);
+    final currentCartQuantity = _cartItems.where(_sameProduct(product)).length;
+    if (availableStock > 0 &&
+        currentCartQuantity + quantity > availableStock) {
+      return false;
+    }
+
+    for (var i = 0; i < quantity; i++) {
+      _cartItems.add(product);
+    }
+    _updateCartTotals();
+    notifyListeners();
+    unawaited(_database.replaceCart(_cartItems));
+    return true;
+  }
+
   bool removeSingleFromCart(ProductItem product) {
     final index = _cartItems.indexWhere(_sameProduct(product));
     if (index == -1) return false;
@@ -420,6 +524,193 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     unawaited(_database.replaceCart(_cartItems));
     return true;
+  }
+
+  Future<void> saveDaftariSession(DaftariRecoverySession session) async {
+    final index = _daftariSessions.indexWhere((item) => item.id == session.id);
+    if (index == -1) {
+      _daftariSessions.insert(0, session);
+    } else {
+      _daftariSessions[index] = session;
+      _daftariSessions.sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    }
+    notifyListeners();
+    await _database.upsertDaftariSession(session);
+  }
+
+  Future<void> rememberDaftariCorrection({
+    required String sourceText,
+    required ProductItem product,
+  }) async {
+    final normalizedSource = sourceText.trim();
+    if (normalizedSource.isEmpty) return;
+
+    final targetCode = product.code ?? product.name;
+    final now = DateTime.now().toIso8601String();
+    final existingIndex = _daftariLearningRules.indexWhere(
+      (rule) =>
+          rule.sourceText.toLowerCase() == normalizedSource.toLowerCase() &&
+          rule.targetProductCode == targetCode,
+    );
+
+    final updated = existingIndex == -1
+        ? DaftariLearningRule(
+            id: 'learn-${DateTime.now().microsecondsSinceEpoch}',
+            sourceText: normalizedSource,
+            targetProductCode: targetCode,
+            targetProductName: product.name,
+            createdAt: now,
+            hitCount: 1,
+            lastUsedAt: now,
+          )
+        : DaftariLearningRule(
+            id: _daftariLearningRules[existingIndex].id,
+            sourceText: normalizedSource,
+            targetProductCode: targetCode,
+            targetProductName: product.name,
+            createdAt: _daftariLearningRules[existingIndex].createdAt,
+            hitCount: _daftariLearningRules[existingIndex].hitCount + 1,
+            lastUsedAt: now,
+          );
+
+    if (existingIndex == -1) {
+      _daftariLearningRules.insert(0, updated);
+    } else {
+      _daftariLearningRules[existingIndex] = updated;
+    }
+    _daftariLearningRules.sort((left, right) {
+      final lastUsed = right.lastUsedAt.compareTo(left.lastUsedAt);
+      if (lastUsed != 0) return lastUsed;
+      return right.hitCount.compareTo(left.hitCount);
+    });
+    notifyListeners();
+    await _database.upsertDaftariLearningRule(updated);
+  }
+
+  Future<void> replaceMyDukaAiMessages(List<MyDukaAiMessage> messages) async {
+    await replaceMyDukaAiMessagesForThread(activeMyDukaAiThreadId, messages);
+  }
+
+  Future<void> replaceMyDukaAiMessagesForThread(
+    String threadId,
+    List<MyDukaAiMessage> messages,
+  ) async {
+    _myDukaAiMessages
+      ..clear()
+      ..addAll(messages);
+    notifyListeners();
+    await _database.replaceMyDukaAiMessages(threadId, _myDukaAiMessages);
+  }
+
+  Future<MyDukaAiThread> createMyDukaAiThread({
+    String? title,
+    List<MyDukaAiMessage>? seedMessages,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final thread = MyDukaAiThread(
+      id: 'thread-${DateTime.now().millisecondsSinceEpoch}',
+      title: title?.trim().isNotEmpty == true ? title!.trim() : 'New chat',
+      preview: seedMessages == null || seedMessages.isEmpty
+          ? ''
+          : seedMessages.last.content,
+      createdAt: now,
+      updatedAt: now,
+    );
+    _myDukaAiThreads.insert(0, thread);
+    _activeMyDukaAiThreadId = thread.id;
+    _myDukaAiMessages
+      ..clear()
+      ..addAll(seedMessages ?? const <MyDukaAiMessage>[]);
+    notifyListeners();
+    await _database.upsertMyDukaAiThread(thread);
+    await _database.replaceMyDukaAiMessages(thread.id, _myDukaAiMessages);
+    return thread;
+  }
+
+  Future<void> setActiveMyDukaAiThread(String threadId) async {
+    final thread = _myDukaAiThreads.firstWhere(
+      (item) => item.id == threadId,
+      orElse: () => _myDukaAiThreads.first,
+    );
+    _activeMyDukaAiThreadId = thread.id;
+    _myDukaAiMessages
+      ..clear()
+      ..addAll(await _database.loadMyDukaAiMessages(thread.id));
+    notifyListeners();
+  }
+
+  Future<void> updateMyDukaAiThreadTitle(
+    String threadId,
+    String title,
+  ) async {
+    final index = _myDukaAiThreads.indexWhere((thread) => thread.id == threadId);
+    if (index == -1) return;
+    final current = _myDukaAiThreads[index];
+    final updated = current.copyWith(
+      title: title.trim().isEmpty ? current.title : title.trim(),
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+    _myDukaAiThreads[index] = updated;
+    _myDukaAiThreads.sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+    notifyListeners();
+    await _database.upsertMyDukaAiThread(updated);
+  }
+
+  Future<void> updateMyDukaAiThreadPreview(
+    String threadId,
+    String preview,
+  ) async {
+    final index = _myDukaAiThreads.indexWhere((thread) => thread.id == threadId);
+    if (index == -1) return;
+    final current = _myDukaAiThreads[index];
+    final updated = current.copyWith(
+      preview: preview.trim(),
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+    _myDukaAiThreads[index] = updated;
+    _myDukaAiThreads.sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+    notifyListeners();
+    await _database.upsertMyDukaAiThread(updated);
+  }
+
+  Future<void> deleteMyDukaAiThread(String threadId) async {
+    final index = _myDukaAiThreads.indexWhere((thread) => thread.id == threadId);
+    if (index == -1) return;
+
+    final wasActive = _activeMyDukaAiThreadId == threadId;
+    _myDukaAiThreads.removeAt(index);
+    await _database.deleteMyDukaAiThread(threadId);
+
+    if (_myDukaAiThreads.isEmpty) {
+      final now = DateTime.now().toIso8601String();
+      final defaultThread = MyDukaAiThread(
+        id: 'thread-default',
+        title: 'MyDuka AI',
+        preview: '',
+        createdAt: now,
+        updatedAt: now,
+      );
+      _myDukaAiThreads.add(defaultThread);
+      _activeMyDukaAiThreadId = defaultThread.id;
+      _myDukaAiMessages
+        ..clear()
+        ..add(
+          const MyDukaAiMessage(
+            role: 'assistant',
+            content:
+                'Hi, I am MYDUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
+          ),
+        );
+      await _database.upsertMyDukaAiThread(defaultThread);
+      await _database.replaceMyDukaAiMessages(defaultThread.id, _myDukaAiMessages);
+    } else if (wasActive) {
+      _activeMyDukaAiThreadId = _myDukaAiThreads.first.id;
+      _myDukaAiMessages
+        ..clear()
+        ..addAll(await _database.loadMyDukaAiMessages(_activeMyDukaAiThreadId!));
+    }
+
+    notifyListeners();
   }
 
   void removeFromCart(int index) {

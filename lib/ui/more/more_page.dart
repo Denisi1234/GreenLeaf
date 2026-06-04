@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'about_app_page.dart';
 import 'help_support_page.dart';
 import 'multi_store_management_page.dart';
+import 'smartduka_ai_advisor_page.dart';
 import 'store_profile_page.dart';
 import 'staff_management_page.dart';
 import 'subscription_plan_page.dart';
@@ -25,6 +26,7 @@ class MorePage extends StatelessWidget {
       _MoreMenuItem(
           'Multi-Store Management', Icons.store_mall_directory_outlined),
       _MoreMenuItem('Tax & Discounts', Icons.sell_outlined),
+      _MoreMenuItem('MYDUKA AI', Icons.psychology_alt_outlined),
       _MoreMenuItem('Subscription Plan', Icons.description_outlined),
       _MoreMenuItem('Help & Support', Icons.support_agent_outlined),
       _MoreMenuItem('About App', Icons.info_outline_rounded),
@@ -42,8 +44,8 @@ class MorePage extends StatelessWidget {
         profile.memberSince.isEmpty ? 'Not set' : profile.memberSince;
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
@@ -542,6 +544,15 @@ class _MoreListTile extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const SubscriptionPlanPage(),
+            ),
+          );
+          return;
+        }
+
+        if (item.label == 'MYDUKA AI') {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const MyDukaAiPage(),
             ),
           );
           return;

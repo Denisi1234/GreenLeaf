@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import 'daftari_recovery_models.dart';
+import 'myduka_ai_service.dart';
 import 'pos_order_models.dart';
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
@@ -20,7 +22,7 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 3,
+      version: 8,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE inventory_products (
@@ -101,7 +103,7 @@ class PosLocalDatabase {
             sort_order INTEGER NOT NULL
           )
         ''');
-        await db.execute('''
+        await db.execute('''  
           CREATE TABLE staff_members (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -109,6 +111,53 @@ class PosLocalDatabase {
             phone TEXT NOT NULL,
             role_id TEXT NOT NULL,
             created_at TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE daftari_recovery_sessions (
+            id TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            stage TEXT NOT NULL,
+            image_path TEXT,
+            raw_text TEXT NOT NULL,
+            extracted_lines_json TEXT NOT NULL,
+            lines_json TEXT NOT NULL,
+            matched_count INTEGER NOT NULL,
+            unresolved_count INTEGER NOT NULL,
+            confidence REAL NOT NULL,
+            estimated_total REAL NOT NULL,
+            imported_order_id TEXT,
+            failure_reason TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE daftari_learning_rules (
+            id TEXT PRIMARY KEY,
+            source_text TEXT NOT NULL UNIQUE,
+            target_product_code TEXT NOT NULL,
+            target_product_name TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            hit_count INTEGER NOT NULL,
+            last_used_at TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE myduka_ai_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            thread_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            image_path TEXT,
+            created_at TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE myduka_ai_threads (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            preview TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
           )
         ''');
       },
@@ -149,6 +198,89 @@ class PosLocalDatabase {
               created_at TEXT NOT NULL
             )
           ''');
+        }
+        if (oldVersion < 4) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS daftari_recovery_sessions (
+              id TEXT PRIMARY KEY,
+              created_at TEXT NOT NULL,
+              stage TEXT NOT NULL,
+              image_path TEXT,
+              raw_text TEXT NOT NULL,
+              extracted_lines_json TEXT NOT NULL,
+              lines_json TEXT NOT NULL,
+              matched_count INTEGER NOT NULL,
+              unresolved_count INTEGER NOT NULL,
+              confidence REAL NOT NULL,
+              estimated_total REAL NOT NULL,
+              imported_order_id TEXT,
+              failure_reason TEXT
+            )
+          ''');
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS daftari_learning_rules (
+              id TEXT PRIMARY KEY,
+              source_text TEXT NOT NULL UNIQUE,
+              target_product_code TEXT NOT NULL,
+              target_product_name TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              hit_count INTEGER NOT NULL,
+              last_used_at TEXT NOT NULL
+            )
+          ''');
+        }
+        if (oldVersion < 5) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS myduka_ai_messages (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              thread_id TEXT NOT NULL,
+              role TEXT NOT NULL,
+              content TEXT NOT NULL,
+              image_path TEXT,
+              created_at TEXT NOT NULL
+            )
+          ''');
+        }
+        if (oldVersion < 6) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS myduka_ai_threads (
+              id TEXT PRIMARY KEY,
+              title TEXT NOT NULL,
+              preview TEXT NOT NULL DEFAULT '',
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            )
+          ''');
+          final tableInfo = await db.rawQuery('PRAGMA table_info(myduka_ai_messages)');
+          final hasThreadId = tableInfo.any((column) => column['name'] == 'thread_id');
+          if (!hasThreadId) {
+            await db.execute(
+              'ALTER TABLE myduka_ai_messages ADD COLUMN thread_id TEXT',
+            );
+          }
+          final hasImagePath = tableInfo.any((column) => column['name'] == 'image_path');
+          if (!hasImagePath) {
+            await db.execute(
+              'ALTER TABLE myduka_ai_messages ADD COLUMN image_path TEXT',
+            );
+          }
+          await db.execute('''
+            UPDATE myduka_ai_messages
+            SET thread_id = COALESCE(thread_id, 'thread-default')
+          ''');
+          await db.execute('''
+            INSERT OR IGNORE INTO myduka_ai_threads (id, title, created_at, updated_at)
+            VALUES ('thread-default', 'MyDuka AI', datetime('now'), datetime('now'))
+          ''');
+        }
+        if (oldVersion < 7) {
+          final tableInfo = await db.rawQuery('PRAGMA table_info(myduka_ai_threads)');
+          final hasPreview = tableInfo.any((column) => column['name'] == 'preview');
+          if (!hasPreview) {
+            await db.execute(
+              'ALTER TABLE myduka_ai_threads ADD COLUMN preview TEXT NOT NULL DEFAULT \'\'',
+            );
+          }
         }
       },
     );
@@ -357,6 +489,137 @@ class PosLocalDatabase {
         );
       }
     });
+  }
+
+  Future<List<DaftariRecoverySession>> loadDaftariSessions() async {
+    final db = await database;
+    final rows = await db.query(
+      'daftari_recovery_sessions',
+      orderBy: 'created_at DESC',
+    );
+    return rows.map(DaftariRecoverySession.fromMap).toList();
+  }
+
+  Future<void> upsertDaftariSession(DaftariRecoverySession session) async {
+    final db = await database;
+    await db.insert(
+      'daftari_recovery_sessions',
+      session.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<DaftariLearningRule>> loadDaftariLearningRules() async {
+    final db = await database;
+    final rows = await db.query(
+      'daftari_learning_rules',
+      orderBy: 'last_used_at DESC, hit_count DESC',
+    );
+    return rows.map(DaftariLearningRule.fromMap).toList();
+  }
+
+  Future<void> upsertDaftariLearningRule(DaftariLearningRule rule) async {
+    final db = await database;
+    await db.insert(
+      'daftari_learning_rules',
+      rule.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<MyDukaAiThread>> loadMyDukaAiThreads() async {
+    final db = await database;
+    final rows = await db.query(
+      'myduka_ai_threads',
+      orderBy: 'updated_at DESC, created_at DESC',
+    );
+    return rows
+        .map(
+          (row) => MyDukaAiThread(
+            id: row['id'] as String,
+            title: row['title'] as String,
+            preview: (row['preview'] as String?) ?? '',
+            createdAt: row['created_at'] as String,
+            updatedAt: row['updated_at'] as String,
+          ),
+        )
+        .toList();
+  }
+
+  Future<void> upsertMyDukaAiThread(MyDukaAiThread thread) async {
+    final db = await database;
+    await db.insert(
+      'myduka_ai_threads',
+      <String, Object?>{
+        'id': thread.id,
+        'title': thread.title,
+        'preview': thread.preview,
+        'created_at': thread.createdAt,
+        'updated_at': thread.updatedAt,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> deleteMyDukaAiThread(String threadId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'myduka_ai_messages',
+        where: 'thread_id = ?',
+        whereArgs: <Object?>[threadId],
+      );
+      await txn.delete(
+        'myduka_ai_threads',
+        where: 'id = ?',
+        whereArgs: <Object?>[threadId],
+      );
+    });
+  }
+
+  Future<List<MyDukaAiMessage>> loadMyDukaAiMessages(String threadId) async {
+    final db = await database;
+    final rows = await db.query(
+      'myduka_ai_messages',
+      where: 'thread_id = ?',
+      whereArgs: <Object?>[threadId],
+      orderBy: 'id ASC',
+    );
+    return rows
+        .map(
+            (row) => MyDukaAiMessage(
+              role: row['role'] as String,
+              content: row['content'] as String,
+              imagePath: row['image_path'] as String?,
+            ),
+        )
+        .toList();
+  }
+
+  Future<void> replaceMyDukaAiMessages(
+    String threadId,
+    List<MyDukaAiMessage> messages,
+  ) async {
+    final db = await database;
+    final batch = db.batch();
+    batch.delete(
+      'myduka_ai_messages',
+      where: 'thread_id = ?',
+      whereArgs: <Object?>[threadId],
+    );
+    for (final message in messages) {
+      batch.insert(
+        'myduka_ai_messages',
+        <String, Object?>{
+          'thread_id': threadId,
+          'role': message.role,
+          'content': message.content,
+          'image_path': message.imagePath,
+          'created_at': DateTime.now().toIso8601String(),
+        },
+      );
+    }
+    await batch.commit(noResult: true);
   }
 
   Map<String, Object?> _inventoryToMap(InventoryProductItem item) {

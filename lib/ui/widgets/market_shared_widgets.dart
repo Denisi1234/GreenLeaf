@@ -12,7 +12,8 @@ import '../more/expenses_tracking_page.dart';
 import '../more/help_support_page.dart';
 import '../products/product_management_page.dart';
 import '../reports/reports_page.dart';
-import '../sales/order_history_page.dart';
+import '../scanner/daftari_recovery_pages.dart';
+import '../scanner/daftari_scan_page.dart';
 import '../../service/pos_local_store.dart';
 
 class BackdropGlow extends StatelessWidget {
@@ -24,37 +25,51 @@ class BackdropGlow extends StatelessWidget {
       child: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFFFFEFC), AppColors.pageBackground],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFDFEFF), AppColors.pageBackground],
           ),
         ),
         child: Stack(
           children: [
             Positioned(
-              top: -30,
-              left: -20,
+              top: -20,
+              left: -50,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0x332563EB), Color(0x002563EB)],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 160,
+              right: -40,
               child: Container(
                 width: 220,
                 height: 220,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x22FFFFFF), Color(0x00FFFFFF)],
+                    colors: [Color(0x1A10B981), Color(0x0010B981)],
                   ),
                 ),
               ),
             ),
             Positioned(
-              top: 140,
-              right: -30,
+              bottom: -30,
+              left: 30,
               child: Container(
-                width: 170,
-                height: 170,
+                width: 200,
+                height: 200,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x18FFFFFF), Color(0x00FFFFFF)],
+                    colors: [Color(0x140F172A), Color(0x000F172A)],
                   ),
                 ),
               ),
@@ -185,19 +200,23 @@ class MarketPageHeader extends StatelessWidget {
       ),
       child: SafeArea(
         bottom: false,
-        child: Row(
-          children: [
-            if (showBackButton)
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 40,
-                  height: 40,
+      child: Row(
+        children: [
+          if (showBackButton)
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: isGradient ? Colors.white.withOpacity(0.15) : Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    color: isGradient
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isGradient ? Colors.white.withOpacity(0.2) : AppColors.border,
+                      color: isGradient
+                          ? Colors.white.withValues(alpha: 0.18)
+                          : AppColors.border,
                     ),
                   ),
                   child: Icon(
@@ -253,7 +272,7 @@ class MarketButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveColor = color ?? (isPrimary ? AppColors.primary : Colors.white);
-    
+
     final button = GestureDetector(
       onTap: onTap,
       child: Container(
@@ -261,14 +280,14 @@ class MarketButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
           color: effectiveColor,
-          borderRadius: BorderRadius.circular(AppRadius.standard),
+          borderRadius: BorderRadius.circular(AppRadius.rounded),
           border: isPrimary ? null : Border.all(color: AppColors.border),
           boxShadow: isPrimary
               ? [
                   BoxShadow(
-                    color: effectiveColor.withOpacity(0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: effectiveColor.withValues(alpha: 0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
                 ]
               : null,
@@ -316,8 +335,8 @@ void showMarketNotice(
   final accent =
       type == MarketNoticeType.success ? AppColors.green : AppColors.warning;
   final iconBg = type == MarketNoticeType.success
-      ? const Color(0xFFEFF8F2)
-      : const Color(0xFFFFF5E8);
+      ? const Color(0xFFEFFBF4)
+      : const Color(0xFFFFF8EB);
   final icon = type == MarketNoticeType.success
       ? Icons.check_circle_rounded
       : Icons.error_outline_rounded;
@@ -379,13 +398,13 @@ class _MarketNoticeCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.sharp),
+            borderRadius: BorderRadius.circular(AppRadius.standard),
             border: Border.all(color: AppColors.border),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x22000000),
-                blurRadius: 6,
-                offset: Offset(0, 2),
+                color: Color(0x12000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
               ),
             ],
           ),
@@ -396,7 +415,7 @@ class _MarketNoticeCard extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: iconBg,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: accent, size: 24),
               ),
@@ -455,7 +474,7 @@ class AnimatedCartToken extends StatelessWidget {
       padding: hasImage ? EdgeInsets.zero : EdgeInsets.all(compact ? 4 : 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
             color: Color(0x18000000),
@@ -466,7 +485,7 @@ class AnimatedCartToken extends StatelessWidget {
       ),
       child: hasImage
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(12),
               child: Image.file(
                 File(imagePath!),
                 fit: BoxFit.cover,
@@ -517,7 +536,7 @@ class ProductArt extends StatelessWidget {
 class MarketAppDrawer extends StatelessWidget {
   const MarketAppDrawer({
     super.key,
-    this.selectedItem = 'Reports',
+    this.selectedItem = 'Dashboard',
   });
 
   final String selectedItem;
@@ -526,11 +545,11 @@ class MarketAppDrawer extends StatelessWidget {
   static const Color _drawerIcon = Color(0xFF667085);
 
   static const _primaryItems = [
-    _DrawerItemData('Dashboard', Icons.home_outlined),
-    _DrawerItemData('Sales', Icons.bar_chart_rounded),
+    _DrawerItemData('Sales', Icons.shopping_bag_outlined),
     _DrawerItemData('Products', Icons.inventory_2_outlined),
+    _DrawerItemData('Scan Daftari', Icons.document_scanner_outlined),
     _DrawerItemData('Customers', Icons.people_outline_rounded),
-    _DrawerItemData('Reports', Icons.description_outlined),
+    _DrawerItemData('Dashboard', Icons.grid_view_rounded),
   ];
 
   static const _operationsItems = [
@@ -768,15 +787,11 @@ class _DrawerTile extends StatelessWidget {
   }
 }
 
-Route<void>? _routeForLabel(String label) {
+  Route<void>? _routeForLabel(String label) {
   switch (label) {
-    case 'Dashboard':
-      return MaterialPageRoute<void>(
-        builder: (context) => const MarketHomePage(),
-      );
     case 'Sales':
       return MaterialPageRoute<void>(
-        builder: (context) => const OrderHistoryPage(),
+        builder: (context) => const MarketHomePage(),
       );
     case 'Products':
       return MaterialPageRoute<void>(
@@ -786,13 +801,45 @@ Route<void>? _routeForLabel(String label) {
       return MaterialPageRoute<void>(
         builder: (context) => const CustomersPage(),
       );
-    case 'Reports':
+    case 'Dashboard':
       return MaterialPageRoute<void>(
         builder: (context) => const ReportsPage(),
       );
     case 'Expenses Tracking':
       return MaterialPageRoute<void>(
         builder: (context) => const ExpensesTrackingPage(),
+      );
+    case 'Scan Daftari':
+      return MaterialPageRoute<void>(
+        builder: (context) => const DaftariScanPage(),
+      );
+    case 'OCR Processing':
+      return MaterialPageRoute<void>(
+        builder: (context) => const DaftariOcrProcessingPage(),
+      );
+    case 'AI Matching':
+      return MaterialPageRoute<void>(
+        builder: (context) => const DaftariMatchingPage(),
+      );
+    case 'Review Sales':
+      return MaterialPageRoute<void>(
+        builder: (context) => const DaftariReviewSalesPage(),
+      );
+    case 'Failed Scans':
+      return MaterialPageRoute<void>(
+        builder: (context) => const DaftariFailedScansPage(),
+      );
+    case 'History':
+      return MaterialPageRoute<void>(
+        builder: (context) => const DaftariHistoryPage(),
+      );
+    case 'AI Learning':
+      return MaterialPageRoute<void>(
+        builder: (context) => const DaftariLearningPage(),
+      );
+    case 'Analytics':
+      return MaterialPageRoute<void>(
+        builder: (context) => const DaftariAnalyticsPage(),
       );
     case 'About/Help':
       return MaterialPageRoute<void>(

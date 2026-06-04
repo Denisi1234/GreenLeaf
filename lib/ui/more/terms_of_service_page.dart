@@ -11,8 +11,8 @@ class TermsOfServicePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(

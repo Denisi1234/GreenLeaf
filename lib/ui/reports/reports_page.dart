@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../home/home_page.dart';
+import '../more/smartduka_ai_advisor_page.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'report_hub_page.dart';
 import 'reports_catalog_page.dart';
 
 // ignore_for_file: unused_element, unused_field
@@ -239,15 +241,15 @@ class ReportsPage extends StatelessWidget {
     final todayLabel = _formatToday();
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
       data: interTheme,
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
-        drawer: const MarketAppDrawer(selectedItem: 'Reports'),
+        drawer: const MarketAppDrawer(selectedItem: 'Dashboard'),
         body: SafeArea(
           child: Stack(
             children: [
@@ -271,10 +273,40 @@ class ReportsPage extends StatelessWidget {
                   ),
                 ],
               ),
-            ],
+                Positioned(
+                  right: 14,
+                  bottom: 14,
+                  child: Transform.translate(
+                    offset: const Offset(0, -8),
+                  child: _NewSaleFloatingButton(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const MarketHomePage(),
+                        ),
+                      );
+                    },
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 14,
+                  top: 142,
+                  child: _DukaAiFloatingButton(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) =>
+                              const SmartDukaAiAdvisorPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
     );
   }
 }
@@ -360,7 +392,7 @@ class _PremiumReportsHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'Overview',
+                    'Dashboard',
                     style: TextStyle(
                       color: Color(0xFF33363F),
                       fontSize: 22,
@@ -385,6 +417,250 @@ class _PremiumReportsHeader extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NewSaleFloatingButton extends StatelessWidget {
+  const _NewSaleFloatingButton({
+    required this.onTap,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      child: Material(
+        color: Colors.transparent,
+        elevation: 18,
+        shadowColor: const Color(0x40208F5A),
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF28B26D), Color(0xFF18824E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.16),
+                width: 1,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x40208F5A),
+                  blurRadius: 30,
+                  spreadRadius: 1,
+                  offset: Offset(0, 16),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 31,
+                  height: 31,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'New Sale',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DukaAiFloatingButton extends StatelessWidget {
+  const _DukaAiFloatingButton({
+    required this.onTap,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 650),
+      curve: Curves.easeOutQuart,
+      builder: (context, value, child) {
+        final lift = -14.0 * (1 - value);
+        final scale = 0.92 + (0.08 * value);
+        final glowOpacity = 0.08 + (0.06 * value);
+
+        return Transform.translate(
+          offset: Offset(0, lift),
+          child: Transform.scale(
+            scale: scale,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF2D6CEA).withValues(alpha: glowOpacity),
+                    blurRadius: 26,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: Material(
+        color: Colors.transparent,
+        elevation: 16,
+        shadowColor: const Color(0x332D6CEA),
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 1),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.96),
+                  const Color(0xFFF6F9FE).withValues(alpha: 0.96),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: const Color(0xFFD8E0EB)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1E0F172A),
+                  blurRadius: 22,
+                  offset: Offset(0, 11),
+                ),
+              ],
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: const Color(0xFF2D6CEA).withValues(alpha: 0.12),
+                      ),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 25,
+                      height: 25,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFEAF0FF), Color(0xFFDCE7FF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x120F172A),
+                            blurRadius: 6,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.smart_toy_outlined,
+                        color: Color(0xFF2D6CEA),
+                        size: 14,
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'DUKA AI',
+                          style: TextStyle(
+                            color: ReportsPage._ink,
+                            fontSize: 10.8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.15,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'Ask anything',
+                          style: TextStyle(
+                            color: ReportsPage._muted.withValues(alpha: 0.82),
+                            fontSize: 8.8,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 2),
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(left: 3, top: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2D6CEA).withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 11,
+                    height: 11,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2D6CEA).withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1112,7 +1388,13 @@ class _InsightsPromoCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) => const ReportHubPage(),
+                                  ),
+                                );
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF5B8CFF),
                                 foregroundColor: Colors.white,
@@ -1134,7 +1416,13 @@ class _InsightsPromoCard extends StatelessWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) => const ReportHubPage(),
+                                  ),
+                                );
+                              },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: ReportsPage._ink,
                                 side: const BorderSide(color: Color(0xFFE1E6EE)),
@@ -1144,7 +1432,7 @@ class _InsightsPromoCard extends StatelessWidget {
                                 ),
                               ),
                               child: const Text(
-                                'learn more',
+                                'Report',
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,

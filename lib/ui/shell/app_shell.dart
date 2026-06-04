@@ -23,9 +23,9 @@ class _AppShellState extends State<AppShell>
   late final AnimationController _transitionController;
 
   static const _pages = [
-    MarketHomePage(),
-    ProductManagementPage(),
     ReportsPage(),
+    ProductManagementPage(),
+    MarketHomePage(),
     MorePage(),
   ];
 

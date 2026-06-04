@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../../service/daftari_scan_parser.dart';
 import '../models/product_item.dart';
+import '../scanner/daftari_scan_page.dart';
 import '../widgets/app_design.dart';
 import '../receipt/receipt_success_page.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -95,6 +97,84 @@ class _PaymentPageState extends State<PaymentPage> {
     setState(_orderLines.clear);
   }
 
+  void _mergeImportedItem(ProductItem product, int quantity) {
+    final key = '${product.name}|${product.size}|${product.price}|${product.type.name}';
+    final existingIndex = _orderLines.indexWhere((line) {
+      final lineKey =
+          '${line.product.name}|${line.product.size}|${line.product.price}|${line.product.type.name}';
+      return lineKey == key;
+    });
+
+    if (existingIndex == -1) {
+      _orderLines.add(OrderLineItem(product: product, quantity: quantity));
+      return;
+    }
+
+    _orderLines[existingIndex].quantity += quantity;
+  }
+
+  Future<void> _scanDaftari() async {
+    final importedLines = await Navigator.of(context).push<List<DaftariScanLine>>(
+      MaterialPageRoute<List<DaftariScanLine>>(
+        builder: (context) => const DaftariScanPage(
+          mode: DaftariScanMode.checkout,
+        ),
+      ),
+    );
+
+    if (!mounted || importedLines == null || importedLines.isEmpty) return;
+
+    final store = context.read<PosLocalStore>();
+    var importedUnits = 0;
+    var skippedLines = 0;
+
+    for (final line in importedLines) {
+      final product = line.matchedProduct;
+      final quantity = line.quantity.round();
+      if (product == null || quantity <= 0) {
+        skippedLines += 1;
+        continue;
+      }
+
+      final didAdd = store.addToCartQuantity(product, quantity);
+      if (!didAdd) {
+        skippedLines += 1;
+        continue;
+      }
+
+      setState(() {
+        _mergeImportedItem(product, quantity);
+      });
+      importedUnits += quantity;
+
+      if (line.rawText.trim().isNotEmpty) {
+        await store.rememberDaftariCorrection(
+          sourceText: line.rawText,
+          product: product,
+        );
+      }
+    }
+
+    if (!mounted) return;
+
+    if (importedUnits > 0) {
+      showMarketNotice(
+        context,
+        title: 'Daftari Imported',
+        message: '$importedUnits unit(s) added to the current sale',
+      );
+    }
+
+    if (skippedLines > 0) {
+      showMarketNotice(
+        context,
+        title: 'Some Lines Skipped',
+        message: 'A few lines could not be matched or were out of stock',
+        type: MarketNoticeType.warning,
+      );
+    }
+  }
+
   Future<void> _confirmPayment() async {
     if (!_hasItems) {
       showMarketNotice(
@@ -168,7 +248,7 @@ class _PaymentPageState extends State<PaymentPage> {
                   const SizedBox(height: 6),
                   _CounterActionRow(
                     onAddItem: () => Navigator.of(context).pop(),
-                    onScan: () => _showComingSoon('Scan Barcode'),
+                    onScan: _scanDaftari,
                   ),
                   const SizedBox(height: 6),
                   _TotalsPanel(
@@ -472,7 +552,7 @@ class _CounterActionRow extends StatelessWidget {
             height: 54,
             color: Colors.white,
             alignment: Alignment.center,
-            child: const Icon(Icons.qr_code_scanner,
+            child: const Icon(Icons.document_scanner_outlined,
                 color: Color(0xFF4D6ED8), size: 24),
           ),
         ),

@@ -16,7 +16,7 @@ class MarketHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      drawer: MarketAppDrawer(selectedItem: 'Dashboard'),
+      drawer: MarketAppDrawer(selectedItem: 'Sales'),
       body: MarketDashboardView(),
     );
   }
@@ -33,11 +33,13 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _cartAnimationController;
   late final Animation<double> _cartAnimation;
+  final TextEditingController _searchController = TextEditingController();
   final GlobalKey _cartKey = GlobalKey();
   OverlayEntry? _flyToCartOverlay;
   String? _successMessage;
   ProductArtType? _lastAddedType;
   String? _lastAddedImagePath;
+  String _searchQuery = '';
   int _cartAnimationTicket = 0;
 
   @override
@@ -56,6 +58,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   @override
   void dispose() {
     _clearFlyToCartOverlay();
+    _searchController.dispose();
     _cartAnimationController.dispose();
     super.dispose();
   }
@@ -167,48 +170,114 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
-    final displayProducts = store.products;
+    final query = _searchQuery.trim().toLowerCase();
+    final displayProducts = store.products.where((product) {
+      if (query.isEmpty) return true;
+      final price = product.priceValue.toStringAsFixed(0);
+      return product.name.toLowerCase().contains(query) ||
+          product.size.toLowerCase().contains(query) ||
+          price.contains(query) ||
+          product.type.name.toLowerCase().contains(query);
+    }).toList();
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
     return Theme(
       data: interTheme,
       child: SafeArea(
         child: Stack(
           children: [
-            const Positioned.fill(child: BackdropGlow()),
+            const Positioned.fill(
+              child: ColoredBox(color: Color(0xFFF8FAFC)),
+            ),
             Column(
               children: [
                 const TopBar(),
-                const Divider(height: 1, thickness: 1, color: Color(0xFFE6E7EB)),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                const Divider(height: 1, thickness: 1, color: Color(0xFFE7EAF0)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
                   child: Column(
                     children: [
-                      SearchBox(),
-                      SizedBox(height: 12),
+                      SearchBox(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 14),
                     ],
                   ),
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 144),
-                    child: GridView.builder(
-                      itemCount: displayProducts.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        mainAxisSpacing: 3,
-                        crossAxisSpacing: 3,
-                        childAspectRatio: 0.86,
-                      ),
-                      itemBuilder: (context, index) {
-                        final product = displayProducts[index];
-                        return ProductCard(
-                          product: product,
-                          onTapDown: (details) => _handleProductTap(product, details),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 138),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 620;
+                        if (displayProducts.isEmpty) {
+                          return Center(
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: const Color(0xFFE7EAF0)),
+                              ),
+                              child: const Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.search_off_rounded,
+                                    size: 34,
+                                    color: Color(0xFF7A859C),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    'No products found',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFF33363F),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Try another name or clear the search.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFF7A859C),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        return GridView.builder(
+                          itemCount: displayProducts.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: compact ? 2 : 3,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            childAspectRatio: compact ? 0.80 : 0.86,
+                          ),
+                          itemBuilder: (context, index) {
+                            final product = displayProducts[index];
+                            return ProductCard(
+                              product: product,
+                              onTapDown: (details) =>
+                                  _handleProductTap(product, details),
+                            );
+                          },
                         );
                       },
                     ),
@@ -238,11 +307,6 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                 onCheckout: _openPaymentScreen,
               ),
             ),
-            const Positioned(
-              right: 6,
-              top: 300,
-              child: ScrollHandle(),
-            ),
           ],
         ),
       ),
@@ -256,19 +320,19 @@ class TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Row(
+      padding: EdgeInsets.fromLTRB(14, 10, 14, 10),
+          child: Row(
         children: [
           DrawerMenuButton(),
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Dashboard',
+              'Sales',
               style: TextStyle(
                 color: Color(0xFF33363F),
-                fontSize: 22,
+                fontSize: 21,
                 fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
+                letterSpacing: -0.25,
               ),
             ),
           ),
@@ -288,14 +352,14 @@ class ProfileBlock extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            color: const Color(0xFFF0F2F4),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: const Color(0xFFE0E5EC)),
+            color: const Color(0xFFF5F7FA),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE4E9F0)),
           ),
-          child: const Icon(Icons.person, color: Color(0xFF293140), size: 28),
+          child: const Icon(Icons.person, color: Color(0xFF293140), size: 24),
         ),
         const SizedBox(width: 8),
         const Column(
@@ -306,7 +370,7 @@ class ProfileBlock extends StatelessWidget {
               'John Doe',
               style: TextStyle(
                 color: Color(0xFF33363F),
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -314,7 +378,7 @@ class ProfileBlock extends StatelessWidget {
               'Cashier',
               style: TextStyle(
                 color: Color(0xFF7B859A),
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -332,36 +396,61 @@ class ProfileBlock extends StatelessWidget {
 }
 
 class SearchBox extends StatelessWidget {
-  const SearchBox({super.key});
+  const SearchBox({
+    super.key,
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 56,
+      height: 54,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFD8DDE6)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE1E6ED)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.search_rounded, size: 24, color: Color(0xFF7E8695)),
-          SizedBox(width: 10),
+          const Icon(Icons.search_rounded, size: 18, color: Color(0xFF7E8695)),
+          const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'Search products by name or SKU',
-              style: TextStyle(
-                color: Color(0xFF7A859C),
-                fontSize: 12.8,
-                fontWeight: FontWeight.w500,
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(
+                color: Color(0xFF33363F),
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: 'Search products by name or SKU',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF7A859C),
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                ),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        onPressed: () {
+                          controller.clear();
+                          onChanged('');
+                        },
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: Color(0xFF8A93A7),
+                        ),
+                      )
+                    : null,
               ),
             ),
           ),
@@ -401,12 +490,12 @@ class ProductCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFE7EAF0)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0C0E1726),
-              blurRadius: 5,
+              color: Color(0x060E1726),
+              blurRadius: 6,
               offset: Offset(0, 2),
             ),
           ],
@@ -415,7 +504,7 @@ class ProductCard extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -425,7 +514,7 @@ class ProductCard extends StatelessWidget {
                       child: _DashboardTileArt(product: product),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: Text(
@@ -435,13 +524,13 @@ class ProductCard extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFF33363F),
-                        fontSize: 13,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.3,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: Text(
@@ -451,7 +540,7 @@ class ProductCard extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFF7A859C),
-                        fontSize: 10,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -460,27 +549,27 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: 10,
-              right: 10,
+              top: 8,
+              right: 8,
               child: Container(
-                width: 28,
-                height: 28,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.96),
+                  color: const Color(0xFFF8FAFC),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE7EAF0)),
+                  border: Border.all(color: const Color(0xFFE1E6ED)),
                   boxShadow: const [
                     BoxShadow(
-                      color: Color(0x140E1726),
-                      blurRadius: 6,
+                      color: Color(0x0C0E1726),
+                      blurRadius: 5,
                       offset: Offset(0, 2),
                     ),
                   ],
                 ),
                 child: const Icon(
                   Icons.add_rounded,
-                  color: Color(0xFF2B6FF3),
-                  size: 18,
+                  color: Color(0xFF1C8F5A),
+                  size: 15,
                 ),
               ),
             ),
@@ -524,27 +613,22 @@ class _DashboardFallbackArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initials = label.trim().isEmpty ? '?' : label.trim()[0].toUpperCase();
-    final isCircle = label.length.isOdd;
 
     return Center(
       child: Container(
-        width: 72,
-        height: 72,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
-          color: label.toLowerCase().contains('g')
-              ? const Color(0xFFF2F2FD)
-              : const Color(0xFFFF4036),
-          shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
-          borderRadius: isCircle ? null : BorderRadius.circular(14),
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE3E8EF)),
         ),
         alignment: Alignment.center,
         child: Text(
           initials,
-          style: TextStyle(
-            color: label.toLowerCase().contains('g')
-                ? Colors.black87
-                : Colors.transparent,
-            fontSize: 26,
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 23,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -572,13 +656,14 @@ class CheckoutBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFF202938),
-        borderRadius: BorderRadius.circular(4),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE1E6ED)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x32000000),
-            blurRadius: 8,
-            offset: Offset(0, 3),
+            color: Color(0x080E1726),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -589,34 +674,35 @@ class CheckoutBar extends StatelessWidget {
             children: [
               Container(
                 key: cartKey,
-                width: 58,
-                height: 58,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF8EA06D),
-                  borderRadius: BorderRadius.circular(4),
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE1E6ED)),
                 ),
                 child: const Icon(
                   Icons.shopping_cart_outlined,
-                  color: Colors.white,
-                  size: 29,
+                  color: Color(0xFF1F2937),
+                  size: 24,
                 ),
               ),
               Positioned(
-                top: -3,
-                right: -3,
+                top: -2,
+                right: -2,
                 child: Container(
-                  width: 24,
-                  height: 24,
+                  width: 22,
+                  height: 22,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
+                    color: const Color(0xFF1C8F5A),
+                    borderRadius: BorderRadius.circular(11),
                   ),
                   child: Center(
                     child: Text(
                       '$itemCount',
                       style: const TextStyle(
-                        color: Color(0xFF202938),
-                        fontSize: 13,
+                        color: Colors.white,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -633,18 +719,18 @@ class CheckoutBar extends StatelessWidget {
               children: [
                 Text(
                   '$itemCount Items',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: const TextStyle(
+                    color: Color(0xFF1F2937),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 const Text(
                   'View cart',
                   style: TextStyle(
-                    color: Color(0xFFD0D5DE),
-                    fontSize: 10.5,
+                    color: Color(0xFF7A859C),
+                    fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -653,8 +739,8 @@ class CheckoutBar extends StatelessWidget {
           ),
           Container(
             width: 1,
-            height: 46,
-            color: Colors.white.withValues(alpha: 0.14),
+            height: 42,
+            color: const Color(0xFFE7EAF0),
           ),
           const SizedBox(width: 12),
           Column(
@@ -663,8 +749,8 @@ class CheckoutBar extends StatelessWidget {
               Text(
                 'TSH ${total.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
+                  color: Color(0xFF1F2937),
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -672,8 +758,8 @@ class CheckoutBar extends StatelessWidget {
               const Text(
                 'Total',
                 style: TextStyle(
-                  color: Color(0xFFD0D5DE),
-                  fontSize: 10.5,
+                  color: Color(0xFF7A859C),
+                  fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -683,24 +769,25 @@ class CheckoutBar extends StatelessWidget {
           GestureDetector(
             onTap: onCheckout,
             child: Container(
-              height: 58,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF8EA06D),
-                borderRadius: BorderRadius.circular(4),
+                color: const Color(0xFF1C8F5A),
+                borderRadius: BorderRadius.circular(14),
               ),
-                child: const Row(
-                  children: [
-                    Text(
-                      'Checkout',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Checkout',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
                     ),
+                  ),
                   SizedBox(width: 10),
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
                 ],
               ),
             ),

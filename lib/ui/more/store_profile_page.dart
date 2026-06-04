@@ -137,8 +137,8 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
     final logoPath = _logoFile?.path ?? _initialLogoPath;
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
