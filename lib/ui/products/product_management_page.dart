@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element, prefer_const_constructors
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -20,11 +22,24 @@ class ProductManagementPage extends StatefulWidget {
 class _ProductManagementPageState extends State<ProductManagementPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedCategory = 'All';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_handleSearchTextChanged);
+  }
 
   @override
   void dispose() {
+    _searchController.removeListener(_handleSearchTextChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _handleSearchTextChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _openAddProductPage() async {
@@ -103,7 +118,14 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final query = _searchQuery.trim().toLowerCase();
+    final categories = <String>{
+      'All',
+      ...store.inventory.map((product) => product.category),
+    }.toList();
     final filteredItems = store.inventory.where((product) {
+      final matchesCategory =
+          _selectedCategory == 'All' || product.category == _selectedCategory;
+      if (!matchesCategory) return false;
       if (query.isEmpty) return true;
       final stockLabel = product.stockState == InventoryStockState.lowStock
           ? 'low stock'
@@ -127,59 +149,93 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       data: interTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
+        floatingActionButton: _AddProductFab(
+          onPressed: _openAddProductPage,
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: SafeArea(
           child: Stack(
             children: [
+              const Positioned.fill(child: BackdropGlow()),
               Column(
                 children: [
-                  _PremiumProductsHeader(
-                    onAddTap: _openAddProductPage,
+                  const _ProductsHeader(),
+                  _PinnedSearchPanel(
+                    controller: _searchController,
+                    onSearchChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    onClearSearch: () {
+                      setState(() {
+                        _searchController.clear();
+                        _searchQuery = '';
+                      });
+                    },
                   ),
                   Expanded(
-                    child: SingleChildScrollView(
+                    child: CustomScrollView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _ItemsSearchBar(
-                            controller: _searchController,
-                            onChanged: (value) {
+                      slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: _CategoryStrip(
+                            categories: categories,
+                            selectedCategory: _selectedCategory,
+                            onSelected: (value) {
                               setState(() {
-                                _searchQuery = value;
+                                _selectedCategory = value;
                               });
                             },
                           ),
-                          const SizedBox(height: 18),
-                          if (filteredItems.isEmpty)
-                            _EmptyProductsState(
-                              query: _searchQuery,
-                              onAddTap: _openAddProductPage,
-                              onClearFilter: () {
-                                setState(() {
-                                  _searchController.clear();
-                                  _searchQuery = '';
-                                });
-                              },
-                            )
-                          else
-                            ListView.separated(
-                              itemCount: filteredItems.length,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              separatorBuilder: (_, __) => const SizedBox(height: 14),
-                              itemBuilder: (context, index) {
-                                final product = filteredItems[index];
-                                return _InventoryRowTile(
-                                  product: product,
-                                  onEdit: () => _editProduct(product),
-                                  onDelete: () => _deleteProduct(product),
-                                );
-                              },
-                            ),
-                          const SizedBox(height: 20),
-                        ],
+                        ),
                       ),
+                      if (filteredItems.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                            child: _ProductsEmptyState(
+                              query: _searchQuery,
+                              category: _selectedCategory,
+                                onAddTap: _openAddProductPage,
+                                onClearFilter: () {
+                                  setState(() {
+                                    _searchController.clear();
+                                    _searchQuery = '';
+                                    _selectedCategory = 'All';
+                                  });
+                                },
+                              ),
+                            ),
+                          )
+                        else
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 92),
+                            sliver: SliverGrid(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 14,
+                                crossAxisSpacing: 14,
+                                childAspectRatio: 0.72,
+                              ),
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  final product = filteredItems[index];
+                                  return _ProductGridCard(
+                                    product: product,
+                                    onTap: () => _editProduct(product),
+                                    onDelete: () => _deleteProduct(product),
+                                  );
+                                },
+                                childCount: filteredItems.length,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -203,6 +259,652 @@ String _money(double value) {
     }
   }
   return 'TSH $buffer';
+}
+
+
+class _ProductsHeader extends StatelessWidget {
+  const _ProductsHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: const [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Products',
+                  style: TextStyle(
+                    color: AppColors.ink,
+                    fontSize: 28,
+                    height: 1.1,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Browse, filter, and edit items',
+                  style: TextStyle(
+                    color: Color(0xFF7A859C),
+                    fontSize: 13,
+                    height: 1.2,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PinnedSearchHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _PinnedSearchHeaderDelegate({required this.child});
+
+  final Widget child;
+
+  @override
+  double get minExtent => 0;
+
+  @override
+  double get maxExtent => 0;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return const SizedBox.shrink();
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedSearchHeaderDelegate oldDelegate) {
+    return false;
+  }
+}
+
+class _PinnedSearchPanel extends StatelessWidget {
+  const _PinnedSearchPanel({
+    required this.controller,
+    required this.onSearchChanged,
+    required this.onClearSearch,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onClearSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE1E6ED)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x060E1726),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: _CatalogSearchBar(
+            controller: controller,
+            onChanged: onSearchChanged,
+            onClear: onClearSearch,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CatalogSearchBar extends StatelessWidget {
+  const _CatalogSearchBar({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 54,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE1E6ED)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x060E1726),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search_rounded, size: 18, color: Color(0xFF7E8695)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(
+                color: Color(0xFF33363F),
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: 'Search products by name or SKU',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF7A859C),
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                ),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        onPressed: onClear,
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: Color(0xFF8A93A7),
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryStrip extends StatelessWidget {
+  const _CategoryStrip({
+    required this.categories,
+    required this.selectedCategory,
+    required this.onSelected,
+  });
+
+  final List<String> categories;
+  final String selectedCategory;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final selected = category == selectedCategory;
+          return _CategoryChip(
+            label: category,
+            selected: selected,
+            onTap: () => onSelected(category),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF1B9B69) : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? const Color(0xFF1B9B69) : const Color(0xFFE2E8F0),
+            ),
+            boxShadow: selected
+                ? const [
+                    BoxShadow(
+                      color: Color(0x221B9B69),
+                      blurRadius: 12,
+                      offset: Offset(0, 5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : const Color(0xFF425062),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductGridCard extends StatelessWidget {
+  const _ProductGridCard({
+    required this.product,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final InventoryProductItem product;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE1E5EB)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x050F172A),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 4,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(18),
+                        ),
+                        child: ColoredBox(
+                          color: const Color(0xFFF8FAFC),
+                          child: _ProductArtFrame(product: product),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  product.name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.ink,
+                                    fontSize: 15,
+                                    height: 1.15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _money(product.sellingPrice),
+                                  style: const TextStyle(
+                                    color: Color(0xFF1B9B69),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 0),
+                            child: _EditActionsButton(
+                              onEdit: onTap,
+                              onDelete: onDelete,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _ProductCardAction {
+  edit,
+  delete,
+}
+
+class _EditActionsButton extends StatelessWidget {
+  const _EditActionsButton({
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_ProductCardAction>(
+      onSelected: (action) {
+        switch (action) {
+          case _ProductCardAction.edit:
+            onEdit();
+            break;
+          case _ProductCardAction.delete:
+            onDelete();
+            break;
+        }
+      },
+      offset: const Offset(0, 42),
+      position: PopupMenuPosition.over,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE1E6ED)),
+      ),
+      itemBuilder: (context) => const [
+        PopupMenuItem<_ProductCardAction>(
+          value: _ProductCardAction.edit,
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1B9B69)),
+              SizedBox(width: 10),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        PopupMenuItem<_ProductCardAction>(
+          value: _ProductCardAction.delete,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFEF4444)),
+              SizedBox(width: 10),
+              Text('Delete'),
+            ],
+          ),
+        ),
+      ],
+      child: const Padding(
+        padding: EdgeInsets.all(6),
+        child: Icon(
+          Icons.edit_outlined,
+          color: Color(0xFF1B9B69),
+          size: 28,
+        ),
+      ),
+    );
+  }
+}
+
+class _AddProductFab extends StatelessWidget {
+  const _AddProductFab({
+    required this.onPressed,
+  });
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: const Offset(0, -10),
+      child: FloatingActionButton.extended(
+        onPressed: onPressed,
+        backgroundColor: const Color(0xFF16825B),
+        foregroundColor: Colors.white,
+        elevation: 12,
+        highlightElevation: 14,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        extendedPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        icon: const Icon(
+          Icons.add_rounded,
+          size: 24,
+        ),
+        label: const Text(
+          'Add product',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.1,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductArtFrame extends StatelessWidget {
+  const _ProductArtFrame({
+    required this.product,
+  });
+
+  final InventoryProductItem product;
+
+  @override
+  Widget build(BuildContext context) {
+    if (product.imagePath != null && product.imagePath!.isNotEmpty) {
+      return Image.file(
+        File(product.imagePath!),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, __, ___) => Center(
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: ProductArt(type: product.artType),
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: ProductArt(type: product.artType),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductsEmptyState extends StatelessWidget {
+  const _ProductsEmptyState({
+    required this.query,
+    required this.category,
+    required this.onAddTap,
+    required this.onClearFilter,
+  });
+
+  final String query;
+  final String category;
+  final VoidCallback onAddTap;
+  final VoidCallback onClearFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE3E7ED)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x060F172A),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 92,
+            height: 92,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F8F6),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              size: 40,
+              color: Color(0xFF1B9B69),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            query.isEmpty && category == 'All'
+                ? 'No products yet'
+                : 'No products found',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.ink,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            query.isEmpty && category == 'All'
+                ? 'Your inventory will appear here once products are added.'
+                : 'Try another search or switch to a different category.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF7A859C),
+              fontSize: 13.5,
+              height: 1.35,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (query.isEmpty && category == 'All')
+            ElevatedButton(
+              onPressed: onAddTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1B9B69),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'Add product',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            )
+          else
+            OutlinedButton(
+              onPressed: onClearFilter,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.ink,
+                side: const BorderSide(color: Color(0xFFD9E2EC)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text(
+                'Clear filters',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 

@@ -1645,36 +1645,46 @@ class _Composer extends StatelessWidget {
             ),
           ],
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            height: 54,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFFE9EEF4)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE1E6ED)),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x060F172A),
-                  blurRadius: 12,
-                  offset: Offset(0, 5),
+                  color: Color(0x060E1726),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 3, right: 6),
-                  child: IconButton(
-                    onPressed: isSending ? null : onAttachTap,
-                    icon: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Color(0xFF16A34A),
-                      size: 18,
+                Material(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    onTap: isSending ? null : onAttachTap,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE7ECF2)),
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Color(0xFF7E8695),
+                        size: 18,
+                      ),
                     ),
-                    splashRadius: 14,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
                   ),
                 ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
                     controller: controller,
@@ -1688,20 +1698,19 @@ class _Composer extends StatelessWidget {
                     cursorColor: const Color(0xFF16A34A),
                     onSubmitted: (_) => onSend(),
                     style: const TextStyle(
-                      color: Color(0xFF111827),
-                      fontSize: 15.2,
+                      color: Color(0xFF33363F),
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w500,
                     ),
                     decoration: const InputDecoration(
                       isDense: true,
-                      isCollapsed: true,
                       border: InputBorder.none,
                       hintText: 'Type a message...',
-                      contentPadding: EdgeInsets.symmetric(vertical: 2),
+                      contentPadding: EdgeInsets.symmetric(vertical: 10),
                       hintStyle: TextStyle(
-                        color: Color(0xFF98A2B3),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF7A859C),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -1709,10 +1718,10 @@ class _Composer extends StatelessWidget {
                 const SizedBox(width: 5),
                 Material(
                   color: const Color(0xFF16A34A),
-                  shape: const CircleBorder(),
+                  borderRadius: BorderRadius.circular(14),
                   child: InkWell(
                     onTap: isSending ? null : onSend,
-                    customBorder: const CircleBorder(),
+                    borderRadius: BorderRadius.circular(14),
                     child: SizedBox(
                       width: 40,
                       height: 40,
