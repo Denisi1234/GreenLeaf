@@ -1,6 +1,8 @@
 import '../ui/models/product_item.dart';
 
+/// Represents a completed sale order with all transaction details.
 class CompletedOrder {
+  /// Creates an immutable completed order record.
   const CompletedOrder({
     required this.id,
     required this.dateTime,
@@ -36,6 +38,8 @@ class CompletedOrder {
   final String? discountLabel;
 }
 
+/// Single line item within an order.
+/// Links to product data and calculates line total.
 class OrderLine {
   const OrderLine({
     required this.itemCode,

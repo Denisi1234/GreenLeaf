@@ -126,26 +126,14 @@ class _AppShellState extends State<AppShell>
             titleWeight: FontWeight.w800,
             showBorder: true,
             actions: [
-              HeaderActionButton(
-                icon: Icons.smart_toy_outlined,
-                background: Colors.white,
-                foreground: const Color(0xFF33363F),
-                borderColor: const Color(0xFFE7EAF0),
-                onTap: () {
+              MarketHeaderActionButtons(
+                onDukaAiTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (context) => DukaAiAdvisorPage(),
+                      builder: (context) => const DukaAiAdvisorPage(),
                     ),
                   );
                 },
-              ),
-              const SizedBox(width: 8),
-              HeaderActionButton(
-                icon: Icons.notifications_none_rounded,
-                background: Colors.white,
-                foreground: const Color(0xFF33363F),
-                borderColor: const Color(0xFFE7EAF0),
-                showDot: true,
               ),
             ],
           ),

@@ -25,13 +25,13 @@ class CustomerDetailsPage extends StatelessWidget {
       },
       builder: (context, customer, _) {
         if (customer == null) {
-          return Scaffold(
+          return const Scaffold(
             backgroundColor: Colors.white,
             body: SafeArea(
               child: Column(
                 children: [
-                  const MarketPageHeader(title: 'Customer Details'),
-                  const Expanded(
+                  MarketPageHeader(title: 'Customer Details'),
+                  Expanded(
                     child: Center(
                       child: Text(
                         'Customer no longer exists',
@@ -63,11 +63,11 @@ class _CustomerDetailsView extends StatelessWidget {
     final store = context.watch<PosLocalStore>();
     final orders = store.ordersForCustomer(customer.name);
     final totalSpent = orders.fold<double>(0, (s, o) => s + o.total);
+    final debitBalance = customer.debitBalance;
     final avg = orders.isEmpty ? 0.0 : totalSpent / orders.length;
     final lastOrder = orders.isEmpty ? null : orders.first;
-    final lastOrderDate = lastOrder == null
-        ? null
-        : DateTime.tryParse(lastOrder.dateTime);
+    final lastOrderDate =
+        lastOrder == null ? null : DateTime.tryParse(lastOrder.dateTime);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -101,6 +101,11 @@ class _CustomerDetailsView extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
                 children: [
                   _HeroCard(customer: customer),
+                  const SizedBox(height: 14),
+                  if (debitBalance > 0)
+                    _DueBanner(amount: debitBalance)
+                  else
+                    const _DueBanner(amount: 0),
                   const SizedBox(height: 14),
                   _ContactActions(customer: customer),
                   const SizedBox(height: 18),
@@ -177,12 +182,11 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(16),
-      ),
+      backgroundColor: const Color(0xFF0F172A),
+      borderColor: const Color(0xFF0F172A),
+      radius: 16,
       child: Row(
         children: [
           Container(
@@ -262,6 +266,41 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
+class _DueBanner extends StatelessWidget {
+  const _DueBanner({required this.amount});
+
+  final double amount;
+
+  @override
+  Widget build(BuildContext context) {
+    if (amount <= 0) return const SizedBox.shrink();
+
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.all(14),
+      backgroundColor: const Color(0xFFFEF2F2),
+      borderColor: const Color(0xFFFECACA),
+      radius: 12,
+      child: Row(
+        children: [
+          const Icon(Icons.receipt_long_outlined,
+              color: Color(0xFFB91C1C), size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Outstanding debit due: TSh ${amount.toStringAsFixed(0)}',
+              style: const TextStyle(
+                color: Color(0xFF7F1D1D),
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ContactActions extends StatelessWidget {
   const _ContactActions({required this.customer});
 
@@ -274,7 +313,8 @@ class _ContactActions extends StatelessWidget {
   ) async {
     final uri = Uri.parse(scheme);
     try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched && context.mounted) {
         showMarketNotice(
           context,
@@ -305,7 +345,8 @@ class _ContactActions extends StatelessWidget {
             icon: Icons.call_rounded,
             label: 'Call',
             color: AppColors.primary,
-            onTap: () => _open(context, 'tel:$phone', 'Phone dialer unavailable'),
+            onTap: () =>
+                _open(context, 'tel:$phone', 'Phone dialer unavailable'),
           ),
         ),
         const SizedBox(width: 10),
@@ -355,27 +396,27 @@ class _ActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 64,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.18)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
+      child: MarketSurfaceCard(
+        backgroundColor: color.withValues(alpha: 0.08),
+        borderColor: color.withValues(alpha: 0.18),
+        radius: 12,
+        child: SizedBox(
+          height: 64,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -454,13 +495,10 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+      borderColor: AppColors.border,
+      radius: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -552,13 +590,10 @@ class _InfoBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+      borderColor: AppColors.border,
+      radius: 12,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -617,14 +652,12 @@ class _OrdersSection extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         if (orders.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.pageBackground,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Column(
+          const MarketSurfaceCard(
+            padding: EdgeInsets.all(20),
+            backgroundColor: AppColors.pageBackground,
+            borderColor: AppColors.pageBackground,
+            radius: 12,
+            child: Column(
               children: [
                 Icon(
                   Icons.receipt_long_outlined,
@@ -677,63 +710,62 @@ class _OrderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: MarketSurfaceCard(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        borderColor: AppColors.border,
+        radius: 12,
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.receipt_rounded,
+                color: AppColors.primary,
+                size: 18,
+              ),
             ),
-            child: const Icon(
-              Icons.receipt_rounded,
-              color: AppColors.primary,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '#${order.id}',
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '#${order.id}',
+                    style: const TextStyle(
+                      color: AppColors.ink,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${order.date} · ${order.time}',
-                  style: const TextStyle(
-                    color: AppColors.mutedText,
-                    fontSize: 12,
+                  const SizedBox(height: 2),
+                  Text(
+                    '${order.date} · ${order.time}',
+                    style: const TextStyle(
+                      color: AppColors.mutedText,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Text(
-            'TSh ${_formatMoney(order.total)}',
-            style: const TextStyle(
-              color: AppColors.ink,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
+            Text(
+              'TSh ${_formatMoney(order.total)}',
+              style: const TextStyle(
+                color: AppColors.ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -751,8 +783,18 @@ String _formatMoney(double v) {
 
 String _formatDate(DateTime d) {
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return '${months[d.month - 1]} ${d.day}, ${d.year}';
 }

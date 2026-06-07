@@ -22,7 +22,7 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 11,
+      version: 13,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE inventory_products (
@@ -90,6 +90,13 @@ class PosLocalDatabase {
             contact_number TEXT NOT NULL,
             email_address TEXT NOT NULL,
             physical_address TEXT NOT NULL,
+            tax_id TEXT NOT NULL DEFAULT '',
+            weekday_open TEXT NOT NULL DEFAULT '',
+            weekday_close TEXT NOT NULL DEFAULT '',
+            saturday_open TEXT NOT NULL DEFAULT '',
+            saturday_close TEXT NOT NULL DEFAULT '',
+            sunday_schedule TEXT NOT NULL DEFAULT '',
+            open_24_hours INTEGER NOT NULL DEFAULT 0,
             logo_path TEXT,
             member_since TEXT NOT NULL
           )
@@ -285,17 +292,18 @@ class PosLocalDatabase {
           ''');
         }
         if (oldVersion < 9) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS customers (
-              id TEXT PRIMARY KEY,
-              name TEXT NOT NULL,
-              email TEXT NOT NULL DEFAULT '',
-              phone TEXT NOT NULL,
-              address TEXT NOT NULL DEFAULT '',
-              created_at TEXT NOT NULL DEFAULT '',
-              tags TEXT NOT NULL DEFAULT ''
-            )
-          ''');
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS customers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL DEFAULT '',
+            phone TEXT NOT NULL,
+            address TEXT NOT NULL DEFAULT '',
+            debit_balance REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT '',
+            tags TEXT NOT NULL DEFAULT ''
+          )
+        ''');
         }
         if (oldVersion < 7) {
           final tableInfo = await db.rawQuery('PRAGMA table_info(myduka_ai_threads)');
@@ -318,6 +326,39 @@ class PosLocalDatabase {
               notes TEXT
             )
           ''');
+        }
+        if (oldVersion < 12) {
+          final tableInfo = await db.rawQuery('PRAGMA table_info(app_profile)');
+          Future<void> addColumn(String name, String definition) async {
+            final exists = tableInfo.any((column) => column['name'] == name);
+            if (!exists) {
+              await db.execute('ALTER TABLE app_profile ADD COLUMN $definition');
+            }
+          }
+
+          await addColumn('tax_id', 'tax_id TEXT NOT NULL DEFAULT \'\'');
+          await addColumn(
+              'weekday_open', 'weekday_open TEXT NOT NULL DEFAULT \'\'');
+          await addColumn(
+              'weekday_close', 'weekday_close TEXT NOT NULL DEFAULT \'\'');
+          await addColumn(
+              'saturday_open', 'saturday_open TEXT NOT NULL DEFAULT \'\'');
+          await addColumn(
+              'saturday_close', 'saturday_close TEXT NOT NULL DEFAULT \'\'');
+          await addColumn(
+              'sunday_schedule', 'sunday_schedule TEXT NOT NULL DEFAULT \'\'');
+          await addColumn(
+              'open_24_hours', 'open_24_hours INTEGER NOT NULL DEFAULT 0');
+        }
+        if (oldVersion < 13) {
+          final tableInfo = await db.rawQuery('PRAGMA table_info(customers)');
+          final hasDebitBalance =
+              tableInfo.any((column) => column['name'] == 'debit_balance');
+          if (!hasDebitBalance) {
+            await db.execute(
+              'ALTER TABLE customers ADD COLUMN debit_balance REAL NOT NULL DEFAULT 0',
+            );
+          }
         }
       },
     );

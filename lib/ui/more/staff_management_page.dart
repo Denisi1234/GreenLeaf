@@ -14,7 +14,6 @@ class StaffManagementPage extends StatefulWidget {
 }
 
 class _StaffManagementPageState extends State<StaffManagementPage> {
-
   static const List<String> _permissionCatalog = <String>[
     'View Sales',
     'View Reports',
@@ -78,18 +77,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                   height: 62,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF356BD8), Color(0xFF2B5FCE)],
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x22356BD8),
-                        blurRadius: 18,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
+                    color: const Color(0xFF2B5FCE),
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -127,13 +115,6 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                     borderRadius: BorderRadius.circular(8),
                     color: Colors.white,
                     border: Border.all(color: const Color(0xFFD9DEE8)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x0A000000),
-                        blurRadius: 8,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -186,8 +167,9 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                           child: _RoleCard(
                             role: roles[index],
                             visual: _visualForRole(roles[index]),
-                            assignedStaffCount:
-                                store.staffMembersForRole(roles[index].id).length,
+                            assignedStaffCount: store
+                                .staffMembersForRole(roles[index].id)
+                                .length,
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute<void>(
@@ -254,19 +236,9 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE1E5EC)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 8,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
+    return MarketSurfaceCard(
+      borderColor: const Color(0xFFE1E5EC),
+      radius: 8,
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
@@ -518,7 +490,8 @@ class _AddRoleSheetState extends State<_AddRoleSheet> {
                       ),
                       itemBuilder: (context, index) {
                         final permission = widget.permissionCatalog[index];
-                        final isSelected = _selectedPermissions.contains(permission);
+                        final isSelected =
+                            _selectedPermissions.contains(permission);
                         return InkWell(
                           borderRadius: BorderRadius.circular(8),
                           onTap: () {

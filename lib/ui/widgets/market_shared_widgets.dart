@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'app_design.dart';
@@ -20,62 +21,8 @@ class BackdropGlow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFFDFEFF), AppColors.pageBackground],
-          ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -20,
-              left: -50,
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x332563EB), Color(0x002563EB)],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 160,
-              right: -40,
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x1A10B981), Color(0x0010B981)],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -30,
-              left: 30,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x140F172A), Color(0x000F172A)],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return const IgnorePointer(
+      child: ColoredBox(color: AppColors.pageBackground),
     );
   }
 }
@@ -193,26 +140,19 @@ class HeaderActionButton extends StatelessWidget {
           color: background,
           shape: BoxShape.circle,
           border: borderColor != null ? Border.all(color: borderColor!) : null,
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x100E1726),
-              blurRadius: 10,
-              offset: Offset(0, 2),
-            ),
-          ],
         ),
         child: Stack(
           children: [
             Center(child: Icon(icon, color: foreground, size: 20)),
             if (showDot)
-              Positioned(
+                Positioned(
                 right: 11,
                 top: 11,
                 child: Container(
                   width: 7,
                   height: 7,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF2B6FF3),
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -220,6 +160,58 @@ class HeaderActionButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class MarketHeaderActionButtons extends StatelessWidget {
+  const MarketHeaderActionButtons({
+    super.key,
+    required this.onDukaAiTap,
+    this.onNotificationTap,
+    this.aiBackground = Colors.white,
+    this.aiForeground = const Color(0xFF33363F),
+    this.aiBorderColor = const Color(0xFFE7EAF0),
+    this.notificationBackground = Colors.white,
+    this.notificationForeground = const Color(0xFF33363F),
+    this.notificationBorderColor = const Color(0xFFE7EAF0),
+    this.showNotificationDot = false,
+    this.spacing = 8,
+  });
+
+  final VoidCallback onDukaAiTap;
+  final VoidCallback? onNotificationTap;
+  final Color aiBackground;
+  final Color aiForeground;
+  final Color aiBorderColor;
+  final Color notificationBackground;
+  final Color notificationForeground;
+  final Color notificationBorderColor;
+  final bool showNotificationDot;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        HeaderActionButton(
+          icon: Icons.smart_toy_outlined,
+          background: aiBackground,
+          foreground: aiForeground,
+          borderColor: aiBorderColor,
+          onTap: onDukaAiTap,
+        ),
+        SizedBox(width: spacing),
+        HeaderActionButton(
+          icon: Icons.notifications_none_rounded,
+          background: notificationBackground,
+          foreground: notificationForeground,
+          borderColor: notificationBorderColor,
+          showDot: showNotificationDot,
+          onTap: onNotificationTap,
+        ),
+      ],
     );
   }
 }
@@ -283,7 +275,7 @@ class MarketPageHeader extends StatelessWidget {
             ? const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
+                colors: [AppColors.primary, AppColors.primaryDeep],
               )
             : null,
         borderRadius: hasGradient
@@ -415,6 +407,16 @@ class MarketButton extends StatelessWidget {
     this.isPrimary = true,
     this.isFullWidth = true,
     this.color,
+    this.foregroundColor,
+    this.borderColor,
+    this.height = 56,
+    this.radius = AppRadius.rounded,
+    this.paddingHorizontal = 24,
+    this.boxShadow,
+    this.fontSize = 16,
+    this.fontWeight = FontWeight.w700,
+    this.iconSize = 22,
+    this.iconSpacing = 10,
   });
 
   final String label;
@@ -423,30 +425,38 @@ class MarketButton extends StatelessWidget {
   final bool isPrimary;
   final bool isFullWidth;
   final Color? color;
+  final Color? foregroundColor;
+  final Color? borderColor;
+  final double height;
+  final double radius;
+  final double paddingHorizontal;
+  final List<BoxShadow>? boxShadow;
+  final double fontSize;
+  final FontWeight fontWeight;
+  final double iconSize;
+  final double iconSpacing;
 
   @override
   Widget build(BuildContext context) {
     final effectiveColor =
         color ?? (isPrimary ? AppColors.primary : Colors.white);
+    final effectiveForeground =
+        foregroundColor ?? (isPrimary ? Colors.white : AppColors.ink);
+    final effectiveBorderColor =
+        borderColor ?? (isPrimary ? null : AppColors.border);
 
     final button = GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        height: height,
+        padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
         decoration: BoxDecoration(
           color: effectiveColor,
-          borderRadius: BorderRadius.circular(AppRadius.rounded),
-          border: isPrimary ? null : Border.all(color: AppColors.border),
-          boxShadow: isPrimary
-              ? [
-                  BoxShadow(
-                    color: effectiveColor.withValues(alpha: 0.18),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
+          borderRadius: BorderRadius.circular(radius),
+          border: effectiveBorderColor != null
+              ? Border.all(color: effectiveBorderColor)
               : null,
+          boxShadow: boxShadow,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -455,17 +465,17 @@ class MarketButton extends StatelessWidget {
             if (icon != null) ...[
               Icon(
                 icon,
-                color: isPrimary ? Colors.white : AppColors.ink,
-                size: 22,
+                color: effectiveForeground,
+                size: iconSize,
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: iconSpacing),
             ],
             Text(
               label,
               style: TextStyle(
-                color: isPrimary ? Colors.white : AppColors.ink,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                color: effectiveForeground,
+                fontSize: fontSize,
+                fontWeight: fontWeight,
                 letterSpacing: -0.1,
               ),
             ),
@@ -476,6 +486,166 @@ class MarketButton extends StatelessWidget {
 
     if (isFullWidth) return button;
     return Center(child: button);
+  }
+}
+
+class MarketSearchField extends StatelessWidget {
+  const MarketSearchField({
+    super.key,
+    required this.controller,
+    required this.hintText,
+    required this.onChanged,
+    this.onClear,
+    this.height = 56,
+    this.radius = 16,
+    this.backgroundColor = Colors.white,
+    this.borderColor = AppColors.border,
+    this.iconColor = const Color(0xFF94A3B8),
+    this.hintColor = const Color(0xFF94A3B8),
+    this.textColor = const Color(0xFF111827),
+    this.leadingIcon = Icons.search_rounded,
+    this.paddingHorizontal = 14,
+    this.iconSize = 20,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+  final VoidCallback? onClear;
+  final double height;
+  final double radius;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color iconColor;
+  final Color hintColor;
+  final Color textColor;
+  final IconData leadingIcon;
+  final double paddingHorizontal;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasValue = controller.text.isNotEmpty;
+    return Container(
+      height: height,
+      padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(leadingIcon, size: iconSize, color: iconColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              style: GoogleFonts.manrope(
+                color: textColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: hintText,
+                contentPadding: EdgeInsets.zero,
+                hintStyle: GoogleFonts.manrope(
+                  color: hintColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                suffixIcon: onClear != null && hasValue
+                    ? IconButton(
+                        onPressed: onClear,
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 17,
+                          color: Color(0xFF64748B),
+                        ),
+                        splashRadius: 18,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 28,
+                          height: 28,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MarketSectionHeader extends StatelessWidget {
+  const MarketSectionHeader({
+    super.key,
+    required this.title,
+    required this.trailing,
+    this.titleColor = AppColors.ink,
+    this.titleSize = 17,
+    this.titleWeight = FontWeight.w800,
+  });
+
+  final String title;
+  final Widget trailing;
+  final Color titleColor;
+  final double titleSize;
+  final FontWeight titleWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: titleColor,
+            fontSize: titleSize,
+            fontWeight: titleWeight,
+            letterSpacing: -0.2,
+          ),
+        ),
+        const Spacer(),
+        trailing,
+      ],
+    );
+  }
+}
+
+class MarketSurfaceCard extends StatelessWidget {
+  const MarketSurfaceCard({
+    super.key,
+    required this.child,
+    this.padding = EdgeInsets.zero,
+    this.backgroundColor = Colors.white,
+    this.borderColor = AppColors.border,
+    this.radius = AppRadius.standard,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final Color backgroundColor;
+  final Color borderColor;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: borderColor),
+      ),
+      child: child,
+    );
   }
 }
 
@@ -537,72 +707,51 @@ class _MarketNoticeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-        builder: (context, value, child) {
-          return Opacity(
-            opacity: value,
-            child: Transform.translate(
-              offset: Offset(0, (1 - value) * -18),
-              child: child,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: accent, size: 24),
             ),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.standard),
-            border: Border.all(color: AppColors.border),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x12000000),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: accent, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Color(0xFF202938),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                      ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Color(0xFF202938),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      message,
-                      style: const TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 11.8,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 11.8,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -631,13 +780,7 @@ class AnimatedCartToken extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x18000000),
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.border),
       ),
       child: hasImage
           ? ClipRRect(
@@ -773,12 +916,19 @@ class _DrawerProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<PosLocalStore>().profile;
-    final storeName =
-        profile.storeName.isEmpty ? 'Set up store profile' : profile.storeName;
-    final ownerName =
-        profile.ownerName.isEmpty ? 'Store profile not set' : profile.ownerName;
-    final roleTitle =
-        profile.roleTitle.isEmpty ? 'Business Owner' : profile.roleTitle;
+    final ownerName = profile.ownerName.isEmpty
+        ? (profile.storeName.isEmpty
+            ? (profile.businessCategory.isEmpty
+                ? 'Set up store profile'
+                : profile.businessCategory)
+            : profile.storeName)
+        : profile.ownerName;
+    final category = profile.businessCategory.isEmpty
+        ? (profile.roleTitle.isEmpty ? 'Business Owner' : profile.roleTitle)
+        : profile.businessCategory;
+    final storeDetail = profile.storeName.isEmpty || profile.storeName == ownerName
+        ? ''
+        : profile.storeName;
 
     return Row(
       children: [
@@ -819,7 +969,7 @@ class _DrawerProfileHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                roleTitle,
+                category,
                 style: const TextStyle(
                   color: Color(0xFF667085),
                   fontSize: 13.5,
@@ -827,16 +977,19 @@ class _DrawerProfileHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
-                storeName,
-                style: const TextStyle(
-                  color: Color(0xFF2B6FE8),
-                  fontSize: 13.2,
-                  fontWeight: FontWeight.w600,
+              if (storeDetail.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  storeDetail,
+                  style: const TextStyle(
+                    color: Color(0xFF2B6FE8),
+                    fontSize: 13.2,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              ],
             ],
           ),
         ),

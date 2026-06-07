@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_design.dart';
+
 enum MarketTab {
   dashboard,
   products,
@@ -60,14 +62,14 @@ class MarketBottomNav extends StatelessWidget {
                         width: selected ? 44 : 0,
                         margin: const EdgeInsets.only(bottom: 7),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2B6FF3),
+                          color: AppColors.primary,
                           borderRadius: BorderRadius.circular(99),
                         ),
                       ),
                       Icon(
                         item.icon,
                         color: selected
-                            ? const Color(0xFF2B6FF3)
+                            ? AppColors.primary
                             : const Color(0xFF7A8393),
                         size: 23,
                       ),
@@ -76,7 +78,7 @@ class MarketBottomNav extends StatelessWidget {
                         item.label,
                         style: TextStyle(
                           color: selected
-                              ? const Color(0xFF2B6FF3)
+                              ? AppColors.primary
                               : const Color(0xFF7A8393),
                           fontSize: 11,
                           fontWeight:

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../home/home_page.dart';
 import '../more/duka_ai_page.dart';
 import '../more/expenses_tracking_page.dart';
 import '../shell/app_shell.dart';
@@ -15,6 +14,10 @@ import 'report_hub_page.dart';
 import 'reports_catalog_page.dart';
 
 // ignore_for_file: unused_element, unused_field
+
+const Duration _eastAfricaOffset = Duration(hours: 3);
+
+DateTime _eastAfricaNow() => DateTime.now().toUtc().add(_eastAfricaOffset);
 
 enum _ReportPeriod { today, week, month, all }
 
@@ -47,7 +50,7 @@ extension _ReportPeriodLabel on _ReportPeriod {
 }
 
 DateTime _periodStart(_ReportPeriod period) {
-  final now = DateTime.now();
+  final now = _eastAfricaNow();
   switch (period) {
     case _ReportPeriod.today:
       return DateTime(now.year, now.month, now.day);
@@ -86,13 +89,9 @@ class ReportsPage extends StatelessWidget {
       icon: Icons.shopping_bag_outlined,
       label: 'Start Sale',
       iconColor: _blue,
-      background: LinearGradient(
-        colors: [Color(0xFF2F6FDF), Color(0xFF265ECB)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      foreground: Colors.white,
-      emphasized: true,
+      background: null,
+      foreground: null,
+      iconBackground: Color(0xFFEAF0FF),
     ),
     _QuickActionData(
       icon: Icons.point_of_sale_outlined,
@@ -109,7 +108,7 @@ class ReportsPage extends StatelessWidget {
   ];
 
   static List<_OverviewCardData> _buildOverviewCards(PosLocalStore store) {
-    final today = DateTime.now();
+    final today = _eastAfricaNow();
     final todayOrders = store.orders.where((order) {
       final orderDate = DateTime.tryParse(order.dateTime);
       return orderDate != null &&
@@ -176,7 +175,6 @@ class ReportsPage extends StatelessWidget {
         iconBackground: const Color(0xFFECF3FF),
         title: 'Orders today',
         value: transactionCount.toString(),
-        badge: 'Now',
         footer: 'Updated today',
       ),
       _OverviewCardData(
@@ -253,7 +251,7 @@ class ReportsPage extends StatelessWidget {
       'Sat',
       'Sun',
     ];
-    final now = DateTime.now();
+    final now = _eastAfricaNow();
     return '${monthNames[now.month - 1]} ${now.day}, ${now.year} (${weekdayNames[now.weekday - 1]})';
   }
 
@@ -280,7 +278,9 @@ class ReportsPage extends StatelessWidget {
           top: !useSharedShell,
           child: Stack(
             children: [
-              const Positioned.fill(child: BackdropGlow()),
+              const Positioned.fill(
+                child: ColoredBox(color: Color(0xFFF1F5F9)),
+              ),
               Column(
                 children: [
                   if (!useSharedShell)
@@ -306,30 +306,17 @@ class ReportsPage extends StatelessWidget {
                 bottom: 14,
                 child: Transform.translate(
                   offset: const Offset(0, -8),
-                child: _NewSaleFloatingButton(
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const AppShell(
-                          initialTab: MarketTab.reports,
+                  child: _NewSaleFloatingButton(
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const AppShell(
+                            initialTab: MarketTab.reports,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              ),
-              Positioned(
-                right: 14,
-                top: 142,
-                child: _DukaAiFloatingButton(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const DukaAiAdvisorPage(),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
@@ -343,6 +330,7 @@ class ReportsPage extends StatelessWidget {
 class _DashboardSummaryData {
   const _DashboardSummaryData({
     required this.totalRevenue,
+    required this.todayRevenue,
     required this.monthlySales,
     required this.activeClients,
     required this.todayOrdersCount,
@@ -358,6 +346,7 @@ class _DashboardSummaryData {
   });
 
   final double totalRevenue;
+  final double todayRevenue;
   final int monthlySales;
   final int activeClients;
   final int todayOrdersCount;
@@ -372,13 +361,14 @@ class _DashboardSummaryData {
   final String recentRevenueLabel;
 
   double get revenue => totalRevenue;
+  double get today => todayRevenue;
   int get orders => monthlySales;
   double get averageOrder =>
       monthlySales == 0 ? 0.0 : totalRevenue / monthlySales;
 }
 
 _DashboardSummaryData _buildDashboardSummary(PosLocalStore store) {
-  final now = DateTime.now();
+  final now = _eastAfricaNow();
   final todayStart = DateTime(now.year, now.month, now.day);
   final monthStart = DateTime(now.year, now.month, 1);
   final orders = store.orders;
@@ -404,8 +394,10 @@ _DashboardSummaryData _buildDashboardSummary(PosLocalStore store) {
         !parsed.isBefore(monthStart) &&
         !parsed.isAfter(now);
   }).toList();
-  final monthRevenue = monthOrders.fold<double>(0, (sum, order) => sum + order.total);
-  final todayRevenue = todayOrders.fold<double>(0, (sum, order) => sum + order.total);
+  final monthRevenue =
+      monthOrders.fold<double>(0, (sum, order) => sum + order.total);
+  final todayRevenue =
+      todayOrders.fold<double>(0, (sum, order) => sum + order.total);
   final yesterdayRevenue =
       yesterdayOrders.fold<double>(0, (sum, order) => sum + order.total);
   final totalRevenue = monthRevenue;
@@ -421,18 +413,19 @@ _DashboardSummaryData _buildDashboardSummary(PosLocalStore store) {
         parsed.month == now.month &&
         parsed.day == now.day;
   }).fold<double>(0, (sum, expense) => sum + expense.amount);
-  final conversionRate = orders.isEmpty
-      ? 0.0
-      : (monthOrders.length / orders.length) * 100;
+  final conversionRate =
+      orders.isEmpty ? 0.0 : (monthOrders.length / orders.length) * 100;
   final deltaText = yesterdayRevenue <= 0
       ? null
       : '${(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100).abs().toStringAsFixed(1)}%';
-  final deltaIsPositive = yesterdayRevenue <= 0 ? null : todayRevenue >= yesterdayRevenue;
+  final deltaIsPositive =
+      yesterdayRevenue <= 0 ? null : todayRevenue >= yesterdayRevenue;
 
   final soldCounts = <String, int>{};
   for (final order in todayOrders) {
     for (final line in order.lines) {
-      soldCounts[line.itemName] = (soldCounts[line.itemName] ?? 0) + line.quantity;
+      soldCounts[line.itemName] =
+          (soldCounts[line.itemName] ?? 0) + line.quantity;
     }
   }
   final bestSellerEntry = soldCounts.entries.isEmpty
@@ -453,6 +446,7 @@ _DashboardSummaryData _buildDashboardSummary(PosLocalStore store) {
 
   return _DashboardSummaryData(
     totalRevenue: totalRevenue,
+    todayRevenue: todayRevenue,
     monthlySales: monthlySales,
     activeClients: activeClients,
     todayOrdersCount: todayOrders.length,
@@ -485,26 +479,16 @@ class _PremiumReportsHeader extends StatelessWidget {
       titleWeight: FontWeight.w700,
       leading: const _ReportsBrandIcon(),
       actions: [
-        HeaderActionButton(
-          icon: Icons.smart_toy_outlined,
-          background: Colors.white,
-          foreground: ReportsPage._ink,
-          borderColor: const Color(0xFFE7EAF0),
-          onTap: () {
+        MarketHeaderActionButtons(
+          aiForeground: ReportsPage._ink,
+          notificationForeground: ReportsPage._ink,
+          onDukaAiTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (context) => const DukaAiAdvisorPage(),
               ),
             );
           },
-        ),
-        const SizedBox(width: 8),
-        const HeaderActionButton(
-          icon: Icons.notifications_none_rounded,
-          background: Colors.white,
-          foreground: ReportsPage._ink,
-          borderColor: Color(0xFFE7EAF0),
-          showDot: true,
         ),
       ],
     );
@@ -541,235 +525,46 @@ class _NewSaleFloatingButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      child: Material(
-        color: Colors.transparent,
-        elevation: 10,
-        shadowColor: const Color(0x2AD94B4B),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFD94B4B), Color(0xFFB93C3C)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.16),
-                width: 1,
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x22D94B4B),
-                  blurRadius: 18,
-                  spreadRadius: 0,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 31,
-                  height: 31,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'New Sale',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.25,
-                  ),
-                ),
-              ],
-            ),
+        child: Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+          decoration: BoxDecoration(
+            color: const Color(0xFFD94B4B),
+            borderRadius: BorderRadius.circular(999),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DukaAiFloatingButton extends StatelessWidget {
-  const _DukaAiFloatingButton({
-    required this.onTap,
-  });
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 650),
-      curve: Curves.easeOutQuart,
-      builder: (context, value, child) {
-        final lift = -14.0 * (1 - value);
-        final scale = 0.92 + (0.08 * value);
-        final glowOpacity = 0.08 + (0.06 * value);
-
-        return Transform.translate(
-          offset: Offset(0, lift),
-          child: Transform.scale(
-            scale: scale,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        const Color(0xFF2D6CEA).withValues(alpha: glowOpacity),
-                    blurRadius: 26,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 31,
+                height: 31,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              child: child,
-            ),
-          ),
-        );
-      },
-      child: Material(
-        color: Colors.transparent,
-        elevation: 16,
-        shadowColor: const Color(0x332D6CEA),
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 1),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withValues(alpha: 0.96),
-                  const Color(0xFFF6F9FE).withValues(alpha: 0.96),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              const SizedBox(width: 12),
+              const Text(
+                'New Sale',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.25,
+                ),
               ),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFFD8E0EB)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1E0F172A),
-                  blurRadius: 22,
-                  offset: Offset(0, 11),
-                ),
-              ],
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: const Color(0xFF2D6CEA).withValues(alpha: 0.12),
-                      ),
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 25,
-                      height: 25,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFEAF0FF), Color(0xFFDCE7FF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(9),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x120F172A),
-                            blurRadius: 6,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.smart_toy_outlined,
-                        color: Color(0xFF2D6CEA),
-                        size: 14,
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'DUKA AI',
-                          style: TextStyle(
-                            color: ReportsPage._ink,
-                            fontSize: 10.8,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.15,
-                          ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          'Ask anything',
-                          style: TextStyle(
-                            color: ReportsPage._muted.withValues(alpha: 0.82),
-                            fontSize: 8.8,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.1,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 2),
-                    Container(
-                      width: 6,
-                      height: 6,
-                      margin: const EdgeInsets.only(left: 3, top: 1),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2D6CEA).withValues(alpha: 0.8),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                ),
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    width: 11,
-                    height: 11,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2D6CEA).withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -875,20 +670,11 @@ class _OverviewCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(4),
           onTap: () => _openDetails(context),
-          child: Container(
+          child: MarketSurfaceCard(
             padding: const EdgeInsets.fromLTRB(11, 10, 11, 9),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: ReportsPage._border),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0C0E1726),
-                  blurRadius: 5,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
+            backgroundColor: Colors.white.withValues(alpha: 0.92),
+            borderColor: ReportsPage._border,
+            radius: 4,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -968,49 +754,13 @@ class _OverviewCard extends StatelessWidget {
                     ],
                   ),
                 ] else ...[
-                  Row(
-                    children: [
-                      Text(
-                        card.footer,
-                        style: const TextStyle(
-                          color: ReportsPage._muted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (card.badge != null) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF5E6),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 11,
-                                color: Color(0xFFF2B437),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                card.badge!,
-                                style: const TextStyle(
-                                  color: Color(0xFFC78C17),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    card.footer,
+                    style: const TextStyle(
+                      color: ReportsPage._muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ],
@@ -1091,8 +841,7 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconBackground =
-        hero || action.emphasized ? Colors.white : action.iconBackground!;
+    final iconBackground = action.iconBackground ?? Colors.white;
     final labelColor = action.foreground ?? ReportsPage._ink;
 
     return Material(
@@ -1113,13 +862,6 @@ class _QuickActionCard extends StatelessWidget {
             border: action.background == null
                 ? Border.all(color: ReportsPage._border)
                 : null,
-            boxShadow: [
-              BoxShadow(
-                color: hero ? const Color(0x1F2560D6) : const Color(0x140E1726),
-                blurRadius: hero ? 14 : 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1260,7 +1002,8 @@ class _LiveGrowthOverviewCard extends StatefulWidget {
   final List<CompletedOrder> orders;
 
   @override
-  State<_LiveGrowthOverviewCard> createState() => _LiveGrowthOverviewCardState();
+  State<_LiveGrowthOverviewCard> createState() =>
+      _LiveGrowthOverviewCardState();
 }
 
 class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
@@ -1274,7 +1017,8 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
     return _startOfDay(start);
   }
 
-  DateTime _startOfMonth(DateTime value) => DateTime(value.year, value.month, 1);
+  DateTime _startOfMonth(DateTime value) =>
+      DateTime(value.year, value.month, 1);
 
   DateTime _periodStart(_LiveGrowthPeriod period, DateTime now) {
     switch (period) {
@@ -1336,7 +1080,8 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
       'Sun',
     ];
     return List<String>.generate(7, (index) {
-      final point = start.add(Duration(seconds: ((safeSpan / 6) * index).round()));
+      final point =
+          start.add(Duration(seconds: ((safeSpan / 6) * index).round()));
       switch (period) {
         case _LiveGrowthPeriod.today:
           final hour = point.hour % 12 == 0 ? 12 : point.hour % 12;
@@ -1353,7 +1098,7 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = _eastAfricaNow();
     final start = _periodStart(_selectedPeriod, now);
     final end = now;
     final selectedOrders = _ordersInRange(start, end);
@@ -1375,20 +1120,10 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
             .clamp(1.0, double.infinity);
     final normalized = series.map((value) => value / chartMaxValue).toList();
 
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE7EAF0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0E1726),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+      borderColor: const Color(0xFFE7EAF0),
+      radius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1525,10 +1260,10 @@ class _OverviewStatsGrid extends StatelessWidget {
               width: itemWidth,
               child: _OverviewStatCard(
                 icon: Icons.payments_outlined,
-                iconColor: Color(0xFF6BA5FF),
-                iconBackground: Color(0xFFF4F8FF),
+                iconColor: const Color(0xFF6BA5FF),
+                iconBackground: const Color(0xFFF4F8FF),
                 title: 'Today Revenue',
-                value: 'TSH ${summary.revenue.toStringAsFixed(0)}',
+                value: 'TSH ${summary.today.toStringAsFixed(0)}',
                 footer: summary.deltaText ?? 'Updated just now',
                 footerColor: summary.deltaIsPositive == false
                     ? const Color(0xFFD65555)
@@ -1541,8 +1276,8 @@ class _OverviewStatsGrid extends StatelessWidget {
               width: itemWidth,
               child: _OverviewStatCard(
                 icon: Icons.shopping_bag_outlined,
-                iconColor: Color(0xFFF6B34A),
-                iconBackground: Color(0xFFFFF7ED),
+                iconColor: const Color(0xFFF6B34A),
+                iconBackground: const Color(0xFFFFF7ED),
                 title: 'Yesterday Sales',
                 value: 'TSH ${summary.yesterdaySales.toStringAsFixed(0)}',
                 footer: 'Compared to today',
@@ -1555,8 +1290,8 @@ class _OverviewStatsGrid extends StatelessWidget {
               width: itemWidth,
               child: _OverviewStatCard(
                 icon: Icons.groups_rounded,
-                iconColor: Color(0xFFEF6A7A),
-                iconBackground: Color(0xFFFFEEF1),
+                iconColor: const Color(0xFFEF6A7A),
+                iconBackground: const Color(0xFFFFEEF1),
                 title: 'Today Orders',
                 value: summary.todayOrdersCount.toString(),
                 footer: 'Updated today',
@@ -1569,8 +1304,8 @@ class _OverviewStatsGrid extends StatelessWidget {
               width: itemWidth,
               child: _OverviewStatCard(
                 icon: Icons.bolt_rounded,
-                iconColor: Color(0xFF8B5CF6),
-                iconBackground: Color(0xFFF5F1FF),
+                iconColor: const Color(0xFF8B5CF6),
+                iconBackground: const Color(0xFFF5F1FF),
                 title: 'Today Expenses',
                 value: 'TSH ${summary.todayExpenses.toStringAsFixed(0)}',
                 footer: 'Updated today',
@@ -1611,91 +1346,83 @@ class _OverviewStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 120,
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE7EAF0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x080E1726),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: iconBackground,
-                  borderRadius: BorderRadius.circular(4),
+      borderColor: const Color(0xFFE7EAF0),
+      radius: 12,
+      child: SizedBox(
+        height: 120,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: iconBackground,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(icon, size: 10, color: iconColor),
                 ),
-                child: Icon(icon, size: 10, color: iconColor),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Color(0xFF7A859C),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                color: ReportsPage._ink,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF7A859C),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (showTrend) ...[
+                  Icon(
+                    trendUp
+                        ? Icons.arrow_upward_rounded
+                        : Icons.arrow_downward_rounded,
+                    size: 12,
+                    color: footerColor,
+                  ),
+                  const SizedBox(width: 3),
+                ],
+                Text(
+                  footer,
+                  style: TextStyle(
+                    color: footerColor ?? const Color(0xFF7A859C),
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: ReportsPage._ink,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              if (showTrend) ...[
-                Icon(
-                  trendUp
-                      ? Icons.arrow_upward_rounded
-                      : Icons.arrow_downward_rounded,
-                  size: 12,
-                  color: footerColor,
+                const Spacer(),
+                const Text(
+                  'Last 30 days',
+                  style: TextStyle(
+                    color: Color(0xFF8A93A7),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                const SizedBox(width: 3),
               ],
-              Text(
-                footer,
-                style: TextStyle(
-                  color: footerColor ?? const Color(0xFF7A859C),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              const Text(
-                'Last 30 days',
-                style: TextStyle(
-                  color: Color(0xFF8A93A7),
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1710,26 +1437,10 @@ class _InsightsPromoCard extends StatelessWidget {
       height: 152,
       child: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0A0E1726),
-                  blurRadius: 10,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-          ),
-          const Positioned.fill(
-            child: CustomPaint(
-              painter: _DashedBorderPainter(
-                radius: 14,
-                color: Color(0xFFDDE3EA),
-              ),
-            ),
+          const MarketSurfaceCard(
+            borderColor: Color(0xFFE7EAF0),
+            radius: 14,
+            child: SizedBox.expand(),
           ),
           Padding(
             padding: const EdgeInsets.all(14),
@@ -1902,20 +1613,10 @@ class _GrowthOverviewCard extends StatelessWidget {
         .map((value) => value / chartMaxValue)
         .toList();
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE7EAF0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0E1726),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+      borderColor: const Color(0xFFE7EAF0),
+      radius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1950,8 +1651,8 @@ class _GrowthOverviewCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(width: 4),
-                    Icon(
+                    const SizedBox(width: 4),
+                    const Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 16,
                       color: Color(0xFF7A859C),
@@ -2218,7 +1919,7 @@ class _OverviewChartPainter extends CustomPainter {
             text: _compactTsh(
               rawValues.length > highlightIndex ? rawValues[highlightIndex] : 0,
             ),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -2233,12 +1934,9 @@ class _OverviewChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _OverviewChartPainter oldDelegate) {
-    return oldDelegate.values != values ||
-        oldDelegate.rawValues != rawValues;
+    return oldDelegate.values != values || oldDelegate.rawValues != rawValues;
   }
-  }
-
-
+}
 
 String _compactTsh(double value) {
   if (value >= 1000000) {
@@ -2446,13 +2144,11 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE7EAF0)),
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
+      borderColor: const Color(0xFFE7EAF0),
+      radius: 18,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2524,13 +2220,11 @@ class _MiniSummaryStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE7EAF0)),
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
+      borderColor: const Color(0xFFE7EAF0),
+      radius: 14,
       child: Column(
         children: [
           Text(
@@ -2565,36 +2259,35 @@ class _LatestActivityHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const _SectionTitle('Latest activity'),
-        const Spacer(),
-        InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: onSeeAll,
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            child: Row(
-              children: [
-                Text(
-                  'See all',
-                  style: TextStyle(
-                    color: ReportsPage._blue,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(width: 2),
-                Icon(
-                  Icons.chevron_right_rounded,
+    return MarketSectionHeader(
+      title: 'Latest activity',
+      titleSize: 15,
+      titleWeight: FontWeight.w700,
+      trailing: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onSeeAll,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(
+            children: [
+              Text(
+                'See all',
+                style: TextStyle(
                   color: ReportsPage._blue,
-                  size: 16,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
+              ),
+              SizedBox(width: 2),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: ReportsPage._blue,
+                size: 16,
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -2606,19 +2299,9 @@ class _PremiumRecentActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE7EAF0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x100E1726),
-            blurRadius: 18,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
+    return MarketSurfaceCard(
+      borderColor: const Color(0xFFE7EAF0),
+      radius: 22,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
         child: Column(
@@ -2657,36 +2340,35 @@ class _RecentHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          const _SectionTitle('Latest activity'),
-          const Spacer(),
-          InkWell(
-            borderRadius: BorderRadius.circular(4),
-            onTap: () => _openAll(context),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: Row(
-                children: [
-                  Text(
-                    'See all',
-                    style: TextStyle(
-                      color: ReportsPage._blue,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(width: 2),
-                  Icon(
-                    Icons.chevron_right_rounded,
+      child: MarketSectionHeader(
+        title: 'Latest activity',
+        titleSize: 15,
+        titleWeight: FontWeight.w700,
+        trailing: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _openAll(context),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: Row(
+              children: [
+                Text(
+                  'See all',
+                  style: TextStyle(
                     color: ReportsPage._blue,
-                    size: 16,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
+                ),
+                SizedBox(width: 2),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: ReportsPage._blue,
+                  size: 16,
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -2699,20 +2381,11 @@ class _RecentActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(vertical: 2),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: ReportsPage._border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x100E1726),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+      backgroundColor: Colors.white.withValues(alpha: 0.94),
+      borderColor: ReportsPage._border,
+      radius: 4,
       child: Column(
         children: List.generate(items.length, (index) {
           final item = items[index];
@@ -3069,7 +2742,6 @@ class _OverviewCardData {
     required this.footer,
     this.delta,
     this.deltaIsPositive,
-    this.badge,
     this.highlightValue = false,
   });
 
@@ -3081,7 +2753,6 @@ class _OverviewCardData {
   final String footer;
   final String? delta;
   final bool? deltaIsPositive;
-  final String? badge;
   final bool highlightValue;
 }
 
@@ -3093,7 +2764,6 @@ class _QuickActionData {
     this.background,
     this.foreground,
     this.iconBackground,
-    this.emphasized = false,
   });
 
   final IconData icon;
@@ -3102,7 +2772,6 @@ class _QuickActionData {
   final Gradient? background;
   final Color? foreground;
   final Color? iconBackground;
-  final bool emphasized;
 }
 
 class _ActivityItemData {

@@ -20,7 +20,8 @@ class AboutAppPage extends StatelessWidget {
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
@@ -68,12 +69,10 @@ class AboutAppPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.pageBackground,
-                        borderRadius: BorderRadius.circular(AppRadius.rounded),
-                        border: Border.all(color: AppColors.border),
-                      ),
+                    MarketSurfaceCard(
+                      backgroundColor: AppColors.pageBackground,
+                      radius: AppRadius.rounded,
+                      borderColor: AppColors.border,
                       child: Column(
                         children: [
                           ...items.asMap().entries.map(
@@ -122,78 +121,82 @@ class _AboutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (item.label == 'Terms of Service') {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const TermsOfServicePage(),
-            ),
-          );
-          return;
-        }
-
-        if (item.label == 'Privacy Policy') {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const PrivacyPolicyPage(),
-            ),
-          );
-          return;
-        }
-
-        if (item.label == 'Licenses') {
-          showLicensePage(
-            context: context,
-            applicationName: 'Green Leaf',
-            applicationVersion: '2.4.1',
-            applicationLegalese: '© 2026 Green Leaf. All rights reserved.',
-          );
-          return;
-        }
-
-        showMarketNotice(
-          context,
-          title: item.label,
-          message: '${item.label} can be connected to the full document next',
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.pageBackground,
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-                border: Border.all(color: AppColors.border),
+    return MarketSurfaceCard(
+      borderColor: AppColors.border,
+      radius: AppRadius.standard,
+      child: GestureDetector(
+        onTap: () {
+          if (item.label == 'Terms of Service') {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const TermsOfServicePage(),
               ),
-              child: Icon(
-                item.icon,
-                color: AppColors.ink,
-                size: 18,
+            );
+            return;
+          }
+
+          if (item.label == 'Privacy Policy') {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const PrivacyPolicyPage(),
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                item.label,
-                style: const TextStyle(
+            );
+            return;
+          }
+
+          if (item.label == 'Licenses') {
+            showLicensePage(
+              context: context,
+              applicationName: 'Green Leaf',
+              applicationVersion: '2.4.1',
+              applicationLegalese: '© 2026 Green Leaf. All rights reserved.',
+            );
+            return;
+          }
+
+          showMarketNotice(
+            context,
+            title: item.label,
+            message: '${item.label} can be connected to the full document next',
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.pageBackground,
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Icon(
+                  item.icon,
                   color: AppColors.ink,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.1,
+                  size: 18,
                 ),
               ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.mutedText,
-              size: 20,
-            ),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  item.label,
+                  style: const TextStyle(
+                    color: AppColors.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.mutedText,
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );

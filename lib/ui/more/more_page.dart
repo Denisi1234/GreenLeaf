@@ -58,7 +58,9 @@ class MorePage extends StatelessWidget {
             useSharedShell ? null : const MarketAppDrawer(selectedItem: 'More'),
         body: Stack(
           children: [
-            const Positioned.fill(child: BackdropGlow()),
+            const Positioned.fill(
+              child: ColoredBox(color: AppColors.pageBackground),
+            ),
             SafeArea(
               top: !useSharedShell,
               child: Column(
@@ -67,46 +69,16 @@ class MorePage extends StatelessWidget {
                     MarketPageHeader(
                       title: 'More',
                       centerTitle: false,
-                      leading: Builder(
-                        builder: (context) => GestureDetector(
-                          onTap: () => Scaffold.of(context).openDrawer(),
-                          child: Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: const Icon(
-                              Icons.menu_rounded,
-                              color: AppColors.ink,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
+                      leading: const DrawerMenuButton(),
                       actions: [
-                        HeaderActionButton(
-                          icon: Icons.smart_toy_outlined,
-                          background: Colors.white,
-                          foreground: const Color(0xFF33363F),
-                          borderColor: const Color(0xFFE7EAF0),
-                          onTap: () {
+                        MarketHeaderActionButtons(
+                          onDukaAiTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
                                 builder: (context) => const DukaAiAdvisorPage(),
                               ),
                             );
                           },
-                        ),
-                        const SizedBox(width: 8),
-                        HeaderActionButton(
-                          icon: Icons.notifications_none_rounded,
-                          background: Colors.white,
-                          foreground: const Color(0xFF33363F),
-                          borderColor: const Color(0xFFE7EAF0),
-                          showDot: true,
                         ),
                       ],
                     ),
@@ -118,6 +90,7 @@ class MorePage extends StatelessWidget {
                         _ProfileSummaryCard(
                           ownerName: profile.ownerName,
                           roleTitle: profile.roleTitle,
+                          businessCategory: profile.businessCategory,
                           storeName: profile.storeName,
                           logoPath: profile.logoPath,
                           totalSales: totalSalesLabel,
@@ -149,49 +122,11 @@ class MorePage extends StatelessWidget {
   }
 }
 
-class _HeaderActionCircle extends StatelessWidget {
-  const _HeaderActionCircle({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFE7EAF0)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0C0E1726),
-              blurRadius: 5,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 18,
-          color: AppColors.ink,
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileSummaryCard extends StatelessWidget {
   const _ProfileSummaryCard({
     required this.ownerName,
     required this.roleTitle,
+    required this.businessCategory,
     required this.storeName,
     required this.logoPath,
     required this.totalSales,
@@ -200,6 +135,7 @@ class _ProfileSummaryCard extends StatelessWidget {
 
   final String ownerName;
   final String roleTitle;
+  final String businessCategory;
   final String storeName;
   final String? logoPath;
   final String totalSales;
@@ -211,20 +147,11 @@ class _ProfileSummaryCard extends StatelessWidget {
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 380;
 
-        return Container(
+        return MarketSurfaceCard(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE7EAF0)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0C0E1726),
-                blurRadius: 7,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
+          backgroundColor: Colors.white.withValues(alpha: 0.92),
+          borderColor: const Color(0xFFE7EAF0),
+          radius: 12,
           child: Column(
             children: [
               if (isNarrow)
@@ -236,6 +163,7 @@ class _ProfileSummaryCard extends StatelessWidget {
                       centered: true,
                       ownerName: ownerName,
                       roleTitle: roleTitle,
+                      businessCategory: businessCategory,
                       storeName: storeName,
                     ),
                   ],
@@ -249,6 +177,7 @@ class _ProfileSummaryCard extends StatelessWidget {
                       child: _ProfileDetails(
                         ownerName: ownerName,
                         roleTitle: roleTitle,
+                        businessCategory: businessCategory,
                         storeName: storeName,
                       ),
                     ),
@@ -322,19 +251,10 @@ class _MoreMenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE7EAF0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C0E1726),
-            blurRadius: 7,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+    return MarketSurfaceCard(
+      backgroundColor: Colors.white.withValues(alpha: 0.92),
+      borderColor: const Color(0xFFE7EAF0),
+      radius: 12,
       child: Column(
         children: [
           for (var index = 0; index < items.length; index++) ...[
@@ -391,22 +311,31 @@ class _ProfileDetails extends StatelessWidget {
     this.centered = false,
     required this.ownerName,
     required this.roleTitle,
+    required this.businessCategory,
     required this.storeName,
   });
 
   final bool centered;
   final String ownerName;
   final String roleTitle;
+  final String businessCategory;
   final String storeName;
 
   @override
   Widget build(BuildContext context) {
+    final displayName = ownerName.isNotEmpty
+        ? ownerName
+        : (storeName.isEmpty ? 'Store profile not set' : storeName);
+    final detailLine = businessCategory.isEmpty
+        ? (roleTitle.isEmpty ? 'Business Owner' : roleTitle)
+        : businessCategory;
+
     return Column(
       crossAxisAlignment:
           centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Text(
-          ownerName.isEmpty ? 'Store profile not set' : ownerName,
+          displayName,
           style: const TextStyle(
             color: Color(0xFF202938),
             fontSize: 16,
@@ -434,7 +363,7 @@ class _ProfileDetails extends StatelessWidget {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                storeName.isEmpty ? 'Set up store profile' : storeName,
+                detailLine,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Color(0xFF202938),
@@ -614,20 +543,11 @@ class _LogoutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 58,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE7EAF0)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0C0E1726),
-              blurRadius: 7,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
+      child: MarketSurfaceCard(
+        backgroundColor: Colors.white.withValues(alpha: 0.92),
+        borderColor: const Color(0xFFE7EAF0),
+        radius: 12,
+        padding: const EdgeInsets.symmetric(vertical: 17),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

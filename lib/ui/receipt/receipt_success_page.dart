@@ -4,6 +4,7 @@ import '../../service/pos_order_models.dart';
 import '../shell/app_shell.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../widgets/app_design.dart';
+import '../widgets/market_shared_widgets.dart';
 import 'receipt_preview_page.dart';
 
 class ReceiptSuccessPage extends StatefulWidget {
@@ -128,7 +129,9 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                                 animation: _checkProgress,
                                 builder: (context, child) {
                                   final bounce = 1 +
-                                      (0.08 * (1 - (_checkProgress.value - 1).abs()).clamp(0.0, 1.0));
+                                      (0.08 *
+                                          (1 - (_checkProgress.value - 1).abs())
+                                              .clamp(0.0, 1.0));
                                   return Transform.scale(
                                     scale: bounce,
                                     child: CustomPaint(
@@ -148,7 +151,8 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                       ),
                     ),
                     const SizedBox(height: 24),
-                    if (order.discountAmount != null && order.discountAmount! > 0) ...[
+                    if (order.discountAmount != null &&
+                        order.discountAmount! > 0) ...[
                       Text(
                         'Total: TSH${_amount(order.total + order.discountAmount!)}',
                         style: const TextStyle(
@@ -201,15 +205,39 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _ActionButton(
+                    MarketButton(
                       label: 'GET RECEIPT',
                       color: const Color(0xFF67BE68),
+                      foregroundColor: Colors.white,
+                      borderColor: Colors.transparent,
+                      height: 44,
+                      radius: 2,
+                      paddingHorizontal: 0,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x22000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                       onTap: () => _openReceipt(context),
                     ),
                     const SizedBox(height: 12),
-                    _ActionButton(
+                    MarketButton(
                       label: 'NEW SALE',
                       color: const Color(0xFFD94B4B),
+                      foregroundColor: Colors.white,
+                      borderColor: Colors.transparent,
+                      height: 44,
+                      radius: 2,
+                      paddingHorizontal: 0,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x22000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                       onTap: () => _startNewSale(context),
                     ),
                   ],
@@ -278,48 +306,5 @@ class _CheckMarkPainter extends CustomPainter {
     return oldDelegate.progress != progress ||
         oldDelegate.color != color ||
         oldDelegate.strokeWidth != strokeWidth;
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 44,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x22000000),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
   }
 }

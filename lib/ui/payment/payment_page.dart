@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../../service/pos_local_store.dart';
 import '../models/product_item.dart';
 import '../widgets/app_design.dart';
+import '../more/create_customer_page.dart';
 import '../receipt/receipt_success_page.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../more/customers_page.dart';
 import 'record_debit_bottom_sheet.dart';
+import '../../utils/currency_formatter.dart';
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({
@@ -47,27 +49,17 @@ class _PaymentPageState extends State<PaymentPage> {
   double get _subtotal =>
       _orderLines.fold(0, (sum, line) => sum + line.totalPrice);
   double get _tax => 0;
-  double get _grandTotal => (_subtotal + _tax - _discountAmount).clamp(0, double.infinity);
-  double get _changeDue => (_cashReceived != null && _cashReceived! > _grandTotal)
-      ? _cashReceived! - _grandTotal
-      : 0;
+  double get _grandTotal =>
+      (_subtotal + _tax - _discountAmount).clamp(0, double.infinity);
+  double get _changeDue =>
+      (_cashReceived != null && _cashReceived! > _grandTotal)
+          ? _cashReceived! - _grandTotal
+          : 0;
   int get _itemTypes => _orderLines.length;
-  int get _unitCount =>
-      _orderLines.fold(0, (sum, line) => sum + line.quantity);
+  int get _unitCount => _orderLines.fold(0, (sum, line) => sum + line.quantity);
   bool get _hasItems => _orderLines.isNotEmpty;
 
-  String _amount(double value) {
-    final whole = value.round().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < whole.length; i++) {
-      final remaining = whole.length - i;
-      buffer.write(whole[i]);
-      if (remaining > 1 && remaining % 3 == 1) {
-        buffer.write(',');
-      }
-    }
-    return buffer.toString();
-  }
+  String _amount(double value) => formatCurrency(value);
 
   void _increaseQuantity(OrderLineItem line) {
     final didAdd = context.read<PosLocalStore>().addToCart(line.product);
@@ -108,16 +100,29 @@ class _PaymentPageState extends State<PaymentPage> {
     });
   }
 
-  Future<void> _selectCustomer() async {
+  Future<void> _addCustomer() async {
     final customerName = await Navigator.of(context).push<String>(
       MaterialPageRoute<String>(
-        builder: (context) => CustomersPage(isSelectionMode: true),
+        builder: (context) => const CreateCustomerPage(),
+      ),
+    );
+
+    if (customerName != null && mounted) {
+      setState(() => _selectedCustomer = customerName);
+    }
+  }
+
+  Future<String?> _selectExistingCustomer() async {
+    final customerName = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (context) => const CustomersPage(isSelectionMode: true),
       ),
     );
 
     if (customerName != null) {
       setState(() => _selectedCustomer = customerName);
     }
+    return customerName;
   }
 
   Future<void> _applyDiscount() async {
@@ -140,6 +145,7 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future<void> _enterCashReceived() async {
+    if (!_validateStockBeforeCheckout()) return;
     final result = await showModalBottomSheet<double>(
       context: context,
       isScrollControlled: true,
@@ -158,11 +164,7 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future<void> _recordDebit() async {
-    final customer = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(
-        builder: (context) => const CustomersPage(isSelectionMode: true),
-      ),
-    );
+    final customer = await _selectExistingCustomer();
 
     if (customer == null || !mounted) return;
 
@@ -185,6 +187,41 @@ class _PaymentPageState extends State<PaymentPage> {
     _completeSale();
   }
 
+  bool _validateStockBeforeCheckout() {
+    final store = context.read<PosLocalStore>();
+    final inventoryByCode = <String, int>{};
+    final inventoryByIdentity = <String, int>{};
+
+    for (final item in store.inventory) {
+      final code = item.code.trim();
+      if (code.isNotEmpty) {
+        inventoryByCode[code] = item.stockCount;
+      } else {
+        inventoryByIdentity[item.name.trim()] = item.stockCount;
+      }
+    }
+
+    for (final line in _orderLines) {
+      final code = line.product.code?.trim();
+      final stock = code != null && code.isNotEmpty
+          ? inventoryByCode[code]
+          : inventoryByIdentity[line.product.name.trim()];
+      final availableStock = stock ?? 0;
+      if (availableStock >= line.quantity) continue;
+
+      showMarketNotice(
+        context,
+        title: 'Stock Changed',
+        message:
+            'Only $availableStock unit(s) of ${line.product.name} are left. Reduce the quantity before charging.',
+        type: MarketNoticeType.warning,
+      );
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _completeSale({
     String? customerName,
     String paymentMethod = 'Cash',
@@ -196,6 +233,10 @@ class _PaymentPageState extends State<PaymentPage> {
         message: 'Add at least one product before charging this order',
         type: MarketNoticeType.warning,
       );
+      return;
+    }
+
+    if (!_validateStockBeforeCheckout()) {
       return;
     }
 
@@ -212,17 +253,19 @@ class _PaymentPageState extends State<PaymentPage> {
 
     try {
       final profile = context.read<PosLocalStore>().profile;
-      final cashierName = profile.ownerName.isEmpty ? 'Cashier' : profile.ownerName;
-      final completedOrder = await context.read<PosLocalStore>().completeCashSale(
-            items: _orderLines,
-            cashTendered: paymentMethod == 'Cash' ? tendered : 0,
-            cashierName: cashierName,
-            registerName: 'POS-01',
-            customerName: customerName ?? _selectedCustomer,
-            discountAmount: _discountAmount > 0 ? _discountAmount : null,
-            discountLabel: _discountAmount > 0 ? _discountLabel : null,
-            paymentMethod: paymentMethod,
-          );
+      final cashierName =
+          profile.ownerName.isEmpty ? 'Cashier' : profile.ownerName;
+      final completedOrder =
+          await context.read<PosLocalStore>().completeCashSale(
+                items: _orderLines,
+                cashTendered: paymentMethod == 'Cash' ? tendered : 0,
+                cashierName: cashierName,
+                registerName: 'POS-01',
+                customerName: customerName ?? _selectedCustomer,
+                discountAmount: _discountAmount > 0 ? _discountAmount : null,
+                discountLabel: _discountAmount > 0 ? _discountLabel : null,
+                paymentMethod: paymentMethod,
+              );
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -255,18 +298,21 @@ class _PaymentPageState extends State<PaymentPage> {
               centerTitle: false,
               actions: [
                 IconButton(
-                  onPressed: _selectCustomer,
-                  icon: const Icon(Icons.group_add_outlined, color: AppColors.ink, size: 26),
+                  onPressed: _addCustomer,
+                  icon: const Icon(Icons.group_add_outlined,
+                      color: AppColors.ink, size: 26),
                 ),
               ],
             ),
             if (_selectedCustomer != null)
               Container(
                 color: const Color(0xFFE8F4FF),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.person_outline, size: 18, color: Color(0xFF2B5FCE)),
+                    const Icon(Icons.person_outline,
+                        size: 18, color: Color(0xFF2B5FCE)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -280,7 +326,8 @@ class _PaymentPageState extends State<PaymentPage> {
                     ),
                     GestureDetector(
                       onTap: () => setState(() => _selectedCustomer = null),
-                      child: const Icon(Icons.close, size: 18, color: Color(0xFF2B5FCE)),
+                      child: const Icon(Icons.close,
+                          size: 18, color: Color(0xFF2B5FCE)),
                     ),
                   ],
                 ),
@@ -308,10 +355,13 @@ class _PaymentPageState extends State<PaymentPage> {
                   _TotalsPanel(
                     subtotal: _amount(_subtotal),
                     tax: _amount(_tax),
-                    discount: _discountAmount > 0 ? _amount(_discountAmount) : null,
+                    discount:
+                        _discountAmount > 0 ? _amount(_discountAmount) : null,
                     grandTotal: _amount(_grandTotal),
-                    cashReceived: _cashReceived != null ? _amount(_cashReceived!) : null,
-                    changeDue: _cashReceived != null ? _amount(_changeDue) : null,
+                    cashReceived:
+                        _cashReceived != null ? _amount(_cashReceived!) : null,
+                    changeDue:
+                        _cashReceived != null ? _amount(_changeDue) : null,
                     itemTypes: _itemTypes,
                     unitCount: _unitCount,
                     onEnterCash: _enterCashReceived,
@@ -334,14 +384,14 @@ class _PaymentPageState extends State<PaymentPage> {
                 onTap: _confirmPayment,
               ),
             ),
-            ],
-            ),
-            ),
-            );
-            }
-            }
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-            class _CounterLineTile extends StatelessWidget {
+class _CounterLineTile extends StatelessWidget {
   const _CounterLineTile({
     required this.line,
     required this.amountText,
@@ -399,13 +449,20 @@ class _PaymentPageState extends State<PaymentPage> {
             children: [
               GestureDetector(
                 onTap: onIncrease,
-                child: const Icon(Icons.edit, color: Color(0xFF4D6ED8), size: 20),
+                child: const Icon(
+                  Icons.add_circle_outline,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
               ),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: onDecrease,
-                child: const Icon(Icons.remove_circle_outline,
-                    color: Color(0xFFE66C73), size: 20),
+                child: const Icon(
+                  Icons.remove_circle_outline,
+                  color: Color(0xFFE66C73),
+                  size: 20,
+                ),
               ),
             ],
           ),
@@ -420,24 +477,26 @@ class _EmptyCounterState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(24),
-      alignment: Alignment.center,
-      child: const Column(
-        children: [
-          Icon(Icons.remove_shopping_cart_outlined,
-              size: 36, color: Color(0xFF9CA3AF)),
-          SizedBox(height: 10),
-          Text(
-            'No items in this counter yet',
-            style: TextStyle(
-              color: AppColors.ink,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+    return const MarketSurfaceCard(
+      padding: EdgeInsets.all(24),
+      child: SizedBox(
+        height: 92,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.remove_shopping_cart_outlined,
+                size: 36, color: Color(0xFF9CA3AF)),
+            SizedBox(height: 10),
+            Text(
+              'No items in this counter yet',
+              style: TextStyle(
+                color: AppColors.ink,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -513,8 +572,7 @@ class _TotalsPanel extends StatelessWidget {
       decoration: TextDecoration.underline,
     );
 
-    return Container(
-      color: Colors.white,
+    return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -708,7 +766,8 @@ class _CashReceivedBottomSheet extends StatefulWidget {
   final double? currentAmount;
 
   @override
-  State<_CashReceivedBottomSheet> createState() => _CashReceivedBottomSheetState();
+  State<_CashReceivedBottomSheet> createState() =>
+      _CashReceivedBottomSheetState();
 }
 
 class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
@@ -719,7 +778,9 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
   void initState() {
     super.initState();
     _controller = TextEditingController(
-      text: widget.currentAmount != null ? widget.currentAmount!.round().toString() : '',
+      text: widget.currentAmount != null
+          ? widget.currentAmount!.round().toString()
+          : '',
     );
     _currentInput = widget.currentAmount ?? 0;
   }
@@ -730,23 +791,15 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
     super.dispose();
   }
 
-  String _format(double value) {
-    final whole = value.round().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < whole.length; i++) {
-      final remaining = whole.length - i;
-      buffer.write(whole[i]);
-      if (remaining > 1 && remaining % 3 == 1) {
-        buffer.write(',');
-      }
-    }
-    return buffer.toString();
-  }
+  String _format(double value) => formatCurrency(value);
 
   @override
   Widget build(BuildContext context) {
-    final changeDue = (_currentInput > widget.grandTotal) ? _currentInput - widget.grandTotal : 0.0;
-    final isInsufficient = _currentInput > 0 && _currentInput < widget.grandTotal;
+    final changeDue = (_currentInput > widget.grandTotal)
+        ? _currentInput - widget.grandTotal
+        : 0.0;
+    final isInsufficient =
+        _currentInput > 0 && _currentInput < widget.grandTotal;
 
     return Container(
       decoration: const BoxDecoration(
@@ -814,17 +867,22 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
               const Spacer(),
               _SummaryRow(
                 label: isInsufficient ? 'Remaining' : 'Change',
-                value: 'TSh ${_format(isInsufficient ? (widget.grandTotal - _currentInput) : changeDue)}',
-                valueColor: isInsufficient ? const Color(0xFFE11D48) : const Color(0xFF15803D),
+                value:
+                    'TSh ${_format(isInsufficient ? (widget.grandTotal - _currentInput) : changeDue)}',
+                valueColor: isInsufficient
+                    ? const Color(0xFFE11D48)
+                    : const Color(0xFF15803D),
                 isBold: true,
               ),
             ],
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _currentInput >= widget.grandTotal ? () {
-              Navigator.of(context).pop(_currentInput);
-            } : null,
+            onPressed: _currentInput >= widget.grandTotal
+                ? () {
+                    Navigator.of(context).pop(_currentInput);
+                  }
+                : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
               foregroundColor: Colors.white,
@@ -937,7 +995,9 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
   void initState() {
     super.initState();
     _controller = TextEditingController(
-      text: widget.currentAmount > 0 ? widget.currentAmount.round().toString() : '',
+      text: widget.currentAmount > 0
+          ? widget.currentAmount.round().toString()
+          : '',
     );
     _currentInput = widget.currentAmount;
   }
@@ -948,27 +1008,16 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
     super.dispose();
   }
 
-  String _format(double value) {
-    final whole = value.round().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < whole.length; i++) {
-      final remaining = whole.length - i;
-      buffer.write(whole[i]);
-      if (remaining > 1 && remaining % 3 == 1) {
-        buffer.write(',');
-      }
-    }
-    return buffer.toString();
-  }
+  String _format(double value) => formatCurrency(value);
 
   @override
   Widget build(BuildContext context) {
-    final calculatedDiscount = _isPercentage
-        ? (widget.subtotal * _currentInput / 100)
-        : _currentInput;
-    
+    final calculatedDiscount =
+        _isPercentage ? (widget.subtotal * _currentInput / 100) : _currentInput;
+
     final finalDiscount = calculatedDiscount.clamp(0.0, widget.subtotal);
-    final revisedTotal = (widget.subtotal - finalDiscount).clamp(0.0, double.infinity);
+    final revisedTotal =
+        (widget.subtotal - finalDiscount).clamp(0.0, double.infinity);
 
     return Container(
       decoration: const BoxDecoration(
@@ -1047,7 +1096,7 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
               hintText: '0',
               prefixText: _isPercentage ? null : 'TSh ',
               suffixText: _isPercentage ? '%' : null,
-              hintStyle: TextStyle(color: AppColors.ink.withOpacity(0.1)),
+              hintStyle: TextStyle(color: AppColors.ink.withValues(alpha: 0.1)),
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
             ),
@@ -1074,7 +1123,7 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
             onPressed: () {
               Navigator.of(context).pop({
                 'amount': finalDiscount,
-                'label': _isPercentage 
+                'label': _isPercentage
                     ? '${_currentInput.round()}% Discount'
                     : 'Discount',
               });
@@ -1123,22 +1172,17 @@ class _DiscountModeTab extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          boxShadow: isSelected
-              ? [
-                  const BoxShadow(
-                    color: Color(0x0A000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  )
-                ]
-              : null,
+          border: Border.all(
+            color: isSelected ? const Color(0xFFD7DDEA) : Colors.transparent,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+            color:
+                isSelected ? const Color(0xFF1F2937) : const Color(0xFF64748B),
           ),
         ),
       ),

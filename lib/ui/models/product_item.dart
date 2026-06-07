@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Product item model for catalog and cart operations.
 class ProductItem {
   const ProductItem(
     this.name,
@@ -22,6 +23,7 @@ class ProductItem {
   double get priceValue => double.tryParse(price) ?? 0;
 }
 
+/// Category navigation item for product filtering.
 class CategoryItem {
   const CategoryItem(this.label, this.icon, this.isActive);
 
@@ -30,6 +32,7 @@ class CategoryItem {
   final bool isActive;
 }
 
+/// Line item in an order with mutable quantity.
 class OrderLineItem {
   OrderLineItem({
     required this.product,

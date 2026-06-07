@@ -39,7 +39,8 @@ class HelpSupportPage extends StatelessWidget {
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
@@ -94,12 +95,9 @@ class HelpSupportPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(AppRadius.rounded),
-                        border: Border.all(color: AppColors.border),
-                      ),
+                    MarketSurfaceCard(
+                      radius: AppRadius.rounded,
+                      borderColor: AppColors.border,
                       child: Column(
                         children: [
                           ...supportItems.asMap().entries.map(
@@ -112,23 +110,21 @@ class HelpSupportPage extends StatelessWidget {
                                   if (index != supportItems.length - 1)
                                     const Divider(
                                         height: 1, color: AppColors.divider),
-                              ],
-                            );
-                          },
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.pageBackground,
-                        borderRadius: BorderRadius.circular(AppRadius.rounded),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: const Row(
+                    const MarketSurfaceCard(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      backgroundColor: AppColors.pageBackground,
+                      radius: AppRadius.rounded,
+                      borderColor: AppColors.border,
+                      child: Row(
                         children: [
                           _ShieldSupportIcon(),
                           SizedBox(width: 16),
@@ -178,94 +174,98 @@ class _SupportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        switch (item.title) {
-          case 'Chat with Us':
-          case 'Call Help Center':
-            launchUrl(
-              Uri.parse('tel:${HelpSupportPage._supportPhone}'),
-              mode: LaunchMode.externalApplication,
-            );
-            return;
-          case 'Email Support':
-            launchUrl(
-              Uri.parse('mailto:${HelpSupportPage._supportEmail}'),
-              mode: LaunchMode.externalApplication,
-            );
-            return;
-          case 'User Guide':
-            showDialog<void>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('User Guide'),
-                content: const Text(
-                    'The comprehensive user guide is being prepared. It will cover sales management, inventory tracking, and reporting in detail.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
-                  ),
-                ],
-              ),
-            );
-            return;
-          default:
-            showMarketNotice(
-              context,
-              title: item.title,
-              message:
-                  '${item.title} can be connected to the live support flow next',
-            );
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.pageBackground,
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Icon(item.icon, color: AppColors.ink, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.1,
+    return MarketSurfaceCard(
+      borderColor: AppColors.border,
+      radius: AppRadius.standard,
+      child: GestureDetector(
+        onTap: () {
+          switch (item.title) {
+            case 'Chat with Us':
+            case 'Call Help Center':
+              launchUrl(
+                Uri.parse('tel:${HelpSupportPage._supportPhone}'),
+                mode: LaunchMode.externalApplication,
+              );
+              return;
+            case 'Email Support':
+              launchUrl(
+                Uri.parse('mailto:${HelpSupportPage._supportEmail}'),
+                mode: LaunchMode.externalApplication,
+              );
+              return;
+            case 'User Guide':
+              showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('User Guide'),
+                  content: const Text(
+                      'The comprehensive user guide is being prepared. It will cover sales management, inventory tracking, and reporting in detail.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.subtitle,
-                    style: const TextStyle(
-                      color: AppColors.mutedText,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
+              );
+              return;
+            default:
+              showMarketNotice(
+                context,
+                title: item.title,
+                message:
+                    '${item.title} can be connected to the live support flow next',
+              );
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.pageBackground,
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Icon(item.icon, color: AppColors.ink, size: 20),
               ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.mutedText,
-              size: 20,
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        color: AppColors.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.subtitle,
+                      style: const TextStyle(
+                        color: AppColors.mutedText,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.mutedText,
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );

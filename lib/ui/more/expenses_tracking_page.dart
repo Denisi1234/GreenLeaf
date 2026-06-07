@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../../service/expense_model.dart';
 import '../../service/pos_local_store.dart';
+import '../widgets/market_shared_widgets.dart';
 import 'add_expense_page.dart';
 
 class ExpensesTrackingPage extends StatefulWidget {
@@ -116,22 +117,33 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                       comparisonLabel: comparisonLabel,
                       onFilterSelected: _setFilter,
                       onPickDay: _pickExpenseDay,
-                      onClearDay: _selectedDay == null ? null : _clearSelectedDay,
+                      onClearDay:
+                          _selectedDay == null ? null : _clearSelectedDay,
                     ),
                   ),
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
                   sliver: SliverToBoxAdapter(
-                    child: _SectionHeader(
+                    child: MarketSectionHeader(
                       title: 'Recent Expenses',
-                      actionLabel: 'View All',
-                      onActionTap: recentSourceExpenses.isEmpty
-                          ? null
-                          : () => _showAllExpenses(
-                              context,
-                              recentSourceExpenses,
-                            ),
+                      trailing: TextButton(
+                        onPressed: recentSourceExpenses.isEmpty
+                            ? null
+                            : () => _showAllExpenses(
+                                  context,
+                                  recentSourceExpenses,
+                                ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF2563EB),
+                          padding: EdgeInsets.zero,
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        child: const Text('View All'),
+                      ),
                     ),
                   ),
                 ),
@@ -667,13 +679,10 @@ class _ExpenseSummaryCard extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 420;
 
-        return Container(
+        return MarketSurfaceCard(
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE7EBF1)),
-          ),
+          borderColor: const Color(0xFFE7EBF1),
+          radius: 16,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1052,49 +1061,6 @@ Future<void> _showFilterSheet(
   );
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.actionLabel,
-    required this.onActionTap,
-  });
-
-  final String title;
-  final String actionLabel;
-  final VoidCallback? onActionTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFF0F172A),
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: onActionTap,
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF2563EB),
-            padding: EdgeInsets.zero,
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          child: Text(actionLabel),
-        ),
-      ],
-    );
-  }
-}
-
 class _RecentExpensesCard extends StatelessWidget {
   const _RecentExpensesCard({
     required this.expenses,
@@ -1106,12 +1072,9 @@ class _RecentExpensesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE7EBF1)),
-      ),
+    return MarketSurfaceCard(
+      borderColor: const Color(0xFFE7EBF1),
+      radius: 16,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Column(
@@ -1244,13 +1207,10 @@ class _EmptyExpensesState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE7EBF1)),
-      ),
+      borderColor: const Color(0xFFE7EBF1),
+      radius: 20,
       child: Column(
         children: [
           const Icon(

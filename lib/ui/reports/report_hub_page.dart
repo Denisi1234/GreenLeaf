@@ -118,13 +118,11 @@ class _ReportHubPageState extends State<ReportHubPage> {
                   child: _SectionCard(
                     title: 'Sales Trend',
                     trailing: const SizedBox.shrink(),
-                    child: Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: _SalesTrendChart(
-                          points: report.trendPoints,
-                          maxValue: report.chartMaxValue,
-                        ),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: _SalesTrendChart(
+                        points: report.trendPoints,
+                        maxValue: report.chartMaxValue,
                       ),
                     ),
                   ),
@@ -134,12 +132,20 @@ class _ReportHubPageState extends State<ReportHubPage> {
                   flex: 1,
                   child: _SectionCard(
                     title: 'Top Selling Products',
-                    trailing: const _LinkAction(label: 'View All'),
+                    trailing: _LinkAction(
+                      label: 'View All',
+                      onTap: report.allProducts.isEmpty
+                          ? null
+                          : () => _showTopSellingProducts(context, report),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.only(top: 10),
-                      child: _TopSellingProductsList(
-                        products: report.products,
-                        emptyMessage: 'No completed sales in this period.',
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: _TopSellingProductsList(
+                          products: report.products,
+                          emptyMessage: 'No completed sales in this period.',
+                        ),
                       ),
                     ),
                   ),
@@ -192,6 +198,75 @@ class _ReportHubPageState extends State<ReportHubPage> {
         setState(() => _isDownloading = false);
       }
     }
+  }
+
+  void _showTopSellingProducts(
+    BuildContext context,
+    _ReportSnapshot report,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return FractionallySizedBox(
+          heightFactor: 0.82,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+            child: MarketSurfaceCard(
+              borderColor: ReportHubPage._border,
+              radius: 18,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MarketSectionHeader(
+                      title: 'Top Selling Products',
+                      trailing: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: ReportHubPage._muted,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: report.allProducts.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No completed sales in this period.',
+                                style: TextStyle(
+                                  color: ReportHubPage._muted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: report.allProducts.length,
+                              separatorBuilder: (_, __) => const Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: ReportHubPage._border,
+                              ),
+                              itemBuilder: (context, index) {
+                                return _ProductRow(
+                                  data: report.allProducts[index],
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   _ReportSnapshot _buildReportSnapshot(
@@ -303,6 +378,17 @@ class _ReportHubPageState extends State<ReportHubPage> {
       ],
       trendPoints: trendPoints,
       products: productData,
+      allProducts: topProducts
+          .map(
+            (product) => _ProductData(
+              title: product.title,
+              orders: '${product.quantity} sold',
+              amount: _moneyLabel(product.revenue),
+              icon: product.icon,
+              colors: product.colors,
+            ),
+          )
+          .toList(),
       chartMaxValue: _resolveChartMax(trendPoints),
     );
   }
@@ -879,8 +965,10 @@ class _ReportHubPageState extends State<ReportHubPage> {
     _ReportSnapshot report,
     _PdfReportStats stats,
   ) {
-    final firstPoint = report.trendPoints.isNotEmpty ? report.trendPoints.first : null;
-    final lastPoint = report.trendPoints.isNotEmpty ? report.trendPoints.last : null;
+    final firstPoint =
+        report.trendPoints.isNotEmpty ? report.trendPoints.first : null;
+    final lastPoint =
+        report.trendPoints.isNotEmpty ? report.trendPoints.last : null;
     final peakPoint = report.trendPoints.isEmpty
         ? null
         : report.trendPoints.reduce(
@@ -944,10 +1032,10 @@ class _ReportHubPageState extends State<ReportHubPage> {
           ),
           pw.SizedBox(height: 8),
           pw.Table(
-      border: pw.TableBorder.all(
-        color: PdfColor.fromHex('#EDF2F7'),
-        width: 0.35,
-      ),
+            border: pw.TableBorder.all(
+              color: PdfColor.fromHex('#EDF2F7'),
+              width: 0.35,
+            ),
             columnWidths: const {
               0: pw.FlexColumnWidth(2.5),
               1: pw.FlexColumnWidth(2),
@@ -988,17 +1076,22 @@ class _ReportHubPageState extends State<ReportHubPage> {
     final repeatCustomers = orders
         .where((order) => (order.customerName ?? '').trim().isNotEmpty)
         .fold<Map<String, int>>({}, (map, order) {
-      final name = order.customerName!.trim();
-      map[name] = (map[name] ?? 0) + 1;
-      return map;
-    }).values.where((count) => count > 1).length;
+          final name = order.customerName!.trim();
+          map[name] = (map[name] ?? 0) + 1;
+          return map;
+        })
+        .values
+        .where((count) => count > 1)
+        .length;
     final customerStats = store.customerStats();
     final topCustomerName = customerStats['topName'] as String?;
-    final topCustomerValue = (customerStats['topValue'] as num?)?.toDouble() ?? 0.0;
+    final topCustomerValue =
+        (customerStats['topValue'] as num?)?.toDouble() ?? 0.0;
     final createdThisPeriod = store.customers
         .where((customer) =>
             !customer.createdAt.isBefore(stats.startDate) &&
-            !customer.createdAt.isAfter(stats.endDate.add(const Duration(days: 1))))
+            !customer.createdAt
+                .isAfter(stats.endDate.add(const Duration(days: 1))))
         .length;
 
     final insight = topCustomerName == null || topCustomerName.trim().isEmpty
@@ -1038,10 +1131,10 @@ class _ReportHubPageState extends State<ReportHubPage> {
           ),
           pw.SizedBox(height: 8),
           pw.Table(
-      border: pw.TableBorder.all(
-        color: PdfColor.fromHex('#EDF2F7'),
-        width: 0.35,
-      ),
+            border: pw.TableBorder.all(
+              color: PdfColor.fromHex('#EDF2F7'),
+              width: 0.35,
+            ),
             columnWidths: const {
               0: pw.FlexColumnWidth(2.7),
               1: pw.FlexColumnWidth(2),
@@ -1053,7 +1146,8 @@ class _ReportHubPageState extends State<ReportHubPage> {
                   _pdfTableCell('Value', bold: true),
                 ],
               ),
-              _pdfTableRow('Registered customers', store.customers.length.toString()),
+              _pdfTableRow(
+                  'Registered customers', store.customers.length.toString()),
               _pdfTableRow('Active customers', activeCustomers.toString()),
               _pdfTableRow('Returning customers', repeatCustomers.toString()),
               _pdfTableRow(
@@ -1088,7 +1182,8 @@ class _ReportHubPageState extends State<ReportHubPage> {
   }
 
   pw.Widget _pdfExpenseAnalysisSection(List<Expense> expenses) {
-    final total = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+    final total =
+        expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
     final categories = <String, double>{};
     for (final expense in expenses) {
       categories[expense.category] =
@@ -1149,7 +1244,9 @@ class _ReportHubPageState extends State<ReportHubPage> {
                     _pdfTableCell(entry.key),
                     _pdfTableCell(_moneyLabel(entry.value)),
                     _pdfTableCell(
-                      total <= 0 ? '0%' : '${((entry.value / total) * 100).toStringAsFixed(0)}%',
+                      total <= 0
+                          ? '0%'
+                          : '${((entry.value / total) * 100).toStringAsFixed(0)}%',
                     ),
                   ],
                 ),
@@ -1257,8 +1354,9 @@ class _ReportHubPageState extends State<ReportHubPage> {
     required _PdfReportStats stats,
     required AppProfileData profile,
   }) {
-    final storeName =
-        profile.storeName.trim().isEmpty ? 'The store' : profile.storeName.trim();
+    final storeName = profile.storeName.trim().isEmpty
+        ? 'The store'
+        : profile.storeName.trim();
     final trendWord = stats.revenueTrend >= 0 ? 'growth' : 'softness';
     final revenueDirection = stats.revenueTrend >= 0 ? 'increased' : 'declined';
     final topProduct = report.products.isNotEmpty
@@ -1292,7 +1390,8 @@ class _ReportHubPageState extends State<ReportHubPage> {
     final revenue = orders.fold<double>(0, (sum, order) => sum + order.total);
     final orderCount = orders.length;
     final averageOrderValue = orderCount == 0 ? 0.0 : revenue / orderCount;
-    final totalExpenses = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+    final totalExpenses =
+        expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
 
     final activeCustomerNames = orders
         .map((order) => order.customerName?.trim())
@@ -1303,10 +1402,13 @@ class _ReportHubPageState extends State<ReportHubPage> {
     final returningCustomers = orders
         .where((order) => (order.customerName ?? '').trim().isNotEmpty)
         .fold<Map<String, int>>({}, (map, order) {
-      final name = order.customerName!.trim();
-      map[name] = (map[name] ?? 0) + 1;
-      return map;
-    }).values.where((count) => count > 1).length;
+          final name = order.customerName!.trim();
+          map[name] = (map[name] ?? 0) + 1;
+          return map;
+        })
+        .values
+        .where((count) => count > 1)
+        .length;
     final newCustomers = customers
         .where((customer) =>
             !customer.createdAt.isBefore(startDate) &&
@@ -1343,9 +1445,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
       topCustomerName: topCustomerName,
       topCustomerValue: topCustomerValue,
       peakOrderId: peakOrder?.id,
-      revenueTrend: orders.isEmpty
-          ? 0
-          : orders.last.total - orders.first.total,
+      revenueTrend: orders.isEmpty ? 0 : orders.last.total - orders.first.total,
       startDate: startDate,
       endDate: endDate,
     );
@@ -1397,12 +1497,11 @@ class _ReportHubPageState extends State<ReportHubPage> {
     DateTime start,
     DateTime end,
   ) {
-    return expenses
-        .where((expense) {
-          final day = DateTime(expense.date.year, expense.date.month, expense.date.day);
-          return !day.isBefore(start) && !day.isAfter(end);
-        })
-        .toList();
+    return expenses.where((expense) {
+      final day =
+          DateTime(expense.date.year, expense.date.month, expense.date.day);
+      return !day.isBefore(start) && !day.isAfter(end);
+    }).toList();
   }
 
   _ReportRange _previousComparableRange(DateTime start, DateTime end) {
@@ -1425,10 +1524,12 @@ class _ReportHubPageState extends State<ReportHubPage> {
         profile.storeName.trim().isEmpty ? 'Store report' : profile.storeName;
     final ownerName =
         profile.ownerName.trim().isEmpty ? 'Owner not set' : profile.ownerName;
-    final contact =
-        profile.contactNumber.trim().isEmpty ? 'Contact not set' : profile.contactNumber;
-    final email =
-        profile.emailAddress.trim().isEmpty ? 'Email not set' : profile.emailAddress;
+    final contact = profile.contactNumber.trim().isEmpty
+        ? 'Contact not set'
+        : profile.contactNumber;
+    final email = profile.emailAddress.trim().isEmpty
+        ? 'Email not set'
+        : profile.emailAddress;
     final address = profile.physicalAddress.trim().isEmpty
         ? 'Address not set'
         : profile.physicalAddress;
@@ -1669,12 +1770,13 @@ class _ReportHubPageState extends State<ReportHubPage> {
   }
 
   pw.Widget _pdfHighlightsSection(_ReportSnapshot report) {
-    final topProduct = report.products.isNotEmpty
-        ? report.products.first
-        : null;
-    final revenue = report.metrics.isNotEmpty ? report.metrics[0].value : 'TSH 0';
+    final topProduct =
+        report.products.isNotEmpty ? report.products.first : null;
+    final revenue =
+        report.metrics.isNotEmpty ? report.metrics[0].value : 'TSH 0';
     final orders = report.metrics.length > 1 ? report.metrics[1].value : '0';
-    final average = report.metrics.length > 2 ? report.metrics[2].value : 'TSH 0';
+    final average =
+        report.metrics.length > 2 ? report.metrics[2].value : 'TSH 0';
     final topProductText = topProduct == null
         ? 'No completed sales were recorded in this period.'
         : '${topProduct.title} led the period with ${topProduct.orders} and ${topProduct.amount} revenue.';
@@ -2147,7 +2249,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
     }
 
     final response = await service
-      .sendMessage(
+        .sendMessage(
           prompt:
               'Write a polished business insights section for a store performance report. Focus on sales momentum, customer activity, expense pressure, and practical next actions.',
           storeContext: _buildReportContext(store, report),
@@ -2436,6 +2538,7 @@ class _ReportSnapshot {
     required this.metrics,
     required this.trendPoints,
     required this.products,
+    required this.allProducts,
     required this.chartMaxValue,
   });
 
@@ -2446,6 +2549,7 @@ class _ReportSnapshot {
   final List<_MetricData> metrics;
   final List<_TrendPoint> trendPoints;
   final List<_ProductData> products;
+  final List<_ProductData> allProducts;
   final double chartMaxValue;
 }
 
@@ -2582,13 +2686,10 @@ class _RangeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ReportHubPage._border),
-      ),
+    return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      borderColor: ReportHubPage._border,
+      radius: 16,
       child: Row(
         children: [
           const Icon(
@@ -2703,57 +2804,56 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 104,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ReportHubPage._border),
-      ),
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: data.tint,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              data.icon,
-              color: data.iconColor,
-              size: 15,
-            ),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            data.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: ReportHubPage._muted,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              height: 1,
-            ),
-          ),
-          const Spacer(),
-          FittedBox(
-            alignment: Alignment.centerLeft,
-            fit: BoxFit.scaleDown,
-            child: Text(
-              data.value,
-              style: TextStyle(
-                color: data.valueColor,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
+      borderColor: ReportHubPage._border,
+      radius: 16,
+      child: SizedBox(
+        height: 104,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: data.tint,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                data.icon,
+                color: data.iconColor,
+                size: 15,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 7),
+            Text(
+              data.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: ReportHubPage._muted,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                height: 1,
+              ),
+            ),
+            const Spacer(),
+            FittedBox(
+              alignment: Alignment.centerLeft,
+              fit: BoxFit.scaleDown,
+              child: Text(
+                data.value,
+                style: TextStyle(
+                  color: data.valueColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2772,14 +2872,12 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ReportHubPage._border),
-      ),
+    return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      borderColor: ReportHubPage._border,
+      radius: 16,
       child: Column(
+        mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -2799,7 +2897,7 @@ class _SectionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          child,
+          Expanded(child: child),
         ],
       ),
     );
@@ -2807,19 +2905,22 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _LinkAction extends StatelessWidget {
-  const _LinkAction({required this.label});
+  const _LinkAction({required this.label, this.onTap});
 
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: ReportHubPage._blue,
+          style: TextStyle(
+            color: onTap == null
+                ? ReportHubPage._blue.withValues(alpha: 0.55)
+                : ReportHubPage._blue,
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
@@ -2831,6 +2932,19 @@ class _LinkAction extends StatelessWidget {
           size: 16,
         ),
       ],
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: content,
+      ),
     );
   }
 }
@@ -2979,8 +3093,7 @@ class _SalesTrendPainter extends CustomPainter {
     for (var index = 0; index < points.length; index++) {
       final x = chartRect.left + (stepX * index);
       final y = chartRect.bottom -
-          (points[index].value / chartMaxValue) *
-              (chartRect.height - topInset);
+          (points[index].value / chartMaxValue) * (chartRect.height - topInset);
       offsets.add(Offset(x, y));
     }
 

@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -163,6 +163,13 @@ class AppProfileData {
     required this.emailAddress,
     required this.physicalAddress,
     required this.memberSince,
+    required this.taxId,
+    required this.weekdayOpen,
+    required this.weekdayClose,
+    required this.saturdayOpen,
+    required this.saturdayClose,
+    required this.sundaySchedule,
+    required this.open24Hours,
     this.logoPath,
   });
 
@@ -176,6 +183,13 @@ class AppProfileData {
       emailAddress: '',
       physicalAddress: '',
       memberSince: '',
+      taxId: '',
+      weekdayOpen: '',
+      weekdayClose: '',
+      saturdayOpen: '',
+      saturdayClose: '',
+      sundaySchedule: '',
+      open24Hours: false,
       logoPath: null,
     );
   }
@@ -188,6 +202,13 @@ class AppProfileData {
   final String emailAddress;
   final String physicalAddress;
   final String memberSince;
+  final String taxId;
+  final String weekdayOpen;
+  final String weekdayClose;
+  final String saturdayOpen;
+  final String saturdayClose;
+  final String sundaySchedule;
+  final bool open24Hours;
   final String? logoPath;
 
   AppProfileData copyWith({
@@ -199,6 +220,13 @@ class AppProfileData {
     String? emailAddress,
     String? physicalAddress,
     String? memberSince,
+    String? taxId,
+    String? weekdayOpen,
+    String? weekdayClose,
+    String? saturdayOpen,
+    String? saturdayClose,
+    String? sundaySchedule,
+    bool? open24Hours,
     String? logoPath,
   }) {
     return AppProfileData(
@@ -210,6 +238,13 @@ class AppProfileData {
       emailAddress: emailAddress ?? this.emailAddress,
       physicalAddress: physicalAddress ?? this.physicalAddress,
       memberSince: memberSince ?? this.memberSince,
+      taxId: taxId ?? this.taxId,
+      weekdayOpen: weekdayOpen ?? this.weekdayOpen,
+      weekdayClose: weekdayClose ?? this.weekdayClose,
+      saturdayOpen: saturdayOpen ?? this.saturdayOpen,
+      saturdayClose: saturdayClose ?? this.saturdayClose,
+      sundaySchedule: sundaySchedule ?? this.sundaySchedule,
+      open24Hours: open24Hours ?? this.open24Hours,
       logoPath: logoPath ?? this.logoPath,
     );
   }
@@ -302,6 +337,7 @@ class PosLocalStore extends ChangeNotifier {
       : _database = database ?? PosLocalDatabase.instance;
 
   final PosLocalDatabase _database;
+  static const Duration _eastAfricaOffset = Duration(hours: 3);
 
   final List<ProductItem> _products = <ProductItem>[];
   final List<ProductItem> _cartItems = <ProductItem>[];
@@ -309,7 +345,8 @@ class PosLocalStore extends ChangeNotifier {
   final List<InventoryProductItem> _allInventory = <InventoryProductItem>[];
   final List<StaffRoleData> _staffRoles = <StaffRoleData>[];
   final List<StaffMemberData> _staffMembers = <StaffMemberData>[];
-  final List<DaftariRecoverySession> _daftariSessions = <DaftariRecoverySession>[];
+  final List<DaftariRecoverySession> _daftariSessions =
+      <DaftariRecoverySession>[];
   final List<DaftariLearningRule> _daftariLearningRules =
       <DaftariLearningRule>[];
   final List<DukaAiThread> _dukaAiThreads = <DukaAiThread>[];
@@ -317,6 +354,7 @@ class PosLocalStore extends ChangeNotifier {
   final List<Expense> _expenses = <Expense>[];
   AppProfileData _profile = AppProfileData.empty();
   String? _activeDukaAiThreadId;
+  Timer? _midnightRefreshTimer;
 
   static const String _defaultGeminiApiKey = '';
   static const String _defaultGroqApiKey = '';
@@ -333,6 +371,12 @@ class PosLocalStore extends ChangeNotifier {
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
+
+  @override
+  void dispose() {
+    _midnightRefreshTimer?.cancel();
+    super.dispose();
+  }
 
   static PosLocalStore of(BuildContext context) {
     return context.read<PosLocalStore>();
@@ -402,6 +446,13 @@ class PosLocalStore extends ChangeNotifier {
             emailAddress: storedProfile['email_address'] as String,
             physicalAddress: storedProfile['physical_address'] as String,
             memberSince: storedProfile['member_since'] as String,
+            taxId: storedProfile['tax_id'] as String? ?? '',
+            weekdayOpen: storedProfile['weekday_open'] as String? ?? '',
+            weekdayClose: storedProfile['weekday_close'] as String? ?? '',
+            saturdayOpen: storedProfile['saturday_open'] as String? ?? '',
+            saturdayClose: storedProfile['saturday_close'] as String? ?? '',
+            sundaySchedule: storedProfile['sunday_schedule'] as String? ?? '',
+            open24Hours: (storedProfile['open_24_hours'] as int? ?? 0) == 1,
             logoPath: storedProfile['logo_path'] as String?,
           );
 
@@ -419,6 +470,11 @@ class PosLocalStore extends ChangeNotifier {
     _expenses
       ..clear()
       ..addAll(storedExpenses.map(Expense.fromMap));
+
+    final storedCustomers = await _database.loadCustomers();
+    _customers
+      ..clear()
+      ..addAll(storedCustomers.map(_customerFromMap));
 
     if (_dukaAiThreads.isEmpty) {
       final now = DateTime.now().toIso8601String();
@@ -455,31 +511,49 @@ class PosLocalStore extends ChangeNotifier {
     _dukaAiMessages.sort(_compareMessagesByTime);
 
     try {
-       final dir = await getApplicationDocumentsDirectory();
-       final file = File('${dir.path}/daftari_gemini_config.json');
-       if (await file.exists()) {
-         final jsonStr = await file.readAsString();
-         final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-         _geminiApiKey = map['apiKey'] as String? ?? _defaultGeminiApiKey;
-         _groqApiKey = map['groqApiKey'] as String? ?? _defaultGroqApiKey;
-         _groqModel = map['groqModel'] as String? ?? _defaultGroqModel;
-         _useLiveGeminiOcr = map['useLiveOcr'] as bool? ?? true;
-       } else {
-         // Write default config so it persists
-         await file.writeAsString(jsonEncode({
-           'apiKey': _defaultGeminiApiKey,
-           'groqApiKey': _defaultGroqApiKey,
-           'groqModel': _defaultGroqModel,
-           'useLiveOcr': true,
-         }));
-       }
-     } catch (e) {
-       // Ignore
-     }
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/daftari_gemini_config.json');
+      if (await file.exists()) {
+        final jsonStr = await file.readAsString();
+        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+        _geminiApiKey = map['apiKey'] as String? ?? _defaultGeminiApiKey;
+        _groqApiKey = map['groqApiKey'] as String? ?? _defaultGroqApiKey;
+        _groqModel = map['groqModel'] as String? ?? _defaultGroqModel;
+        _useLiveGeminiOcr = map['useLiveOcr'] as bool? ?? true;
+      } else {
+        // Write default config so it persists
+        await file.writeAsString(jsonEncode({
+          'apiKey': _defaultGeminiApiKey,
+          'groqApiKey': _defaultGroqApiKey,
+          'groqModel': _defaultGroqModel,
+          'useLiveOcr': true,
+        }));
+      }
+    } catch (e) {
+      // Ignore
+    }
 
     _updateCartTotals();
+    _scheduleMidnightRefresh();
     _isInitialized = true;
     notifyListeners();
+  }
+
+  void _scheduleMidnightRefresh() {
+    _midnightRefreshTimer?.cancel();
+    final nowUtc = DateTime.now().toUtc();
+    final eastAfricaNow = nowUtc.add(_eastAfricaOffset);
+    final nextMidnightUtc = DateTime.utc(
+      eastAfricaNow.year,
+      eastAfricaNow.month,
+      eastAfricaNow.day + 1,
+    ).subtract(_eastAfricaOffset);
+    final delay = nextMidnightUtc.difference(nowUtc);
+    _midnightRefreshTimer = Timer(delay, () {
+      if (!_isInitialized) return;
+      notifyListeners();
+      _scheduleMidnightRefresh();
+    });
   }
 
   List<Expense> get expenses => List.unmodifiable(_expenses);
@@ -532,20 +606,21 @@ class PosLocalStore extends ChangeNotifier {
       List.unmodifiable(_daftariSessions);
   List<DaftariLearningRule> get daftariLearningRules =>
       List.unmodifiable(_daftariLearningRules);
-  List<DukaAiThread> get dukaAiThreads =>
-      List.unmodifiable(_dukaAiThreads);
-  List<DukaAiMessage> get dukaAiMessages =>
-      List.unmodifiable(_dukaAiMessages);
+  List<DukaAiThread> get dukaAiThreads => List.unmodifiable(_dukaAiThreads);
+  List<DukaAiMessage> get dukaAiMessages => List.unmodifiable(_dukaAiMessages);
   String get activeDukaAiThreadId =>
       _activeDukaAiThreadId ?? _dukaAiThreads.first.id;
   DukaAiThread? get activeDukaAiThread {
     final activeId = _activeDukaAiThreadId;
-    if (activeId == null) return _dukaAiThreads.isEmpty ? null : _dukaAiThreads.first;
+    if (activeId == null) {
+      return _dukaAiThreads.isEmpty ? null : _dukaAiThreads.first;
+    }
     for (final thread in _dukaAiThreads) {
       if (thread.id == activeId) return thread;
     }
     return _dukaAiThreads.isEmpty ? null : _dukaAiThreads.first;
   }
+
   AppProfileData get profile => _profile;
 
   int _compareMessagesByTime(DukaAiMessage a, DukaAiMessage b) {
@@ -556,6 +631,7 @@ class PosLocalStore extends ChangeNotifier {
     if (bTime == null) return -1;
     return aTime.compareTo(bTime);
   }
+
   DaftariRecoverySession? get latestDaftariSession =>
       _daftariSessions.isEmpty ? null : _daftariSessions.first;
 
@@ -600,8 +676,7 @@ class PosLocalStore extends ChangeNotifier {
 
     final availableStock = _availableStockForProduct(product);
     final currentCartQuantity = _cartItems.where(_sameProduct(product)).length;
-    if (availableStock > 0 &&
-        currentCartQuantity + quantity > availableStock) {
+    if (availableStock > 0 && currentCartQuantity + quantity > availableStock) {
       return false;
     }
 
@@ -630,7 +705,8 @@ class PosLocalStore extends ChangeNotifier {
       _daftariSessions.insert(0, session);
     } else {
       _daftariSessions[index] = session;
-      _daftariSessions.sort((left, right) => right.createdAt.compareTo(left.createdAt));
+      _daftariSessions
+          .sort((left, right) => right.createdAt.compareTo(left.createdAt));
     }
     notifyListeners();
     await _database.upsertDaftariSession(session);
@@ -749,7 +825,8 @@ class PosLocalStore extends ChangeNotifier {
       updatedAt: DateTime.now().toIso8601String(),
     );
     _dukaAiThreads[index] = updated;
-    _dukaAiThreads.sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+    _dukaAiThreads
+        .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
     await _database.upsertDukaAiThread(updated);
   }
@@ -766,7 +843,8 @@ class PosLocalStore extends ChangeNotifier {
       updatedAt: DateTime.now().toIso8601String(),
     );
     _dukaAiThreads[index] = updated;
-    _dukaAiThreads.sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+    _dukaAiThreads
+        .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
     await _database.upsertDukaAiThread(updated);
   }
@@ -920,7 +998,8 @@ class PosLocalStore extends ChangeNotifier {
       (sum, line) => sum + line.totalPrice,
     );
     final total = subtotal - (discountAmount ?? 0);
-    if (cashTendered < total) {
+    final isCashSale = paymentMethod.toLowerCase() == 'cash';
+    if (isCashSale && cashTendered < total) {
       throw StateError('Cash tendered is less than total due.');
     }
 
@@ -967,9 +1046,9 @@ class PosLocalStore extends ChangeNotifier {
       status: 'Completed',
       cashierName: cashierName,
       register: registerName,
-      paymentMethod: 'Cash',
-      cashTendered: cashTendered,
-      changeDue: cashTendered - total,
+      paymentMethod: paymentMethod,
+      cashTendered: isCashSale ? cashTendered : 0,
+      changeDue: isCashSale ? cashTendered - total : 0,
       customerName: customerName,
       discountAmount: discountAmount,
       discountLabel: discountLabel,
@@ -990,6 +1069,20 @@ class PosLocalStore extends ChangeNotifier {
           .toList(),
     );
 
+    var customerUpdated = false;
+    if (paymentMethod.toLowerCase() == 'credit' &&
+        customerName != null &&
+        customerName.trim().isNotEmpty) {
+      final customerIndex =
+          _customers.indexWhere((customer) => customer.name == customerName);
+      if (customerIndex != -1) {
+        _customers[customerIndex] = _customers[customerIndex].copyWith(
+          debitBalance: _customers[customerIndex].debitBalance + total,
+        );
+        customerUpdated = true;
+      }
+    }
+
     _orders.insert(0, order);
     _cartItems.clear();
     _updateCartTotals();
@@ -998,6 +1091,9 @@ class PosLocalStore extends ChangeNotifier {
     await _database.replaceInventory(_allInventory);
     await _database.replaceCart(_cartItems);
     await _database.insertOrder(order);
+    if (customerUpdated) {
+      await _database.replaceCustomers(_customers.map(_customerToMap).toList());
+    }
     return order;
   }
 
@@ -1006,10 +1102,11 @@ class PosLocalStore extends ChangeNotifier {
     if (index == -1) return;
 
     final order = _orders[index];
-    
+
     // Restore stock
     for (final line in order.lines) {
-      final invIndex = _allInventory.indexWhere((item) => item.code == line.itemCode);
+      final invIndex =
+          _allInventory.indexWhere((item) => item.code == line.itemCode);
       if (invIndex != -1) {
         final item = _allInventory[invIndex];
         final nextStock = item.stockCount + line.quantity;
@@ -1037,10 +1134,10 @@ class PosLocalStore extends ChangeNotifier {
 
   Future<void> reopenOrderForEdit(String orderId) async {
     final order = _orders.firstWhere((o) => o.id == orderId);
-    
+
     // 1. Clear current cart
     await clearCart();
-    
+
     // 2. Add order items back to cart
     for (final line in order.lines) {
       for (var i = 0; i < line.quantity; i++) {
@@ -1064,6 +1161,13 @@ class PosLocalStore extends ChangeNotifier {
       'email_address': profile.emailAddress,
       'physical_address': profile.physicalAddress,
       'member_since': profile.memberSince,
+      'tax_id': profile.taxId,
+      'weekday_open': profile.weekdayOpen,
+      'weekday_close': profile.weekdayClose,
+      'saturday_open': profile.saturdayOpen,
+      'saturday_close': profile.saturdayClose,
+      'sunday_schedule': profile.sundaySchedule,
+      'open_24_hours': profile.open24Hours ? 1 : 0,
       'logo_path': profile.logoPath,
     });
   }
@@ -1204,11 +1308,15 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   bool Function(ProductItem) _sameProduct(ProductItem product) {
+    final productCode = product.code?.trim();
+    if (productCode != null && productCode.isNotEmpty) {
+      return (item) => item.code?.trim() == productCode;
+    }
+
+    final productName = product.name.trim();
+    final productSize = product.size.trim();
     return (item) =>
-        item.code == product.code &&
-        item.name == product.name &&
-        item.price == product.price &&
-        item.size == product.size;
+        item.name.trim() == productName && item.size.trim() == productSize;
   }
 
   void _updateCartTotals() {
@@ -1322,6 +1430,23 @@ class PosLocalStore extends ChangeNotifier {
     await _database.replaceCustomers(_customers.map(_customerToMap).toList());
   }
 
+  CustomerData _customerFromMap(Map<String, Object?> map) {
+    return CustomerData(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      email: map['email'] as String? ?? '',
+      phone: map['phone'] as String,
+      address: map['address'] as String? ?? '',
+      debitBalance: (map['debit_balance'] as num?)?.toDouble() ?? 0,
+      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
+          DateTime.now(),
+      tags: (map['tags'] as String? ?? '')
+          .split(',')
+          .where((tag) => tag.trim().isNotEmpty)
+          .toList(),
+    );
+  }
+
   Map<String, Object?> _customerToMap(CustomerData customer) {
     return <String, Object?>{
       'id': customer.id,
@@ -1329,26 +1454,10 @@ class PosLocalStore extends ChangeNotifier {
       'email': customer.email,
       'phone': customer.phone,
       'address': customer.address,
+      'debit_balance': customer.debitBalance,
       'created_at': customer.createdAt.toIso8601String(),
       'tags': customer.tags.join(','),
     };
-  }
-
-  CustomerData _customerFromMap(Map<String, Object?> map) {
-    final tagsRaw = map['tags'] as String? ?? '';
-    final tags = tagsRaw.isEmpty
-        ? const <String>[]
-        : tagsRaw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-    return CustomerData(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      email: map['email'] as String? ?? '',
-      phone: map['phone'] as String,
-      address: map['address'] as String? ?? '',
-      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
-          DateTime.now(),
-      tags: tags,
-    );
   }
 
   Future<void> updateCustomer(CustomerData customer) async {

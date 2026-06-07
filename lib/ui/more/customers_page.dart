@@ -2,16 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
-import '../home/home_page.dart';
 import '../models/customer_data.dart';
-import '../products/product_management_page.dart';
-import '../reports/reports_page.dart';
-import '../sales/order_history_page.dart';
-import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'create_customer_page.dart';
 import 'customer_details_page.dart';
-import 'more_page.dart';
 
 class CustomersPage extends StatefulWidget {
   const CustomersPage({
@@ -27,7 +21,14 @@ class CustomersPage extends StatefulWidget {
 
 class _CustomersPageState extends State<CustomersPage> {
   static const List<int> _fallbackPoints = <int>[
-    450, 320, 780, 560, 240, 610, 180, 400,
+    450,
+    320,
+    780,
+    560,
+    240,
+    610,
+    180,
+    400,
   ];
 
   final TextEditingController _searchController = TextEditingController();
@@ -72,11 +73,10 @@ class _CustomersPageState extends State<CustomersPage> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    final customers = _filteredCustomers(context.watch<PosLocalStore>().customers);
+    final customers =
+        _filteredCustomers(context.watch<PosLocalStore>().customers);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -151,6 +151,7 @@ class _CustomersPageState extends State<CustomersPage> {
                         child: _CustomerListItem(
                           customer: customer,
                           loyaltyPoints: points,
+                          debitBalance: customer.debitBalance,
                         ),
                       );
                     },
@@ -174,7 +175,8 @@ class _CustomersPageState extends State<CustomersPage> {
         child: Row(
           children: [
             const SizedBox(width: 12),
-            const Icon(Icons.search_rounded, color: Color(0xFF94A3B8), size: 20),
+            const Icon(Icons.search_rounded,
+                color: Color(0xFF94A3B8), size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -199,7 +201,8 @@ class _CustomersPageState extends State<CustomersPage> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF94A3B8)),
+                          icon: const Icon(Icons.close_rounded,
+                              size: 18, color: Color(0xFF94A3B8)),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -219,34 +222,41 @@ class _CustomersPageState extends State<CustomersPage> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _searchQuery.isEmpty ? Icons.people_outline_rounded : Icons.search_off_rounded,
-            size: 48,
-            color: const Color(0xFFCBD5E1),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _searchQuery.isEmpty ? 'No Customers' : 'No matches found',
-            style: const TextStyle(
-              color: Color(0xFF334155),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+      child: MarketSurfaceCard(
+        padding: const EdgeInsets.all(20),
+        borderColor: const Color(0xFFE2E8F0),
+        radius: 12,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _searchQuery.isEmpty
+                  ? Icons.people_outline_rounded
+                  : Icons.search_off_rounded,
+              size: 48,
+              color: const Color(0xFFCBD5E1),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchQuery.isEmpty
-                ? 'Add your first customer to get started.'
-                : 'Try a different name or phone number.',
-            style: const TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 14,
+            const SizedBox(height: 16),
+            Text(
+              _searchQuery.isEmpty ? 'No Customers' : 'No matches found',
+              style: const TextStyle(
+                color: Color(0xFF334155),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'Add your first customer to get started.'
+                  : 'Try a different name or phone number.',
+              style: const TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -256,10 +266,12 @@ class _CustomerListItem extends StatelessWidget {
   const _CustomerListItem({
     required this.customer,
     required this.loyaltyPoints,
+    required this.debitBalance,
   });
 
   final CustomerData customer;
   final int loyaltyPoints;
+  final double debitBalance;
 
   @override
   Widget build(BuildContext context) {
@@ -300,6 +312,17 @@ class _CustomerListItem extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
+                if (debitBalance > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Debit due: TSh ${debitBalance.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      color: Color(0xFFB91C1C),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -326,11 +349,10 @@ class _CustomerListItem extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 12),
-          const Icon(Icons.chevron_right_rounded, color: Color(0xFFCBD5E1), size: 20),
+          const Icon(Icons.chevron_right_rounded,
+              color: Color(0xFFCBD5E1), size: 20),
         ],
       ),
     );
   }
 }
-
-

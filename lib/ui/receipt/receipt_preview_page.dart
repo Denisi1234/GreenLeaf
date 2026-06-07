@@ -105,13 +105,12 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     }
   }
 
-  Future<File?> _ensurePdf(BuildContext context) async {
+  Future<File?> _ensurePdf() async {
     File? pdfFile = _preparedPdf;
     if (pdfFile != null) return pdfFile;
 
     if (_isPreparing) {
-      showMarketNotice(
-        context,
+      _showNotice(
         title: 'Preparing Receipt',
         message: 'One moment while we finish the PDF...',
       );
@@ -144,15 +143,28 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
       setState(() => _preparedPdf = pdfFile);
       return pdfFile;
     } catch (_) {
-      if (!context.mounted) return null;
-      showMarketNotice(
-        context,
+      if (!mounted) return null;
+      _showNotice(
         title: 'Receipt Error',
         message: 'Receipt PDF could not be prepared',
         type: MarketNoticeType.warning,
       );
       return null;
     }
+  }
+
+  void _showNotice({
+    required String title,
+    required String message,
+    MarketNoticeType type = MarketNoticeType.success,
+  }) {
+    if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: title,
+      message: message,
+      type: type,
+    );
   }
 
   String _buildWhatsAppMessage() {
@@ -174,23 +186,25 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     }
     buffer.writeln('--------------------');
     buffer.writeln('Subtotal: ${_money(_subtotal)}');
-    
-    if (widget.order.discountAmount != null && widget.order.discountAmount! > 0) {
-      buffer.writeln('${widget.order.discountLabel ?? 'Discount'}: -${_money(widget.order.discountAmount!)}');
+
+    if (widget.order.discountAmount != null &&
+        widget.order.discountAmount! > 0) {
+      buffer.writeln(
+          '${widget.order.discountLabel ?? 'Discount'}: -${_money(widget.order.discountAmount!)}');
     }
-    
+
     buffer.writeln('*Total: ${_money(widget.order.total)}*');
     buffer.writeln('Cash Received: ${_money(widget.order.cashTendered)}');
     buffer.writeln('Change Due: ${_money(widget.order.changeDue)}');
     buffer.writeln('--------------------');
     buffer.writeln('THANK YOU!');
-    
+
     return buffer.toString();
   }
 
-  Future<void> _shareToWhatsApp(BuildContext context) async {
+  Future<void> _shareToWhatsApp() async {
     try {
-      final pdfFile = await _ensurePdf(context);
+      final pdfFile = await _ensurePdf();
       if (pdfFile == null) return;
 
       final message = _buildWhatsAppMessage();
@@ -212,9 +226,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
       }
 
       if (customShared) {
-        if (!context.mounted) return;
-        showMarketNotice(
-          context,
+        _showNotice(
           title: 'WhatsApp Ready',
           message: 'Receipt PDF opened in WhatsApp',
         );
@@ -225,26 +237,20 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         'https://wa.me/?text=${Uri.encodeComponent(message)}',
       );
       if (await launchUrl(webUri, mode: LaunchMode.externalApplication)) {
-        if (!context.mounted) return;
-        showMarketNotice(
-          context,
+        _showNotice(
           title: 'WhatsApp Opened',
           message: 'WhatsApp opened with receipt details',
         );
         return;
       }
 
-      if (!context.mounted) return;
-      showMarketNotice(
-        context,
+      _showNotice(
         title: 'Share Unavailable',
         message: 'WhatsApp could not be opened on this device',
         type: MarketNoticeType.warning,
       );
     } on PlatformException catch (error) {
-      if (!context.mounted) return;
-      showMarketNotice(
-        context,
+      _showNotice(
         title: 'Share Failed',
         message: error.message ?? 'Receipt could not be shared',
         type: MarketNoticeType.warning,
@@ -252,13 +258,11 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     }
   }
 
-  Future<void> _sharePdf(BuildContext context) async {
+  Future<void> _sharePdf() async {
     try {
-      final pdfFile = await _ensurePdf(context);
+      final pdfFile = await _ensurePdf();
       if (pdfFile == null) return;
-      debugPrint('Sharing PDF from: ${pdfFile.path}');
       final pdfBytes = await pdfFile.readAsBytes();
-      debugPrint('PDF bytes length: ${pdfBytes.length}');
       await Printing.sharePdf(
         bytes: pdfBytes,
         filename:
@@ -266,9 +270,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
       );
     } catch (error, stack) {
       debugPrint('Share PDF error: $error\n$stack');
-      if (!context.mounted) return;
-      showMarketNotice(
-        context,
+      _showNotice(
         title: 'Share Failed',
         message: 'Could not share receipt: ${error.toString()}',
         type: MarketNoticeType.warning,
@@ -276,29 +278,25 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     }
   }
 
-  Future<void> _printReceipt(BuildContext context) async {
-    final pdfFile = await _ensurePdf(context);
+  Future<void> _printReceipt() async {
+    final pdfFile = await _ensurePdf();
     if (pdfFile == null) return;
     final bytes = await pdfFile.readAsBytes();
     await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
-  Future<void> _downloadReceipt(BuildContext context) async {
-    final pdfFile = await _ensurePdf(context);
-    if (pdfFile == null || !context.mounted) return;
+  Future<void> _downloadReceipt() async {
+    final pdfFile = await _ensurePdf();
+    if (pdfFile == null || !mounted) return;
 
     try {
       final targetFile = await _saveReceiptPdf(pdfFile, widget.order.id);
-      if (!context.mounted) return;
-      showMarketNotice(
-        context,
+      _showNotice(
         title: 'Receipt Downloaded',
         message: 'Saved to ${targetFile.path}',
       );
     } catch (_) {
-      if (!context.mounted) return;
-      showMarketNotice(
-        context,
+      _showNotice(
         title: 'Download Failed',
         message: 'Receipt PDF could not be saved',
         type: MarketNoticeType.warning,
@@ -351,7 +349,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     );
   }
 
-  void _startNewSale(BuildContext context) {
+  void _startNewSale() {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(
         builder: (context) => const AppShell(
@@ -382,7 +380,8 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
-              foregroundColor: isDanger ? const Color(0xFFF24840) : const Color(0xFF4C68D6),
+              foregroundColor:
+                  isDanger ? const Color(0xFFF24840) : const Color(0xFF4C68D6),
             ),
             child: Text(actionLabel),
           ),
@@ -406,11 +405,12 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF4C68D6)),
+                    icon:
+                        const Icon(Icons.arrow_back, color: Color(0xFF4C68D6)),
                   ),
                   const Spacer(),
                   IconButton(
-                    onPressed: () => _sharePdf(context),
+                    onPressed: _sharePdf,
                     icon: const Icon(Icons.share, color: Color(0xFF4C68D6)),
                   ),
                   IconButton(
@@ -418,15 +418,15 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                     icon: const Icon(Icons.sms, color: Color(0xFF4C68D6)),
                   ),
                   IconButton(
-                    onPressed: () => _shareToWhatsApp(context),
+                    onPressed: _shareToWhatsApp,
                     icon: const Icon(Icons.chat, color: Color(0xFF4C68D6)),
                   ),
                   IconButton(
-                    onPressed: () => _downloadReceipt(context),
+                    onPressed: _downloadReceipt,
                     icon: const Icon(Icons.download, color: Color(0xFF4C68D6)),
                   ),
                   IconButton(
-                    onPressed: () => _printReceipt(context),
+                    onPressed: _printReceipt,
                     icon: const Icon(Icons.print, color: Color(0xFF4C68D6)),
                   ),
                   IconButton(
@@ -452,17 +452,19 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                     label: 'DELETE',
                     color: const Color(0xFFF24840),
                     onTap: () async {
+                      final store = context.read<PosLocalStore>();
                       final confirmed = await _showConfirmDialog(
                         context,
                         title: 'Delete Order?',
-                        message: 'This will permanently remove the order and restore product stock.',
+                        message:
+                            'This will permanently remove the order and restore product stock.',
                         actionLabel: 'Delete',
                         isDanger: true,
                       );
                       if (confirmed == true && mounted) {
-                        await context.read<PosLocalStore>().voidOrder(widget.order.id);
+                        await store.voidOrder(widget.order.id);
                         if (!mounted) return;
-                        _startNewSale(context);
+                        _startNewSale();
                       }
                     },
                   ),
@@ -471,16 +473,18 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                     label: 'EDIT',
                     color: const Color(0xFF476ADB),
                     onTap: () async {
+                      final store = context.read<PosLocalStore>();
                       final confirmed = await _showConfirmDialog(
                         context,
                         title: 'Edit Order?',
-                        message: 'The current order will be voided, and its items will be re-added to your cart for editing.',
+                        message:
+                            'The current order will be voided, and its items will be re-added to your cart for editing.',
                         actionLabel: 'Edit',
                       );
                       if (confirmed == true && mounted) {
-                        await context.read<PosLocalStore>().reopenOrderForEdit(widget.order.id);
+                        await store.reopenOrderForEdit(widget.order.id);
                         if (!mounted) return;
-                        _startNewSale(context);
+                        _startNewSale();
                       }
                     },
                   ),
@@ -515,7 +519,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 18),
               child: GestureDetector(
-                onTap: () => _startNewSale(context),
+                onTap: _startNewSale,
                 child: Container(
                   width: double.infinity,
                   height: 42,
@@ -564,27 +568,23 @@ class _TopActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 82,
-        height: 34,
-        decoration: BoxDecoration(
-          color: color,
-          border: Border.all(color: const Color(0xFFCFD3DE)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x22000000),
-              blurRadius: 3,
-              offset: Offset(0, 2),
+      child: MarketSurfaceCard(
+        padding: EdgeInsets.zero,
+        backgroundColor: color,
+        borderColor: const Color(0xFFCFD3DE),
+        radius: 4,
+        child: SizedBox(
+          width: 82,
+          height: 34,
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -641,9 +641,9 @@ class _ReceiptPaper extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
       child: Column(
         children: [
-          Text(
+          const Text(
             ReceiptBrandData.storeName,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.ink,
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -665,7 +665,8 @@ class _ReceiptPaper extends StatelessWidget {
           ),
           _MetaLine(label: 'Receipt #', value: receiptNumber),
           _MetaLine(label: 'Date', value: '$date $time'),
-          if (customerName != null) _MetaLine(label: 'Customer', value: customerName!),
+          if (customerName != null)
+            _MetaLine(label: 'Customer', value: customerName!),
           _MetaLine(label: 'Payment', value: paymentMethod),
           const SizedBox(height: 20),
           const _TableHeader(
@@ -765,12 +766,18 @@ class _MetaLine extends StatelessWidget {
         children: [
           Text(
             '$label:',
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.w500),
           ),
           const SizedBox(width: 8),
           Text(
             value,
-            style: const TextStyle(color: AppColors.ink, fontSize: 12, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                color: AppColors.ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -819,13 +826,11 @@ class _TableRow extends StatelessWidget {
     required this.cells,
     required this.alignments,
     required this.flexes,
-    this.isBold = false,
   });
 
   final List<String> cells;
   final List<TextAlign> alignments;
   final List<int> flexes;
-  final bool isBold;
 
   @override
   Widget build(BuildContext context) {
@@ -838,10 +843,10 @@ class _TableRow extends StatelessWidget {
             child: Text(
               cells[index],
               textAlign: alignments[index],
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.ink,
                 fontSize: 13,
-                fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: FontWeight.w500,
               ),
             ),
           );
@@ -856,7 +861,6 @@ class _SummaryLine extends StatelessWidget {
     required this.label,
     required this.value,
     this.isBold = false,
-    this.valueWidth = 140,
     this.valueColor,
     this.fontSize,
   });
@@ -864,7 +868,6 @@ class _SummaryLine extends StatelessWidget {
   final String label;
   final String value;
   final bool isBold;
-  final double valueWidth;
   final Color? valueColor;
   final double? fontSize;
 
@@ -886,7 +889,7 @@ class _SummaryLine extends StatelessWidget {
           ),
         ),
         SizedBox(
-          width: valueWidth,
+          width: 140,
           child: Text(
             value,
             textAlign: TextAlign.right,

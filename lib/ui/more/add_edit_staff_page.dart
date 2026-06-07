@@ -144,7 +144,9 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       body: SafeArea(
         child: Stack(
           children: [
-            const Positioned.fill(child: BackdropGlow()),
+            const Positioned.fill(
+              child: ColoredBox(color: Color(0xFFF8FAFC)),
+            ),
             Column(
               children: [
                 const MarketPageHeader(title: 'Add / Edit Staff'),
@@ -200,13 +202,6 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                                         border: Border.all(
                                           color: const Color(0xFFE4E7EC),
                                         ),
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            color: Color(0x12000000),
-                                            blurRadius: 12,
-                                            offset: Offset(0, 4),
-                                          ),
-                                        ],
                                       ),
                                       child: const Icon(
                                         Icons.photo_camera_outlined,
@@ -320,50 +315,32 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                           const SizedBox(height: 28),
                           GestureDetector(
                             onTap: _isSaving ? null : _saveStaff,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 180),
-                              opacity: _isSaving ? 0.78 : 1,
-                              child: Container(
-                                height: 74,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(4),
-                                  gradient: const LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Color(0xFF1562E8),
-                                      Color(0xFF2B6FF3),
-                                    ],
+                            child: Container(
+                              height: 74,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1562E8),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _isSaving
+                                        ? Icons.hourglass_top_rounded
+                                        : Icons.save_outlined,
+                                    color: Colors.white,
+                                    size: 26,
                                   ),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x291562E8),
-                                      blurRadius: 6,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _isSaving
-                                          ? Icons.hourglass_top_rounded
-                                          : Icons.save_outlined,
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _isSaving ? 'Saving...' : 'Save Staff',
+                                    style: const TextStyle(
                                       color: Colors.white,
-                                      size: 26,
+                                      fontSize: 16.5,
+                                      fontWeight: FontWeight.w700,
                                     ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      _isSaving ? 'Saving...' : 'Save Staff',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

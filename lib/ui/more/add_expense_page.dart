@@ -296,45 +296,41 @@ class _AddExpensePageState extends State<AddExpensePage> {
                         const SizedBox(height: 20),
                         GestureDetector(
                           onTap: _isSaving ? null : _saveExpense,
-                          child: AnimatedOpacity(
-                            opacity: _isSaving ? 0.7 : 1,
-                            duration: const Duration(milliseconds: 160),
-                            child: Container(
-                              height: 54,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                color: const Color(0xFF0F172A),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _isSaving
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                    Colors.white),
-                                          ),
-                                        )
-                                      : const Icon(
-                                          Icons.check_rounded,
-                                          color: Colors.white,
-                                          size: 20,
+                          child: Container(
+                            height: 54,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: const Color(0xFF0F172A),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _isSaving
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
                                         ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _isSaving ? 'Saving...' : 'Save Expense',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                      )
+                                    : const Icon(
+                                        Icons.check_rounded,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _isSaving ? 'Saving...' : 'Save Expense',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),

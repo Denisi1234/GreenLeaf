@@ -21,7 +21,8 @@ class StaffMembersPage extends StatelessWidget {
           children: [
             const MarketPageHeader(
               title: 'All Staff Members',
-              subtitle: 'View and manage all staff members across different roles.',
+              subtitle:
+                  'View and manage all staff members across different roles.',
               showBorder: false,
             ),
             const SizedBox(height: 16),
@@ -31,15 +32,11 @@ class StaffMembersPage extends StatelessWidget {
                 child: Column(
                   children: [
                     if (staffMembers.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE1E5EC)),
-                        ),
-                        child: const Text(
+                      const MarketSurfaceCard(
+                        padding: EdgeInsets.all(18),
+                        borderColor: Color(0xFFE1E5EC),
+                        radius: 8,
+                        child: Text(
                           'No staff members added yet.',
                           style: TextStyle(
                             color: Color(0xFF6B7280),
@@ -95,13 +92,10 @@ class _StaffMemberTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
-      child: Container(
+      child: MarketSurfaceCard(
         padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE2E7EF)),
-        ),
+        borderColor: const Color(0xFFE2E7EF),
+        radius: 8,
         child: Row(
           children: [
             CircleAvatar(
@@ -174,4 +168,3 @@ Color _avatarColorForName(String name) {
   final index = name.hashCode.abs() % colors.length;
   return colors[index];
 }
-

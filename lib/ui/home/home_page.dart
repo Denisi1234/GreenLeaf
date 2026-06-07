@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../models/product_item.dart';
 import '../payment/payment_page.dart';
+import '../products/product_management_page.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
@@ -250,24 +251,20 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                     final compact = constraints.maxWidth < 620;
                     if (displayProducts.isEmpty) {
                       return Center(
-                        child: Container(
-                          width: double.infinity,
+                        child: MarketSurfaceCard(
                           padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: const Color(0xFFE7EAF0)),
-                          ),
-                          child: const Column(
+                          borderColor: const Color(0xFFE7EAF0),
+                          radius: 18,
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.search_off_rounded,
                                 size: 34,
                                 color: Color(0xFF7A859C),
                               ),
-                              SizedBox(height: 10),
-                              Text(
+                              const SizedBox(height: 10),
+                              const Text(
                                 'No products found',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -276,8 +273,8 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              SizedBox(height: 4),
-                              Text(
+                              const SizedBox(height: 4),
+                              const Text(
                                 'Try another name or clear the search.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
@@ -285,6 +282,22 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
+                              ),
+                              const SizedBox(height: 14),
+                              MarketButton(
+                                label: 'Add Product',
+                                icon: Icons.add_rounded,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (context) =>
+                                          const ProductManagementPage(),
+                                    ),
+                                  );
+                                },
+                                height: 44,
+                                radius: 14,
+                                fontSize: 14,
                               ),
                             ],
                           ),
@@ -361,26 +374,14 @@ class TopBar extends StatelessWidget {
       showBackButton: false,
       leading: const DrawerMenuButton(),
       actions: [
-        HeaderActionButton(
-          icon: Icons.smart_toy_outlined,
-          background: Colors.white,
-          foreground: const Color(0xFF33363F),
-          borderColor: const Color(0xFFE7EAF0),
-          onTap: () {
+        MarketHeaderActionButtons(
+          onDukaAiTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (context) => const DukaAiAdvisorPage(),
               ),
             );
           },
-        ),
-        const SizedBox(width: 8),
-        HeaderActionButton(
-          icon: Icons.notifications_none_rounded,
-          background: Colors.white,
-          foreground: const Color(0xFF33363F),
-          borderColor: const Color(0xFFE7EAF0),
-          showDot: true,
         ),
       ],
     );
@@ -399,62 +400,23 @@ class SearchBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSearchField(
+      controller: controller,
+      hintText: 'Search products by name or SKU',
+      onChanged: onChanged,
+      onClear: () {
+        controller.clear();
+        onChanged('');
+      },
+      backgroundColor: const Color(0xFFF8FAFC),
+      borderColor: const Color(0xFFE5EAF0),
+      radius: 18,
       height: 54,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5EAF0)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: [
-          const Icon(Icons.search, size: 22, color: Color(0xFF94A3B8)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              textInputAction: TextInputAction.search,
-              style: GoogleFonts.manrope(
-                color: AppColors.ink,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                hintText: 'Search products by name or SKU',
-                hintStyle: GoogleFonts.manrope(
-                  color: const Color(0xFF94A3B8),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-                suffixIcon: controller.text.isNotEmpty
-                    ? IconButton(
-                        onPressed: () {
-                          controller.clear();
-                          onChanged('');
-                        },
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          size: 17,
-                          color: Color(0xFF64748B),
-                        ),
-                        splashRadius: 18,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints.tightFor(
-                          width: 28,
-                          height: 28,
-                        ),
-                      )
-                    : null,
-              ),
-            ),
-          ),
-        ],
-      ),
+      paddingHorizontal: 14,
+      iconColor: const Color(0xFF94A3B8),
+      hintColor: const Color(0xFF94A3B8),
+      textColor: AppColors.ink,
+      iconSize: 22,
     );
   }
 }
@@ -512,17 +474,15 @@ class _SalesCategoryChip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
+        child: Container(
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1F6FEB) : const Color(0xFFF8FAFC),
+            color: selected ? AppColors.primary : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: selected ? const Color(0xFF1F6FEB) : const Color(0xFFE5EAF0),
+              color: selected ? AppColors.primary : const Color(0xFFE5EAF0),
             ),
           ),
           child: Text(
@@ -575,13 +535,6 @@ class ProductCard extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: const Color(0xFFE1E5EB)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x050F172A),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,24 +551,6 @@ class ProductCard extends StatelessWidget {
                         child: ColoredBox(
                           color: const Color(0xFFF8FAFC),
                           child: _DashboardTileArt(product: product),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF4FF),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0xFFD7E2FF)),
-                        ),
-                        child: const Icon(
-                          Icons.add_rounded,
-                          color: Color(0xFF2563EB),
-                          size: 26,
                         ),
                       ),
                     ),
@@ -753,13 +688,6 @@ class CheckoutBar extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE5EAF0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
       ),
       child: Row(
         children: [
@@ -863,13 +791,6 @@ class CheckoutBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFEF4444),
                 borderRadius: BorderRadius.circular(13),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x1FB91C1C),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -916,13 +837,6 @@ class SuccessMessageBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF1E7A47),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x22000000),
-              blurRadius: 16,
-              offset: Offset(0, 6),
-            ),
-          ],
         ),
         child: Row(
           children: [

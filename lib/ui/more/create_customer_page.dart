@@ -101,7 +101,8 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 64),
+              const Icon(Icons.check_circle_rounded,
+                  color: Color(0xFF10B981), size: 64),
               const SizedBox(height: 16),
               Text(
                 _isEdit ? 'Customer Updated' : 'Customer Saved',
@@ -129,7 +130,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
     if (!mounted) return;
 
     Navigator.of(context, rootNavigator: true).pop();
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(customer.name);
   }
 
   @override
@@ -139,7 +140,8 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
       body: SafeArea(
         child: Column(
           children: [
-            MarketPageHeader(title: _isEdit ? 'Edit Customer' : 'Create Customer'),
+            MarketPageHeader(
+                title: _isEdit ? 'Edit Customer' : 'Create Customer'),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
@@ -184,45 +186,47 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                       const SizedBox(height: 32),
                       GestureDetector(
                         onTap: _isSaving ? null : _saveCustomer,
-                        child: AnimatedOpacity(
-                          opacity: _isSaving ? 0.7 : 1,
-                          duration: const Duration(milliseconds: 160),
-                          child: Container(
-                            height: 54,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: const Color(0xFF0F172A),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _isSaving
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        ),
-                                      )
-                                    : Icon(
-                                        _isEdit ? Icons.check_rounded : Icons.add_rounded,
-                                        color: Colors.white,
-                                        size: 20,
+                        child: Container(
+                          height: 54,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: const Color(0xFF0F172A),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _isSaving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
                                       ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _isSaving
-                                      ? 'Saving...'
-                                      : (_isEdit ? 'Save Changes' : 'Create Customer'),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                    )
+                                  : Icon(
+                                      _isEdit
+                                          ? Icons.check_rounded
+                                          : Icons.add_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _isSaving
+                                    ? 'Saving...'
+                                    : (_isEdit
+                                        ? 'Save Changes'
+                                        : 'Create Customer'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -237,8 +241,6 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
     );
   }
 }
-
-
 
 class _CustomerField extends StatelessWidget {
   const _CustomerField({
@@ -291,18 +293,21 @@ class _CustomerField extends StatelessWidget {
             prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+              borderSide:
+                  const BorderSide(color: Color(0xFF2563EB), width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+              borderSide:
+                  const BorderSide(color: Color(0xFFEF4444), width: 1.5),
             ),
           ),
         ),

@@ -121,7 +121,8 @@ class StaffMemberDetailsPage extends StatelessWidget {
                           const SizedBox(height: 16),
                           _DetailRow(
                             label: 'Permissions',
-                            value: '${role.permissions.length} permissions assigned',
+                            value:
+                                '${role.permissions.length} permissions assigned',
                             icon: Icons.security_outlined,
                           ),
                         ] else
@@ -191,21 +192,10 @@ class _DetailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE1E5EC)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+      borderColor: const Color(0xFFE1E5EC),
+      radius: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -13,6 +13,15 @@ class OrderHistoryPage extends StatefulWidget {
 }
 
 class _OrderHistoryPageState extends State<OrderHistoryPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   List<_OrderHistoryItem> get _orders =>
       context.watch<PosLocalStore>().orders
           .map(
@@ -49,6 +58,22 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   @override
   Widget build(BuildContext context) {
     final orders = _orders;
+    final query = _searchQuery.trim().toLowerCase();
+    final filteredOrders = orders.where((order) {
+      if (query.isEmpty) return true;
+      final searchableValues = <String>[
+        order.id,
+        order.dateTime,
+        order.amount,
+        order.status,
+        order.customerName ?? '',
+        order.paymentMethod ?? '',
+        order.paidAmount ?? '',
+      ];
+      return searchableValues.any(
+        (value) => value.toLowerCase().contains(query),
+      );
+    }).toList();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       drawer: const MarketAppDrawer(selectedItem: 'Sales'),
@@ -88,28 +113,92 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
                     child: Column(
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Expanded(child: _OrderSearchBar()),
-                            SizedBox(width: 12),
-                            _OrderActionChip(
+                            Expanded(
+                              child: MarketSearchField(
+                                controller: _searchController,
+                                hintText:
+                                    'Search orders by ID, cashier, or payment',
+                                onChanged: (value) {
+                                  setState(() {
+                                    _searchQuery = value;
+                                  });
+                                },
+                                onClear: () {
+                                  setState(() {
+                                    _searchController.clear();
+                                    _searchQuery = '';
+                                  });
+                                },
+                                height: 64,
+                                radius: 4,
+                                backgroundColor: Colors.white,
+                                borderColor: const Color(0xFFE3E7ED),
+                                iconColor: const Color(0xFF98A1AF),
+                                hintColor: const Color(0xFFB0B7C3),
+                                textColor: const Color(0xFF202938),
+                                iconSize: 26,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const _OrderActionChip(
                               label: 'Filter',
                               icon: Icons.filter_alt_outlined,
                             ),
-                            SizedBox(width: 10),
-                            _OrderActionChip(
+                            const SizedBox(width: 10),
+                            const _OrderActionChip(
                               label: 'Date',
                               icon: Icons.calendar_today_outlined,
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        ...orders.map(
-                          (order) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _OrderCard(order: order),
+                        if (filteredOrders.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: MarketSurfaceCard(
+                              borderColor: Color(0xFFE3E7ED),
+                              radius: 4,
+                              padding: EdgeInsets.all(18),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.search_off_rounded,
+                                    color: Color(0xFF98A1AF),
+                                    size: 28,
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    'No matching orders',
+                                    style: TextStyle(
+                                      color: Color(0xFF202938),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Try a different order ID, cashier name, or payment method.',
+                                    style: TextStyle(
+                                      color: Color(0xFF7E8797),
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          ...filteredOrders.map(
+                            (order) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _OrderCard(order: order),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -118,39 +207,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _OrderSearchBar extends StatelessWidget {
-  const _OrderSearchBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFE3E7ED)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.search_rounded, color: Color(0xFF98A1AF), size: 30),
-          SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Search orders by ID or customer...',
-              style: TextStyle(
-                color: Color(0xFFB0B7C3),
-                fontSize: 13.4,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

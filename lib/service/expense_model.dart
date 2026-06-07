@@ -1,3 +1,5 @@
+/// Business expense record model.
+/// Represents a single expense entry with category and payment method.
 class Expense {
   final int? id;
   final String title;

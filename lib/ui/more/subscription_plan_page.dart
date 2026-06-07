@@ -80,13 +80,10 @@ class _CurrentPlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE4E8EF)),
-      ),
+      borderColor: const Color(0xFFE4E8EF),
+      radius: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -166,15 +163,12 @@ class _PlanOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: highlight ? const Color(0xFF1562E8) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: highlight ? const Color(0xFF1562E8) : const Color(0xFFE4E8EF),
-        ),
-      ),
+      backgroundColor: highlight ? const Color(0xFF1562E8) : Colors.white,
+      borderColor:
+          highlight ? const Color(0xFF1562E8) : const Color(0xFFE4E8EF),
+      radius: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

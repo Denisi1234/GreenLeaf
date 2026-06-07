@@ -80,7 +80,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
 
   void _startCooldownTicker() {
     _cooldownTicker?.cancel();
-    _cooldownTicker = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+    _cooldownTicker =
+        Timer.periodic(const Duration(milliseconds: 200), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -129,13 +130,13 @@ class _DukaAiPageState extends State<DukaAiPage> {
                       child: SingleChildScrollView(
                         controller: _scrollController,
                         physics: const BouncingScrollPhysics(),
-                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
                         padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (_messages.length <= 1)
-                              const _DukaAiIntroCard(),
+                            if (_messages.length <= 1) const _DukaAiIntroCard(),
                             const SizedBox(height: 10),
                             _ConversationCard(
                               messages: _messages,
@@ -156,7 +157,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_isStreaming) _StopGeneratingBar(onStop: _stopGenerating),
+                          if (_isStreaming)
+                            _StopGeneratingBar(onStop: _stopGenerating),
                           _Composer(
                             controller: _controller,
                             focusNode: _focusNode,
@@ -193,7 +195,10 @@ class _DukaAiPageState extends State<DukaAiPage> {
       ..clear()
       ..addAll(store.dukaAiMessages);
     if (_messages.isEmpty) {
-      _messages.add(DukaAiMessage(role: 'assistant', content: '', createdAt: DateTime.now().toIso8601String()));
+      _messages.add(DukaAiMessage(
+          role: 'assistant',
+          content: '',
+          createdAt: DateTime.now().toIso8601String()));
       _streamGreeting();
     }
     _service = DukaAiService(
@@ -266,9 +271,10 @@ class _DukaAiPageState extends State<DukaAiPage> {
     try {
       final currentToken = ++_requestToken;
       final result = await _service.sendMessage(
-        prompt: userMessage.imagePath != null && userMessage.imagePath!.isNotEmpty
-            ? '${userMessage.content}\n\n[Attachment included for context.]'
-            : userMessage.content,
+        prompt:
+            userMessage.imagePath != null && userMessage.imagePath!.isNotEmpty
+                ? '${userMessage.content}\n\n[Attachment included for context.]'
+                : userMessage.content,
         storeContext: _buildStoreContext(store),
         history: List<DukaAiMessage>.from(_messages),
       );
@@ -323,7 +329,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
         _messages.add(
           DukaAiMessage(
             role: 'assistant',
-            content: 'I could not reach the live AI service right now. Please try again in a moment.',
+            content:
+                'I could not reach the live AI service right now. Please try again in a moment.',
             createdAt: DateTime.now().toIso8601String(),
           ),
         );
@@ -348,7 +355,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          icon: const Icon(Icons.key_off_rounded, color: Color(0xFFB42318), size: 32),
+          icon: const Icon(Icons.key_off_rounded,
+              color: Color(0xFFB42318), size: 32),
           title: const Text('API key required'),
           content: const Text(
             'Add a Gemini API key in Settings to chat with DUKA AI. The AI service is not configured for this account.',
@@ -413,14 +421,17 @@ class _DukaAiPageState extends State<DukaAiPage> {
         return;
       }
       index += 2;
-      final visible = greeting.substring(0, index > greeting.length ? greeting.length : index);
+      final visible = greeting.substring(
+          0, index > greeting.length ? greeting.length : index);
       setState(() {
-        _messages[0] = DukaAiMessage(role: 'assistant', content: visible, createdAt: ts);
+        _messages[0] =
+            DukaAiMessage(role: 'assistant', content: visible, createdAt: ts);
       });
       if (index >= greeting.length) {
         timer.cancel();
         setState(() {
-          _messages[0] = DukaAiMessage(role: 'assistant', content: greeting, createdAt: ts);
+          _messages[0] = DukaAiMessage(
+              role: 'assistant', content: greeting, createdAt: ts);
         });
         _scrollToBottom();
       }
@@ -551,7 +562,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
     );
   }
 
-  Future<void> _showThreadPicker(BuildContext context, PosLocalStore store) async {
+  Future<void> _showThreadPicker(
+      BuildContext context, PosLocalStore store) async {
     final selected = await showModalBottomSheet<_ThreadAction>(
       context: context,
       backgroundColor: Colors.white,
@@ -656,7 +668,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
                             thread.title,
                             style: TextStyle(
                               color: AppColors.ink,
-                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                              fontWeight:
+                                  isActive ? FontWeight.w700 : FontWeight.w600,
                             ),
                           ),
                           subtitle: Text(
@@ -672,7 +685,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
                             ),
                           ),
                           onTap: () {
-                            Navigator.of(sheetContext).pop(_ThreadAction.open(thread.id));
+                            Navigator.of(sheetContext)
+                                .pop(_ThreadAction.open(thread.id));
                           },
                           trailing: PopupMenuButton<_ThreadActionType>(
                             padding: EdgeInsets.zero,
@@ -706,7 +720,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
                                 value: _ThreadActionType.delete,
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete_outline_rounded, size: 18),
+                                    Icon(Icons.delete_outline_rounded,
+                                        size: 18),
                                     SizedBox(width: 10),
                                     Text('Delete'),
                                   ],
@@ -732,7 +747,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => Navigator.of(sheetContext).pop(_ThreadAction.newChat()),
+                    onPressed: () =>
+                        Navigator.of(sheetContext).pop(_ThreadAction.newChat()),
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('New chat'),
                     style: ElevatedButton.styleFrom(
@@ -855,7 +871,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Delete chat?'),
-          content: const Text('This removes the thread and its messages permanently.'),
+          content: const Text(
+              'This removes the thread and its messages permanently.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -910,13 +927,15 @@ class _DukaAiPageState extends State<DukaAiPage> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.photo_library_outlined),
                   title: const Text('Choose from gallery'),
-                  onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(ImageSource.gallery),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.camera_alt_outlined),
                   title: const Text('Open camera'),
-                  onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(ImageSource.camera),
                 ),
               ],
             ),
@@ -967,9 +986,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
     final threadId = _activeThreadId ?? store.activeDukaAiThreadId;
     final thread = store.activeDukaAiThread;
     final currentToken = ++_requestToken;
-    final userContent = prompt.isNotEmpty
-        ? prompt
-        : 'Please review the attached image.';
+    final userContent =
+        prompt.isNotEmpty ? prompt : 'Please review the attached image.';
     final userMessage = DukaAiMessage(
       role: 'user',
       content: userContent,
@@ -1119,8 +1137,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
       final visible = reply.substring(0, end);
       final existingTs = _messages[_messages.length - 1].createdAt;
       setState(() {
-        _messages[_messages.length - 1] =
-            DukaAiMessage(role: 'assistant', content: visible, createdAt: existingTs);
+        _messages[_messages.length - 1] = DukaAiMessage(
+            role: 'assistant', content: visible, createdAt: existingTs);
       });
       _scrollToBottom();
 
@@ -1149,14 +1167,23 @@ class _DukaAiPageState extends State<DukaAiPage> {
 
   bool _shouldAutonameThread(String title) {
     final normalized = title.trim().toLowerCase();
-    return normalized.isEmpty || normalized == 'new chat' || normalized == 'duka ai' || normalized == 'myduka ai';
+    return normalized.isEmpty ||
+        normalized == 'new chat' ||
+        normalized == 'duka ai' ||
+        normalized == 'myduka ai';
   }
 
   String _threadTitleFromPrompt(String prompt) {
-    final words = prompt.trim().split(RegExp(r'\s+')).where((word) => word.isNotEmpty).toList();
+    final words = prompt
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList();
     if (words.isEmpty) return 'New chat';
     final preview = words.take(4).join(' ');
-    return preview.length > 28 ? '${preview.substring(0, 28).trimRight()}...' : preview;
+    return preview.length > 28
+        ? '${preview.substring(0, 28).trimRight()}...'
+        : preview;
   }
 
   String _formatThreadStamp(String value) {
@@ -1197,7 +1224,8 @@ class _DukaAiPageState extends State<DukaAiPage> {
     const cacheWindow = Duration(seconds: 60);
     const maxContextChars = 6000;
 
-    final fingerprint = '${store.inventory.length}|${store.orders.length}|${store.profile.storeName}|${store.profile.ownerName}';
+    final fingerprint =
+        '${store.inventory.length}|${store.orders.length}|${store.profile.storeName}|${store.profile.ownerName}';
     final now = DateTime.now();
     final isFresh = now.difference(_cachedContextAt) < cacheWindow &&
         fingerprint == _cachedContextFingerprint &&
@@ -1208,8 +1236,10 @@ class _DukaAiPageState extends State<DukaAiPage> {
     final lines = <String>[];
 
     lines.add('=== STORE PROFILE ===');
-    lines.add('Name: ${store.profile.storeName.isEmpty ? 'Not set' : store.profile.storeName}');
-    lines.add('Owner: ${store.profile.ownerName.isEmpty ? 'Not set' : store.profile.ownerName}');
+    lines.add(
+        'Name: ${store.profile.storeName.isEmpty ? 'Not set' : store.profile.storeName}');
+    lines.add(
+        'Owner: ${store.profile.ownerName.isEmpty ? 'Not set' : store.profile.ownerName}');
     lines.add('Business: ${store.profile.businessCategory}');
 
     // Precomputed aggregates so the model can answer totals without mental math.
@@ -1217,8 +1247,10 @@ class _DukaAiPageState extends State<DukaAiPage> {
       0,
       (sum, item) => sum + (item.stockCount * item.purchasePrice),
     );
-    final lowStockCount = store.inventory.where((i) => i.stockCount <= 5).length;
-    final totalRevenue = store.orders.fold<double>(0, (sum, o) => sum + o.total);
+    final lowStockCount =
+        store.inventory.where((i) => i.stockCount <= 5).length;
+    final totalRevenue =
+        store.orders.fold<double>(0, (sum, o) => sum + o.total);
     final totalOrders = store.orders.length;
     final now2 = DateTime.now();
     final weekAgo = now2.subtract(const Duration(days: 7));
@@ -1234,16 +1266,21 @@ class _DukaAiPageState extends State<DukaAiPage> {
 
     lines.add('');
     lines.add('=== QUICK TOTALS ===');
-    lines.add('- Inventory items: ${store.inventory.length} (low stock: $lowStockCount)');
-    lines.add('- Stock value at cost: TSH ${_formatWithCommas(totalInventoryValue)}');
-    lines.add('- Total orders: $totalOrders | Total revenue: TSH ${_formatWithCommas(totalRevenue)}');
-    lines.add('- Last 7 days: $weekOrderCount orders, TSH ${_formatWithCommas(weekRevenue)} revenue');
+    lines.add(
+        '- Inventory items: ${store.inventory.length} (low stock: $lowStockCount)');
+    lines.add(
+        '- Stock value at cost: TSH ${_formatWithCommas(totalInventoryValue)}');
+    lines.add(
+        '- Total orders: $totalOrders | Total revenue: TSH ${_formatWithCommas(totalRevenue)}');
+    lines.add(
+        '- Last 7 days: $weekOrderCount orders, TSH ${_formatWithCommas(weekRevenue)} revenue');
 
     lines.add('');
     final inventoryCap = store.inventory.length > 80
         ? store.inventory.take(80).toList()
         : store.inventory;
-    lines.add('=== INVENTORY (${store.inventory.length} products, showing top ${inventoryCap.length}) ===');
+    lines.add(
+        '=== INVENTORY (${store.inventory.length} products, showing top ${inventoryCap.length}) ===');
     for (final item in inventoryCap) {
       final lowFlag = item.stockCount <= 5 ? ' [LOW]' : '';
       lines.add(
@@ -1252,10 +1289,14 @@ class _DukaAiPageState extends State<DukaAiPage> {
     }
 
     lines.add('');
-    final orderCap = store.orders.length > 15 ? store.orders.take(15).toList() : store.orders;
-    lines.add('=== RECENT ORDERS (${store.orders.length} total, showing latest ${orderCap.length}) ===');
+    final orderCap = store.orders.length > 15
+        ? store.orders.take(15).toList()
+        : store.orders;
+    lines.add(
+        '=== RECENT ORDERS (${store.orders.length} total, showing latest ${orderCap.length}) ===');
     for (final order in orderCap) {
-      final items = order.lines.map((l) => '${l.itemName} x${l.quantity}').join(', ');
+      final items =
+          order.lines.map((l) => '${l.itemName} x${l.quantity}').join(', ');
       lines.add(
         '- ${order.dateTime} | ${order.paymentMethod} | TSH ${_formatWithCommas(order.total)} | $items',
       );
@@ -1371,18 +1412,11 @@ class _DukaAiHeroHeader extends StatelessWidget {
           Semantics(
             label: 'Go back',
             button: true,
-            child: Material(
-              color: const Color(0xFFF1F5F9),
-              shape: const CircleBorder(),
-              child: InkWell(
-                onTap: onBackTap,
-                customBorder: const CircleBorder(),
-                child: const SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF334155), size: 18),
-                ),
-              ),
+            child: _HeaderActionButton(
+              icon: Icons.arrow_back_ios_new_rounded,
+              background: const Color(0xFFF1F5F9),
+              foreground: const Color(0xFF334155),
+              onTap: onBackTap,
             ),
           ),
           const SizedBox(width: 12),
@@ -1398,7 +1432,8 @@ class _DukaAiHeroHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Center(
-                  child: Icon(Icons.smart_toy_rounded, color: Color(0xFF16A34A), size: 32),
+                  child: Icon(Icons.smart_toy_rounded,
+                      color: Color(0xFF16A34A), size: 32),
                 ),
               ),
             ),
@@ -1471,21 +1506,45 @@ class _DukaAiHeroHeader extends StatelessWidget {
           Semantics(
             label: 'Chat history',
             button: true,
-            child: Material(
-              color: const Color(0xFFF1F5F9),
-              shape: const CircleBorder(),
-              child: InkWell(
-                onTap: onMoreTap,
-                customBorder: const CircleBorder(),
-                child: const SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Icon(Icons.history_rounded, color: Color(0xFF334155), size: 22),
-                ),
-              ),
+            child: _HeaderActionButton(
+              icon: Icons.history_rounded,
+              background: const Color(0xFFF1F5F9),
+              foreground: const Color(0xFF334155),
+              onTap: onMoreTap,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeaderActionButton extends StatelessWidget {
+  const _HeaderActionButton({
+    required this.icon,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(99),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: background,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: foreground, size: 20),
       ),
     );
   }
@@ -1560,16 +1619,15 @@ class _ConversationCard extends StatelessWidget {
             () {
               final message = messages[index];
               final isLast = index == messages.length - 1;
-              final canRegenerate = isLast &&
-                  !isSending &&
-                  !isStreaming &&
-                  message.isAssistant;
+              final canRegenerate =
+                  isLast && !isSending && !isStreaming && message.isAssistant;
               final isErrorBubble = index == lastErrorIndex &&
                   message.isAssistant &&
                   !isSending &&
                   !isStreaming;
               return TweenAnimationBuilder<double>(
-                key: ValueKey<String>('bubble_${index}_${message.content.length}'),
+                key: ValueKey<String>(
+                    'bubble_${index}_${message.content.length}'),
                 tween: Tween<double>(begin: 0, end: 1),
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
@@ -1584,7 +1642,8 @@ class _ConversationCard extends StatelessWidget {
                 },
                 child: _ChatBubble(
                   message: message,
-                  onRegenerate: canRegenerate ? () => onRegenerate(message) : null,
+                  onRegenerate:
+                      canRegenerate ? () => onRegenerate(message) : null,
                   onRetry: isErrorBubble ? () => onRetry(message) : null,
                 ),
               );
@@ -1623,7 +1682,8 @@ class _SampleConversation extends StatelessWidget {
               child: const _ChatBubble(
                 message: DukaAiMessage(
                   role: 'user',
-                  content: 'How is my sales performance this week compared to last month?',
+                  content:
+                      'How is my sales performance this week compared to last month?',
                   createdAt: '',
                 ),
               ),
@@ -1709,15 +1769,18 @@ class _ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.isUser;
     final bubbleColor = isUser ? const Color(0xFFF1FBF4) : Colors.white;
-    final borderColor = isUser ? const Color(0xFFD4EEDC) : const Color(0xFFE1E6EE);
+    final borderColor =
+        isUser ? const Color(0xFFD4EEDC) : const Color(0xFFE1E6EE);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment:
+                isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!isUser) ...[
@@ -1742,7 +1805,8 @@ class _ChatBubble extends StatelessWidget {
               Flexible(
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 540),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     color: bubbleColor,
                     borderRadius: BorderRadius.only(
@@ -1757,7 +1821,8 @@ class _ChatBubble extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (message.imagePath != null && message.imagePath!.isNotEmpty) ...[
+                      if (message.imagePath != null &&
+                          message.imagePath!.isNotEmpty) ...[
                         _ChatAttachmentPreview(imagePath: message.imagePath!),
                         const SizedBox(height: 10),
                       ],
@@ -2300,8 +2365,6 @@ List<InlineSpan> _buildInlineSpans(String text, TextStyle baseStyle) {
   return spans;
 }
 
-
-
 class _ChatAttachmentPreview extends StatelessWidget {
   const _ChatAttachmentPreview({required this.imagePath});
 
@@ -2375,7 +2438,7 @@ class _ComposerAttachmentPreview extends StatelessWidget {
                     Icons.image_outlined,
                     color: AppColors.mutedText,
                     size: 20,
-                ),
+                  ),
           ),
         ),
         const SizedBox(width: 10),
@@ -2442,7 +2505,9 @@ class _Composer extends StatelessWidget {
     final text = controller.text;
     final isOverLimit = text.length > maxLength;
     final isAtWarn = text.length > (maxLength * 0.875).round();
-    final canSend = !isSending && !isInCooldown && !isOverLimit &&
+    final canSend = !isSending &&
+        !isInCooldown &&
+        !isOverLimit &&
         (text.trim().isNotEmpty || attachmentPath != null);
     final showStopButton = isStreaming;
     final buttonEnabled = showStopButton || canSend;
@@ -2476,12 +2541,16 @@ class _Composer extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isListening ? const Color(0xFF16A34A) : const Color(0xFFE1E6ED),
+                color: isListening
+                    ? const Color(0xFF16A34A)
+                    : const Color(0xFFE1E6ED),
                 width: isListening ? 1.5 : 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: isListening ? const Color(0x2016A34A) : const Color(0x060E1726),
+                  color: isListening
+                      ? const Color(0x2016A34A)
+                      : const Color(0x060E1726),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -2519,10 +2588,13 @@ class _Composer extends StatelessWidget {
                 if (sttAvailable) ...[
                   const SizedBox(width: 8),
                   Semantics(
-                    label: isListening ? 'Stop voice input' : 'Start voice input',
+                    label:
+                        isListening ? 'Stop voice input' : 'Start voice input',
                     button: true,
                     child: Material(
-                      color: isListening ? const Color(0xFF16A34A) : const Color(0xFFF8FAFC),
+                      color: isListening
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(14),
                       child: InkWell(
                         onTap: isSending ? null : onVoiceTap,
@@ -2533,12 +2605,18 @@ class _Composer extends StatelessWidget {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: isListening ? const Color(0xFF16A34A) : const Color(0xFFE7ECF2),
+                              color: isListening
+                                  ? const Color(0xFF16A34A)
+                                  : const Color(0xFFE7ECF2),
                             ),
                           ),
                           child: Icon(
-                            isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                            color: isListening ? Colors.white : const Color(0xFF7E8695),
+                            isListening
+                                ? Icons.mic_rounded
+                                : Icons.mic_none_rounded,
+                            color: isListening
+                                ? Colors.white
+                                : const Color(0xFF7E8695),
                             size: 19,
                           ),
                         ),
@@ -2636,7 +2714,8 @@ class _Composer extends StatelessWidget {
                 children: [
                   Text(
                     '${text.length} / $maxLength',
-                    semanticsLabel: '${text.length} of $maxLength characters used',
+                    semanticsLabel:
+                        '${text.length} of $maxLength characters used',
                     style: TextStyle(
                       color: isOverLimit
                           ? const Color(0xFFB42318)
@@ -2694,7 +2773,8 @@ class _StopGeneratingBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.stop_circle_outlined, size: 18, color: Color(0xFFB42318)),
+                  Icon(Icons.stop_circle_outlined,
+                      size: 18, color: Color(0xFFB42318)),
                   SizedBox(width: 8),
                   Text(
                     'Stop generating',

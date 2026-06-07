@@ -86,11 +86,12 @@ class ReportsCatalogPage extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate.fixed([
-                        _SectionShell(
+                        MarketSurfaceCard(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _SectionHeader(
+                              MarketSectionHeader(
                                 title: 'All Reports',
                                 trailing: IconButton(
                                   onPressed: () {
@@ -142,8 +143,7 @@ class _ReportsCatalogHeader extends StatelessWidget {
             showMarketNotice(
               context,
               title: 'Filter Reports',
-              message:
-                  'Date and category filters can be connected here next.',
+              message: 'Date and category filters can be connected here next.',
             );
           },
           icon: const Icon(
@@ -157,50 +157,6 @@ class _ReportsCatalogHeader extends StatelessWidget {
   }
 }
 
-class _SectionShell extends StatelessWidget {
-  const _SectionShell({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: ReportsCatalogPage._border),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.trailing});
-
-  final String title;
-  final Widget trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: ReportsCatalogPage._ink,
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const Spacer(),
-        trailing,
-      ],
-    );
-  }
-}
-
 class _ReportSectionTile extends StatelessWidget {
   const _ReportSectionTile({required this.section});
 
@@ -208,51 +164,57 @@ class _ReportSectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        initiallyExpanded: section.initiallyExpanded,
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        iconColor: ReportsCatalogPage._muted,
-        collapsedIconColor: ReportsCatalogPage._muted,
-        title: Row(
+    return MarketSurfaceCard(
+      borderColor: ReportsCatalogPage._border,
+      radius: 14,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: section.initiallyExpanded,
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: EdgeInsets.zero,
+          iconColor: ReportsCatalogPage._muted,
+          collapsedIconColor: ReportsCatalogPage._muted,
+          title: Row(
+            children: [
+              Icon(section.icon, color: section.accent, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  section.categoryTitle,
+                  style: TextStyle(
+                    color: section.accent,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: section.soft,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${section.count}',
+                  style: TextStyle(
+                    color: section.accent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
           children: [
-            Icon(section.icon, color: section.accent, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                section.categoryTitle,
-                style: TextStyle(
-                  color: section.accent,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: section.soft,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                '${section.count}',
-                style: TextStyle(
-                  color: section.accent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            if (section.reports.isNotEmpty) ...[
+              const Divider(height: 1, color: ReportsCatalogPage._border),
+              ...section.reports
+                  .map((report) => _ReportListItem(report: report)),
+            ],
           ],
         ),
-        children: [
-          if (section.reports.isNotEmpty) ...[
-            const Divider(height: 1, color: ReportsCatalogPage._border),
-            ...section.reports.map((report) => _ReportListItem(report: report)),
-          ],
-        ],
       ),
     );
   }

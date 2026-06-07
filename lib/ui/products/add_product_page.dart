@@ -162,21 +162,33 @@ class _AddProductPageState extends State<AddProductPage> {
 
   ProductArtType _deriveArtType(String name, String category) {
     final lower = name.toLowerCase();
-    if (lower.contains('water')) return ProductArtType.aquafina;
-    if (lower.contains('coke') || lower.contains('cola')) return ProductArtType.coke;
-    if (lower.contains('lay') || lower.contains('chips')) return ProductArtType.lays;
+    if (lower.contains('water')) {
+      return ProductArtType.aquafina;
+    }
+    if (lower.contains('coke') || lower.contains('cola')) {
+      return ProductArtType.coke;
+    }
+    if (lower.contains('lay') || lower.contains('chips')) {
+      return ProductArtType.lays;
+    }
     if (lower.contains('galaxy') || lower.contains('chocolate')) {
       return ProductArtType.galaxy;
     }
     if (lower.contains('corn') || lower.contains('flakes')) {
       return ProductArtType.kelloggs;
     }
-    if (lower.contains('soap') || lower.contains('dove')) return ProductArtType.dove;
+    if (lower.contains('soap') || lower.contains('dove')) {
+      return ProductArtType.dove;
+    }
     if (lower.contains('colgate') || lower.contains('toothpaste')) {
       return ProductArtType.colgate;
     }
-    if (lower.contains('dettol') || lower.contains('wash')) return ProductArtType.dettol;
-    if (lower.contains('tide') || lower.contains('detergent')) return ProductArtType.tide;
+    if (lower.contains('dettol') || lower.contains('wash')) {
+      return ProductArtType.dettol;
+    }
+    if (lower.contains('tide') || lower.contains('detergent')) {
+      return ProductArtType.tide;
+    }
 
     return switch (category) {
       'Beverages' => ProductArtType.aquafina,
@@ -195,7 +207,8 @@ class _AddProductPageState extends State<AddProductPage> {
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
@@ -203,181 +216,192 @@ class _AddProductPageState extends State<AddProductPage> {
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
         body: Stack(
-        children: [
-          const Positioned.fill(child: BackdropGlow()),
-          Column(
-            children: [
-              MarketPageHeader(
-                title: widget.product == null ? 'Add Product' : 'Edit Product',
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 112),
-                  child: Form(
-                    key: _formKey,
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.divider),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0C0E1726),
-                            blurRadius: 5,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const _FieldLabel(
-                            'Product Name',
-                            requiredField: true,
-                          ),
-                          const SizedBox(height: 8),
-                          _TextInputField(
-                            controller: _nameController,
-                            hint: 'Enter product name',
-                            trailingIcon: Icons.sell_outlined,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Product name is required';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
+          children: [
+            const Positioned.fill(
+              child: ColoredBox(color: AppColors.pageBackground),
+            ),
+            Column(
+              children: [
+                MarketPageHeader(
+                  title:
+                      widget.product == null ? 'Add Product' : 'Edit Product',
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 112),
+                    child: Form(
+                      key: _formKey,
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.divider),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const _FieldLabel(
+                              'Product Name',
+                              requiredField: true,
+                            ),
+                            const SizedBox(height: 8),
+                            _TextInputField(
+                              controller: _nameController,
+                              hint: 'Enter product name',
+                              trailingIcon: Icons.sell_outlined,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Product name is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
                                       const _FieldLabel(
                                         'Purchase Price',
                                         requiredField: true,
                                       ),
-                                    const SizedBox(height: 8),
-                                    _TextInputField(
-                                      controller: _purchasePriceController,
-                                      hint: '0.00',
-                                      leadingText: 'TSH ',
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                        decimal: true,
+                                      const SizedBox(height: 8),
+                                      _TextInputField(
+                                        controller: _purchasePriceController,
+                                        hint: '0.00',
+                                        leadingText: 'TSH ',
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                        validator: _validateMoney,
                                       ),
-                                      validator: _validateMoney,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
                                       const _FieldLabel(
                                         'Selling Price',
                                         requiredField: true,
                                       ),
-                                    const SizedBox(height: 8),
-                                    _TextInputField(
-                                      controller: _sellingPriceController,
-                                      hint: '0.00',
-                                      leadingText: 'TSH ',
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                        decimal: true,
+                                      const SizedBox(height: 8),
+                                      _TextInputField(
+                                        controller: _sellingPriceController,
+                                        hint: '0.00',
+                                        leadingText: 'TSH ',
+                                        keyboardType: const TextInputType
+                                            .numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                        validator: _validateMoney,
                                       ),
-                                      validator: _validateMoney,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          const _FieldLabel('Category', requiredField: true),
-                          const SizedBox(height: 8),
-                          _DropdownInputField(
-                            value: _selectedCategory,
-                            hint: 'Select category',
-                            items: _categories,
-                            onChanged: (value) {
-                              setState(() => _selectedCategory = value);
-                            },
-                            validator: (value) =>
-                              value == null ? 'Category is required' : null,
-                          ),
-                          const SizedBox(height: 18),
-                          const _FieldLabel(
-                            'Stock Quantity',
-                            requiredField: true,
-                          ),
-                          const SizedBox(height: 8),
-                          _TextInputField(
-                            controller: _stockController,
-                            hint: 'Enter stock quantity',
-                            trailingIcon: Icons.inventory_2_outlined,
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Stock quantity is required';
-                              }
-                              final parsed = int.tryParse(value.trim());
-                              if (parsed == null || parsed < 0) {
-                                return 'Enter a valid stock quantity';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          const _FieldLabel('Product Image'),
-                          const SizedBox(height: 10),
-                          GestureDetector(
-                            onTap: _pickImage,
-                            child: _UploadBox(
-                              imagePath: _selectedImagePath,
+                              ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 18),
+                            const _FieldLabel('Category', requiredField: true),
+                            const SizedBox(height: 8),
+                            _DropdownInputField(
+                              value: _selectedCategory,
+                              hint: 'Select category',
+                              items: _categories,
+                              onChanged: (value) {
+                                setState(() => _selectedCategory = value);
+                              },
+                              validator: (value) =>
+                                  value == null ? 'Category is required' : null,
+                            ),
+                            const SizedBox(height: 18),
+                            const _FieldLabel(
+                              'Stock Quantity',
+                              requiredField: true,
+                            ),
+                            const SizedBox(height: 8),
+                            _TextInputField(
+                              controller: _stockController,
+                              hint: 'Enter stock quantity',
+                              trailingIcon: Icons.inventory_2_outlined,
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Stock quantity is required';
+                                }
+                                final parsed = int.tryParse(value.trim());
+                                if (parsed == null || parsed < 0) {
+                                  return 'Enter a valid stock quantity';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            const _FieldLabel('Product Image'),
+                            const SizedBox(height: 10),
+                            GestureDetector(
+                              onTap: _pickImage,
+                              child: _UploadBox(
+                                imagePath: _selectedImagePath,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Cancel',
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Save',
-                    icon: Icons.save_outlined,
-                    isPrimary: true,
-                    onTap: _saveProduct,
-                  ),
-                ),
               ],
             ),
-          ),
-        ],
-      ),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: MarketButton(
+                      label: 'Cancel',
+                      onTap: () => Navigator.of(context).pop(),
+                      color: Colors.white.withValues(alpha: 0.92),
+                      foregroundColor: AppColors.ink,
+                      borderColor: const Color(0xFFE7EAF0),
+                      height: 64,
+                      radius: 8,
+                      paddingHorizontal: 0,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: MarketButton(
+                      label: 'Save',
+                      icon: Icons.save_outlined,
+                      onTap: _saveProduct,
+                      color: const Color(0xFF5B8CFF),
+                      foregroundColor: Colors.white,
+                      borderColor: const Color(0xFF5B8CFF),
+                      height: 64,
+                      radius: 8,
+                      paddingHorizontal: 0,
+                      fontSize: 15,
+                      iconSize: 24,
+                      iconSpacing: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -474,8 +498,7 @@ class _TextInputField extends StatelessWidget {
                 ),
               )
             : null,
-        prefixIconConstraints:
-            const BoxConstraints(minWidth: 0, minHeight: 0),
+        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         suffixIcon: trailingIcon != null
             ? Icon(
                 trailingIcon,
@@ -602,13 +625,6 @@ class _UploadBox extends StatelessWidget {
         color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFE7EAF0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C0E1726),
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: hasImage
           ? ClipRRect(
@@ -697,71 +713,6 @@ class _UploadBox extends StatelessWidget {
                 ),
               ],
             ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.label,
-    required this.onTap,
-    this.icon,
-    this.isPrimary = false,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-  final IconData? icon;
-  final bool isPrimary;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 64,
-        decoration: BoxDecoration(
-          color: isPrimary
-              ? const Color(0xFF5B8CFF)
-              : Colors.white.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isPrimary
-                ? const Color(0xFF5B8CFF)
-                : const Color(0xFFE7EAF0),
-          ),
-          boxShadow: isPrimary
-              ? const [
-                  BoxShadow(
-                    color: Color(0x225B8CFF),
-                    blurRadius: 14,
-                    offset: Offset(0, 5),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                color: Colors.white,
-                size: 24,
-              ),
-              const SizedBox(width: 10),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                color: isPrimary ? Colors.white : AppColors.ink,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

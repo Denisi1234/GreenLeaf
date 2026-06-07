@@ -84,7 +84,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _permissionCatalog.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         mainAxisExtent: 38,
                         crossAxisSpacing: 12,
@@ -142,15 +143,12 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                     ),
                     const SizedBox(height: 12),
                     if (assignedStaff.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF7FAFF),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE4EBF7)),
-                        ),
-                        child: const Text(
+                      const MarketSurfaceCard(
+                        padding: EdgeInsets.all(14),
+                        backgroundColor: Color(0xFFF7FAFF),
+                        borderColor: Color(0xFFE4EBF7),
+                        radius: 8,
+                        child: Text(
                           'No staff assigned to this role yet.',
                           style: TextStyle(
                             color: Color(0xFF5C667A),
@@ -283,13 +281,10 @@ class _AssignedStaffTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avatarColor = _avatarColorForName(data.name);
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E7EF)),
-      ),
+      borderColor: const Color(0xFFE2E7EF),
+      radius: 8,
       child: Row(
         children: [
           CircleAvatar(
@@ -353,13 +348,11 @@ class _PermissionNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7FAFF),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE4EBF7)),
-      ),
+      backgroundColor: const Color(0xFFF7FAFF),
+      borderColor: const Color(0xFFE4EBF7),
+      radius: 8,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -584,14 +577,12 @@ class _ManageStaffSheet extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               if (assignedStaff.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFD),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE4E8EF)),
-                  ),
-                  child: const Text(
+                const MarketSurfaceCard(
+                  padding: EdgeInsets.all(16),
+                  backgroundColor: Color(0xFFF8FAFD),
+                  borderColor: Color(0xFFE4E8EF),
+                  radius: 8,
+                  child: Text(
                     'No staff assigned to this role yet.',
                     style: TextStyle(
                       color: Color(0xFF6B7280),
@@ -676,13 +667,10 @@ class _StaffMemberTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avatarColor = _avatarColorForName(staff.name);
-    return Container(
+    return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE2E7EF)),
-      ),
+      borderColor: const Color(0xFFE2E7EF),
+      radius: 8,
       child: Row(
         children: [
           CircleAvatar(

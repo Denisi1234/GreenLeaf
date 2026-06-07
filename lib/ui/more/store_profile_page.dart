@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -23,6 +24,8 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _picker = ImagePicker();
+  static final _emailPattern =
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   static const _categories = <String>[
     'Retail',
@@ -33,18 +36,19 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
     'Supermarket',
   ];
 
-  String? _selectedCategory = 'Retail';
+  String? _selectedCategory;
   bool _isSaving = false;
   XFile? _logoFile;
   String? _initialLogoPath;
-  bool _loadedProfile = false;
+  String? _loadedProfileSignature;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_loadedProfile) return;
-
     final profile = context.read<PosLocalStore>().profile;
+    final profileSignature = _profileSignature(profile);
+    if (_loadedProfileSignature == profileSignature) return;
+
     _storeNameController.text = profile.storeName;
     _contactController.text = profile.contactNumber;
     _emailController.text = profile.emailAddress;
@@ -52,7 +56,7 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
     _selectedCategory =
         profile.businessCategory.isEmpty ? null : profile.businessCategory;
     _initialLogoPath = profile.logoPath;
-    _loadedProfile = true;
+    _loadedProfileSignature = profileSignature;
   }
 
   @override
@@ -108,28 +112,54 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
       _isSaving = true;
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (!mounted) return;
+    try {
+      final store = context.read<PosLocalStore>();
+      final navigator = Navigator.of(context);
+      final currentProfile = store.profile;
+      final memberSince = currentProfile.memberSince.isEmpty
+          ? _formatToday()
+          : currentProfile.memberSince;
+      final previousLogoPath = _initialLogoPath;
+      final nextLogoPath = _logoFile?.path ?? _initialLogoPath;
 
-    final store = context.read<PosLocalStore>();
-    final navigator = Navigator.of(context);
-    final currentProfile = store.profile;
-    final memberSince = currentProfile.memberSince.isEmpty
-        ? _formatToday()
-        : currentProfile.memberSince;
-    await store.updateProfile(
-      currentProfile.copyWith(
-        storeName: _storeNameController.text.trim(),
-        businessCategory: _selectedCategory!,
-        contactNumber: _contactController.text.trim(),
-        emailAddress: _emailController.text.trim(),
-        physicalAddress: _addressController.text.trim(),
-        memberSince: memberSince,
-        logoPath: _logoFile?.path ?? _initialLogoPath,
-      ),
-    );
+      await store.updateProfile(
+        currentProfile.copyWith(
+          storeName: _storeNameController.text.trim(),
+          businessCategory: _selectedCategory!,
+          contactNumber: _contactController.text.trim(),
+          emailAddress: _emailController.text.trim(),
+          physicalAddress: _addressController.text.trim(),
+          memberSince: memberSince,
+          logoPath: nextLogoPath,
+        ),
+      );
 
-    navigator.pop();
+      if (_logoFile != null &&
+          previousLogoPath != null &&
+          previousLogoPath != nextLogoPath) {
+        final previousFile = File(previousLogoPath);
+        if (await previousFile.exists()) {
+          await previousFile.delete();
+        }
+      }
+
+      if (!mounted) return;
+      navigator.pop();
+    } catch (_) {
+      if (!mounted) return;
+      showMarketNotice(
+        context,
+        title: 'Save Failed',
+        message: 'Store profile could not be saved. Please try again.',
+        type: MarketNoticeType.warning,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   @override
@@ -152,172 +182,134 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                  child: Row(
-                    children: [
-                      _IosNavButton(
-                        icon: Icons.arrow_back_rounded,
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                      const Expanded(
-                        child: Text(
-                          'Store Profile',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.ink,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 44),
-                    ],
+                const SliverToBoxAdapter(
+                  child: MarketPageHeader(
+                    title: 'Store Profile',
+                    showBackButton: true,
+                    centerTitle: true,
+                    titleSize: 19,
+                    titleWeight: FontWeight.w600,
+                    transparent: false,
+                    showBorder: true,
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-                  child: _ProfileHeaderCard(
-                    logoPath: logoPath,
-                    onPickLogo: _pickLogo,
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _SectionCard(
-                  title: 'Business details',
-                  children: [
-                    _StoreField(
-                      label: 'Store Name',
-                      hint: 'Enter store name',
-                      controller: _storeNameController,
-                      icon: Icons.storefront_outlined,
-                      requiredField: true,
-                      dense: true,
-                      borderless: true,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Store name is required';
-                        }
-                        return null;
-                      },
-                    ),
-                    const _SectionDivider(),
-                    _DropdownField(
-                      label: 'Business Category',
-                      hint: 'Select business category',
-                      icon: Icons.local_offer_outlined,
-                      value: _selectedCategory,
-                      items: _categories,
-                      requiredField: true,
-                      dense: true,
-                      borderless: true,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategory = value;
-                        });
-                      },
-                    ),
-                    const _SectionDivider(),
-                    _StoreField(
-                      label: 'Contact Number',
-                      hint: 'Enter contact number',
-                      controller: _contactController,
-                      icon: Icons.call_outlined,
-                      requiredField: true,
-                      dense: true,
-                      borderless: true,
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Contact number is required';
-                        }
-                        return null;
-                      },
-                    ),
-                    const _SectionDivider(),
-                    _StoreField(
-                      label: 'Email Address',
-                      hint: 'Enter email address',
-                      controller: _emailController,
-                      icon: Icons.email_outlined,
-                      dense: true,
-                      borderless: true,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Email address is required';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Enter a valid email address';
-                        }
-                        return null;
-                      },
-                    ),
-                    const _SectionDivider(),
-                    _StoreField(
-                      label: 'Physical Address',
-                      hint: 'Enter complete physical address',
-                      controller: _addressController,
-                      icon: Icons.location_on_outlined,
-                      requiredField: true,
-                      dense: true,
-                      borderless: true,
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Physical address is required';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 22)),
-              SliverToBoxAdapter(
-                child: _SectionCard(
-                  title: 'Store logo',
-                  children: [
-                    _LogoUploadRow(
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                    child: _ProfileHeaderCard(
                       logoPath: logoPath,
-                      onTap: _pickLogo,
-                    ),
-                  ],
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-                  child: SizedBox(
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD94B4B),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        _isSaving ? 'Saving...' : 'Save Changes',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
+                      onPickLogo: _pickLogo,
                     ),
                   ),
                 ),
-              ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _SectionCard(
+                      title: 'Business details',
+                      children: [
+                        _StoreField(
+                          label: 'Store Name',
+                          hint: 'Enter store name',
+                          controller: _storeNameController,
+                          icon: Icons.storefront_outlined,
+                          requiredField: true,
+                          dense: true,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Store name is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const _SectionDivider(),
+                        _DropdownField(
+                          label: 'Business Category',
+                          hint: 'Select business category',
+                          icon: Icons.local_offer_outlined,
+                          value: _selectedCategory,
+                          items: _categories,
+                          requiredField: true,
+                          dense: true,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value;
+                            });
+                          },
+                        ),
+                        const _SectionDivider(),
+                        _StoreField(
+                          label: 'Contact Number',
+                          hint: 'Enter contact number',
+                          controller: _contactController,
+                          icon: Icons.call_outlined,
+                          requiredField: true,
+                          dense: true,
+                          keyboardType: TextInputType.phone,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Contact number is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const _SectionDivider(),
+                        _StoreField(
+                          label: 'Email Address',
+                          hint: 'Enter email address',
+                          controller: _emailController,
+                          icon: Icons.email_outlined,
+                          dense: true,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Email address is required';
+                            }
+                            if (!_emailPattern.hasMatch(value.trim())) {
+                              return 'Enter a valid email address';
+                            }
+                            return null;
+                          },
+                        ),
+                        const _SectionDivider(),
+                        _StoreField(
+                          label: 'Physical Address',
+                          hint: 'Enter complete physical address',
+                          controller: _addressController,
+                          icon: Icons.location_on_outlined,
+                          requiredField: true,
+                          dense: true,
+                          maxLines: 3,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Physical address is required';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                    child: MarketButton(
+                      label: _isSaving ? 'Saving...' : 'Save Changes',
+                      icon: _isSaving
+                          ? Icons.hourglass_top_rounded
+                          : Icons.save_outlined,
+                      onTap: _isSaving ? () {} : _saveProfile,
+                      color: AppColors.primary,
+                      height: 74,
+                      radius: 4,
+                      iconSize: 28,
+                      fontSize: 17.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -338,19 +330,25 @@ class _IosNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: AppColors.ink,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: AppColors.ink,
+          ),
         ),
       ),
     );
@@ -368,65 +366,66 @@ class _ProfileHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPickLogo,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F4F7),
-                borderRadius: BorderRadius.circular(16),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPickLogo,
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF2F4F7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: logoPath == null
+                      ? const Icon(
+                          Icons.storefront_outlined,
+                          color: AppColors.primary,
+                          size: 30,
+                        )
+                      : Image.file(
+                          File(logoPath!),
+                          fit: BoxFit.cover,
+                        ),
+                ),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: logoPath == null
-                    ? const Icon(
-                        Icons.storefront_outlined,
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Store logo',
+                      style: TextStyle(
                         color: AppColors.ink,
-                        size: 28,
-                      )
-                    : Image.file(
-                        File(logoPath!),
-                        fit: BoxFit.cover,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Store logo',
-                    style: TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.05,
                     ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Tap to upload or replace your logo.',
-                    style: TextStyle(
-                      color: AppColors.mutedText,
-                      fontSize: 12,
-                      height: 1.3,
-                      fontWeight: FontWeight.w400,
+                    SizedBox(height: 4),
+                    Text(
+                      'Tap to upload or replace.',
+                      style: TextStyle(
+                        color: AppColors.mutedText,
+                        fontSize: 12,
+                        height: 1.35,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -444,29 +443,22 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: AppColors.ink,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.02,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.ink,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          ...children,
-        ],
-      ),
+        ),
+        ...children,
+      ],
     );
   }
 }
@@ -477,9 +469,8 @@ class _SectionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(left: 16),
-      height: 1,
-      color: const Color(0xFFF0F1F4),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      height: 14,
     );
   }
 }
@@ -575,7 +566,6 @@ class _StoreField extends StatelessWidget {
     this.maxLines = 1,
     this.validator,
     this.dense = false,
-    this.borderless = false,
   });
 
   final String label;
@@ -587,7 +577,6 @@ class _StoreField extends StatelessWidget {
   final int maxLines;
   final FormFieldValidator<String>? validator;
   final bool dense;
-  final bool borderless;
 
   @override
   Widget build(BuildContext context) {
@@ -598,7 +587,7 @@ class _StoreField extends StatelessWidget {
           text: TextSpan(
             style: const TextStyle(
               color: AppColors.ink,
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: FontWeight.w500,
               letterSpacing: 0,
             ),
@@ -613,41 +602,46 @@ class _StoreField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: borderless ? Colors.transparent : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(14),
-            border: borderless
-                ? null
-                : Border.all(color: const Color(0xFFE5E7EB)),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          validator: validator,
+          style: const TextStyle(
+            color: Color(0xFF33363F),
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
           ),
-          child: TextFormField(
-            controller: controller,
-            keyboardType: keyboardType,
-            maxLines: maxLines,
-            validator: validator,
-            style: const TextStyle(
-              color: AppColors.ink,
-              fontSize: 14,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(
+              color: Color(0xFF8A93A7),
+              fontSize: 13,
               fontWeight: FontWeight.w400,
             ),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: borderless ? 4 : 14,
-                vertical: borderless ? 10 : (dense ? 14 : 16),
-              ),
-              prefixIcon: Icon(
-                icon,
-                color: AppColors.mutedText,
-                size: 20,
-              ),
-              hintText: hint,
-              hintStyle: const TextStyle(
-                color: AppColors.mutedText,
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-              ),
+            prefixIcon: Icon(
+              icon,
+              color: const Color(0xFF5B8CFF),
+              size: 20,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.92),
+            enabledBorder: _storeFieldBorder(),
+            focusedBorder: _storeFieldBorder(
+              color: const Color(0xFF5B8CFF),
+              width: 1.2,
+            ),
+            errorBorder: _storeFieldBorder(
+              color: const Color(0xFFEF4444),
+              width: 1.1,
+            ),
+            focusedErrorBorder: _storeFieldBorder(
+              color: const Color(0xFFEF4444),
+              width: 1.1,
             ),
           ),
         ),
@@ -658,21 +652,42 @@ class _StoreField extends StatelessWidget {
 
 String _formatToday() {
   const monthNames = <String>[
-    'January',
-    'February',
-    'March',
-    'April',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
     'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   final now = DateTime.now();
   return '${monthNames[now.month - 1]} ${now.day}, ${now.year}';
+}
+
+String _profileSignature(AppProfileData profile) {
+  return [
+    profile.storeName,
+    profile.ownerName,
+    profile.roleTitle,
+    profile.businessCategory,
+    profile.contactNumber,
+    profile.emailAddress,
+    profile.physicalAddress,
+    profile.memberSince,
+    profile.taxId,
+    profile.weekdayOpen,
+    profile.weekdayClose,
+    profile.saturdayOpen,
+    profile.saturdayClose,
+    profile.sundaySchedule,
+    profile.open24Hours ? '1' : '0',
+    profile.logoPath ?? '',
+  ].join('|');
 }
 
 class _DropdownField extends StatelessWidget {
@@ -685,7 +700,6 @@ class _DropdownField extends StatelessWidget {
     required this.onChanged,
     this.requiredField = false,
     this.dense = false,
-    this.borderless = false,
   });
 
   final String label;
@@ -696,7 +710,6 @@ class _DropdownField extends StatelessWidget {
   final ValueChanged<String?> onChanged;
   final bool requiredField;
   final bool dense;
-  final bool borderless;
 
   @override
   Widget build(BuildContext context) {
@@ -707,7 +720,7 @@ class _DropdownField extends StatelessWidget {
           text: TextSpan(
             style: const TextStyle(
               color: AppColors.ink,
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: FontWeight.w500,
               letterSpacing: 0,
             ),
@@ -722,59 +735,74 @@ class _DropdownField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: borderless ? Colors.transparent : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(14),
-            border: borderless
-                ? null
-                : Border.all(color: const Color(0xFFE5E7EB)),
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          isExpanded: true,
+          borderRadius: BorderRadius.circular(8),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Color(0xFF5B8CFF),
           ),
-          child: DropdownButtonFormField<String>(
-            initialValue: value,
-            isExpanded: true,
-            borderRadius: BorderRadius.circular(14),
-            icon: const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: AppColors.mutedText,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(
+              color: Color(0xFF8A93A7),
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
             ),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: borderless ? 4 : 14,
-                vertical: borderless ? 10 : (dense ? 14 : 16),
-              ),
-              prefixIcon: Icon(
-                icon,
-                color: AppColors.mutedText,
-                size: 20,
-              ),
-              hintText: hint,
-              hintStyle: const TextStyle(
-                color: AppColors.mutedText,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
+            prefixIcon: Icon(
+              icon,
+              color: const Color(0xFF5B8CFF),
+              size: 20,
             ),
-            items: items
-                .map(
-                  (item) => DropdownMenuItem<String>(
-                    value: item,
-                    child: Text(
-                      item,
-                      style: const TextStyle(
-                        color: AppColors.ink,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.92),
+            enabledBorder: _storeFieldBorder(),
+            focusedBorder: _storeFieldBorder(
+              color: const Color(0xFF5B8CFF),
+              width: 1.2,
+            ),
+            errorBorder: _storeFieldBorder(
+              color: const Color(0xFFEF4444),
+              width: 1.1,
+            ),
+            focusedErrorBorder: _storeFieldBorder(
+              color: const Color(0xFFEF4444),
+              width: 1.1,
+            ),
+          ),
+          items: items
+              .map(
+                (item) => DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(
+                    item,
+                    style: const TextStyle(
+                      color: Color(0xFF33363F),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
-                )
-                .toList(),
-            onChanged: onChanged,
-          ),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
         ),
       ],
     );
   }
+}
+
+OutlineInputBorder _storeFieldBorder({
+  Color color = const Color(0xFFE7EAF0),
+  double width = 1,
+}) {
+  return OutlineInputBorder(
+    borderRadius: BorderRadius.circular(8),
+    borderSide: BorderSide(color: color, width: width),
+  );
 }

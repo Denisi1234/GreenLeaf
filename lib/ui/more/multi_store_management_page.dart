@@ -141,7 +141,8 @@ class _MultiStoreManagementPageState extends State<MultiStoreManagementPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Switch Branch?'),
-        content: Text('Are you sure you want to switch to $branchName? You will be logged into this branch\'s management system.'),
+        content: Text(
+            'Are you sure you want to switch to $branchName? You will be logged into this branch\'s management system.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -266,19 +267,8 @@ class _MultiStoreManagementPageState extends State<MultiStoreManagementPage> {
                       width: 86,
                       height: 86,
                       decoration: const BoxDecoration(
+                        color: Color(0xFF2B5FCE),
                         borderRadius: BorderRadius.all(Radius.circular(14)),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF356BD8), Color(0xFF2B5FCE)],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x32356BD8),
-                            blurRadius: 18,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
                       ),
                       child: const Icon(
                         Icons.add_rounded,
@@ -321,19 +311,9 @@ class _BranchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE1E5EC)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
+    return MarketSurfaceCard(
+      borderColor: const Color(0xFFE1E5EC),
+      radius: 8,
       child: Column(
         children: [
           InkWell(
@@ -501,20 +481,12 @@ class _BranchDetails extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: GestureDetector(
                 onTap: onSwitch,
-                child: Container(
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2B5FCE),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x22356BD8),
-                        blurRadius: 12,
-                        offset: Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
+                child: const MarketSurfaceCard(
+                  backgroundColor: Color(0xFF2B5FCE),
+                  borderColor: Color(0xFF2B5FCE),
+                  radius: 8,
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(

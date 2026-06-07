@@ -200,13 +200,11 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      Container(
+                      MarketSurfaceCard(
                         padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFFE2E7EF)),
-                        ),
+                        backgroundColor: Colors.white,
+                        borderColor: const Color(0xFFE2E7EF),
+                        radius: 4,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -322,19 +320,11 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      Container(
+                      MarketSurfaceCard(
                         padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0A000000),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
+                        backgroundColor: Colors.white,
+                        borderColor: Colors.transparent,
+                        radius: 4,
                         child: Column(
                           children: [
                             _StoreFormRow(
@@ -410,38 +400,32 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                       const SizedBox(height: 20),
                       GestureDetector(
                         onTap: _isSaving ? null : _saveStore,
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 160),
-                          opacity: _isSaving ? 0.82 : 1,
-                          child: Container(
-                            height: 74,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
+                        child: Container(
+                          height: 74,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1562E8),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _isSaving
+                                    ? Icons.hourglass_top_rounded
+                                    : Icons.save_outlined,
+                                color: Colors.white,
+                                size: 28,
                               ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _isSaving
-                                      ? Icons.hourglass_top_rounded
-                                      : Icons.save_outlined,
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Save Store',
+                                style: TextStyle(
                                   color: Colors.white,
-                                  size: 28,
+                                  fontSize: 17.5,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  'Save Store',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
