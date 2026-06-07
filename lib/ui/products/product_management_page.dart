@@ -13,7 +13,12 @@ import 'add_product_page.dart';
 import 'inventory_product_item.dart';
 
 class ProductManagementPage extends StatefulWidget {
-  const ProductManagementPage({super.key});
+  const ProductManagementPage({
+    super.key,
+    this.useSharedShell = false,
+  });
+
+  final bool useSharedShell;
 
   @override
   State<ProductManagementPage> createState() => _ProductManagementPageState();
@@ -87,7 +92,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Product?'),
-        content: Text('Are you sure you want to delete "${product.name}"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${product.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -142,24 +148,29 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
       data: interTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
+        drawer: widget.useSharedShell
+            ? null
+            : const MarketAppDrawer(selectedItem: 'Products'),
         floatingActionButton: _AddProductFab(
           onPressed: _openAddProductPage,
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: SafeArea(
+          top: !widget.useSharedShell,
           child: Stack(
             children: [
               const Positioned.fill(child: BackdropGlow()),
               Column(
                 children: [
-                  const _ProductsHeader(),
+                  if (!widget.useSharedShell) const _ProductsHeader(),
                   _PinnedSearchPanel(
                     controller: _searchController,
                     onSearchChanged: (value) {
@@ -178,28 +189,28 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                     child: CustomScrollView(
                       physics: const BouncingScrollPhysics(),
                       slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                          child: _CategoryStrip(
-                            categories: categories,
-                            selectedCategory: _selectedCategory,
-                            onSelected: (value) {
-                              setState(() {
-                                _selectedCategory = value;
-                              });
-                            },
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            child: _CategoryStrip(
+                              categories: categories,
+                              selectedCategory: _selectedCategory,
+                              onSelected: (value) {
+                                setState(() {
+                                  _selectedCategory = value;
+                                });
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                      if (filteredItems.isEmpty)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                            child: _ProductsEmptyState(
-                              query: _searchQuery,
-                              category: _selectedCategory,
+                        if (filteredItems.isEmpty)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                              child: _ProductsEmptyState(
+                                query: _searchQuery,
+                                category: _selectedCategory,
                                 onAddTap: _openAddProductPage,
                                 onClearFilter: () {
                                   setState(() {
@@ -260,7 +271,6 @@ String _money(double value) {
   }
   return 'TSH $buffer';
 }
-
 
 class _ProductsHeader extends StatelessWidget {
   const _ProductsHeader();
@@ -478,7 +488,8 @@ class _CategoryChip extends StatelessWidget {
             color: selected ? const Color(0xFF1B9B69) : Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: selected ? const Color(0xFF1B9B69) : const Color(0xFFE2E8F0),
+              color:
+                  selected ? const Color(0xFF1B9B69) : const Color(0xFFE2E8F0),
             ),
             boxShadow: selected
                 ? const [
@@ -667,7 +678,8 @@ class _EditActionsButton extends StatelessWidget {
           value: _ProductCardAction.delete,
           child: Row(
             children: [
-              Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFEF4444)),
+              Icon(Icons.delete_outline_rounded,
+                  size: 18, color: Color(0xFFEF4444)),
               SizedBox(width: 10),
               Text('Delete'),
             ],
@@ -706,7 +718,8 @@ class _AddProductFab extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
-        extendedPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        extendedPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         icon: const Icon(
           Icons.add_rounded,
           size: 24,
@@ -879,7 +892,6 @@ class _ProductsEmptyState extends StatelessWidget {
     );
   }
 }
-
 
 class _PremiumProductsHeader extends StatelessWidget {
   const _PremiumProductsHeader({
@@ -1258,18 +1270,18 @@ class _InventoryRowTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE6EBF1)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x040E1726),
-              blurRadius: 5,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE6EBF1)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x040E1726),
+                blurRadius: 5,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -1477,5 +1489,3 @@ class _FallbackArt extends StatelessWidget {
     );
   }
 }
-
-

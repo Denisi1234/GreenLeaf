@@ -12,19 +12,32 @@ import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 
 class MarketHomePage extends StatelessWidget {
-  const MarketHomePage({super.key});
+  const MarketHomePage({
+    super.key,
+    this.useSharedShell = false,
+  });
+
+  final bool useSharedShell;
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      drawer: MarketAppDrawer(selectedItem: 'Sales'),
-      body: MarketDashboardView(),
+    return Scaffold(
+      drawer:
+          useSharedShell ? null : const MarketAppDrawer(selectedItem: 'Sales'),
+      body: MarketDashboardView(
+        showHeader: !useSharedShell,
+      ),
     );
   }
 }
 
 class MarketDashboardView extends StatefulWidget {
-  const MarketDashboardView({super.key});
+  const MarketDashboardView({
+    super.key,
+    this.showHeader = true,
+  });
+
+  final bool showHeader;
 
   @override
   State<MarketDashboardView> createState() => _MarketDashboardViewState();
@@ -183,133 +196,135 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
-    return Theme(
-      data: interTheme,
-      child: SafeArea(
-        child: Stack(
+    final content = Stack(
+      children: [
+        const Positioned.fill(
+          child: ColoredBox(color: Color(0xFFF8FAFC)),
+        ),
+        Column(
           children: [
-            const Positioned.fill(
-              child: ColoredBox(color: Color(0xFFF8FAFC)),
-            ),
-            Column(
-              children: [
-                const TopBar(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
-                  child: Column(
-                    children: [
-                      SearchBox(
-                        controller: _searchController,
-                        onChanged: (value) {
-                          setState(() {
-                            _searchQuery = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                    ],
+            if (widget.showHeader) const TopBar(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+              child: Column(
+                children: [
+                  SearchBox(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 138),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxWidth < 620;
-                        if (displayProducts.isEmpty) {
-                          return Center(
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: const Color(0xFFE7EAF0)),
-                              ),
-                              child: const Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.search_off_rounded,
-                                    size: 34,
-                                    color: Color(0xFF7A859C),
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    'No products found',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFF33363F),
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Try another name or clear the search.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFF7A859C),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-                        return GridView.builder(
-                          itemCount: displayProducts.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: compact ? 2 : 3,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: compact ? 0.80 : 0.86,
+                  const SizedBox(height: 14),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 138),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 620;
+                    if (displayProducts.isEmpty) {
+                      return Center(
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFE7EAF0)),
                           ),
-                          itemBuilder: (context, index) {
-                            final product = displayProducts[index];
-                            return ProductCard(
-                              product: product,
-                              onTapDown: (details) =>
-                                  _handleProductTap(product, details),
-                            );
-                          },
+                          child: const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.search_off_rounded,
+                                size: 34,
+                                color: Color(0xFF7A859C),
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                'No products found',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF33363F),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Try another name or clear the search.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF7A859C),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    return GridView.builder(
+                      itemCount: displayProducts.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: compact ? 2 : 3,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: compact ? 0.80 : 0.86,
+                      ),
+                      itemBuilder: (context, index) {
+                        final product = displayProducts[index];
+                        return ProductCard(
+                          product: product,
+                          onTapDown: (details) =>
+                              _handleProductTap(product, details),
                         );
                       },
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ],
-            ),
-            if (_successMessage != null)
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 102,
-                child: SuccessMessageBanner(
-                  message: _successMessage!,
-                  type: _lastAddedType ?? ProductArtType.aquafina,
-                  imagePath: _lastAddedImagePath,
-                ),
-              ),
-            Positioned(
-              left: 14,
-              right: 14,
-              bottom: 12,
-              child: CheckoutBar(
-                cartKey: _cartKey,
-                itemCount: store.cartCount,
-                total: store.cartTotal,
-                onCheckout: _openPaymentScreen,
               ),
             ),
           ],
         ),
-      ),
+        if (_successMessage != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 102,
+            child: SuccessMessageBanner(
+              message: _successMessage!,
+              type: _lastAddedType ?? ProductArtType.aquafina,
+              imagePath: _lastAddedImagePath,
+            ),
+          ),
+        Positioned(
+          left: 14,
+          right: 14,
+          bottom: 12,
+          child: CheckoutBar(
+            cartKey: _cartKey,
+            itemCount: store.cartCount,
+            total: store.cartTotal,
+            onCheckout: _openPaymentScreen,
+          ),
+        ),
+      ],
+    );
+
+    return Theme(
+      data: interTheme,
+      child: widget.showHeader
+          ? SafeArea(child: content)
+          : SafeArea(top: false, child: content),
     );
   }
 }
@@ -529,7 +544,8 @@ class _DashboardTileArt extends StatelessWidget {
         child: Image.file(
           File(product.imagePath!),
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _DashboardFallbackArt(label: product.name),
+          errorBuilder: (_, __, ___) =>
+              _DashboardFallbackArt(label: product.name),
         ),
       );
     }
@@ -721,7 +737,8 @@ class CheckoutBar extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 10),
-                  Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                  Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white, size: 18),
                 ],
               ),
             ),
@@ -769,7 +786,8 @@ class SuccessMessageBanner extends StatelessWidget {
               compact: true,
             ),
             const SizedBox(width: 10),
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

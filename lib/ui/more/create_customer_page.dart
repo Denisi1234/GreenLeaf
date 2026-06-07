@@ -77,7 +77,6 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
         .copyWith(
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
-      email: _emailController.text.trim(),
       address: _addressController.text.trim(),
       tags: _selectedTags.toList(),
     );

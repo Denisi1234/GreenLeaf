@@ -12,8 +12,7 @@ import '../more/expenses_tracking_page.dart';
 import '../more/help_support_page.dart';
 import '../products/product_management_page.dart';
 import '../reports/reports_page.dart';
-import '../scanner/daftari_recovery_pages.dart';
-import '../scanner/daftari_scan_page.dart';
+import '../more/about_app_page.dart';
 import '../../service/pos_local_store.dart';
 
 class BackdropGlow extends StatelessWidget {
@@ -327,9 +326,8 @@ class _BackButton extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: isGradient
-              ? Colors.white.withValues(alpha: 0.16)
-              : Colors.white,
+          color:
+              isGradient ? Colors.white.withValues(alpha: 0.16) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isGradient
@@ -367,7 +365,8 @@ class MarketButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? (isPrimary ? AppColors.primary : Colors.white);
+    final effectiveColor =
+        color ?? (isPrimary ? AppColors.primary : Colors.white);
 
     final button = GestureDetector(
       onTap: onTap,
@@ -641,11 +640,7 @@ class MarketAppDrawer extends StatelessWidget {
   static const Color _drawerIcon = Color(0xFF667085);
 
   static const _primaryItems = [
-    _DrawerItemData('Sales', Icons.shopping_bag_outlined),
-    _DrawerItemData('Products', Icons.inventory_2_outlined),
-    _DrawerItemData('Scan Daftari', Icons.document_scanner_outlined),
     _DrawerItemData('Customers', Icons.people_outline_rounded),
-    _DrawerItemData('Dashboard', Icons.grid_view_rounded),
   ];
 
   static const _operationsItems = [
@@ -653,7 +648,8 @@ class MarketAppDrawer extends StatelessWidget {
   ];
 
   static const _supportItems = [
-    _DrawerItemData('About/Help', Icons.help_outline_rounded),
+    _DrawerItemData('Help & Support', Icons.support_agent_outlined),
+    _DrawerItemData('About App', Icons.info_outline_rounded),
   ];
 
   @override
@@ -883,7 +879,7 @@ class _DrawerTile extends StatelessWidget {
   }
 }
 
-  Route<void>? _routeForLabel(String label) {
+Route<void>? _routeForLabel(String label) {
   switch (label) {
     case 'Sales':
       return MaterialPageRoute<void>(
@@ -905,41 +901,13 @@ class _DrawerTile extends StatelessWidget {
       return MaterialPageRoute<void>(
         builder: (context) => const ExpensesTrackingPage(),
       );
-    case 'Scan Daftari':
-      return MaterialPageRoute<void>(
-        builder: (context) => const DaftariScanPage(),
-      );
-    case 'OCR Processing':
-      return MaterialPageRoute<void>(
-        builder: (context) => const DaftariOcrProcessingPage(),
-      );
-    case 'AI Matching':
-      return MaterialPageRoute<void>(
-        builder: (context) => const DaftariMatchingPage(),
-      );
-    case 'Review Sales':
-      return MaterialPageRoute<void>(
-        builder: (context) => const DaftariReviewSalesPage(),
-      );
-    case 'Failed Scans':
-      return MaterialPageRoute<void>(
-        builder: (context) => const DaftariFailedScansPage(),
-      );
-    case 'History':
-      return MaterialPageRoute<void>(
-        builder: (context) => const DaftariHistoryPage(),
-      );
-    case 'AI Learning':
-      return MaterialPageRoute<void>(
-        builder: (context) => const DaftariLearningPage(),
-      );
-    case 'Analytics':
-      return MaterialPageRoute<void>(
-        builder: (context) => const DaftariAnalyticsPage(),
-      );
-    case 'About/Help':
+    case 'Help & Support':
       return MaterialPageRoute<void>(
         builder: (context) => const HelpSupportPage(),
+      );
+    case 'About App':
+      return MaterialPageRoute<void>(
+        builder: (context) => const AboutAppPage(),
       );
     default:
       return null;

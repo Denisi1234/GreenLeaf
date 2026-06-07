@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import 'about_app_page.dart';
-import 'help_support_page.dart';
 import 'multi_store_management_page.dart';
 import 'duka_ai_page.dart';
 import 'store_profile_page.dart';
@@ -16,7 +14,12 @@ import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class MorePage extends StatelessWidget {
-  const MorePage({super.key});
+  const MorePage({
+    super.key,
+    this.useSharedShell = false,
+  });
+
+  final bool useSharedShell;
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +28,9 @@ class MorePage extends StatelessWidget {
       _MoreMenuItem('Staff Management', Icons.groups_2_outlined),
       _MoreMenuItem(
           'Multi-Store Management', Icons.store_mall_directory_outlined),
-      _MoreMenuItem('Tax & Discounts', Icons.sell_outlined),
+      _MoreMenuItem('Settings', Icons.settings_outlined),
       _MoreMenuItem('DUKA AI', Icons.psychology_alt_outlined),
       _MoreMenuItem('Subscription Plan', Icons.description_outlined),
-      _MoreMenuItem('Help & Support', Icons.support_agent_outlined),
-      _MoreMenuItem('About App', Icons.info_outline_rounded),
     ];
     final store = context.watch<PosLocalStore>();
     final profile = store.profile;
@@ -45,49 +46,53 @@ class MorePage extends StatelessWidget {
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
       data: interTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
-        drawer: const MarketAppDrawer(selectedItem: 'More'),
+        drawer:
+            useSharedShell ? null : const MarketAppDrawer(selectedItem: 'More'),
         body: Stack(
           children: [
             const Positioned.fill(child: BackdropGlow()),
             SafeArea(
+              top: !useSharedShell,
               child: Column(
                 children: [
-                  MarketPageHeader(
-                    title: 'More',
-                    centerTitle: false,
-                    leading: Builder(
-                      builder: (context) => GestureDetector(
-                        onTap: () => Scaffold.of(context).openDrawer(),
-                        child: Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: const Icon(
-                            Icons.menu_rounded,
-                            color: AppColors.ink,
-                            size: 22,
+                  if (!useSharedShell)
+                    MarketPageHeader(
+                      title: 'More',
+                      centerTitle: false,
+                      leading: Builder(
+                        builder: (context) => GestureDetector(
+                          onTap: () => Scaffold.of(context).openDrawer(),
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: const Icon(
+                              Icons.menu_rounded,
+                              color: AppColors.ink,
+                              size: 22,
+                            ),
                           ),
                         ),
                       ),
+                      actions: [
+                        _HeaderActionCircle(
+                          icon: Icons.person_outline_rounded,
+                          onTap: () {},
+                        ),
+                      ],
                     ),
-                    actions: [
-                      _HeaderActionCircle(
-                        icon: Icons.person_outline_rounded,
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
                   Expanded(
                     child: ListView(
                       physics: const BouncingScrollPhysics(),
@@ -516,15 +521,6 @@ class _MoreListTile extends StatelessWidget {
           return;
         }
 
-        if (item.label == 'Help & Support') {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const HelpSupportPage(),
-            ),
-          );
-          return;
-        }
-
         if (item.label == 'Subscription Plan') {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -538,15 +534,6 @@ class _MoreListTile extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const DukaAiPage(),
-            ),
-          );
-          return;
-        }
-
-        if (item.label == 'About App') {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const AboutAppPage(),
             ),
           );
           return;

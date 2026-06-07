@@ -64,7 +64,12 @@ bool _orderInPeriod(String dateTime, _ReportPeriod period) {
 }
 
 class ReportsPage extends StatelessWidget {
-  const ReportsPage({super.key});
+  const ReportsPage({
+    super.key,
+    this.useSharedShell = false,
+  });
+
+  final bool useSharedShell;
 
   static const Color _ink = Color(0xFF33363F);
   static const Color _muted = Color(0xFF7A859C);
@@ -303,16 +308,20 @@ class ReportsPage extends StatelessWidget {
       data: interTheme,
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
-        drawer: const MarketAppDrawer(selectedItem: 'Dashboard'),
+        drawer: useSharedShell
+            ? null
+            : const MarketAppDrawer(selectedItem: 'Dashboard'),
         body: SafeArea(
+          top: !useSharedShell,
           child: Stack(
             children: [
               const Positioned.fill(child: BackdropGlow()),
               Column(
                 children: [
-                  _PremiumReportsHeader(
-                    dateLabel: todayLabel,
-                  ),
+                  if (!useSharedShell)
+                    _PremiumReportsHeader(
+                      dateLabel: todayLabel,
+                    ),
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
