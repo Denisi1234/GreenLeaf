@@ -49,44 +49,7 @@ class HelpSupportPage extends StatelessWidget {
         body: SafeArea(
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(color: AppColors.border),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: const SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.ink,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Help & Support',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.ink,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 36),
-                  ],
-                ),
-              ),
+              const MarketPageHeader(title: 'Help & Support'),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
@@ -322,7 +285,7 @@ class _ShieldSupportIcon extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.standard),
         border: Border.all(color: AppColors.border),
       ),
-      child: Icon(
+      child: const Icon(
         Icons.shield_outlined,
         color: AppColors.ink,
         size: 22,

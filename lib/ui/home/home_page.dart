@@ -9,6 +9,7 @@ import '../models/product_item.dart';
 import '../payment/payment_page.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../../service/pos_local_store.dart';
+import '../widgets/app_design.dart';
 
 class MarketHomePage extends StatelessWidget {
   const MarketHomePage({super.key});
@@ -195,7 +196,6 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
             Column(
               children: [
                 const TopBar(),
-                const Divider(height: 1, thickness: 1, color: Color(0xFFE7EAF0)),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
                   child: Column(
@@ -319,78 +319,12 @@ class TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(14, 10, 14, 10),
-          child: Row(
-        children: [
-          DrawerMenuButton(),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Sales',
-              style: TextStyle(
-                color: Color(0xFF33363F),
-                fontSize: 21,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.25,
-              ),
-            ),
-          ),
-          ProfileBlock(),
-        ],
-      ),
-    );
-  }
-}
-
-class ProfileBlock extends StatelessWidget {
-  const ProfileBlock({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F7FA),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE4E9F0)),
-          ),
-          child: const Icon(Icons.person, color: Color(0xFF293140), size: 24),
-        ),
-        const SizedBox(width: 8),
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'John Doe',
-              style: TextStyle(
-                color: Color(0xFF33363F),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              'Cashier',
-              style: TextStyle(
-                color: Color(0xFF7B859A),
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 4),
-        const Icon(
-          Icons.keyboard_arrow_down_rounded,
-          color: Color(0xFF293140),
-          size: 24,
-        ),
-      ],
+    return const MarketPageHeader(
+      title: 'Sales',
+      centerTitle: false,
+      showBackButton: false,
+      leading: DrawerMenuButton(),
+      actions: [],
     );
   }
 }
@@ -412,12 +346,19 @@ class SearchBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE1E6ED)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x05000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 18, color: Color(0xFF7E8695)),
+          const Icon(Icons.search_rounded, size: 20, color: Color(0xFF94A3B8)),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -425,8 +366,8 @@ class SearchBox extends StatelessWidget {
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
               style: const TextStyle(
-                color: Color(0xFF33363F),
-                fontSize: 13.5,
+                color: AppColors.ink,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
               decoration: InputDecoration(
@@ -434,8 +375,8 @@ class SearchBox extends StatelessWidget {
                 border: InputBorder.none,
                 hintText: 'Search products by name or SKU',
                 hintStyle: const TextStyle(
-                  color: Color(0xFF7A859C),
-                  fontSize: 13.5,
+                  color: Color(0xFF94A3B8),
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
                 suffixIcon: controller.text.isNotEmpty
@@ -447,7 +388,7 @@ class SearchBox extends StatelessWidget {
                         icon: const Icon(
                           Icons.close_rounded,
                           size: 18,
-                          color: Color(0xFF8A93A7),
+                          color: Color(0xFF64748B),
                         ),
                       )
                     : null,
@@ -489,16 +430,9 @@ class ProductCard extends StatelessWidget {
       onTapDown: onTapDown,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFE7EAF0)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x060E1726),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -694,7 +628,7 @@ class CheckoutBar extends StatelessWidget {
                   width: 22,
                   height: 22,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1C8F5A),
+                    color: const Color(0xFFE54040),
                     borderRadius: BorderRadius.circular(11),
                   ),
                   child: Center(
@@ -772,7 +706,7 @@ class CheckoutBar extends StatelessWidget {
               height: 50,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C8F5A),
+                color: const Color(0xFFE54040),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Row(

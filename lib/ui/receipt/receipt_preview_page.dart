@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../receipt_brand_data.dart';
+import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../models/product_item.dart';
 import '../widgets/app_design.dart';
@@ -85,6 +87,9 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         register: widget.order.register,
         date: widget.order.date,
         time: widget.order.time,
+        customerName: widget.order.customerName,
+        discountAmount: widget.order.discountAmount,
+        discountLabel: widget.order.discountLabel,
       );
       if (!mounted) return;
       setState(() {
@@ -129,6 +134,9 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         register: widget.order.register,
         date: widget.order.date,
         time: widget.order.time,
+        customerName: widget.order.customerName,
+        discountAmount: widget.order.discountAmount,
+        discountLabel: widget.order.discountLabel,
       );
       if (!mounted) return null;
       setState(() => _preparedPdf = pdfFile);
@@ -147,20 +155,34 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
 
   String _buildWhatsAppMessage() {
     final buffer = StringBuffer()
-      ..writeln(ReceiptBrandData.storeName)
-      ..writeln('Receipt ${widget.order.id}')
+      ..writeln('*${ReceiptBrandData.storeName.toUpperCase()}*')
+      ..writeln('Receipt: ${widget.order.id}')
       ..writeln('Date: ${widget.order.date} ${widget.order.time}')
       ..writeln('');
+
+    if (widget.order.customerName != null) {
+      buffer.writeln('Customer: ${widget.order.customerName}');
+    }
+
+    buffer.writeln('--------------------');
     for (final line in widget.order.lines) {
       buffer.writeln(
         '${line.itemName} x${line.quantity} - ${_money(line.lineTotal)}',
       );
     }
-    buffer
-      ..writeln('')
-      ..writeln('Total: ${_money(widget.order.total)}')
-      ..writeln('Cash Received: ${_money(widget.order.cashTendered)}')
-      ..writeln('Change Amount: ${_money(widget.order.changeDue)}');
+    buffer.writeln('--------------------');
+    buffer.writeln('Subtotal: ${_money(_subtotal)}');
+    
+    if (widget.order.discountAmount != null && widget.order.discountAmount! > 0) {
+      buffer.writeln('${widget.order.discountLabel ?? 'Discount'}: -${_money(widget.order.discountAmount!)}');
+    }
+    
+    buffer.writeln('*Total: ${_money(widget.order.total)}*');
+    buffer.writeln('Cash Received: ${_money(widget.order.cashTendered)}');
+    buffer.writeln('Change Due: ${_money(widget.order.changeDue)}');
+    buffer.writeln('--------------------');
+    buffer.writeln('THANK YOU!');
+    
     return buffer.toString();
   }
 
@@ -229,14 +251,27 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
   }
 
   Future<void> _sharePdf(BuildContext context) async {
-    final pdfFile = await _ensurePdf(context);
-    if (pdfFile == null) return;
-    final pdfBytes = await pdfFile.readAsBytes();
-    await Printing.sharePdf(
-      bytes: pdfBytes,
-      filename:
-          'receipt_${widget.order.id.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_')}.pdf',
-    );
+    try {
+      final pdfFile = await _ensurePdf(context);
+      if (pdfFile == null) return;
+      debugPrint('Sharing PDF from: ${pdfFile.path}');
+      final pdfBytes = await pdfFile.readAsBytes();
+      debugPrint('PDF bytes length: ${pdfBytes.length}');
+      await Printing.sharePdf(
+        bytes: pdfBytes,
+        filename:
+            'receipt_${widget.order.id.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_')}.pdf',
+      );
+    } catch (error, stack) {
+      debugPrint('Share PDF error: $error\n$stack');
+      if (!context.mounted) return;
+      showMarketNotice(
+        context,
+        title: 'Share Failed',
+        message: 'Could not share receipt: ${error.toString()}',
+        type: MarketNoticeType.warning,
+      );
+    }
   }
 
   Future<void> _printReceipt(BuildContext context) async {
@@ -315,15 +350,40 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
   }
 
   void _startNewSale(BuildContext context) {
-    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).popUntil((route) => route.isFirst);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      const SnackBar(
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.fromLTRB(18, 0, 18, 20),
-        backgroundColor: Color(0xFF1E7A47),
-        content: Text('Ready for a new sale'),
+    showMarketNotice(
+      context,
+      title: 'Ready for a new sale',
+      message: 'Start ringing up items for the next customer.',
+      type: MarketNoticeType.success,
+    );
+  }
+
+  Future<bool?> _showConfirmDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String actionLabel,
+    bool isDanger = false,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: isDanger ? const Color(0xFFF24840) : const Color(0xFF4C68D6),
+            ),
+            child: Text(actionLabel),
+          ),
+        ],
       ),
     );
   }
@@ -388,13 +448,38 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                   _TopActionButton(
                     label: 'DELETE',
                     color: const Color(0xFFF24840),
-                    onTap: () => _showPlaceholderAction(context, 'Delete'),
+                    onTap: () async {
+                      final confirmed = await _showConfirmDialog(
+                        context,
+                        title: 'Delete Order?',
+                        message: 'This will permanently remove the order and restore product stock.',
+                        actionLabel: 'Delete',
+                        isDanger: true,
+                      );
+                      if (confirmed == true && mounted) {
+                        await context.read<PosLocalStore>().voidOrder(widget.order.id);
+                        if (!mounted) return;
+                        _startNewSale(context);
+                      }
+                    },
                   ),
                   const SizedBox(width: 6),
                   _TopActionButton(
                     label: 'EDIT',
                     color: const Color(0xFF476ADB),
-                    onTap: () => _showPlaceholderAction(context, 'Edit'),
+                    onTap: () async {
+                      final confirmed = await _showConfirmDialog(
+                        context,
+                        title: 'Edit Order?',
+                        message: 'The current order will be voided, and its items will be re-added to your cart for editing.',
+                        actionLabel: 'Edit',
+                      );
+                      if (confirmed == true && mounted) {
+                        await context.read<PosLocalStore>().reopenOrderForEdit(widget.order.id);
+                        if (!mounted) return;
+                        _startNewSale(context);
+                      }
+                    },
                   ),
                 ],
               ),
@@ -414,6 +499,9 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                   items: widget.order.lines,
                   subtotal: _subtotal,
                   tax: _tax,
+                  customerName: widget.order.customerName,
+                  discountAmount: widget.order.discountAmount,
+                  discountLabel: widget.order.discountLabel,
                   grandTotal: widget.order.total,
                   cashReceived: widget.order.cashTendered,
                   changeAmount: widget.order.changeDue,
@@ -514,6 +602,9 @@ class _ReceiptPaper extends StatelessWidget {
     required this.items,
     required this.subtotal,
     required this.tax,
+    this.customerName,
+    this.discountAmount,
+    this.discountLabel,
     required this.grandTotal,
     required this.cashReceived,
     required this.changeAmount,
@@ -531,6 +622,9 @@ class _ReceiptPaper extends StatelessWidget {
   final List<OrderLine> items;
   final double subtotal;
   final double tax;
+  final String? customerName;
+  final double? discountAmount;
+  final String? discountLabel;
   final double grandTotal;
   final double cashReceived;
   final double changeAmount;
@@ -545,129 +639,135 @@ class _ReceiptPaper extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            phone,
+            ReceiptBrandData.storeName,
             style: const TextStyle(
               color: AppColors.ink,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.only(top: 10, bottom: 100),
-            child: Divider(height: 1, color: Color(0xFFD7D7D7)),
-          ),
+          const SizedBox(height: 4),
           Text(
-            'Receipt# $receiptNumber',
+            phone,
             style: const TextStyle(
-              color: AppColors.ink,
-              fontSize: 14,
+              color: Color(0xFF64748B),
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            'Date : $date - $time',
-            style: const TextStyle(
-              color: AppColors.ink,
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
           ),
-          const SizedBox(height: 18),
+          _MetaLine(label: 'Receipt #', value: receiptNumber),
+          _MetaLine(label: 'Date', value: '$date $time'),
+          if (customerName != null) _MetaLine(label: 'Customer', value: customerName!),
+          _MetaLine(label: 'Payment', value: paymentMethod),
+          const SizedBox(height: 20),
           const _TableHeader(
-            cells: ['P Mode', 'I#', 'U#', 'Amount'],
+            cells: ['Item', 'Qty', 'Price', 'Total'],
             alignments: [
               TextAlign.left,
               TextAlign.center,
-              TextAlign.center,
+              TextAlign.right,
               TextAlign.right,
             ],
-            flexes: [4, 2, 2, 4],
-          ),
-          _TableRow(
-            cells: [paymentMethod, '$itemTypes', '$unitCount', money(amount)],
-            alignments: const [
-              TextAlign.left,
-              TextAlign.center,
-              TextAlign.center,
-              TextAlign.right,
-            ],
-            flexes: const [4, 2, 2, 4],
-            isBold: true,
-          ),
-          const SizedBox(height: 18),
-          const _TableHeader(
-            cells: ['Name', 'Price', 'Qty', 'Total'],
-            alignments: [
-              TextAlign.left,
-              TextAlign.left,
-              TextAlign.center,
-              TextAlign.right,
-            ],
-            flexes: [4, 3, 2, 4],
+            flexes: [5, 2, 3, 4],
           ),
           ...items.map(
             (line) => _TableRow(
               cells: [
                 line.itemName,
-                money(line.unitPriceValue),
                 '${line.quantity}',
+                money(line.unitPriceValue),
                 money(line.lineTotal),
               ],
               alignments: const [
                 TextAlign.left,
-                TextAlign.left,
                 TextAlign.center,
                 TextAlign.right,
+                TextAlign.right,
               ],
-              flexes: const [4, 3, 2, 4],
+              flexes: const [5, 2, 3, 4],
             ),
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(height: 1, thickness: 2, color: Color(0xFF444444)),
+            child: Divider(height: 1, thickness: 1.5, color: AppColors.ink),
           ),
           _SummaryLine(label: 'Subtotal', value: money(subtotal)),
-          const SizedBox(height: 4),
-          _SummaryLine(label: 'Tax (0%)', value: money(tax)),
-          const SizedBox(height: 4),
+          if (discountAmount != null && discountAmount! > 0)
+            _SummaryLine(
+              label: discountLabel ?? 'Discount',
+              value: '- ${money(discountAmount!)}',
+              valueColor: const Color(0xFFE11D48),
+            ),
+          const SizedBox(height: 8),
           _SummaryLine(
             label: 'Grand Total',
             value: money(grandTotal),
             isBold: true,
+            fontSize: 16,
           ),
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Divider(height: 1, color: Color(0xFFD7D7D7)),
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: Color(0xFFE2E8F0), indent: 40),
           ),
           _SummaryLine(
             label: 'Cash Received',
             value: money(cashReceived),
-            valueWidth: 160,
           ),
-          const SizedBox(height: 4),
           _SummaryLine(
-            label: 'Change Amount',
+            label: 'Change Due',
             value: money(changeAmount),
-            valueWidth: 160,
+            valueColor: const Color(0xFF15803D),
+            isBold: true,
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 32),
           const Text(
-            'Thank You! Visit again!',
+            'THANK YOU FOR SHOPPING!',
             style: TextStyle(
               color: AppColors.ink,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           const Text(
-            'Powered By Zobaze',
+            'Please come again',
             style: TextStyle(
-              color: AppColors.ink,
-              fontSize: 12.5,
+              color: Color(0xFF64748B),
+              fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaLine extends StatelessWidget {
+  const _MetaLine({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Text(
+            '$label:',
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            value,
+            style: const TextStyle(color: AppColors.ink, fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -754,12 +854,16 @@ class _SummaryLine extends StatelessWidget {
     required this.value,
     this.isBold = false,
     this.valueWidth = 140,
+    this.valueColor,
+    this.fontSize,
   });
 
   final String label;
   final String value;
   final bool isBold;
   final double valueWidth;
+  final Color? valueColor;
+  final double? fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -772,7 +876,7 @@ class _SummaryLine extends StatelessWidget {
               label,
               style: TextStyle(
                 color: AppColors.ink,
-                fontSize: 13,
+                fontSize: fontSize ?? 13,
                 fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
@@ -784,8 +888,8 @@ class _SummaryLine extends StatelessWidget {
             value,
             textAlign: TextAlign.right,
             style: TextStyle(
-              color: AppColors.ink,
-              fontSize: 13,
+              color: valueColor ?? AppColors.ink,
+              fontSize: fontSize ?? 13,
               fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
             ),
           ),

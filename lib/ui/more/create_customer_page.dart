@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../service/pos_local_store.dart';
+import '../../ui/models/customer_data.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
+const List<String> kCustomerTagOptions = <String>[
+  'VIP',
+  'Wholesale',
+  'Retail',
+  'Credit',
+];
+
 class CreateCustomerPage extends StatefulWidget {
-  const CreateCustomerPage({super.key});
+  const CreateCustomerPage({super.key, this.existing});
+
+  final CustomerData? existing;
 
   @override
   State<CreateCustomerPage> createState() => _CreateCustomerPageState();
@@ -11,11 +24,24 @@ class CreateCustomerPage extends StatefulWidget {
 
 class _CreateCustomerPageState extends State<CreateCustomerPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _addressController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _addressController;
+  late Set<String> _selectedTags;
   bool _isSaving = false;
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.existing;
+    _nameController = TextEditingController(text: c?.name ?? '');
+    _phoneController = TextEditingController(text: c?.phone ?? '');
+    _emailController = TextEditingController(text: c?.email ?? '');
+    _addressController = TextEditingController(text: c?.address ?? '');
+    _selectedTags = c == null ? <String>{} : c.tags.toSet();
+  }
 
   @override
   void dispose() {
@@ -38,19 +64,77 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
     }
 
     FocusScope.of(context).unfocus();
-    setState(() {
-      _isSaving = true;
-    });
+    setState(() => _isSaving = true);
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (!mounted) return;
-
-    showMarketNotice(
-      context,
-      title: 'Customer Saved',
-      message: '${_nameController.text.trim()} is ready to use',
+    final store = context.read<PosLocalStore>();
+    final existing = widget.existing;
+    final customer = (existing ??
+            CustomerData(
+              id: 'CUST-${DateTime.now().millisecondsSinceEpoch}',
+              name: '',
+              phone: '',
+            ))
+        .copyWith(
+      name: _nameController.text.trim(),
+      phone: _phoneController.text.trim(),
+      email: _emailController.text.trim(),
+      address: _addressController.text.trim(),
+      tags: _selectedTags.toList(),
     );
 
+    try {
+      if (existing == null) {
+        await store.addCustomer(customer);
+      } else {
+        await store.updateCustomer(customer);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+
+    if (!mounted) return;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, _, __) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 64),
+              const SizedBox(height: 16),
+              Text(
+                _isEdit ? 'Customer Updated' : 'Customer Saved',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${customer.name} has been ${_isEdit ? 'updated' : 'added'}.',
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    await Future<void>.delayed(const Duration(milliseconds: 1000));
+    if (!mounted) return;
+
+    Navigator.of(context, rootNavigator: true).pop();
     Navigator.of(context).pop();
   }
 
@@ -61,77 +145,14 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.chevron_left_rounded,
-                        color: Color(0xFF1E273A),
-                        size: 30,
-                      ),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Create Customer',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF1E273A),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 40),
-                ],
-              ),
-            ),
+            MarketPageHeader(title: _isEdit ? 'Edit Customer' : 'Create Customer'),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+                padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E7EF)),
-                        ),
-                        child: const Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 44,
-                              backgroundColor: Color(0xFFE8EEF8),
-                              child: Icon(
-                                Icons.person_add_alt_1_rounded,
-                                color: Color(0xFF2B5FCE),
-                                size: 42,
-                              ),
-                            ),
-                            SizedBox(height: 14),
-                            Text(
-                              'Add a new customer to your POS',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF667085),
-                                fontSize: 13.8,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
                       _CustomerField(
                         label: 'Customer Name',
                         hint: 'Enter customer name',
@@ -160,36 +181,34 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                       ),
                       const SizedBox(height: 14),
                       _CustomerField(
-                        label: 'Email Address',
-                        hint: 'Enter email address',
+                        label: 'Email',
+                        hint: 'Optional email address',
                         controller: _emailController,
-                        icon: Icons.email_outlined,
+                        icon: Icons.alternate_email_rounded,
                         keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Email address is required';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Enter a valid email address';
-                          }
-                          return null;
-                        },
                       ),
                       const SizedBox(height: 14),
                       _CustomerField(
                         label: 'Address',
-                        hint: 'Enter customer address',
+                        hint: 'Optional physical address',
                         controller: _addressController,
                         icon: Icons.location_on_outlined,
                         maxLines: 3,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Address is required';
-                          }
-                          return null;
+                      ),
+                      const SizedBox(height: 18),
+                      _TagPicker(
+                        selected: _selectedTags,
+                        onToggle: (tag) {
+                          setState(() {
+                            if (_selectedTags.contains(tag)) {
+                              _selectedTags.remove(tag);
+                            } else {
+                              _selectedTags.add(tag);
+                            }
+                          });
                         },
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 32),
                       GestureDetector(
                         onTap: _isSaving ? null : _saveCustomer,
                         child: AnimatedOpacity(
@@ -214,13 +233,19 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                                 Icon(
                                   _isSaving
                                       ? Icons.hourglass_top_rounded
-                                      : Icons.person_add_alt_1_rounded,
+                                      : (_isEdit
+                                          ? Icons.save_rounded
+                                          : Icons.person_add_alt_1_rounded),
                                   color: Colors.white,
                                   size: 24,
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  _isSaving ? 'Saving...' : 'Save Customer',
+                                  _isSaving
+                                      ? 'Saving...'
+                                      : (_isEdit
+                                          ? 'Save Changes'
+                                          : 'Save Customer'),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16.5,
@@ -239,6 +264,90 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TagPicker extends StatelessWidget {
+  const _TagPicker({required this.selected, required this.onToggle});
+
+  final Set<String> selected;
+  final ValueChanged<String> onToggle;
+
+  Color _colorFor(String tag) {
+    switch (tag) {
+      case 'VIP':
+        return const Color(0xFFF59E0B);
+      case 'Wholesale':
+        return const Color(0xFF2563EB);
+      case 'Retail':
+        return const Color(0xFF10B981);
+      case 'Credit':
+        return const Color(0xFFEF4444);
+      default:
+        return AppColors.mutedText;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E7EF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tags',
+            style: TextStyle(
+              color: Color(0xFF1E273A),
+              fontSize: 15.8,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Tap to assign customer segments',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 12.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: kCustomerTagOptions.map((tag) {
+              final isSelected = selected.contains(tag);
+              final color = _colorFor(tag);
+              return GestureDetector(
+                onTap: () => onToggle(tag),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: color, width: 1.4),
+                  ),
+                  child: Text(
+                    tag,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : color,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

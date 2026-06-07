@@ -176,30 +176,7 @@ class _MultiStoreManagementPageState extends State<MultiStoreManagementPage> {
           children: [
             Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-                  child: Row(
-                    children: [
-                      _TopIconButton(
-                        icon: Icons.chevron_left_rounded,
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                      const Expanded(
-                        child: Text(
-                          'Branch Management',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF1E273A),
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 40),
-                    ],
-                  ),
-                ),
+                const MarketPageHeader(title: 'Branch Management'),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
                   child: Row(
@@ -713,32 +690,6 @@ class _BranchDetailRow extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TopIconButton extends StatelessWidget {
-  const _TopIconButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 40,
-        height: 40,
-        child: Icon(
-          icon,
-          color: const Color(0xFF667085),
-          size: 30,
         ),
       ),
     );

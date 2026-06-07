@@ -3,4 +3,10 @@
     <cache-path
         name="shared_receipts"
         path="shared_receipts/" />
+    <files-path
+        name="downloaded_receipts"
+        path="downloaded_receipts/" />
+    <cache-path
+        name="cache"
+        path="." />
 </paths>

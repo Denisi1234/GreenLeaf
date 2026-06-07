@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import 'daftari_recovery_models.dart';
-import 'myduka_ai_service.dart';
+import 'duka_ai_service.dart';
 import 'pos_order_models.dart';
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
@@ -22,7 +22,7 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE inventory_products (
@@ -270,7 +270,20 @@ class PosLocalDatabase {
           ''');
           await db.execute('''
             INSERT OR IGNORE INTO myduka_ai_threads (id, title, created_at, updated_at)
-            VALUES ('thread-default', 'MyDuka AI', datetime('now'), datetime('now'))
+            VALUES ('thread-default', 'Duka AI', datetime('now'), datetime('now'))
+          ''');
+        }
+        if (oldVersion < 9) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS customers (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              email TEXT NOT NULL DEFAULT '',
+              phone TEXT NOT NULL,
+              address TEXT NOT NULL DEFAULT '',
+              created_at TEXT NOT NULL DEFAULT '',
+              tags TEXT NOT NULL DEFAULT ''
+            )
           ''');
         }
         if (oldVersion < 7) {
@@ -491,6 +504,42 @@ class PosLocalDatabase {
     });
   }
 
+  Future<void> deleteOrder(String orderId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'order_lines',
+        where: 'order_id = ?',
+        whereArgs: <Object?>[orderId],
+      );
+      await txn.delete(
+        'orders',
+        where: 'id = ?',
+        whereArgs: <Object?>[orderId],
+      );
+    });
+  }
+
+  Future<void> clearCart() async {
+    final db = await database;
+    await db.delete('cart_items');
+  }
+
+  Future<List<Map<String, dynamic>>> loadCustomers() async {
+    final db = await database;
+    return await db.query('customers');
+  }
+
+  Future<void> replaceCustomers(List<Map<String, Object?>> customers) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('customers');
+      for (final customer in customers) {
+        await txn.insert('customers', customer);
+      }
+    });
+  }
+
   Future<List<DaftariRecoverySession>> loadDaftariSessions() async {
     final db = await database;
     final rows = await db.query(
@@ -527,7 +576,7 @@ class PosLocalDatabase {
     );
   }
 
-  Future<List<MyDukaAiThread>> loadMyDukaAiThreads() async {
+  Future<List<DukaAiThread>> loadDukaAiThreads() async {
     final db = await database;
     final rows = await db.query(
       'myduka_ai_threads',
@@ -535,7 +584,7 @@ class PosLocalDatabase {
     );
     return rows
         .map(
-          (row) => MyDukaAiThread(
+          (row) => DukaAiThread(
             id: row['id'] as String,
             title: row['title'] as String,
             preview: (row['preview'] as String?) ?? '',
@@ -546,7 +595,7 @@ class PosLocalDatabase {
         .toList();
   }
 
-  Future<void> upsertMyDukaAiThread(MyDukaAiThread thread) async {
+  Future<void> upsertDukaAiThread(DukaAiThread thread) async {
     final db = await database;
     await db.insert(
       'myduka_ai_threads',
@@ -561,7 +610,7 @@ class PosLocalDatabase {
     );
   }
 
-  Future<void> deleteMyDukaAiThread(String threadId) async {
+  Future<void> deleteDukaAiThread(String threadId) async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete(
@@ -577,7 +626,7 @@ class PosLocalDatabase {
     });
   }
 
-  Future<List<MyDukaAiMessage>> loadMyDukaAiMessages(String threadId) async {
+  Future<List<DukaAiMessage>> loadDukaAiMessages(String threadId) async {
     final db = await database;
     final rows = await db.query(
       'myduka_ai_messages',
@@ -587,18 +636,19 @@ class PosLocalDatabase {
     );
     return rows
         .map(
-            (row) => MyDukaAiMessage(
+            (row) => DukaAiMessage(
               role: row['role'] as String,
               content: row['content'] as String,
               imagePath: row['image_path'] as String?,
+              createdAt: row['created_at'] as String?,
             ),
         )
         .toList();
   }
 
-  Future<void> replaceMyDukaAiMessages(
+  Future<void> replaceDukaAiMessages(
     String threadId,
-    List<MyDukaAiMessage> messages,
+    List<DukaAiMessage> messages,
   ) async {
     final db = await database;
     final batch = db.batch();
@@ -615,7 +665,7 @@ class PosLocalDatabase {
           'role': message.role,
           'content': message.content,
           'image_path': message.imagePath,
-          'created_at': DateTime.now().toIso8601String(),
+          'created_at': message.createdAt ?? DateTime.now().toIso8601String(),
         },
       );
     }

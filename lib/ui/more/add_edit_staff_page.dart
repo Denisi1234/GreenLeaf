@@ -147,38 +147,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             const Positioned.fill(child: BackdropGlow()),
             Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: const SizedBox(
-                          width: 42,
-                          height: 42,
-                          child: Icon(
-                            Icons.arrow_back_rounded,
-                            color: Color(0xFF202938),
-                            size: 30,
-                          ),
-                        ),
-                      ),
-                      const Expanded(
-                        child: Text(
-                          'Add / Edit Staff',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF111827),
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 42),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                const MarketPageHeader(title: 'Add / Edit Staff'),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),

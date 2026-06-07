@@ -133,47 +133,26 @@ class _ReportsCatalogHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(
-              Icons.chevron_left_rounded,
-              color: Color(0xFF5C677D),
-              size: 30,
-            ),
+    return MarketPageHeader(
+      title: 'Reports',
+      titleSize: 21,
+      actions: [
+        IconButton(
+          onPressed: () {
+            showMarketNotice(
+              context,
+              title: 'Filter Reports',
+              message:
+                  'Date and category filters can be connected here next.',
+            );
+          },
+          icon: const Icon(
+            Icons.filter_alt_outlined,
+            color: ReportsCatalogPage._muted,
+            size: 26,
           ),
-          const Expanded(
-            child: Center(
-              child: Text(
-                'Reports',
-                style: TextStyle(
-                  color: ReportsCatalogPage._ink,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              showMarketNotice(
-                context,
-                title: 'Filter Reports',
-                message:
-                    'Date and category filters can be connected here next.',
-              );
-            },
-            icon: const Icon(
-              Icons.filter_alt_outlined,
-              color: ReportsCatalogPage._muted,
-              size: 26,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

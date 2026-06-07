@@ -41,6 +41,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final roles = store.staffRoles;
+    final staffCount = store.staffMembers.length;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -48,45 +49,27 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
         bottom: false,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 2),
-              child: Row(
-                children: [
-                  _HeaderIconButton(
-                    icon: Icons.arrow_back_rounded,
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Staff Roles & Permissions',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF1F2A44),
-                        fontSize: 21.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.25,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 40),
-                ],
-              ),
+            const MarketPageHeader(
+              title: 'Staff Roles & Permissions',
+              subtitle:
+                  'Manage roles, set permissions, and assign staff to control access across your POS.',
+              showBorder: false,
             ),
-            const SizedBox(height: 6),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 34),
-              child: Text(
-                'Manage roles, set permissions, and assign staff to control access across your POS.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF6B7280).withValues(alpha: 0.96),
-                  fontSize: 14.8,
-                  height: 1.38,
-                  fontWeight: FontWeight.w500,
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Roles: ${roles.length}  •  Staff: $staffCount',
+                  style: const TextStyle(
+                    color: Color(0xFF8A93A7),
+                    fontSize: 12.5,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 22),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18),
               child: GestureDetector(
@@ -316,7 +299,7 @@ class _RoleCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${role.subtitle} • $assignedStaffCount Staff',
+                      '${role.subtitle} â€¢ $assignedStaffCount Staff',
                       style: const TextStyle(
                         color: Color(0xFF697385),
                         fontSize: 13.8,
@@ -349,25 +332,6 @@ class _StaffRoleVisual {
   final IconData icon;
   final Color background;
   final Color color;
-}
-
-class _PermissionData {
-  const _PermissionData(this.label, this.icon);
-
-  final String label;
-  final IconData icon;
-}
-
-Color _avatarColorForName(String name) {
-  const colors = <Color>[
-    Color(0xFFF2D9D2),
-    Color(0xFFD9E8F7),
-    Color(0xFFE5F4D8),
-    Color(0xFFFDE8D7),
-    Color(0xFFE7E2FB),
-  ];
-  final index = name.hashCode.abs() % colors.length;
-  return colors[index];
 }
 
 class _AddRoleSheet extends StatefulWidget {
@@ -669,36 +633,5 @@ class _AddRoleSheetState extends State<_AddRoleSheet> {
       default:
         return Icons.check_circle_outline;
     }
-  }
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFD9DEE8)),
-          color: Colors.white.withValues(alpha: 0.92),
-        ),
-        child: Icon(
-          icon,
-          color: const Color(0xFF1D2944),
-          size: 24,
-        ),
-      ),
-    );
   }
 }

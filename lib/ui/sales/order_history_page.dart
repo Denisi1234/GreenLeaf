@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class OrderHistoryPage extends StatefulWidget {
@@ -48,70 +49,75 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   @override
   Widget build(BuildContext context) {
     final orders = _orders;
-    return SafeArea(
-      child: Stack(
-        children: [
-          const Positioned.fill(child: BackdropGlow()),
-          Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(18, 18, 18, 10),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.menu,
-                      color: Color(0xFF202938),
-                      size: 28,
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        'Order History',
-                        style: TextStyle(
-                          color: Color(0xFF202938),
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      drawer: const MarketAppDrawer(selectedItem: 'Sales'),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            const Positioned.fill(child: BackdropGlow()),
+            Column(
+              children: [
+                MarketPageHeader(
+                  title: 'Order History',
+                  showBackButton: false,
+                  centerTitle: false,
+                  leading: Builder(
+                    builder: (context) => GestureDetector(
+                      onTap: () => Scaffold.of(context).openDrawer(),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: const Icon(
+                          Icons.menu_rounded,
+                          color: AppColors.ink,
+                          size: 22,
                         ),
                       ),
                     ),
-                    _SalesMetricButton(),
-                  ],
+                  ),
+                  actions: const [_SalesMetricButton()],
                 ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
-                  child: Column(
-                    children: [
-                      const Row(
-                        children: [
-                          Expanded(child: _OrderSearchBar()),
-                          SizedBox(width: 12),
-                          _OrderActionChip(
-                            label: 'Filter',
-                            icon: Icons.filter_alt_outlined,
-                          ),
-                          SizedBox(width: 10),
-                          _OrderActionChip(
-                            label: 'Date',
-                            icon: Icons.calendar_today_outlined,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ...orders.map(
-                        (order) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _OrderCard(order: order),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
+                    child: Column(
+                      children: [
+                        const Row(
+                          children: [
+                            Expanded(child: _OrderSearchBar()),
+                            SizedBox(width: 12),
+                            _OrderActionChip(
+                              label: 'Filter',
+                              icon: Icons.filter_alt_outlined,
+                            ),
+                            SizedBox(width: 10),
+                            _OrderActionChip(
+                              label: 'Date',
+                              icon: Icons.calendar_today_outlined,
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        ...orders.map(
+                          (order) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _OrderCard(order: order),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

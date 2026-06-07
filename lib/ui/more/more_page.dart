@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'about_app_page.dart';
 import 'help_support_page.dart';
 import 'multi_store_management_page.dart';
-import 'smartduka_ai_advisor_page.dart';
+import 'duka_ai_page.dart';
 import 'store_profile_page.dart';
 import 'staff_management_page.dart';
 import 'subscription_plan_page.dart';
@@ -26,7 +26,7 @@ class MorePage extends StatelessWidget {
       _MoreMenuItem(
           'Multi-Store Management', Icons.store_mall_directory_outlined),
       _MoreMenuItem('Tax & Discounts', Icons.sell_outlined),
-      _MoreMenuItem('MYDUKA AI', Icons.psychology_alt_outlined),
+      _MoreMenuItem('DUKA AI', Icons.psychology_alt_outlined),
       _MoreMenuItem('Subscription Plan', Icons.description_outlined),
       _MoreMenuItem('Help & Support', Icons.support_agent_outlined),
       _MoreMenuItem('About App', Icons.info_outline_rounded),
@@ -59,49 +59,34 @@ class MorePage extends StatelessWidget {
             SafeArea(
               child: Column(
                 children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: Container(
-                      height: 60,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        border: Border(
-                          bottom: BorderSide(color: Color(0xFFE7EAF0)),
+                  MarketPageHeader(
+                    title: 'More',
+                    centerTitle: false,
+                    leading: Builder(
+                      builder: (context) => GestureDetector(
+                        onTap: () => Scaffold.of(context).openDrawer(),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Icon(
+                            Icons.menu_rounded,
+                            color: AppColors.ink,
+                            size: 22,
+                          ),
                         ),
                       ),
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                      child: Row(
-                        children: [
-                          Builder(
-                            builder: (context) {
-                              return IconButton(
-                                onPressed: () => Scaffold.of(context).openDrawer(),
-                                icon: const Icon(
-                                  Icons.menu,
-                                  color: AppColors.ink,
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 4),
-                          const Expanded(
-                            child: Text(
-                              'More',
-                              style: TextStyle(
-                                color: AppColors.ink,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                          ),
-                          _HeaderActionCircle(
-                            icon: Icons.person_outline_rounded,
-                            onTap: () {},
-                          ),
-                        ],
-                      ),
                     ),
+                    actions: [
+                      _HeaderActionCircle(
+                        icon: Icons.person_outline_rounded,
+                        onTap: () {},
+                      ),
+                    ],
                   ),
                   Expanded(
                     child: ListView(
@@ -117,7 +102,7 @@ class MorePage extends StatelessWidget {
                           memberSince: memberSince,
                         ),
                         const SizedBox(height: 12),
-                        _MoreMenuCard(items: items),
+                        const _MoreMenuCard(items: items),
                         const SizedBox(height: 12),
                         _LogoutButton(
                           onTap: () {
@@ -549,10 +534,10 @@ class _MoreListTile extends StatelessWidget {
           return;
         }
 
-        if (item.label == 'MYDUKA AI') {
+        if (item.label == 'DUKA AI') {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (context) => const MyDukaAiPage(),
+              builder: (context) => const DukaAiPage(),
             ),
           );
           return;

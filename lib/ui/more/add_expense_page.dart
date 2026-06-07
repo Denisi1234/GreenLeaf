@@ -79,38 +79,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.chevron_left_rounded,
-                        color: Color(0xFF1E273A),
-                        size: 30,
-                      ),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Add Expense',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF1E273A),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 40),
-                ],
-              ),
-            ),
+            const MarketPageHeader(title: 'Add Expense'),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),

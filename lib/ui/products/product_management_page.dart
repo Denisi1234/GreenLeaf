@@ -267,41 +267,14 @@ class _ProductsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: const [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Products',
-                  style: TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 28,
-                    height: 1.1,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Browse, filter, and edit items',
-                  style: TextStyle(
-                    color: Color(0xFF7A859C),
-                    fontSize: 13,
-                    height: 1.2,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return const MarketPageHeader(
+      title: 'Products',
+      subtitle: 'Browse, filter, and edit items',
+      showBackButton: false,
+      centerTitle: false,
+      showBorder: false,
+      titleSize: 28,
+      titleWeight: FontWeight.w700,
     );
   }
 }

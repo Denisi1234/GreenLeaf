@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../service/pos_order_models.dart';
 import '../widgets/app_design.dart';
+import '../widgets/market_shared_widgets.dart';
 import 'receipt_preview_page.dart';
 
 class ReceiptSuccessPage extends StatelessWidget {
@@ -37,16 +38,12 @@ class ReceiptSuccessPage extends StatelessWidget {
   }
 
   void _startNewSale(BuildContext context) {
-    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).popUntil((route) => route.isFirst);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      const SnackBar(
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.fromLTRB(18, 0, 18, 20),
-        backgroundColor: Color(0xFF1E7A47),
-        content: Text('Ready for a new sale'),
-      ),
+    showMarketNotice(
+      context,
+      title: 'Ready for a new sale',
+      message: 'Start ringing up items for the next customer.',
+      type: MarketNoticeType.success,
     );
   }
 
@@ -81,6 +78,27 @@ class ReceiptSuccessPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    if (order.discountAmount != null && order.discountAmount! > 0) ...[
+                      Text(
+                        'Total: TSH${_amount(order.total + order.discountAmount!)}',
+                        style: const TextStyle(
+                          color: Color(0xFF7A859C),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Discount: -TSH${_amount(order.discountAmount!)}',
+                        style: const TextStyle(
+                          color: Color(0xFFE66C73),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     Text(
                       'TSH${_amount(order.total)}',
                       style: const TextStyle(

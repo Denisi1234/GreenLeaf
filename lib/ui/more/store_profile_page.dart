@@ -148,44 +148,7 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
         body: SafeArea(
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(color: AppColors.border),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: const SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: Icon(
-                          Icons.chevron_left_rounded,
-                          color: AppColors.ink,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Store Profile',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.ink,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 36),
-                  ],
-                ),
-              ),
+              const MarketPageHeader(title: 'Store Profile'),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),

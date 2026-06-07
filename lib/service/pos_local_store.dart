@@ -1,13 +1,17 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/widgets.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../ui/models/product_item.dart';
+import '../ui/models/customer_data.dart';
+import '../ui/models/saved_cart.dart';
 import '../ui/products/inventory_product_item.dart';
 import 'daftari_recovery_models.dart';
-import 'myduka_ai_service.dart';
+import 'duka_ai_service.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
 
@@ -308,10 +312,23 @@ class PosLocalStore extends ChangeNotifier {
   final List<DaftariRecoverySession> _daftariSessions = <DaftariRecoverySession>[];
   final List<DaftariLearningRule> _daftariLearningRules =
       <DaftariLearningRule>[];
-  final List<MyDukaAiThread> _myDukaAiThreads = <MyDukaAiThread>[];
-  final List<MyDukaAiMessage> _myDukaAiMessages = <MyDukaAiMessage>[];
+  final List<DukaAiThread> _dukaAiThreads = <DukaAiThread>[];
+  final List<DukaAiMessage> _dukaAiMessages = <DukaAiMessage>[];
   AppProfileData _profile = AppProfileData.empty();
-  String? _activeMyDukaAiThreadId;
+  String? _activeDukaAiThreadId;
+
+  static const String _defaultGeminiApiKey = '';
+  static const String _defaultGroqApiKey = '';
+  static const String _defaultGroqModel = 'llama-3.1-8b-instant';
+  String _geminiApiKey = _defaultGeminiApiKey;
+  String _groqApiKey = _defaultGroqApiKey;
+  String _groqModel = _defaultGroqModel;
+  bool _useLiveGeminiOcr = true;
+
+  String get geminiApiKey => _geminiApiKey;
+  String get groqApiKey => _groqApiKey;
+  String get groqModel => _groqModel;
+  bool get useLiveGeminiOcr => _useLiveGeminiOcr;
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
@@ -393,44 +410,96 @@ class PosLocalStore extends ChangeNotifier {
     _daftariLearningRules
       ..clear()
       ..addAll(await _database.loadDaftariLearningRules());
-    _myDukaAiThreads
+    _dukaAiThreads
       ..clear()
-      ..addAll(await _database.loadMyDukaAiThreads());
+      ..addAll(await _database.loadDukaAiThreads());
 
-    if (_myDukaAiThreads.isEmpty) {
+    if (_dukaAiThreads.isEmpty) {
       final now = DateTime.now().toIso8601String();
-    final defaultThread = MyDukaAiThread(
+    final defaultThread = DukaAiThread(
         id: 'thread-default',
         title: 'MyDuka AI',
         preview: '',
         createdAt: now,
         updatedAt: now,
       );
-      _myDukaAiThreads.add(defaultThread);
-      await _database.upsertMyDukaAiThread(defaultThread);
+      _dukaAiThreads.add(defaultThread);
+      await _database.upsertDukaAiThread(defaultThread);
     }
 
-    _activeMyDukaAiThreadId = _myDukaAiThreads.first.id;
-    _myDukaAiMessages
+    _activeDukaAiThreadId = _dukaAiThreads.first.id;
+    _dukaAiMessages
       ..clear()
-      ..addAll(await _database.loadMyDukaAiMessages(_activeMyDukaAiThreadId!));
-    if (_myDukaAiMessages.isEmpty) {
-      _myDukaAiMessages.add(
-        const MyDukaAiMessage(
+      ..addAll(await _database.loadDukaAiMessages(_activeDukaAiThreadId!));
+    if (_dukaAiMessages.isEmpty) {
+      _dukaAiMessages.add(
+        DukaAiMessage(
           role: 'assistant',
           content:
-              'Hi, I am MYDUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
+              'Hi, I am DUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
+          createdAt: DateTime.now().toIso8601String(),
         ),
       );
-      await _database.replaceMyDukaAiMessages(
-        _activeMyDukaAiThreadId!,
-        _myDukaAiMessages,
+      await _database.replaceDukaAiMessages(
+        _activeDukaAiThreadId!,
+        _dukaAiMessages,
       );
     }
+
+    _dukaAiMessages.sort(_compareMessagesByTime);
+
+    try {
+       final dir = await getApplicationDocumentsDirectory();
+       final file = File('${dir.path}/daftari_gemini_config.json');
+       if (await file.exists()) {
+         final jsonStr = await file.readAsString();
+         final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+         _geminiApiKey = map['apiKey'] as String? ?? _defaultGeminiApiKey;
+         _groqApiKey = map['groqApiKey'] as String? ?? _defaultGroqApiKey;
+         _groqModel = map['groqModel'] as String? ?? _defaultGroqModel;
+         _useLiveGeminiOcr = map['useLiveOcr'] as bool? ?? true;
+       } else {
+         // Write default config so it persists
+         await file.writeAsString(jsonEncode({
+           'apiKey': _defaultGeminiApiKey,
+           'groqApiKey': _defaultGroqApiKey,
+           'groqModel': _defaultGroqModel,
+           'useLiveOcr': true,
+         }));
+       }
+     } catch (e) {
+       // Ignore
+     }
 
     _updateCartTotals();
     _isInitialized = true;
     notifyListeners();
+  }
+
+  Future<void> updateGeminiSettings({
+    required String apiKey,
+    required bool useLiveOcr,
+    String? groqApiKey,
+    String? groqModel,
+  }) async {
+    _geminiApiKey = apiKey;
+    _useLiveGeminiOcr = useLiveOcr;
+    if (groqApiKey != null) _groqApiKey = groqApiKey;
+    if (groqModel != null) _groqModel = groqModel;
+    notifyListeners();
+
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/daftari_gemini_config.json');
+      await file.writeAsString(jsonEncode({
+        'apiKey': _geminiApiKey,
+        'groqApiKey': _groqApiKey,
+        'groqModel': _groqModel,
+        'useLiveOcr': _useLiveGeminiOcr,
+      }));
+    } catch (e) {
+      // Ignore
+    }
   }
 
   List<ProductItem> get products => List.unmodifiable(_products);
@@ -443,21 +512,30 @@ class PosLocalStore extends ChangeNotifier {
       List.unmodifiable(_daftariSessions);
   List<DaftariLearningRule> get daftariLearningRules =>
       List.unmodifiable(_daftariLearningRules);
-  List<MyDukaAiThread> get myDukaAiThreads =>
-      List.unmodifiable(_myDukaAiThreads);
-  List<MyDukaAiMessage> get myDukaAiMessages =>
-      List.unmodifiable(_myDukaAiMessages);
-  String get activeMyDukaAiThreadId =>
-      _activeMyDukaAiThreadId ?? _myDukaAiThreads.first.id;
-  MyDukaAiThread? get activeMyDukaAiThread {
-    final activeId = _activeMyDukaAiThreadId;
-    if (activeId == null) return _myDukaAiThreads.isEmpty ? null : _myDukaAiThreads.first;
-    for (final thread in _myDukaAiThreads) {
+  List<DukaAiThread> get dukaAiThreads =>
+      List.unmodifiable(_dukaAiThreads);
+  List<DukaAiMessage> get dukaAiMessages =>
+      List.unmodifiable(_dukaAiMessages);
+  String get activeDukaAiThreadId =>
+      _activeDukaAiThreadId ?? _dukaAiThreads.first.id;
+  DukaAiThread? get activeDukaAiThread {
+    final activeId = _activeDukaAiThreadId;
+    if (activeId == null) return _dukaAiThreads.isEmpty ? null : _dukaAiThreads.first;
+    for (final thread in _dukaAiThreads) {
       if (thread.id == activeId) return thread;
     }
-    return _myDukaAiThreads.isEmpty ? null : _myDukaAiThreads.first;
+    return _dukaAiThreads.isEmpty ? null : _dukaAiThreads.first;
   }
   AppProfileData get profile => _profile;
+
+  int _compareMessagesByTime(DukaAiMessage a, DukaAiMessage b) {
+    final aTime = DateTime.tryParse(a.createdAt ?? '');
+    final bTime = DateTime.tryParse(b.createdAt ?? '');
+    if (aTime == null && bTime == null) return 0;
+    if (aTime == null) return 1;
+    if (bTime == null) return -1;
+    return aTime.compareTo(bTime);
+  }
   DaftariRecoverySession? get latestDaftariSession =>
       _daftariSessions.isEmpty ? null : _daftariSessions.first;
 
@@ -587,27 +665,27 @@ class PosLocalStore extends ChangeNotifier {
     await _database.upsertDaftariLearningRule(updated);
   }
 
-  Future<void> replaceMyDukaAiMessages(List<MyDukaAiMessage> messages) async {
-    await replaceMyDukaAiMessagesForThread(activeMyDukaAiThreadId, messages);
+  Future<void> replaceDukaAiMessages(List<DukaAiMessage> messages) async {
+    await replaceDukaAiMessagesForThread(activeDukaAiThreadId, messages);
   }
 
-  Future<void> replaceMyDukaAiMessagesForThread(
+  Future<void> replaceDukaAiMessagesForThread(
     String threadId,
-    List<MyDukaAiMessage> messages,
+    List<DukaAiMessage> messages,
   ) async {
-    _myDukaAiMessages
+    _dukaAiMessages
       ..clear()
       ..addAll(messages);
     notifyListeners();
-    await _database.replaceMyDukaAiMessages(threadId, _myDukaAiMessages);
+    await _database.replaceDukaAiMessages(threadId, _dukaAiMessages);
   }
 
-  Future<MyDukaAiThread> createMyDukaAiThread({
+  Future<DukaAiThread> createDukaAiThread({
     String? title,
-    List<MyDukaAiMessage>? seedMessages,
+    List<DukaAiMessage>? seedMessages,
   }) async {
     final now = DateTime.now().toIso8601String();
-    final thread = MyDukaAiThread(
+    final thread = DukaAiThread(
       id: 'thread-${DateTime.now().millisecondsSinceEpoch}',
       title: title?.trim().isNotEmpty == true ? title!.trim() : 'New chat',
       preview: seedMessages == null || seedMessages.isEmpty
@@ -616,98 +694,99 @@ class PosLocalStore extends ChangeNotifier {
       createdAt: now,
       updatedAt: now,
     );
-    _myDukaAiThreads.insert(0, thread);
-    _activeMyDukaAiThreadId = thread.id;
-    _myDukaAiMessages
+    _dukaAiThreads.insert(0, thread);
+    _activeDukaAiThreadId = thread.id;
+    _dukaAiMessages
       ..clear()
-      ..addAll(seedMessages ?? const <MyDukaAiMessage>[]);
+      ..addAll(seedMessages ?? const <DukaAiMessage>[]);
     notifyListeners();
-    await _database.upsertMyDukaAiThread(thread);
-    await _database.replaceMyDukaAiMessages(thread.id, _myDukaAiMessages);
+    await _database.upsertDukaAiThread(thread);
+    await _database.replaceDukaAiMessages(thread.id, _dukaAiMessages);
     return thread;
   }
 
-  Future<void> setActiveMyDukaAiThread(String threadId) async {
-    final thread = _myDukaAiThreads.firstWhere(
+  Future<void> setActiveDukaAiThread(String threadId) async {
+    final thread = _dukaAiThreads.firstWhere(
       (item) => item.id == threadId,
-      orElse: () => _myDukaAiThreads.first,
+      orElse: () => _dukaAiThreads.first,
     );
-    _activeMyDukaAiThreadId = thread.id;
-    _myDukaAiMessages
+    _activeDukaAiThreadId = thread.id;
+    _dukaAiMessages
       ..clear()
-      ..addAll(await _database.loadMyDukaAiMessages(thread.id));
+      ..addAll(await _database.loadDukaAiMessages(thread.id));
     notifyListeners();
   }
 
-  Future<void> updateMyDukaAiThreadTitle(
+  Future<void> updateDukaAiThreadTitle(
     String threadId,
     String title,
   ) async {
-    final index = _myDukaAiThreads.indexWhere((thread) => thread.id == threadId);
+    final index = _dukaAiThreads.indexWhere((thread) => thread.id == threadId);
     if (index == -1) return;
-    final current = _myDukaAiThreads[index];
+    final current = _dukaAiThreads[index];
     final updated = current.copyWith(
       title: title.trim().isEmpty ? current.title : title.trim(),
       updatedAt: DateTime.now().toIso8601String(),
     );
-    _myDukaAiThreads[index] = updated;
-    _myDukaAiThreads.sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+    _dukaAiThreads[index] = updated;
+    _dukaAiThreads.sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
-    await _database.upsertMyDukaAiThread(updated);
+    await _database.upsertDukaAiThread(updated);
   }
 
-  Future<void> updateMyDukaAiThreadPreview(
+  Future<void> updateDukaAiThreadPreview(
     String threadId,
     String preview,
   ) async {
-    final index = _myDukaAiThreads.indexWhere((thread) => thread.id == threadId);
+    final index = _dukaAiThreads.indexWhere((thread) => thread.id == threadId);
     if (index == -1) return;
-    final current = _myDukaAiThreads[index];
+    final current = _dukaAiThreads[index];
     final updated = current.copyWith(
       preview: preview.trim(),
       updatedAt: DateTime.now().toIso8601String(),
     );
-    _myDukaAiThreads[index] = updated;
-    _myDukaAiThreads.sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
+    _dukaAiThreads[index] = updated;
+    _dukaAiThreads.sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
-    await _database.upsertMyDukaAiThread(updated);
+    await _database.upsertDukaAiThread(updated);
   }
 
-  Future<void> deleteMyDukaAiThread(String threadId) async {
-    final index = _myDukaAiThreads.indexWhere((thread) => thread.id == threadId);
+  Future<void> deleteDukaAiThread(String threadId) async {
+    final index = _dukaAiThreads.indexWhere((thread) => thread.id == threadId);
     if (index == -1) return;
 
-    final wasActive = _activeMyDukaAiThreadId == threadId;
-    _myDukaAiThreads.removeAt(index);
-    await _database.deleteMyDukaAiThread(threadId);
+    final wasActive = _activeDukaAiThreadId == threadId;
+    _dukaAiThreads.removeAt(index);
+    await _database.deleteDukaAiThread(threadId);
 
-    if (_myDukaAiThreads.isEmpty) {
+    if (_dukaAiThreads.isEmpty) {
       final now = DateTime.now().toIso8601String();
-      final defaultThread = MyDukaAiThread(
+      final defaultThread = DukaAiThread(
         id: 'thread-default',
         title: 'MyDuka AI',
         preview: '',
         createdAt: now,
         updatedAt: now,
       );
-      _myDukaAiThreads.add(defaultThread);
-      _activeMyDukaAiThreadId = defaultThread.id;
-      _myDukaAiMessages
+      _dukaAiThreads.add(defaultThread);
+      _activeDukaAiThreadId = defaultThread.id;
+      _dukaAiMessages
         ..clear()
         ..add(
-          const MyDukaAiMessage(
+          DukaAiMessage(
             role: 'assistant',
             content:
-                'Hi, I am MYDUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
+                'Hi, I am DUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
+            createdAt: DateTime.now().toIso8601String(),
           ),
         );
-      await _database.upsertMyDukaAiThread(defaultThread);
-      await _database.replaceMyDukaAiMessages(defaultThread.id, _myDukaAiMessages);
+      await _database.upsertDukaAiThread(defaultThread);
+      await _database.replaceDukaAiMessages(defaultThread.id, _dukaAiMessages);
     } else if (wasActive) {
-      _activeMyDukaAiThreadId = _myDukaAiThreads.first.id;
-      _myDukaAiMessages
+      _activeDukaAiThreadId = _dukaAiThreads.first.id;
+      _dukaAiMessages
         ..clear()
-        ..addAll(await _database.loadMyDukaAiMessages(_activeMyDukaAiThreadId!));
+        ..addAll(await _database.loadDukaAiMessages(_activeDukaAiThreadId!));
     }
 
     notifyListeners();
@@ -794,6 +873,10 @@ class PosLocalStore extends ChangeNotifier {
     required double cashTendered,
     required String cashierName,
     required String registerName,
+    String? customerName,
+    double? discountAmount,
+    String? discountLabel,
+    String paymentMethod = 'Cash',
   }) async {
     if (items.isEmpty) {
       throw StateError('Cannot complete a sale with no items.');
@@ -812,10 +895,11 @@ class PosLocalStore extends ChangeNotifier {
       throw StateError('Cannot complete a sale with no items.');
     }
 
-    final total = normalized.fold<double>(
+    final subtotal = normalized.fold<double>(
       0,
       (sum, line) => sum + line.totalPrice,
     );
+    final total = subtotal - (discountAmount ?? 0);
     if (cashTendered < total) {
       throw StateError('Cash tendered is less than total due.');
     }
@@ -866,6 +950,9 @@ class PosLocalStore extends ChangeNotifier {
       paymentMethod: 'Cash',
       cashTendered: cashTendered,
       changeDue: cashTendered - total,
+      customerName: customerName,
+      discountAmount: discountAmount,
+      discountLabel: discountLabel,
       lines: normalized
           .map(
             (line) => OrderLine(
@@ -892,6 +979,57 @@ class PosLocalStore extends ChangeNotifier {
     await _database.replaceCart(_cartItems);
     await _database.insertOrder(order);
     return order;
+  }
+
+  Future<void> voidOrder(String orderId) async {
+    final index = _orders.indexWhere((o) => o.id == orderId);
+    if (index == -1) return;
+
+    final order = _orders[index];
+    
+    // Restore stock
+    for (final line in order.lines) {
+      final invIndex = _allInventory.indexWhere((item) => item.code == line.itemCode);
+      if (invIndex != -1) {
+        final item = _allInventory[invIndex];
+        final nextStock = item.stockCount + line.quantity;
+        _allInventory[invIndex] = InventoryProductItem(
+          code: item.code,
+          name: item.name,
+          category: item.category,
+          purchasePrice: item.purchasePrice,
+          sellingPrice: item.sellingPrice,
+          stockCount: nextStock,
+          stockState: _deriveStockState(nextStock),
+          artType: item.artType,
+          imagePath: item.imagePath,
+        );
+      }
+    }
+
+    _orders.removeAt(index);
+    _syncProductsFromInventory();
+    notifyListeners();
+
+    await _database.replaceInventory(_allInventory);
+    await _database.deleteOrder(orderId);
+  }
+
+  Future<void> reopenOrderForEdit(String orderId) async {
+    final order = _orders.firstWhere((o) => o.id == orderId);
+    
+    // 1. Clear current cart
+    await clearCart();
+    
+    // 2. Add order items back to cart
+    for (final line in order.lines) {
+      for (var i = 0; i < line.quantity; i++) {
+        addToCart(line.product);
+      }
+    }
+
+    // 3. Void the original order
+    await voidOrder(orderId);
   }
 
   Future<void> updateProfile(AppProfileData profile) async {
@@ -1153,5 +1291,108 @@ class PosLocalStore extends ChangeNotifier {
       roleId: map['role_id'] as String,
       createdAt: map['created_at'] as String,
     );
+  }
+
+  List<CustomerData> get customers => _customers;
+  final List<CustomerData> _customers = <CustomerData>[];
+
+  Future<void> addCustomer(CustomerData customer) async {
+    _customers.add(customer);
+    notifyListeners();
+    await _database.replaceCustomers(_customers.map(_customerToMap).toList());
+  }
+
+  Map<String, Object?> _customerToMap(CustomerData customer) {
+    return <String, Object?>{
+      'id': customer.id,
+      'name': customer.name,
+      'email': customer.email,
+      'phone': customer.phone,
+      'address': customer.address,
+      'created_at': customer.createdAt.toIso8601String(),
+      'tags': customer.tags.join(','),
+    };
+  }
+
+  CustomerData _customerFromMap(Map<String, Object?> map) {
+    final tagsRaw = map['tags'] as String? ?? '';
+    final tags = tagsRaw.isEmpty
+        ? const <String>[]
+        : tagsRaw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    return CustomerData(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      email: map['email'] as String? ?? '',
+      phone: map['phone'] as String,
+      address: map['address'] as String? ?? '',
+      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
+          DateTime.now(),
+      tags: tags,
+    );
+  }
+
+  Future<void> updateCustomer(CustomerData customer) async {
+    final index = _customers.indexWhere((c) => c.id == customer.id);
+    if (index == -1) return;
+    _customers[index] = customer;
+    notifyListeners();
+    await _database.replaceCustomers(_customers.map(_customerToMap).toList());
+  }
+
+  Future<void> deleteCustomer(String customerId) async {
+    _customers.removeWhere((c) => c.id == customerId);
+    notifyListeners();
+    await _database.replaceCustomers(_customers.map(_customerToMap).toList());
+  }
+
+  CustomerData? customerById(String id) {
+    for (final c in _customers) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  CustomerData? customerByName(String name) {
+    for (final c in _customers) {
+      if (c.name == name) return c;
+    }
+    return null;
+  }
+
+  List<CompletedOrder> ordersForCustomer(String name) {
+    return _orders.where((o) => o.customerName == name).toList();
+  }
+
+  Map<String, dynamic> customerStats() {
+    final total = _customers.length;
+    final names = _customers.map((c) => c.name).toSet();
+    final active = _orders
+        .map((o) => o.customerName)
+        .where((n) => n != null && names.contains(n))
+        .toSet()
+        .length;
+
+    final spendByCustomer = <String, double>{};
+    for (final order in _orders) {
+      final name = order.customerName;
+      if (name == null) continue;
+      spendByCustomer[name] = (spendByCustomer[name] ?? 0) + order.total;
+    }
+
+    String? topName;
+    double topValue = 0;
+    spendByCustomer.forEach((name, value) {
+      if (value > topValue) {
+        topValue = value;
+        topName = name;
+      }
+    });
+
+    return <String, dynamic>{
+      'total': total,
+      'active': active,
+      'topName': topName,
+      'topValue': topValue,
+    };
   }
 }

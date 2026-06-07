@@ -10,9 +10,13 @@ import 'package:provider/provider.dart';
 import '../../service/daftari_scan_parser.dart';
 import '../../service/daftari_recovery_models.dart';
 import '../../service/pos_local_store.dart';
+import '../../service/gemini_ocr_service.dart';
+import '../../service/local_ocr_service.dart';
 import '../models/product_item.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+
+// ignore_for_file: unused_element
 
 enum DaftariScanMode {
   drawer,
@@ -43,6 +47,7 @@ class _DaftariScanPageState extends State<DaftariScanPage> {
   String? _scanSummary;
   String? _currentSessionId;
   String? _currentSessionCreatedAt;
+  String _scanProgressStep = '';
 
   @override
   void dispose() {
@@ -75,14 +80,72 @@ class _DaftariScanPageState extends State<DaftariScanPage> {
         _scanResult = null;
         _errorMessage = null;
         _scanSummary = null;
+        _scanProgressStep = 'Capturing image...';
         _currentSessionId = 'daftari-${DateTime.now().microsecondsSinceEpoch}';
         _currentSessionCreatedAt = DateTime.now().toIso8601String();
       });
 
-      final recognizedText = await _reader.readFromPath(image.path);
+      String recognizedText = '';
+      var usedGemini = false;
+
+      if (mounted) {
+        setState(() => _scanProgressStep = 'Running OCR...');
+      }
+
+      // Try Gemini if API key is available
+      if (store.geminiApiKey.trim().isNotEmpty) {
+        try {
+          recognizedText = await GeminiOcrService.transcribeLedger(
+            imageFile: File(image.path),
+            apiKey: store.geminiApiKey,
+          );
+          usedGemini = true;
+        } catch (error) {
+          if (mounted) {
+            showMarketNotice(
+              context,
+              title: 'Gemini OCR Failed',
+              message: 'Falling back to local OCR.',
+              type: MarketNoticeType.warning,
+            );
+          }
+        }
+      }
+
+      // Fall back to local OCR if Gemini did not produce text
+      if (recognizedText.trim().isEmpty) {
+        if (mounted) {
+          setState(() => _scanProgressStep = 'Running local OCR...');
+        }
+        recognizedText = await LocalOcrService.recognizeText(File(image.path));
+      }
+
+      if (mounted) {
+        setState(() => _scanProgressStep = 'Matching products...');
+      }
+
+      if (recognizedText.trim().isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = 'No text could be read from this image. Try better lighting or a clearer photo.';
+        });
+        await _persistSession(
+          stage: DaftariRecoveryStage.failed,
+          failureReason: 'No text detected by OCR',
+        );
+        if (!mounted) return;
+        showMarketNotice(
+          context,
+          title: 'Scan Failed',
+          message: 'No text could be read from this image.',
+          type: MarketNoticeType.warning,
+        );
+        return;
+      }
+
       if (!mounted) return;
       final parsed = parseDaftariText(
-        recognizedText.text,
+        recognizedText,
         store.products,
         learnedAliases: learnedAliases,
       );
@@ -96,17 +159,16 @@ class _DaftariScanPageState extends State<DaftariScanPage> {
           );
       });
 
-      if (widget.mode == DaftariScanMode.drawer) {
-        await _autoImportScanResults();
-      } else {
-        await _persistSession(stage: DaftariRecoveryStage.review);
+      if (usedGemini && mounted) {
+        showMarketNotice(
+          context,
+          title: 'Scan Complete',
+          message: 'Recognized ${parsed.lines.length} item(s) with ${parsed.matchedLines.length} matched.',
+          type: MarketNoticeType.success,
+        );
       }
-    } on UnsupportedError {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage =
-            'OCR scanning is not available on this device. Use a supported mobile or desktop build, or try a clearer image.';
-      });
+
+      await _persistSession(stage: DaftariRecoveryStage.review);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -520,8 +582,8 @@ class _DaftariScanPageState extends State<DaftariScanPage> {
                             ),
                           ),
                         if (_isScanning) ...[
-                          const SizedBox(height: 4),
-                          const _LoadingCard(),
+                           const SizedBox(height: 4),
+                           _LoadingCard(progressStep: _scanProgressStep),
                         ] else if (_scanResult != null) ...[
                           const SizedBox(height: 4),
                           _SimpleResultCard(
@@ -667,7 +729,7 @@ class _DaftariScanPageState extends State<DaftariScanPage> {
                             },
                           )
                         else if (_isScanning)
-                          const _DarkLoadingCard()
+                          _DarkLoadingCard(progressStep: _scanProgressStep)
                         else if (_errorMessage != null)
                           _DarkErrorCard(message: _errorMessage!)
                         else
@@ -1540,10 +1602,10 @@ class _ProcessingStatusHeader extends StatelessWidget {
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFF14B87D),
+              decoration: const BoxDecoration(
+                color: Color(0xFF14B87D),
                 shape: BoxShape.circle,
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
                     color: Color(0x5514B87D),
                     blurRadius: 18,
@@ -1852,7 +1914,9 @@ class _DarkEmptySectionText extends StatelessWidget {
 }
 
 class _DarkLoadingCard extends StatelessWidget {
-  const _DarkLoadingCard();
+  const _DarkLoadingCard({this.progressStep = 'Reading text from the photo...'});
+
+  final String progressStep;
 
   @override
   Widget build(BuildContext context) {
@@ -1863,9 +1927,9 @@ class _DarkLoadingCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0x1AFFFFFF)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 22,
             height: 22,
             child: CircularProgressIndicator(
@@ -1873,11 +1937,11 @@ class _DarkLoadingCard extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF18BE87)),
             ),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Reading text from the photo...',
-              style: TextStyle(
+              progressStep,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
@@ -2247,7 +2311,9 @@ class _ImagePreview extends StatelessWidget {
 }
 
 class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
+  const _LoadingCard({this.progressStep = 'Reading text from the photo...'});
+
+  final String progressStep;
 
   @override
   Widget build(BuildContext context) {
@@ -2258,18 +2324,18 @@ class _LoadingCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sharp),
         border: Border.all(color: AppColors.border),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 22,
             height: 22,
             child: CircularProgressIndicator(strokeWidth: 2.2),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Reading text from the photo...',
-              style: TextStyle(
+              progressStep,
+              style: const TextStyle(
                 color: AppColors.ink,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,

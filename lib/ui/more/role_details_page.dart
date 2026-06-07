@@ -56,45 +56,12 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
         bottom: false,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 2),
-              child: Row(
-                children: [
-                  _HeaderIconButton(
-                    icon: Icons.arrow_back_rounded,
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                  Expanded(
-                    child: Text(
-                      role.title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF1F2A44),
-                        fontSize: 21.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.25,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 40),
-                ],
-              ),
+            MarketPageHeader(
+              title: role.title,
+              subtitle: role.subtitle,
+              showBorder: false,
             ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 34),
-              child: Text(
-                role.subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF6B7280).withValues(alpha: 0.96),
-                  fontSize: 14.8,
-                  height: 1.38,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
@@ -422,37 +389,6 @@ class _PermissionNote extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFD9DEE8)),
-          color: Colors.white.withValues(alpha: 0.92),
-        ),
-        child: Icon(
-          icon,
-          color: const Color(0xFF1D2944),
-          size: 24,
-        ),
       ),
     );
   }

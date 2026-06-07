@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'add_expense_page.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class ExpensesTrackingPage extends StatelessWidget {
@@ -93,52 +94,31 @@ class ExpensesTrackingPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.chevron_left_rounded,
-                        color: Color(0xFF1E273A),
-                        size: 30,
-                      ),
+            MarketPageHeader(
+              title: 'Expenses Tracking',
+              actions: [
+                GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AddExpensePage(),
                     ),
                   ),
-                  const Expanded(
-                    child: Text(
-                      'Expenses Tracking',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFF1E273A),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Icon(
+                      Icons.add_circle_outline_rounded,
+                      color: AppColors.ink,
+                      size: 22,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const AddExpensePage(),
-                      ),
-                    ),
-                    child: const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.add_circle_outline_rounded,
-                        color: Color(0xFF1E273A),
-                        size: 27,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 6, 18, 12),

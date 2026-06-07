@@ -72,24 +72,34 @@ DaftariScanLine? _parseLine(
 ) {
   final compact = line.replaceAll(RegExp(r'\s+'), ' ').trim();
   final patterns = <RegExp>[
+    // ProductName x Quantity Price
     RegExp(
       r'^(.*?)\s*(?:x|X|×|\*)\s*(\d+)(?:\s+(?:tsh\s*)?(\d[\d,]*(?:\.\d+)?))?$',
       caseSensitive: false,
     ),
+    // ProductName qty/pcs/pieces Quantity Price
     RegExp(
-      r'^(.*?)\s+(?:qty|pcs|pc|pieces?)\s*(\d+)(?:\s+(?:tsh\s*)?(\d[\d,]*(?:\.\d+)?))?$',
+      r'^(.*?)\s+(?:qty|pcs|pc|pieces?|@)\s*(\d+)(?:\s+(?:tsh\s*)?(\d[\d,]*(?:\.\d+)?))?$',
       caseSensitive: false,
     ),
+    // ProductName Quantity tsh Price
     RegExp(
       r'^(.*?)\s+(\d+)\s+(?:tsh\s*)?(\d[\d,]*(?:\.\d+)?)$',
       caseSensitive: false,
     ),
+    // ProductName tsh Price x Quantity
     RegExp(
       r'^(.*?)\s+(?:tsh\s*)?(\d[\d,]*(?:\.\d+)?)\s*(?:x|X|×|\*)\s*(\d+)$',
       caseSensitive: false,
     ),
+    // ProductName Quantity (just 2 tokens)
     RegExp(
       r'^(.*?)\s+(\d+)$',
+      caseSensitive: false,
+    ),
+    // ProductName only (no quantity, assume qty=1)
+    RegExp(
+      r'^(.+)$',
       caseSensitive: false,
     ),
   ];
@@ -105,11 +115,18 @@ DaftariScanLine? _parseLine(
         '';
     if (productName.isEmpty) continue;
 
-    final quantityText = match.group(2) ?? match.group(3) ?? '';
-    final quantity = _parseQuantity(quantityText);
-    if (quantity <= 0) continue;
+    // Default qty to 1 for "product name only" patterns
+    var quantity = 1;
+    var observedAmount = 0;
 
-    final observedAmount = _parseAmount(_extractObservedAmount(match));
+    if (match.groupCount >= 2) {
+      final quantityText = match.group(2) ?? '';
+      if (quantityText.isNotEmpty && RegExp(r'^\d+$').hasMatch(quantityText)) {
+        quantity = _parseQuantity(quantityText);
+      }
+      observedAmount = _parseAmount(_extractObservedAmount(match));
+    }
+
     final matchedProduct = _matchProduct(
       productName,
       catalog,
@@ -128,7 +145,7 @@ DaftariScanLine? _parseLine(
       productName: productName,
       quantity: quantity,
       matchedProduct: matchedProduct,
-      observedAmount: observedAmount,
+      observedAmount: observedAmount > 0 ? observedAmount : null,
       matchScore: score,
     );
   }
@@ -162,7 +179,7 @@ ProductItem? _matchProduct(
     }
   }
 
-  return bestScore >= 0.45 ? bestMatch : null;
+  return bestScore >= 0.35 ? bestMatch : null;
 }
 
 double _matchScore(
@@ -221,6 +238,14 @@ String _normalize(String value) {
       .trim();
 }
 
+String _normalizeSwahili(String value) {
+  return value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
 String _normalizeOcrLine(String value) {
   var cleaned = value.replaceAll('×', 'x').replaceAll('✕', 'x');
   cleaned = cleaned.replaceAll(RegExp(r'\b[tT][sS][hH]\b'), 'tsh');
@@ -267,17 +292,26 @@ List<String> _productAliases(ProductItem item) {
   ];
 
   final lowerName = item.name.toLowerCase();
-  if (lowerName.contains('water')) aliases.addAll(['aqua', 'bottle', 'mineral']);
+  if (lowerName.contains('water')) aliases.addAll(['aqua', 'bottle', 'mineral', 'maji']);
   if (lowerName.contains('cola') || lowerName.contains('coke')) {
-    aliases.addAll(['cola', 'coca']);
+    aliases.addAll(['cola', 'coca', 'soda', 'fizzy']);
   }
-  if (lowerName.contains('lay')) aliases.addAll(['chips', 'potato']);
-  if (lowerName.contains('galaxy')) aliases.addAll(['chocolate', 'bar']);
-  if (lowerName.contains('corn')) aliases.addAll(['cereal', 'flakes']);
-  if (lowerName.contains('dove')) aliases.addAll(['soap', 'beauty']);
-  if (lowerName.contains('colgate')) aliases.addAll(['toothpaste', 'paste']);
-  if (lowerName.contains('dettol')) aliases.addAll(['handwash', 'wash']);
-  if (lowerName.contains('tide')) aliases.addAll(['detergent', 'powder']);
+  if (lowerName.contains('lay')) aliases.addAll(['chips', 'potato', 'crisps']);
+  if (lowerName.contains('galaxy')) aliases.addAll(['chocolate', 'bar', 'choco']);
+  if (lowerName.contains('corn')) aliases.addAll(['cereal', 'flakes', 'cornflakes']);
+  if (lowerName.contains('dove')) aliases.addAll(['soap', 'beauty', 'dove soap']);
+  if (lowerName.contains('colgate')) aliases.addAll(['toothpaste', 'paste', 'brush']);
+  if (lowerName.contains('dettol')) aliases.addAll(['handwash', 'wash', 'dettol soap']);
+  if (lowerName.contains('tide')) aliases.addAll(['detergent', 'powder', 'washing']);
+  if (lowerName.contains('sugar')) aliases.addAll(['sukari', 'sweet']);
+  if (lowerName.contains('rice')) aliases.addAll(['mchele', 'basmati', 'pishori']);
+  if (lowerName.contains('cooking oil') || lowerName.contains('oil')) {
+    aliases.addAll(['mafuta', 'cooking oil', 'salad oil']);
+  }
+  if (lowerName.contains('milk')) aliases.addAll(['maziwa', 'fresh milk', 'uji']);
+  if (lowerName.contains('bread')) aliases.addAll(['mkate', 'loaf', 'slice']);
+  if (lowerName.contains('soap')) aliases.addAll(['sabuni', 'bar soap', 'laundry']);
+  if (lowerName.contains('sugar')) aliases.addAll(['sukari', 'granulated']);
 
   return aliases.where((alias) => alias.trim().isNotEmpty).toList();
 }

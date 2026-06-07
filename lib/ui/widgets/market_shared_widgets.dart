@@ -168,83 +168,179 @@ class MarketPageHeader extends StatelessWidget {
   const MarketPageHeader({
     super.key,
     required this.title,
-    this.showBackButton = true,
+    this.subtitle,
+    this.leading,
+    this.trailing,
     this.actions,
+    this.showBackButton = true,
+    this.onBack,
     this.isGradient = false,
+    this.transparent = false,
+    this.showShadow = false,
+    this.showBorder = true,
+    this.centerTitle = true,
+    this.titleSize = 20,
+    this.titleWeight = FontWeight.w800,
   });
 
   final String title;
-  final bool showBackButton;
+  final String? subtitle;
+  final Widget? leading;
+  final Widget? trailing;
   final List<Widget>? actions;
+  final bool showBackButton;
+  final VoidCallback? onBack;
   final bool isGradient;
+  final bool transparent;
+  final bool showShadow;
+  final bool showBorder;
+  final bool centerTitle;
+  final double titleSize;
+  final FontWeight titleWeight;
+
+  void _handleBack(BuildContext context) {
+    if (onBack != null) {
+      onBack!();
+      return;
+    }
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasGradient = isGradient;
+    final hasBackground = !transparent && !hasGradient;
+    final effectiveColor = hasGradient ? Colors.white : AppColors.ink;
+    final hasBorder = showBorder && !transparent && !hasGradient;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
       decoration: BoxDecoration(
-        color: isGradient ? null : Colors.white,
-        gradient: isGradient
+        color: hasBackground ? Colors.white : null,
+        gradient: hasGradient
             ? const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [Color(0xFF1562E8), Color(0xFF0C56D7)],
               )
             : null,
-        borderRadius: isGradient
+        borderRadius: hasGradient
             ? const BorderRadius.vertical(bottom: Radius.circular(28))
             : null,
-        border: isGradient
-            ? null
-            : const Border(bottom: BorderSide(color: AppColors.divider)),
+        border: hasBorder
+            ? const Border(bottom: BorderSide(color: AppColors.divider))
+            : null,
+        boxShadow: showShadow
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
       ),
       child: SafeArea(
         bottom: false,
-      child: Row(
-        children: [
-          if (showBackButton)
-            GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: isGradient
-                        ? Colors.white.withValues(alpha: 0.16)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isGradient
-                          ? Colors.white.withValues(alpha: 0.18)
-                          : AppColors.border,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: isGradient ? Colors.white : AppColors.ink,
-                    size: 20,
-                  ),
-                ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (leading != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: leading!,
+              )
+            else if (showBackButton)
+              _BackButton(
+                onTap: () => _handleBack(context),
+                isGradient: hasGradient,
               )
             else
-              const SizedBox(width: 40),
+              const SizedBox(width: 42),
             Expanded(
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isGradient ? Colors.white : AppColors.ink,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
-                ),
+              child: Column(
+                crossAxisAlignment: centerTitle
+                    ? CrossAxisAlignment.center
+                    : CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    textAlign: centerTitle ? TextAlign.center : TextAlign.start,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: effectiveColor,
+                      fontSize: titleSize,
+                      fontWeight: titleWeight,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      textAlign:
+                          centerTitle ? TextAlign.center : TextAlign.start,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: hasGradient
+                            ? Colors.white.withValues(alpha: 0.85)
+                            : AppColors.mutedText,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (actions != null)
+            if (trailing != null)
+              trailing!
+            else if (actions != null)
               Row(mainAxisSize: MainAxisSize.min, children: actions!)
+            else if (showBackButton || leading != null)
+              const SizedBox(width: 42)
             else
-              const SizedBox(width: 40),
+              const SizedBox(width: 42),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap, required this.isGradient});
+
+  final VoidCallback onTap;
+  final bool isGradient;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: isGradient
+              ? Colors.white.withValues(alpha: 0.16)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isGradient
+                ? Colors.white.withValues(alpha: 0.18)
+                : AppColors.border,
+          ),
+        ),
+        child: Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: isGradient ? Colors.white : AppColors.ink,
+          size: 20,
         ),
       ),
     );

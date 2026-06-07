@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
-import '../../service/daftari_scan_parser.dart';
 import '../models/product_item.dart';
-import '../scanner/daftari_scan_page.dart';
 import '../widgets/app_design.dart';
 import '../receipt/receipt_success_page.dart';
 import '../widgets/market_shared_widgets.dart';
+import '../more/customers_page.dart';
+import 'record_debit_bottom_sheet.dart';
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({
@@ -23,7 +23,10 @@ class PaymentPage extends StatefulWidget {
 
 class _PaymentPageState extends State<PaymentPage> {
   late final List<OrderLineItem> _orderLines;
-  bool _showScaleBanner = true;
+  String? _selectedCustomer;
+  double _discountAmount = 0;
+  String? _discountLabel;
+  double? _cashReceived;
 
   @override
   void initState() {
@@ -44,7 +47,10 @@ class _PaymentPageState extends State<PaymentPage> {
   double get _subtotal =>
       _orderLines.fold(0, (sum, line) => sum + line.totalPrice);
   double get _tax => 0;
-  double get _grandTotal => _subtotal + _tax;
+  double get _grandTotal => (_subtotal + _tax - _discountAmount).clamp(0, double.infinity);
+  double get _changeDue => (_cashReceived != null && _cashReceived! > _grandTotal)
+      ? _cashReceived! - _grandTotal
+      : 0;
   int get _itemTypes => _orderLines.length;
   int get _unitCount =>
       _orderLines.fold(0, (sum, line) => sum + line.quantity);
@@ -91,91 +97,126 @@ class _PaymentPageState extends State<PaymentPage> {
     });
   }
 
+  Future<void> _saveForLater() async {
+    if (!_hasItems) {
+      showMarketNotice(
+        context,
+        title: 'Cart Is Empty',
+        message: 'Add items to save for later',
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+    
+    await context.read<PosLocalStore>().saveForLater(
+      items: _orderLines,
+    );
+    
+    if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: 'Cart Saved',
+      message: 'Cart saved for later',
+      type: MarketNoticeType.success,
+    );
+    
+    await _clearCart();
+    if (!mounted) return;
+    Navigator.of(context).pop(); // Return to Sales page
+  }
+
   Future<void> _clearCart() async {
     await context.read<PosLocalStore>().clearCart();
     if (!mounted) return;
-    setState(_orderLines.clear);
-  }
-
-  void _mergeImportedItem(ProductItem product, int quantity) {
-    final key = '${product.name}|${product.size}|${product.price}|${product.type.name}';
-    final existingIndex = _orderLines.indexWhere((line) {
-      final lineKey =
-          '${line.product.name}|${line.product.size}|${line.product.price}|${line.product.type.name}';
-      return lineKey == key;
+    setState(() {
+      _orderLines.clear();
+      _discountAmount = 0;
+      _discountLabel = null;
+      _cashReceived = null;
     });
-
-    if (existingIndex == -1) {
-      _orderLines.add(OrderLineItem(product: product, quantity: quantity));
-      return;
-    }
-
-    _orderLines[existingIndex].quantity += quantity;
   }
 
-  Future<void> _scanDaftari() async {
-    final importedLines = await Navigator.of(context).push<List<DaftariScanLine>>(
-      MaterialPageRoute<List<DaftariScanLine>>(
-        builder: (context) => const DaftariScanPage(
-          mode: DaftariScanMode.checkout,
-        ),
+  Future<void> _selectCustomer() async {
+    final customerName = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (context) => CustomersPage(isSelectionMode: true),
       ),
     );
 
-    if (!mounted || importedLines == null || importedLines.isEmpty) return;
+    if (customerName != null) {
+      setState(() => _selectedCustomer = customerName);
+    }
+  }
 
-    final store = context.read<PosLocalStore>();
-    var importedUnits = 0;
-    var skippedLines = 0;
+  Future<void> _applyDiscount() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _DiscountBottomSheet(
+        subtotal: _subtotal,
+        currentAmount: _discountAmount,
+      ),
+    );
 
-    for (final line in importedLines) {
-      final product = line.matchedProduct;
-      final quantity = line.quantity.round();
-      if (product == null || quantity <= 0) {
-        skippedLines += 1;
-        continue;
-      }
-
-      final didAdd = store.addToCartQuantity(product, quantity);
-      if (!didAdd) {
-        skippedLines += 1;
-        continue;
-      }
-
+    if (result != null && mounted) {
       setState(() {
-        _mergeImportedItem(product, quantity);
+        _discountAmount = result['amount'] as double;
+        _discountLabel = result['label'] as String;
       });
-      importedUnits += quantity;
-
-      if (line.rawText.trim().isNotEmpty) {
-        await store.rememberDaftariCorrection(
-          sourceText: line.rawText,
-          product: product,
-        );
-      }
     }
+  }
 
-    if (!mounted) return;
+  Future<void> _enterCashReceived() async {
+    final result = await showModalBottomSheet<double>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CashReceivedBottomSheet(
+        grandTotal: _grandTotal,
+        currentAmount: _cashReceived,
+      ),
+    );
 
-    if (importedUnits > 0) {
-      showMarketNotice(
-        context,
-        title: 'Daftari Imported',
-        message: '$importedUnits unit(s) added to the current sale',
-      );
+    if (result != null && mounted) {
+      setState(() {
+        _cashReceived = result;
+      });
     }
+  }
 
-    if (skippedLines > 0) {
-      showMarketNotice(
-        context,
-        title: 'Some Lines Skipped',
-        message: 'A few lines could not be matched or were out of stock',
-        type: MarketNoticeType.warning,
-      );
+  Future<void> _recordDebit() async {
+    final customer = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (context) => const CustomersPage(isSelectionMode: true),
+      ),
+    );
+
+    if (customer == null || !mounted) return;
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => RecordDebitBottomSheet(
+        customerName: customer,
+        total: _grandTotal,
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      _completeSale(customerName: customer, paymentMethod: 'Credit');
     }
   }
 
   Future<void> _confirmPayment() async {
+    _completeSale();
+  }
+
+  Future<void> _completeSale({
+    String? customerName,
+    String paymentMethod = 'Cash',
+  }) async {
     if (!_hasItems) {
       showMarketNotice(
         context,
@@ -186,12 +227,29 @@ class _PaymentPageState extends State<PaymentPage> {
       return;
     }
 
+    final tendered = _cashReceived ?? _grandTotal;
+    if (paymentMethod == 'Cash' && tendered < _grandTotal) {
+      showMarketNotice(
+        context,
+        title: 'Insufficient Cash',
+        message: 'Cash received must be at least TSh${_amount(_grandTotal)}',
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+
     try {
+      final profile = context.read<PosLocalStore>().profile;
+      final cashierName = profile.ownerName.isEmpty ? 'Cashier' : profile.ownerName;
       final completedOrder = await context.read<PosLocalStore>().completeCashSale(
             items: _orderLines,
-            cashTendered: _grandTotal,
-            cashierName: 'John Doe',
+            cashTendered: paymentMethod == 'Cash' ? tendered : 0,
+            cashierName: cashierName,
             registerName: 'POS-01',
+            customerName: customerName ?? _selectedCustomer,
+            discountAmount: _discountAmount > 0 ? _discountAmount : null,
+            discountLabel: _discountAmount > 0 ? _discountLabel : null,
+            paymentMethod: paymentMethod,
           );
 
       if (!mounted) return;
@@ -223,13 +281,47 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8E8E8),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
           children: [
-            _CounterAppBar(onBack: () => Navigator.of(context).pop()),
-            if (_showScaleBanner)
-              _ScaleBanner(onClose: () => setState(() => _showScaleBanner = false)),
+            MarketPageHeader(
+              title: 'Counter',
+              onBack: () => Navigator.of(context).pop(),
+              showBackButton: true,
+              centerTitle: false,
+              actions: [
+                IconButton(
+                  onPressed: _selectCustomer,
+                  icon: const Icon(Icons.group_add_outlined, color: AppColors.ink, size: 26),
+                ),
+              ],
+            ),
+            if (_selectedCustomer != null)
+              Container(
+                color: const Color(0xFFE8F4FF),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_outline, size: 18, color: Color(0xFF2B5FCE)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Customer: $_selectedCustomer',
+                        style: const TextStyle(
+                          color: Color(0xFF2B5FCE),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => setState(() => _selectedCustomer = null),
+                      child: const Icon(Icons.close, size: 18, color: Color(0xFF2B5FCE)),
+                    ),
+                  ],
+                ),
+              ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
@@ -248,18 +340,20 @@ class _PaymentPageState extends State<PaymentPage> {
                   const SizedBox(height: 6),
                   _CounterActionRow(
                     onAddItem: () => Navigator.of(context).pop(),
-                    onScan: _scanDaftari,
                   ),
                   const SizedBox(height: 6),
                   _TotalsPanel(
                     subtotal: _amount(_subtotal),
                     tax: _amount(_tax),
+                    discount: _discountAmount > 0 ? _amount(_discountAmount) : null,
                     grandTotal: _amount(_grandTotal),
+                    cashReceived: _cashReceived != null ? _amount(_cashReceived!) : null,
+                    changeDue: _cashReceived != null ? _amount(_changeDue) : null,
                     itemTypes: _itemTypes,
                     unitCount: _unitCount,
-                    onAddTax: () => _showComingSoon('Add Tax'),
-                    onAddDiscount: () => _showComingSoon('Add Discount'),
-                    onOtherCharges: () => _showComingSoon('Add Other Charges'),
+                    onEnterCash: _enterCashReceived,
+                    onAddDiscount: _applyDiscount,
+                    onRecordDebit: _recordDebit,
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -291,127 +385,14 @@ class _PaymentPageState extends State<PaymentPage> {
                 onTap: _confirmPayment,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CounterAppBar extends StatelessWidget {
-  const _CounterAppBar({
-    required this.onBack,
-  });
-
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 56,
-      color: const Color(0xFF355BD8),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            icon: const Icon(Icons.menu, color: Colors.white),
-          ),
-          const Expanded(
-            child: Text(
-              'Counter',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const Icon(Icons.group_add_outlined, color: Colors.white, size: 24),
-          const SizedBox(width: 14),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              const Icon(Icons.mark_chat_unread_outlined,
-                  color: Colors.white, size: 24),
-              Positioned(
-                right: -4,
-                top: -5,
-                child: Container(
-                  width: 15,
-                  height: 15,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE54040),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    '1',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
             ],
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScaleBanner extends StatelessWidget {
-  const _ScaleBanner({
-    required this.onClose,
-  });
-
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF2F2FB),
-      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Expanded(
-            child: Text.rich(
-              TextSpan(
-                text:
-                    'We now support weighing scales. Plug in and start billing faster, ',
-                children: [
-                  TextSpan(
-                    text: 'Know More.',
-                    style: TextStyle(decoration: TextDecoration.underline),
-                  ),
-                ],
-              ),
-              style: TextStyle(
-                color: AppColors.ink,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
             ),
-          ),
-          InkWell(
-            onTap: onClose,
-            child: const Padding(
-              padding: EdgeInsets.only(left: 8, top: 2),
-              child: Icon(Icons.close, color: Color(0xFF7080C2), size: 18),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+            );
+            }
+            }
 
-class _CounterLineTile extends StatelessWidget {
+            class _CounterLineTile extends StatelessWidget {
   const _CounterLineTile({
     required this.line,
     required this.amountText,
@@ -516,11 +497,9 @@ class _EmptyCounterState extends StatelessWidget {
 class _CounterActionRow extends StatelessWidget {
   const _CounterActionRow({
     required this.onAddItem,
-    required this.onScan,
   });
 
   final VoidCallback onAddItem;
-  final VoidCallback onScan;
 
   @override
   Widget build(BuildContext context) {
@@ -544,18 +523,6 @@ class _CounterActionRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 4),
-        GestureDetector(
-          onTap: onScan,
-          child: Container(
-            width: 58,
-            height: 54,
-            color: Colors.white,
-            alignment: Alignment.center,
-            child: const Icon(Icons.document_scanner_outlined,
-                color: Color(0xFF4D6ED8), size: 24),
-          ),
-        ),
       ],
     );
   }
@@ -565,22 +532,28 @@ class _TotalsPanel extends StatelessWidget {
   const _TotalsPanel({
     required this.subtotal,
     required this.tax,
+    this.discount,
     required this.grandTotal,
+    this.cashReceived,
+    this.changeDue,
     required this.itemTypes,
     required this.unitCount,
-    required this.onAddTax,
+    required this.onEnterCash,
     required this.onAddDiscount,
-    required this.onOtherCharges,
+    required this.onRecordDebit,
   });
 
   final String subtotal;
   final String tax;
+  final String? discount;
   final String grandTotal;
+  final String? cashReceived;
+  final String? changeDue;
   final int itemTypes;
   final int unitCount;
-  final VoidCallback onAddTax;
+  final VoidCallback onEnterCash;
   final VoidCallback onAddDiscount;
-  final VoidCallback onOtherCharges;
+  final VoidCallback onRecordDebit;
 
   @override
   Widget build(BuildContext context) {
@@ -642,6 +615,31 @@ class _TotalsPanel extends StatelessWidget {
               ),
             ],
           ),
+          if (discount != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Discount',
+                    style: TextStyle(
+                      color: Color(0xFFE66C73),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text(
+                  '- $discount',
+                  style: const TextStyle(
+                    color: Color(0xFFE66C73),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const Divider(height: 22, color: Color(0xFF444444)),
           Row(
             children: [
@@ -665,12 +663,60 @@ class _TotalsPanel extends StatelessWidget {
               ),
             ],
           ),
+          if (cashReceived != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Cash Received',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Text(
+                  'TSh $cashReceived',
+                  style: const TextStyle(
+                    color: AppColors.ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Change Due',
+                    style: TextStyle(
+                      color: Color(0xFF15803D),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  'TSh $changeDue',
+                  style: const TextStyle(
+                    color: Color(0xFF15803D),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
               GestureDetector(
-                onTap: onAddTax,
-                child: const Text('Add Tax', style: linkStyle),
+                onTap: onEnterCash,
+                child: const Text('Cash Received', style: linkStyle),
               ),
               const Spacer(),
               Text(
@@ -692,11 +738,162 @@ class _TotalsPanel extends StatelessWidget {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: onOtherCharges,
-                child: const Text('Add Other Charges', style: linkStyle),
+                onTap: onRecordDebit,
+                child: const Text('Record Debit', style: linkStyle),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CashReceivedBottomSheet extends StatefulWidget {
+  const _CashReceivedBottomSheet({
+    required this.grandTotal,
+    this.currentAmount,
+  });
+
+  final double grandTotal;
+  final double? currentAmount;
+
+  @override
+  State<_CashReceivedBottomSheet> createState() => _CashReceivedBottomSheetState();
+}
+
+class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
+  late final TextEditingController _controller;
+  double _currentInput = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.currentAmount != null ? widget.currentAmount!.round().toString() : '',
+    );
+    _currentInput = widget.currentAmount ?? 0;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _format(double value) {
+    final whole = value.round().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      final remaining = whole.length - i;
+      buffer.write(whole[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+    return buffer.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final changeDue = (_currentInput > widget.grandTotal) ? _currentInput - widget.grandTotal : 0.0;
+    final isInsufficient = _currentInput > 0 && _currentInput < widget.grandTotal;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        top: 12,
+        left: 20,
+        right: 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Cash Received',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            onChanged: (val) => setState(() {
+              _currentInput = double.tryParse(val) ?? 0;
+            }),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+            decoration: const InputDecoration(
+              hintText: '0',
+              prefixText: 'TSh ',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _SummaryRow(
+                label: 'Total',
+                value: 'TSh ${_format(widget.grandTotal)}',
+                valueColor: AppColors.ink,
+              ),
+              const Spacer(),
+              _SummaryRow(
+                label: isInsufficient ? 'Remaining' : 'Change',
+                value: 'TSh ${_format(isInsufficient ? (widget.grandTotal - _currentInput) : changeDue)}',
+                valueColor: isInsufficient ? const Color(0xFFE11D48) : const Color(0xFF15803D),
+                isBold: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _currentInput >= widget.grandTotal ? () {
+              Navigator.of(context).pop(_currentInput);
+            } : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Done',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -750,21 +947,291 @@ class _ChargeBar extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 48,
+        height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFF68BE69),
-          borderRadius: BorderRadius.circular(4),
+          color: const Color(0xFFE54040),
+          borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
         child: Text(
           totalLabel,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DiscountBottomSheet extends StatefulWidget {
+  const _DiscountBottomSheet({
+    required this.subtotal,
+    required this.currentAmount,
+  });
+
+  final double subtotal;
+  final double currentAmount;
+
+  @override
+  State<_DiscountBottomSheet> createState() => _DiscountBottomSheetState();
+}
+
+class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
+  late final TextEditingController _controller;
+  bool _isPercentage = false;
+  double _currentInput = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.currentAmount > 0 ? widget.currentAmount.round().toString() : '',
+    );
+    _currentInput = widget.currentAmount;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _format(double value) {
+    final whole = value.round().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      final remaining = whole.length - i;
+      buffer.write(whole[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+    return buffer.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final calculatedDiscount = _isPercentage
+        ? (widget.subtotal * _currentInput / 100)
+        : _currentInput;
+    
+    final finalDiscount = calculatedDiscount.clamp(0.0, widget.subtotal);
+    final revisedTotal = (widget.subtotal - finalDiscount).clamp(0.0, double.infinity);
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        top: 12,
+        left: 20,
+        right: 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 32,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Discount',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    _DiscountModeTab(
+                      label: 'TSh',
+                      isSelected: !_isPercentage,
+                      onTap: () => setState(() => _isPercentage = false),
+                    ),
+                    _DiscountModeTab(
+                      label: '%',
+                      isSelected: _isPercentage,
+                      onTap: () => setState(() => _isPercentage = true),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            onChanged: (val) => setState(() {
+              _currentInput = double.tryParse(val) ?? 0;
+            }),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+            decoration: InputDecoration(
+              hintText: '0',
+              prefixText: _isPercentage ? null : 'TSh ',
+              suffixText: _isPercentage ? '%' : null,
+              hintStyle: TextStyle(color: AppColors.ink.withOpacity(0.1)),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _SummaryRow(
+                label: 'Savings',
+                value: '- TSh ${_format(finalDiscount)}',
+                valueColor: const Color(0xFFE11D48),
+              ),
+              const Spacer(),
+              _SummaryRow(
+                label: 'Total',
+                value: 'TSh ${_format(revisedTotal)}',
+                valueColor: AppColors.ink,
+                isBold: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop({
+                'amount': finalDiscount,
+                'label': _isPercentage 
+                    ? '${_currentInput.round()}% Discount'
+                    : 'Discount',
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Apply',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiscountModeTab extends StatelessWidget {
+  const _DiscountModeTab({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  const BoxShadow(
+                    color: Color(0x0A000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+    this.isBold = false,
+  });
+
+  final String label;
+  final String value;
+  final Color valueColor;
+  final bool isBold;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF64748B),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w700,
+            color: valueColor,
+          ),
+        ),
+      ],
     );
   }
 }

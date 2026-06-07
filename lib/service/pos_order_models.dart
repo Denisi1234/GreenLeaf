@@ -14,6 +14,9 @@ class CompletedOrder {
     required this.cashTendered,
     required this.changeDue,
     required this.lines,
+    this.customerName,
+    this.discountAmount,
+    this.discountLabel,
   });
 
   final String id;
@@ -28,6 +31,9 @@ class CompletedOrder {
   final double cashTendered;
   final double changeDue;
   final List<OrderLine> lines;
+  final String? customerName;
+  final double? discountAmount;
+  final String? discountLabel;
 }
 
 class OrderLine {

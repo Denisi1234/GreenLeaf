@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../home/home_page.dart';
-import '../more/smartduka_ai_advisor_page.dart';
+import '../more/duka_ai_page.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../widgets/app_design.dart';
@@ -11,6 +11,57 @@ import 'report_hub_page.dart';
 import 'reports_catalog_page.dart';
 
 // ignore_for_file: unused_element, unused_field
+
+enum _ReportPeriod { today, week, month, all }
+
+extension _ReportPeriodLabel on _ReportPeriod {
+  String get label {
+    switch (this) {
+      case _ReportPeriod.today:
+        return 'Today';
+      case _ReportPeriod.week:
+        return 'This Week';
+      case _ReportPeriod.month:
+        return 'This Month';
+      case _ReportPeriod.all:
+        return 'All Time';
+    }
+  }
+
+  String get shortLabel {
+    switch (this) {
+      case _ReportPeriod.today:
+        return 'Today';
+      case _ReportPeriod.week:
+        return 'Week';
+      case _ReportPeriod.month:
+        return 'Month';
+      case _ReportPeriod.all:
+        return 'All';
+    }
+  }
+}
+
+DateTime _periodStart(_ReportPeriod period) {
+  final now = DateTime.now();
+  switch (period) {
+    case _ReportPeriod.today:
+      return DateTime(now.year, now.month, now.day);
+    case _ReportPeriod.week:
+      final weekStart = now.subtract(Duration(days: now.weekday - 1));
+      return DateTime(weekStart.year, weekStart.month, weekStart.day);
+    case _ReportPeriod.month:
+      return DateTime(now.year, now.month, 1);
+    case _ReportPeriod.all:
+      return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+}
+
+bool _orderInPeriod(String dateTime, _ReportPeriod period) {
+  final parsed = DateTime.tryParse(dateTime);
+  if (parsed == null) return false;
+  return !parsed.isBefore(_periodStart(period));
+}
 
 class ReportsPage extends StatelessWidget {
   const ReportsPage({super.key});
@@ -124,9 +175,11 @@ class ReportsPage extends StatelessWidget {
     final transactionCount = todayOrders.length;
     final averageValue =
         transactionCount == 0 ? 0 : totalSales / transactionCount;
-    final salesChangePercent =
-        yesterdaySales <= 0 ? null : ((totalSales - yesterdaySales) / yesterdaySales) * 100;
-    final salesWentUp = salesChangePercent == null ? null : salesChangePercent >= 0;
+    final salesChangePercent = yesterdaySales <= 0
+        ? null
+        : ((totalSales - yesterdaySales) / yesterdaySales) * 100;
+    final salesWentUp =
+        salesChangePercent == null ? null : salesChangePercent >= 0;
 
     final productTotals = <String, int>{};
     for (final order in todayOrders) {
@@ -242,7 +295,8 @@ class ReportsPage extends StatelessWidget {
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     return Theme(
@@ -273,11 +327,11 @@ class ReportsPage extends StatelessWidget {
                   ),
                 ],
               ),
-                Positioned(
-                  right: 14,
-                  bottom: 14,
-                  child: Transform.translate(
-                    offset: const Offset(0, -8),
+              Positioned(
+                right: 14,
+                bottom: 14,
+                child: Transform.translate(
+                  offset: const Offset(0, -8),
                   child: _NewSaleFloatingButton(
                     onTap: () {
                       Navigator.of(context).push(
@@ -286,27 +340,26 @@ class ReportsPage extends StatelessWidget {
                         ),
                       );
                     },
-                    ),
                   ),
                 ),
-                Positioned(
-                  right: 14,
-                  top: 142,
-                  child: _DukaAiFloatingButton(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              const SmartDukaAiAdvisorPage(),
-                        ),
-                      );
-                    },
-                  ),
+              ),
+              Positioned(
+                right: 14,
+                top: 142,
+                child: _DukaAiFloatingButton(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const DukaAiAdvisorPage(),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 }
@@ -330,7 +383,8 @@ class _DashboardSummaryData {
 
   double get revenue => totalRevenue;
   int get orders => monthlySales;
-  double get averageOrder => monthlySales == 0 ? 0.0 : totalRevenue / monthlySales;
+  double get averageOrder =>
+      monthlySales == 0 ? 0.0 : totalRevenue / monthlySales;
   String get bestSeller => 'No sales yet';
   int? get bestSellerCount => activeClients;
 }
@@ -341,7 +395,7 @@ _DashboardSummaryData _buildDashboardSummary() {
   const activeClients = 642;
   const conversionRate = 4.8;
   const deltaText = '7.4%';
-  return _DashboardSummaryData(
+  return const _DashboardSummaryData(
     totalRevenue: totalRevenue,
     monthlySales: monthlySales,
     activeClients: activeClients,
@@ -360,65 +414,48 @@ class _PremiumReportsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Color(0xFFE7EAF0)),
-          ),
+    return const MarketPageHeader(
+      title: 'Dashboard',
+      showBackButton: false,
+      centerTitle: false,
+      titleSize: 22,
+      titleWeight: FontWeight.w700,
+      leading: _ReportsBrandIcon(),
+      actions: [
+        _HeaderActionButton(
+          icon: Icons.notifications_none_rounded,
+          background: Colors.white,
+          foreground: ReportsPage._ink,
+          borderColor: Color(0xFFE7EAF0),
+          showDot: true,
         ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 2),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF5B8CFF),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: const Icon(
-                      Icons.north_east_rounded,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Dashboard',
-                    style: TextStyle(
-                      color: Color(0xFF33363F),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const Spacer(),
-                  _HeaderActionButton(
-                    icon: Icons.notifications_none_rounded,
-                    background: Colors.white,
-                    foreground: ReportsPage._ink,
-                    borderColor: Color(0xFFE7EAF0),
-                    showDot: true,
-                  ),
-                  const SizedBox(width: 8),
-                  const _HeaderActionButton(
-                    icon: Icons.add_rounded,
-                    background: Color(0xFF23262D),
-                    foreground: Colors.white,
-                  ),
-                ],
-              ),
-            ],
-          ),
+        SizedBox(width: 8),
+        _HeaderActionButton(
+          icon: Icons.add_rounded,
+          background: Color(0xFF23262D),
+          foreground: Colors.white,
         ),
+      ],
+    );
+  }
+}
+
+class _ReportsBrandIcon extends StatelessWidget {
+  const _ReportsBrandIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: const Color(0xFF5B8CFF),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Icon(
+        Icons.north_east_rounded,
+        color: Colors.white,
+        size: 18,
       ),
     );
   }
@@ -528,7 +565,8 @@ class _DukaAiFloatingButton extends StatelessWidget {
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2D6CEA).withValues(alpha: glowOpacity),
+                    color:
+                        const Color(0xFF2D6CEA).withValues(alpha: glowOpacity),
                     blurRadius: 26,
                     offset: const Offset(0, 12),
                   ),
@@ -1004,9 +1042,7 @@ class _QuickActionCard extends StatelessWidget {
                 : null,
             boxShadow: [
               BoxShadow(
-                color: hero
-                    ? const Color(0x1F2560D6)
-                    : const Color(0x140E1726),
+                color: hero ? const Color(0x1F2560D6) : const Color(0x140E1726),
                 blurRadius: hero ? 14 : 6,
                 offset: const Offset(0, 2),
               ),
@@ -1023,7 +1059,8 @@ class _QuickActionCard extends StatelessWidget {
                   color: iconBackground,
                   borderRadius: BorderRadius.circular(hero ? 10 : 8),
                 ),
-                child: Icon(action.icon, color: action.iconColor, size: hero ? 22 : 20),
+                child: Icon(action.icon,
+                    color: action.iconColor, size: hero ? 22 : 20),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1137,56 +1174,56 @@ class _OverviewStatsGrid extends StatelessWidget {
           children: [
             SizedBox(
               width: itemWidth,
-              child: _OverviewStatCard(
+              child: const _OverviewStatCard(
                 icon: Icons.payments_outlined,
-                iconColor: const Color(0xFF6BA5FF),
-                iconBackground: const Color(0xFFF4F8FF),
+                iconColor: Color(0xFF6BA5FF),
+                iconBackground: Color(0xFFF4F8FF),
                 title: 'Total Revenue',
                 value: '\$728,450',
                 footer: '+7.4%',
-                footerColor: const Color(0xFF2FA24A),
+                footerColor: Color(0xFF2FA24A),
                 showTrend: true,
                 trendUp: true,
               ),
             ),
             SizedBox(
               width: itemWidth,
-              child: _OverviewStatCard(
+              child: const _OverviewStatCard(
                 icon: Icons.shopping_bag_outlined,
-                iconColor: const Color(0xFFF6B34A),
-                iconBackground: const Color(0xFFFFF7ED),
+                iconColor: Color(0xFFF6B34A),
+                iconBackground: Color(0xFFFFF7ED),
                 title: 'Monthly Sales',
                 value: '1,284',
                 footer: '+5.9%',
-                footerColor: const Color(0xFF2FA24A),
+                footerColor: Color(0xFF2FA24A),
                 showTrend: true,
                 trendUp: true,
               ),
             ),
             SizedBox(
               width: itemWidth,
-              child: _OverviewStatCard(
+              child: const _OverviewStatCard(
                 icon: Icons.groups_rounded,
-                iconColor: const Color(0xFFEF6A7A),
-                iconBackground: const Color(0xFFFFEEF1),
+                iconColor: Color(0xFFEF6A7A),
+                iconBackground: Color(0xFFFFEEF1),
                 title: 'Active Clients',
                 value: '642',
                 footer: '+3.2%',
-                footerColor: const Color(0xFF2FA24A),
+                footerColor: Color(0xFF2FA24A),
                 showTrend: true,
                 trendUp: true,
               ),
             ),
             SizedBox(
               width: itemWidth,
-              child: _OverviewStatCard(
+              child: const _OverviewStatCard(
                 icon: Icons.bolt_rounded,
-                iconColor: const Color(0xFF8B5CF6),
-                iconBackground: const Color(0xFFF5F1FF),
+                iconColor: Color(0xFF8B5CF6),
+                iconBackground: Color(0xFFF5F1FF),
                 title: 'Conversion Rate',
                 value: '4.8%',
                 footer: '-1.1%',
-                footerColor: const Color(0xFFD65555),
+                footerColor: Color(0xFFD65555),
                 showTrend: true,
                 trendUp: false,
               ),
@@ -1268,7 +1305,7 @@ class _OverviewStatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               color: ReportsPage._ink,
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -1280,7 +1317,9 @@ class _OverviewStatCard extends StatelessWidget {
             children: [
               if (showTrend) ...[
                 Icon(
-                  trendUp ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                  trendUp
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
                   size: 12,
                   color: footerColor,
                 ),
@@ -1333,11 +1372,11 @@ class _InsightsPromoCard extends StatelessWidget {
               ],
             ),
           ),
-          Positioned.fill(
+          const Positioned.fill(
             child: CustomPaint(
               painter: _DashedBorderPainter(
                 radius: 14,
-                color: const Color(0xFFDDE3EA),
+                color: Color(0xFFDDE3EA),
               ),
             ),
           ),
@@ -1399,7 +1438,8 @@ class _InsightsPromoCard extends StatelessWidget {
                                 backgroundColor: const Color(0xFF5B8CFF),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(6),
                                 ),
@@ -1425,14 +1465,16 @@ class _InsightsPromoCard extends StatelessWidget {
                               },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: ReportsPage._ink,
-                                side: const BorderSide(color: Color(0xFFE1E6EE)),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                side:
+                                    const BorderSide(color: Color(0xFFE1E6EE)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                               ),
                               child: const Text(
-                                'Report',
+                                'My Store Reports',
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
@@ -1529,7 +1571,8 @@ class _GrowthOverviewCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(10),
@@ -1558,10 +1601,10 @@ class _GrowthOverviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
+          const Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
+              Text(
                 '701.34K',
                 style: TextStyle(
                   color: ReportsPage._ink,
@@ -1570,8 +1613,8 @@ class _GrowthOverviewCard extends StatelessWidget {
                   letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(width: 4),
-              const Padding(
+              SizedBox(width: 4),
+              Padding(
                 padding: EdgeInsets.only(bottom: 2),
                 child: Text(
                   '+14.5%',
@@ -1582,7 +1625,7 @@ class _GrowthOverviewCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 2),
                 child: Icon(
                   Icons.arrow_upward_rounded,
@@ -1602,10 +1645,10 @@ class _GrowthOverviewCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          SizedBox(
+          const SizedBox(
             height: 166,
             child: _OverviewChart(
-              values: const [0.32, 0.78, 0.58, 0.44, 0.76, 0.50, 0.29],
+              values: [0.32, 0.78, 0.58, 0.44, 0.76, 0.50, 0.29],
             ),
           ),
         ],
@@ -1722,7 +1765,8 @@ class _OverviewChartPainter extends CustomPainter {
 
     for (var i = 0; i < 5; i++) {
       final y = topPad + (chartHeight / 4) * i;
-      canvas.drawLine(Offset(leftPad, y), Offset(size.width - rightPad, y), gridPaint);
+      canvas.drawLine(
+          Offset(leftPad, y), Offset(size.width - rightPad, y), gridPaint);
     }
 
     final points = <Offset>[];
@@ -1732,14 +1776,15 @@ class _OverviewChartPainter extends CustomPainter {
       points.add(Offset(x, y));
     }
 
-    final highlightIndex = 3;
+    const highlightIndex = 3;
     final highlightPoint = points[highlightIndex];
     final highlightRect = Rect.fromCenter(
       center: Offset(highlightPoint.dx, (topPad + chartHeight * 0.53)),
       width: chartWidth / values.length,
       height: chartHeight * 0.92,
     );
-    canvas.drawRect(highlightRect, Paint()..color = const Color(0xFF5B8CFF).withValues(alpha: 0.12));
+    canvas.drawRect(highlightRect,
+        Paint()..color = const Color(0xFF5B8CFF).withValues(alpha: 0.12));
 
     final path = Path()..moveTo(points.first.dx, points.first.dy);
     for (var i = 1; i < points.length; i++) {
@@ -1777,7 +1822,10 @@ class _OverviewChartPainter extends CustomPainter {
         canvas.drawCircle(point, 4.5, outlinePaint);
 
         final bubble = RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset(point.dx - 18, point.dy - 36), width: 66, height: 30),
+          Rect.fromCenter(
+              center: Offset(point.dx - 18, point.dy - 36),
+              width: 66,
+              height: 30),
           const Radius.circular(8),
         );
         final bubblePaint = Paint()..color = const Color(0xFF5B8CFF);
@@ -1908,7 +1956,7 @@ class _EmptySummary extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        Text(
+        const Text(
           'TSH 0',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -1929,8 +1977,8 @@ class _EmptySummary extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: const [
+        const Row(
+          children: [
             Expanded(child: _MiniSummaryStat(title: 'Orders', value: '0')),
             SizedBox(width: 10),
             Expanded(
@@ -2101,7 +2149,9 @@ class _MetricCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  deltaIsPositive! ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                  deltaIsPositive!
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
                   color: accent,
                   size: 14,
                 ),
@@ -2566,7 +2616,9 @@ class _OverviewDetailPage extends StatelessWidget {
                           ? '${card.delta} down from yesterday'
                           : '${card.delta} up from yesterday',
                       style: TextStyle(
-                        color: card.deltaIsPositive == false ? const Color(0xFFC65B4A) : ReportsPage._green,
+                        color: card.deltaIsPositive == false
+                            ? const Color(0xFFC65B4A)
+                            : ReportsPage._green,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
