@@ -26,9 +26,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _emailController;
   late final TextEditingController _addressController;
-  late Set<String> _selectedTags;
   bool _isSaving = false;
   bool get _isEdit => widget.existing != null;
 
@@ -38,16 +36,13 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
     final c = widget.existing;
     _nameController = TextEditingController(text: c?.name ?? '');
     _phoneController = TextEditingController(text: c?.phone ?? '');
-    _emailController = TextEditingController(text: c?.email ?? '');
     _addressController = TextEditingController(text: c?.address ?? '');
-    _selectedTags = c == null ? <String>{} : c.tags.toSet();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _emailController.dispose();
     _addressController.dispose();
     super.dispose();
   }
@@ -78,7 +73,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       address: _addressController.text.trim(),
-      tags: _selectedTags.toList(),
+      tags: const [],
     );
 
     try {
@@ -180,75 +175,50 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                       ),
                       const SizedBox(height: 14),
                       _CustomerField(
-                        label: 'Email',
-                        hint: 'Optional email address',
-                        controller: _emailController,
-                        icon: Icons.alternate_email_rounded,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 14),
-                      _CustomerField(
                         label: 'Address',
                         hint: 'Optional physical address',
                         controller: _addressController,
                         icon: Icons.location_on_outlined,
                         maxLines: 3,
                       ),
-                      const SizedBox(height: 18),
-                      _TagPicker(
-                        selected: _selectedTags,
-                        onToggle: (tag) {
-                          setState(() {
-                            if (_selectedTags.contains(tag)) {
-                              _selectedTags.remove(tag);
-                            } else {
-                              _selectedTags.add(tag);
-                            }
-                          });
-                        },
-                      ),
                       const SizedBox(height: 32),
                       GestureDetector(
                         onTap: _isSaving ? null : _saveCustomer,
                         child: AnimatedOpacity(
-                          opacity: _isSaving ? 0.8 : 1,
+                          opacity: _isSaving ? 0.7 : 1,
                           duration: const Duration(milliseconds: 160),
                           child: Container(
-                            height: 64,
+                            height: 54,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              gradient: const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFF356BD8),
-                                  Color(0xFF2B5FCE),
-                                ],
-                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              color: const Color(0xFF0F172A),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  _isSaving
-                                      ? Icons.hourglass_top_rounded
-                                      : (_isEdit
-                                          ? Icons.save_rounded
-                                          : Icons.person_add_alt_1_rounded),
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 10),
+                                _isSaving
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : Icon(
+                                        _isEdit ? Icons.check_rounded : Icons.add_rounded,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                const SizedBox(width: 8),
                                 Text(
                                   _isSaving
                                       ? 'Saving...'
-                                      : (_isEdit
-                                          ? 'Save Changes'
-                                          : 'Save Customer'),
+                                      : (_isEdit ? 'Save Changes' : 'Create Customer'),
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 16.5,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -268,89 +238,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
   }
 }
 
-class _TagPicker extends StatelessWidget {
-  const _TagPicker({required this.selected, required this.onToggle});
 
-  final Set<String> selected;
-  final ValueChanged<String> onToggle;
-
-  Color _colorFor(String tag) {
-    switch (tag) {
-      case 'VIP':
-        return const Color(0xFFF59E0B);
-      case 'Wholesale':
-        return const Color(0xFF2563EB);
-      case 'Retail':
-        return const Color(0xFF10B981);
-      case 'Credit':
-        return const Color(0xFFEF4444);
-      default:
-        return AppColors.mutedText;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E7EF)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tags',
-            style: TextStyle(
-              color: Color(0xFF1E273A),
-              fontSize: 15.8,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Tap to assign customer segments',
-            style: TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 12.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: kCustomerTagOptions.map((tag) {
-              final isSelected = selected.contains(tag);
-              final color = _colorFor(tag);
-              return GestureDetector(
-                onTap: () => onToggle(tag),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? color : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: color, width: 1.4),
-                  ),
-                  child: Text(
-                    tag,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : color,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _CustomerField extends StatelessWidget {
   const _CustomerField({
@@ -373,71 +261,52 @@ class _CustomerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E7EF)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF1E273A),
-              fontSize: 15.8,
-              fontWeight: FontWeight.w700,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          validator: validator,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          style: const TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 15,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 15,
+            ),
+            prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
             ),
           ),
-          const SizedBox(height: 10),
-          TextFormField(
-            controller: controller,
-            validator: validator,
-            keyboardType: keyboardType,
-            maxLines: maxLines,
-            style: const TextStyle(
-              color: Color(0xFF1E273A),
-              fontSize: 15.2,
-              fontWeight: FontWeight.w500,
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(
-                color: Color(0xFFABB2BF),
-                fontSize: 15.0,
-                fontWeight: FontWeight.w500,
-              ),
-              prefixIcon: Icon(icon, color: const Color(0xFF667085), size: 24),
-              filled: true,
-              fillColor: const Color(0xFFFDFDFE),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFDDE2EA)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFDDE2EA)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFB7C7EA)),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE26B6B)),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE26B6B)),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

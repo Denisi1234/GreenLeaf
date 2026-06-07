@@ -22,7 +22,7 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE inventory_products (
@@ -160,6 +160,17 @@ class PosLocalDatabase {
             updated_at TEXT NOT NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            amount REAL NOT NULL,
+            category TEXT NOT NULL,
+            payment_method TEXT NOT NULL,
+            date TEXT NOT NULL,
+            notes TEXT
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -294,6 +305,19 @@ class PosLocalDatabase {
               'ALTER TABLE myduka_ai_threads ADD COLUMN preview TEXT NOT NULL DEFAULT \'\'',
             );
           }
+        }
+        if (oldVersion < 10) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS expenses (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              title TEXT NOT NULL,
+              amount REAL NOT NULL,
+              category TEXT NOT NULL,
+              payment_method TEXT NOT NULL,
+              date TEXT NOT NULL,
+              notes TEXT
+            )
+          ''');
         }
       },
     );
@@ -737,6 +761,21 @@ class PosLocalDatabase {
       artType: ProductArtType.values.byName(map['art_type'] as String),
       imagePath: map['image_path'] as String?,
     );
+  }
+
+  Future<List<Map<String, Object?>>> loadExpenses() async {
+    final db = await database;
+    return db.query('expenses', orderBy: 'date DESC');
+  }
+
+  Future<void> insertExpense(Map<String, Object?> expense) async {
+    final db = await database;
+    await db.insert('expenses', expense);
+  }
+
+  Future<void> deleteExpense(int id) async {
+    final db = await database;
+    await db.delete('expenses', where: 'id = ?', whereArgs: <Object?>[id]);
   }
 
   String encodeJson(List<String> values) {

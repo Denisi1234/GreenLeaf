@@ -163,6 +163,67 @@ enum MarketNoticeType {
   warning,
 }
 
+class HeaderActionButton extends StatelessWidget {
+  const HeaderActionButton({
+    super.key,
+    required this.icon,
+    required this.background,
+    required this.foreground,
+    this.borderColor,
+    this.showDot = false,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+  final Color? borderColor;
+  final bool showDot;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(99),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: background,
+          shape: BoxShape.circle,
+          border: borderColor != null ? Border.all(color: borderColor!) : null,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x100E1726),
+              blurRadius: 10,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Center(child: Icon(icon, color: foreground, size: 20)),
+            if (showDot)
+              Positioned(
+                right: 11,
+                top: 11,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2B6FF3),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class MarketPageHeader extends StatelessWidget {
   const MarketPageHeader({
     super.key,

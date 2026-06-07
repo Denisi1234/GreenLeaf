@@ -11,6 +11,7 @@ import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_product_page.dart';
 import 'inventory_product_item.dart';
+import '../more/duka_ai_page.dart';
 
 class ProductManagementPage extends StatefulWidget {
   const ProductManagementPage({
@@ -277,7 +278,7 @@ class _ProductsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MarketPageHeader(
+    return MarketPageHeader(
       title: 'Products',
       subtitle: 'Browse, filter, and edit items',
       showBackButton: false,
@@ -285,6 +286,29 @@ class _ProductsHeader extends StatelessWidget {
       showBorder: false,
       titleSize: 28,
       titleWeight: FontWeight.w700,
+      actions: [
+        HeaderActionButton(
+          icon: Icons.smart_toy_outlined,
+          background: Colors.white,
+          foreground: const Color(0xFF33363F),
+          borderColor: const Color(0xFFE7EAF0),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => DukaAiAdvisorPage(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        HeaderActionButton(
+          icon: Icons.notifications_none_rounded,
+          background: Colors.white,
+          foreground: const Color(0xFF33363F),
+          borderColor: const Color(0xFFE7EAF0),
+          showDot: true,
+        ),
+      ],
     );
   }
 }
@@ -602,6 +626,15 @@ class _ProductGridCard extends StatelessWidget {
                                     color: Color(0xFF1B9B69),
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${product.stockCount} in stock',
+                                  style: const TextStyle(
+                                    color: Color(0xFF7A859C),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],

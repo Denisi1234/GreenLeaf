@@ -10,6 +10,7 @@ import '../payment/payment_page.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
+import '../more/duka_ai_page.dart';
 
 class MarketHomePage extends StatelessWidget {
   const MarketHomePage({
@@ -202,7 +203,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
     final content = Stack(
       children: [
         const Positioned.fill(
-          child: ColoredBox(color: Color(0xFFF8FAFC)),
+          child: ColoredBox(color: Colors.white),
         ),
         Column(
           children: [
@@ -329,17 +330,41 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   }
 }
 
+// ... (other imports)
+
 class TopBar extends StatelessWidget {
   const TopBar({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MarketPageHeader(
+    return MarketPageHeader(
       title: 'Sales',
       centerTitle: false,
       showBackButton: false,
-      leading: DrawerMenuButton(),
-      actions: [],
+      leading: const DrawerMenuButton(),
+      actions: [
+        HeaderActionButton(
+          icon: Icons.smart_toy_outlined,
+          background: Colors.white,
+          foreground: const Color(0xFF33363F),
+          borderColor: const Color(0xFFE7EAF0),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const DukaAiAdvisorPage(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        HeaderActionButton(
+          icon: Icons.notifications_none_rounded,
+          background: Colors.white,
+          foreground: const Color(0xFF33363F),
+          borderColor: const Color(0xFFE7EAF0),
+          showDot: true,
+        ),
+      ],
     );
   }
 }
@@ -357,23 +382,16 @@ class SearchBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 54,
+      height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x05000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 20, color: Color(0xFF94A3B8)),
+          const Icon(Icons.search, size: 24, color: Color(0xFF9CA3AF)),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
@@ -446,8 +464,8 @@ class ProductCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE7EAF0)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -501,24 +519,16 @@ class ProductCard extends StatelessWidget {
               top: 8,
               right: 8,
               child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                width: 26,
+                height: 26,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEFF4FF),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE1E6ED)),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x0C0E1726),
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
                 ),
                 child: const Icon(
                   Icons.add_rounded,
-                  color: Color(0xFF1C8F5A),
-                  size: 15,
+                  color: Color(0xFF2563EB),
+                  size: 18,
                 ),
               ),
             ),
@@ -604,34 +614,27 @@ class CheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE1E6ED)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x080E1726),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
       ),
       child: Row(
         children: [
           Stack(
             clipBehavior: Clip.none,
             children: [
-              Container(
-                key: cartKey,
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE1E6ED)),
-                ),
-                child: const Icon(
+                Container(
+                  key: cartKey,
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
+                  ),
+                  child: const Icon(
                   Icons.shopping_cart_outlined,
                   color: Color(0xFF1F2937),
                   size: 24,

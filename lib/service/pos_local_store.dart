@@ -14,6 +14,7 @@ import 'daftari_recovery_models.dart';
 import 'duka_ai_service.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
+import 'expense_model.dart';
 
 const _seedInventory = <InventoryProductItem>[
   InventoryProductItem(
@@ -314,6 +315,7 @@ class PosLocalStore extends ChangeNotifier {
       <DaftariLearningRule>[];
   final List<DukaAiThread> _dukaAiThreads = <DukaAiThread>[];
   final List<DukaAiMessage> _dukaAiMessages = <DukaAiMessage>[];
+  final List<Expense> _expenses = <Expense>[];
   AppProfileData _profile = AppProfileData.empty();
   String? _activeDukaAiThreadId;
 
@@ -414,9 +416,14 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(await _database.loadDukaAiThreads());
 
+    final storedExpenses = await _database.loadExpenses();
+    _expenses
+      ..clear()
+      ..addAll(storedExpenses.map(Expense.fromMap));
+
     if (_dukaAiThreads.isEmpty) {
       final now = DateTime.now().toIso8601String();
-    final defaultThread = DukaAiThread(
+      final defaultThread = DukaAiThread(
         id: 'thread-default',
         title: 'MyDuka AI',
         preview: '',
@@ -474,6 +481,20 @@ class PosLocalStore extends ChangeNotifier {
     _updateCartTotals();
     _isInitialized = true;
     notifyListeners();
+  }
+
+  List<Expense> get expenses => List.unmodifiable(_expenses);
+
+  Future<void> addExpense(Expense expense) async {
+    _expenses.insert(0, expense);
+    notifyListeners();
+    await _database.insertExpense(expense.toMap());
+  }
+
+  Future<void> deleteExpense(int id) async {
+    _expenses.removeWhere((expense) => expense.id == id);
+    notifyListeners();
+    await _database.deleteExpense(id);
   }
 
   Future<void> updateGeminiSettings({

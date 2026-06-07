@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../home/home_page.dart';
 import '../more/duka_ai_page.dart';
+import '../more/expenses_tracking_page.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../widgets/app_design.dart';
@@ -423,26 +424,34 @@ class _PremiumReportsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MarketPageHeader(
+    return MarketPageHeader(
       title: 'Dashboard',
       showBackButton: false,
       centerTitle: false,
       titleSize: 22,
       titleWeight: FontWeight.w700,
-      leading: _ReportsBrandIcon(),
+      leading: const _ReportsBrandIcon(),
       actions: [
-        _HeaderActionButton(
+        HeaderActionButton(
+          icon: Icons.smart_toy_outlined,
+          background: Colors.white,
+          foreground: ReportsPage._ink,
+          borderColor: const Color(0xFFE7EAF0),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const DukaAiAdvisorPage(),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        const HeaderActionButton(
           icon: Icons.notifications_none_rounded,
           background: Colors.white,
           foreground: ReportsPage._ink,
           borderColor: Color(0xFFE7EAF0),
           showDot: true,
-        ),
-        SizedBox(width: 8),
-        _HeaderActionButton(
-          icon: Icons.add_rounded,
-          background: Color(0xFF23262D),
-          foreground: Colors.white,
         ),
       ],
     );
@@ -1187,7 +1196,7 @@ class _OverviewStatsGrid extends StatelessWidget {
                 icon: Icons.payments_outlined,
                 iconColor: Color(0xFF6BA5FF),
                 iconBackground: Color(0xFFF4F8FF),
-                title: 'Total Revenue',
+                title: 'Today Revenue',
                 value: '\$728,450',
                 footer: '+7.4%',
                 footerColor: Color(0xFF2FA24A),
@@ -1229,7 +1238,7 @@ class _OverviewStatsGrid extends StatelessWidget {
                 icon: Icons.bolt_rounded,
                 iconColor: Color(0xFF8B5CF6),
                 iconBackground: Color(0xFFF5F1FF),
-                title: 'Conversion Rate',
+                title: 'Today Expenses',
                 value: '4.8%',
                 footer: '-1.1%',
                 footerColor: Color(0xFFD65555),
@@ -1439,7 +1448,8 @@ class _InsightsPromoCard extends StatelessWidget {
                               onPressed: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(
-                                    builder: (context) => const ReportHubPage(),
+                                    builder: (context) =>
+                                        const ExpensesTrackingPage(),
                                   ),
                                 );
                               },
@@ -1454,7 +1464,7 @@ class _InsightsPromoCard extends StatelessWidget {
                                 ),
                               ),
                               child: const Text(
-                                'Upgrade Plan',
+                                'Record My Expenses',
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
@@ -1483,7 +1493,7 @@ class _InsightsPromoCard extends StatelessWidget {
                                 ),
                               ),
                               child: const Text(
-                                'My Store Reports',
+                                'See My Store Reports',
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
@@ -1674,7 +1684,7 @@ class _OverviewChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
-    final yLabels = [r'40$', r'30$', r'20$', r'10$', r'0$'];
+    final yLabels = [r'0$', r'10$', r'20$', r'30$', r'40$'];
 
     return Column(
       children: [
@@ -1781,14 +1791,14 @@ class _OverviewChartPainter extends CustomPainter {
     final points = <Offset>[];
     for (var i = 0; i < values.length; i++) {
       final x = leftPad + (chartWidth / (values.length - 1)) * i;
-      final y = topPad + (1 - values[i].clamp(0.0, 1.0)) * chartHeight;
+      final y = topPad + values[i].clamp(0.0, 1.0) * chartHeight;
       points.add(Offset(x, y));
     }
 
     const highlightIndex = 3;
     final highlightPoint = points[highlightIndex];
     final highlightRect = Rect.fromCenter(
-      center: Offset(highlightPoint.dx, (topPad + chartHeight * 0.53)),
+      center: Offset(highlightPoint.dx, (topPad + chartHeight * 0.47)),
       width: chartWidth / values.length,
       height: chartHeight * 0.92,
     );
@@ -1859,61 +1869,9 @@ class _OverviewChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _OverviewChartPainter oldDelegate) {
     return oldDelegate.values != values;
   }
-}
-
-class _HeaderActionButton extends StatelessWidget {
-  const _HeaderActionButton({
-    required this.icon,
-    required this.background,
-    required this.foreground,
-    this.borderColor,
-    this.showDot = false,
-  });
-
-  final IconData icon;
-  final Color background;
-  final Color foreground;
-  final Color? borderColor;
-  final bool showDot;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: background,
-        shape: BoxShape.circle,
-        border: borderColor != null ? Border.all(color: borderColor!) : null,
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x100E1726),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Center(child: Icon(icon, color: foreground, size: 20)),
-          if (showDot)
-            Positioned(
-              right: 11,
-              top: 11,
-              child: Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2B6FF3),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
   }
-}
+
+
 
 String _compactMoney(double value) {
   if (value >= 1000000) {

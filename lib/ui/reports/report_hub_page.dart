@@ -14,6 +14,8 @@ import '../../service/pos_order_models.dart';
 import '../models/product_item.dart';
 import '../widgets/market_shared_widgets.dart';
 
+// ignore_for_file: unused_element
+
 enum _ReportPeriod { today, week, month, allTime }
 
 extension _ReportPeriodLabel on _ReportPeriod {
@@ -42,6 +44,12 @@ extension _ReportPeriodLabel on _ReportPeriod {
         return 'All';
     }
   }
+}
+
+String _kLabel(num value) {
+  if (value <= 0) return '0K';
+  final thousands = value.toDouble() / 1000;
+  return '${thousands.round()}K';
 }
 
 class ReportHubPage extends StatefulWidget {
@@ -83,7 +91,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
         backgroundColor: ReportHubPage._bg,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -92,7 +100,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
                   onDownloadTap: () => _downloadReport(context),
                   isDownloading: _isDownloading,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _RangeCard(
                   dateRange: report.dateRangeLabel,
                   periodLabel: _selectedPeriod.shortLabel,
@@ -100,17 +108,17 @@ class _ReportHubPageState extends State<ReportHubPage> {
                     setState(() => _selectedPeriod = period);
                   },
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _MetricGrid(metrics: report.metrics),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Expanded(
                   flex: 2,
                   child: _SectionCard(
                     title: 'Sales Trend',
-                    trailing: _FilterPill(label: report.periodLabel),
+                    trailing: const SizedBox.shrink(),
                     child: Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.only(top: 10),
                         child: _SalesTrendChart(
                           points: report.trendPoints,
                           maxValue: report.chartMaxValue,
@@ -119,7 +127,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 Expanded(
                   flex: 1,
                   child: _SectionCard(
@@ -151,7 +159,11 @@ class _ReportHubPageState extends State<ReportHubPage> {
     final report = _buildReportSnapshot(store.orders, _selectedPeriod);
     try {
       final aiSummary = await _buildAiExecutiveSummary(store, report);
-      pdfBytes = await _buildSalesReportPdfBytes(report, aiSummary);
+      pdfBytes = await _buildSalesReportPdfBytes(
+        report,
+        aiSummary,
+        store.profile,
+      );
       final shared = await _shareReportPdf(pdfBytes, fileName);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -293,10 +305,13 @@ class _ReportHubPageState extends State<ReportHubPage> {
   Future<Uint8List> _buildSalesReportPdfBytes(
     _ReportSnapshot report,
     String aiSummary,
+    AppProfileData profile,
   ) async {
     final pdf = pw.Document();
     final baseFont = await PdfGoogleFonts.notoSansRegular();
     final boldFont = await PdfGoogleFonts.notoSansBold();
+    final logoImage = await _loadPdfLogoImage(profile);
+    final generatedAt = DateTime.now();
 
     pdf.addPage(
       pw.MultiPage(
@@ -304,24 +319,66 @@ class _ReportHubPageState extends State<ReportHubPage> {
         margin: const pw.EdgeInsets.all(24),
         theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
         build: (context) => [
-          _pdfHeader(report),
+          _pdfHeader(report, profile, logoImage),
           pw.SizedBox(height: 14),
           _pdfAiSummarySection(aiSummary),
+          pw.SizedBox(height: 18),
+          _pdfHighlightsSection(report),
+          pw.SizedBox(height: 18),
+          _pdfStoreDetails(profile),
           pw.SizedBox(height: 18),
           _pdfMetricRow(report.metrics),
           pw.SizedBox(height: 18),
           _pdfSectionHeader('Sales Trend'),
           pw.SizedBox(height: 10),
-          _pdfTrendSummary(report.trendPoints),
+          _pdfTrendSummaryClean(report.trendPoints),
           pw.SizedBox(height: 18),
           _pdfSectionHeader('Top Selling Products'),
           pw.SizedBox(height: 10),
           _pdfProductTable(report.products),
         ],
+        footer: (context) => pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 10),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Generated ${_formatPdfDateTime(generatedAt)}',
+                style: const pw.TextStyle(
+                  fontSize: 8.5,
+                  color: PdfColors.grey600,
+                ),
+              ),
+              pw.Text(
+                profile.storeName.trim().isEmpty
+                    ? 'Sales Report'
+                    : profile.storeName.trim(),
+                style: const pw.TextStyle(
+                  fontSize: 8.5,
+                  color: PdfColors.grey600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
 
     return pdf.save();
+  }
+
+  Future<pw.ImageProvider?> _loadPdfLogoImage(AppProfileData profile) async {
+    final path = profile.logoPath?.trim();
+    if (path == null || path.isEmpty) return null;
+
+    try {
+      final file = File(path);
+      if (!await file.exists()) return null;
+      final bytes = await file.readAsBytes();
+      return pw.MemoryImage(bytes);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<bool> _shareReportPdf(Uint8List bytes, String fileName) async {
@@ -342,27 +399,109 @@ class _ReportHubPageState extends State<ReportHubPage> {
     return true;
   }
 
-  pw.Widget _pdfHeader(_ReportSnapshot report) {
+  pw.Widget _pdfHeader(
+    _ReportSnapshot report,
+    AppProfileData profile,
+    pw.ImageProvider? logoImage,
+  ) {
+    final storeName =
+        profile.storeName.trim().isEmpty ? 'Store report' : profile.storeName;
+    final ownerName =
+        profile.ownerName.trim().isEmpty ? 'Owner not set' : profile.ownerName;
+    final contact =
+        profile.contactNumber.trim().isEmpty ? 'Contact not set' : profile.contactNumber;
+    final email =
+        profile.emailAddress.trim().isEmpty ? 'Email not set' : profile.emailAddress;
+    final address = profile.physicalAddress.trim().isEmpty
+        ? 'Address not set'
+        : profile.physicalAddress;
+
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
+        if (logoImage != null) ...[
+          pw.Container(
+            width: 52,
+            height: 52,
+            decoration: pw.BoxDecoration(
+              color: PdfColor.fromHex('#F3F6FB'),
+              borderRadius: pw.BorderRadius.circular(14),
+              border: pw.Border.all(color: PdfColor.fromHex('#DDE4EE')),
+            ),
+            child: pw.ClipRRect(
+              horizontalRadius: 14,
+              verticalRadius: 14,
+              child: pw.Image(
+                logoImage,
+                fit: pw.BoxFit.cover,
+              ),
+            ),
+          ),
+          pw.SizedBox(width: 12),
+        ] else ...[
+          pw.Container(
+            width: 52,
+            height: 52,
+            decoration: pw.BoxDecoration(
+              color: PdfColor.fromHex('#EAF1FF'),
+              borderRadius: pw.BorderRadius.circular(14),
+            ),
+            child: pw.Center(
+              child: pw.Text(
+                storeName.isNotEmpty ? storeName[0].toUpperCase() : 'R',
+                style: pw.TextStyle(
+                  color: PdfColor.fromHex('#1E67E8'),
+                  fontSize: 22,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          pw.SizedBox(width: 12),
+        ],
         pw.Expanded(
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
+                storeName,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColor.fromHex('#0F172A'),
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
                 'Sales Report',
                 style: pw.TextStyle(
-                  fontSize: 22,
+                  fontSize: 11.5,
                   fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey700,
                 ),
               ),
               pw.SizedBox(height: 4),
               pw.Text(
                 report.dateRangeLabel,
                 style: const pw.TextStyle(
-                  fontSize: 11,
+                  fontSize: 10.5,
                   color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                '$ownerName | $contact | $email',
+                style: const pw.TextStyle(
+                  fontSize: 9.5,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                address,
+                style: const pw.TextStyle(
+                  fontSize: 9.5,
+                  color: PdfColors.grey600,
                 ),
               ),
             ],
@@ -371,14 +510,15 @@ class _ReportHubPageState extends State<ReportHubPage> {
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: pw.BoxDecoration(
-            color: PdfColor.fromHex('#EAF1FF'),
+            color: PdfColor.fromHex('#F8FAFC'),
             borderRadius: pw.BorderRadius.circular(10),
+            border: pw.Border.all(color: PdfColor.fromHex('#DDE4EE')),
           ),
           child: pw.Text(
             report.periodLabel,
             style: pw.TextStyle(
-              color: PdfColor.fromHex('#1E67E8'),
-              fontSize: 11,
+              color: PdfColor.fromHex('#0F172A'),
+              fontSize: 10.5,
               fontWeight: pw.FontWeight.bold,
             ),
           ),
@@ -401,7 +541,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
       padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
         color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(12),
+        borderRadius: pw.BorderRadius.circular(14),
         border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2')),
       ),
       child: pw.Column(
@@ -429,7 +569,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
           pw.Text(
             metric.title,
             style: pw.TextStyle(
-              fontSize: 10,
+              fontSize: 9.5,
               color: PdfColors.grey700,
               fontWeight: pw.FontWeight.bold,
             ),
@@ -438,7 +578,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
           pw.Text(
             metric.value,
             style: pw.TextStyle(
-              fontSize: 15,
+              fontSize: 14.5,
               color: PdfColor.fromHex(_hexForMetric(metric.valueColor)),
               fontWeight: pw.FontWeight.bold,
             ),
@@ -448,12 +588,180 @@ class _ReportHubPageState extends State<ReportHubPage> {
     );
   }
 
+  pw.Widget _pdfStoreDetails(AppProfileData profile) {
+    final lines = <pw.Widget>[
+      pw.Text(
+        'Store information',
+        style: pw.TextStyle(
+          fontSize: 13.5,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColor.fromHex('#0F172A'),
+        ),
+      ),
+      pw.SizedBox(height: 8),
+      pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.all(12),
+        decoration: pw.BoxDecoration(
+          color: PdfColor.fromHex('#F8FAFC'),
+          borderRadius: pw.BorderRadius.circular(14),
+          border: pw.Border.all(color: PdfColor.fromHex('#DDE4EE')),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            _pdfInfoLine(
+              'Store name',
+              profile.storeName.trim().isEmpty ? 'Not set' : profile.storeName,
+            ),
+            pw.SizedBox(height: 6),
+            _pdfInfoLine(
+              'Owner',
+              profile.ownerName.trim().isEmpty ? 'Not set' : profile.ownerName,
+            ),
+            pw.SizedBox(height: 6),
+            _pdfInfoLine(
+              'Contact',
+              profile.contactNumber.trim().isEmpty
+                  ? 'Not set'
+                  : profile.contactNumber,
+            ),
+            pw.SizedBox(height: 6),
+            _pdfInfoLine(
+              'Email',
+              profile.emailAddress.trim().isEmpty
+                  ? 'Not set'
+                  : profile.emailAddress,
+            ),
+            pw.SizedBox(height: 6),
+            _pdfInfoLine(
+              'Address',
+              profile.physicalAddress.trim().isEmpty
+                  ? 'Not set'
+                  : profile.physicalAddress,
+            ),
+          ],
+        ),
+      ),
+    ];
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: lines,
+    );
+  }
+
+  pw.Widget _pdfHighlightsSection(_ReportSnapshot report) {
+    final topProduct = report.products.isNotEmpty
+        ? report.products.first
+        : null;
+    final revenue = report.metrics.isNotEmpty ? report.metrics[0].value : 'TSH 0';
+    final orders = report.metrics.length > 1 ? report.metrics[1].value : '0';
+    final average = report.metrics.length > 2 ? report.metrics[2].value : 'TSH 0';
+    final topProductText = topProduct == null
+        ? 'No completed sales were recorded in this period.'
+        : '${topProduct.title} led the period with ${topProduct.orders} and ${topProduct.amount} revenue.';
+
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        color: PdfColor.fromHex('#FBFCFE'),
+        borderRadius: pw.BorderRadius.circular(14),
+        border: pw.Border.all(color: PdfColor.fromHex('#E3E9F2')),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Key highlights',
+            style: pw.TextStyle(
+              fontSize: 13.5,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#0F172A'),
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          _pdfBullet(
+            'Revenue for this period is $revenue across $orders completed orders, with an average order value of $average.',
+          ),
+          pw.SizedBox(height: 5),
+          _pdfBullet(topProductText),
+          pw.SizedBox(height: 5),
+          _pdfBullet(
+            'The report only includes completed sales stored in the app, so it reflects finalized business activity.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfBullet(String text) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Container(
+          width: 5,
+          height: 5,
+          margin: const pw.EdgeInsets.only(top: 5.5),
+          decoration: pw.BoxDecoration(
+            color: PdfColor.fromHex('#1E67E8'),
+            shape: pw.BoxShape.circle,
+          ),
+        ),
+        pw.SizedBox(width: 8),
+        pw.Expanded(
+          child: pw.Text(
+            text,
+            style: const pw.TextStyle(
+              fontSize: 10,
+              color: PdfColors.grey800,
+              lineSpacing: 4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _pdfInfoLine(String label, String value) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(
+          width: 72,
+          child: pw.Text(
+            '$label:',
+            style: pw.TextStyle(
+              fontSize: 9.5,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#64748B'),
+            ),
+          ),
+        ),
+        pw.Expanded(
+          child: pw.Text(
+            value,
+            style: pw.TextStyle(
+              fontSize: 10,
+              color: PdfColor.fromHex('#0F172A'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   pw.Widget _pdfSectionHeader(String title) {
-    return pw.Text(
-      title,
-      style: pw.TextStyle(
-        fontSize: 16,
-        fontWeight: pw.FontWeight.bold,
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 2),
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(
+          fontSize: 14.5,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColor.fromHex('#0F172A'),
+        ),
       ),
     );
   }
@@ -462,9 +770,9 @@ class _ReportHubPageState extends State<ReportHubPage> {
     return pw.Container(
       padding: const pw.EdgeInsets.all(14),
       decoration: pw.BoxDecoration(
-        color: PdfColor.fromHex('#F8FBFF'),
+        color: PdfColor.fromHex('#FAFCFF'),
         borderRadius: pw.BorderRadius.circular(14),
-        border: pw.Border.all(color: PdfColor.fromHex('#DDE6F7')),
+        border: pw.Border.all(color: PdfColor.fromHex('#DCE6F5')),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -493,7 +801,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
               pw.Text(
                 'AI Executive Analysis',
                 style: pw.TextStyle(
-                  fontSize: 14.5,
+                  fontSize: 13.5,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColor.fromHex('#0F172A'),
                 ),
@@ -504,7 +812,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
           pw.Text(
             aiSummary,
             style: const pw.TextStyle(
-              fontSize: 10.8,
+              fontSize: 10.2,
               color: PdfColors.grey800,
               lineSpacing: 4,
             ),
@@ -513,7 +821,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
           pw.Text(
             'Generated from completed sales, trend data, and top product performance inside the app.',
             style: const pw.TextStyle(
-              fontSize: 8.8,
+              fontSize: 8.6,
               color: PdfColors.grey600,
             ),
           ),
@@ -539,12 +847,75 @@ class _ReportHubPageState extends State<ReportHubPage> {
                     (point) => pw.Padding(
                       padding: const pw.EdgeInsets.only(bottom: 4),
                       child: pw.Text(
-                        '${point.label}: ${point.displayValue}',
-                        style: const pw.TextStyle(fontSize: 10.5),
+                        '${point.label}  •  ${point.displayValue}',
+                        style: const pw.TextStyle(
+                          fontSize: 10,
+                          color: PdfColors.grey800,
+                        ),
                       ),
                     ),
                   )
                   .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfTrendSummaryClean(List<_TrendPoint> points) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        color: PdfColor.fromHex('#FBFCFE'),
+        borderRadius: pw.BorderRadius.circular(12),
+        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2')),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Trend breakdown',
+            style: pw.TextStyle(
+              fontSize: 11.5,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#0F172A'),
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          ...points.map(
+            (point) => pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 6),
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.white,
+                borderRadius: pw.BorderRadius.circular(10),
+                border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2')),
+              ),
+              child: pw.Row(
+                children: [
+                  pw.Expanded(
+                    child: pw.Text(
+                      point.label,
+                      style: const pw.TextStyle(
+                        fontSize: 10,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
+                  ),
+                  pw.Text(
+                    point.displayValue,
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColor.fromHex('#1E67E8'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -565,7 +936,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
           decoration: pw.BoxDecoration(color: PdfColor.fromHex('#F8F9FB')),
           children: [
             _pdfTableCell('Product', bold: true),
-            _pdfTableCell('Orders', bold: true),
+            _pdfTableCell('Sold', bold: true),
             _pdfTableCell('Revenue', bold: true),
           ],
         ),
@@ -597,6 +968,28 @@ class _ReportHubPageState extends State<ReportHubPage> {
 
   String _reportFileName() {
     return 'sales_report_${DateTime.now().millisecondsSinceEpoch}.pdf';
+  }
+
+  String _formatPdfDateTime(DateTime dateTime) {
+    const monthNames = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final hour = dateTime.hour % 12 == 0 ? 12 : dateTime.hour % 12;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
+    return '${monthNames[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year} '
+        '$hour:$minute $amPm';
   }
 
   String _hexForMetric(Color color) {
@@ -657,12 +1050,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
   }
 
   String _compactAmount(double value) {
-    if (value <= 0) return '0';
-    if (value >= 1000) {
-      final asThousands = value / 1000;
-      return '${asThousands.toStringAsFixed(asThousands % 1 == 0 ? 0 : 1)}K';
-    }
-    return value.toStringAsFixed(0);
+    return _kLabel(value);
   }
 
   String _formatWithCommas(num value) {
@@ -945,7 +1333,7 @@ Keep each section brief and readable in a PDF.
         _TrendPoint(
           label: _trendLabel(startDate),
           value: 0,
-          displayValue: '0',
+          displayValue: _compactAmount(0),
         ),
       ];
     }
@@ -995,7 +1383,7 @@ Keep each section brief and readable in a PDF.
             _TrendPoint(
               label: _trendLabel(startDate),
               value: 0,
-              displayValue: '0',
+              displayValue: _compactAmount(0),
             ),
           ]
         : points;
@@ -1168,25 +1556,18 @@ class _RangeCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: ReportHubPage._border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
       ),
-      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       child: Row(
         children: [
           const Icon(
             Icons.calendar_month_rounded,
-            color: ReportHubPage._blue,
-            size: 22,
+            color: ReportHubPage._muted,
+            size: 20,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Row(
               children: [
@@ -1195,9 +1576,8 @@ class _RangeCard extends StatelessWidget {
                     dateRange,
                     style: const TextStyle(
                       color: ReportHubPage._ink,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -1220,11 +1600,12 @@ class _RangeCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 8,
+                      vertical: 7,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEAF1FF),
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: ReportHubPage._border),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1232,15 +1613,15 @@ class _RangeCard extends StatelessWidget {
                         Text(
                           periodLabel,
                           style: const TextStyle(
-                            color: ReportHubPage._blue,
+                            color: ReportHubPage._ink,
                             fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(width: 4),
                         const Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: ReportHubPage._blue,
+                          color: ReportHubPage._muted,
                           size: 16,
                         ),
                       ],
@@ -1265,7 +1646,7 @@ class _MetricGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const columns = 3;
+        final columns = constraints.maxWidth < 420 ? 2 : 3;
         const gap = 6.0;
         final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
 
@@ -1294,26 +1675,19 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 108,
+      height: 104,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: ReportHubPage._border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x090F172A),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
       ),
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: data.tint,
               shape: BoxShape.circle,
@@ -1321,18 +1695,18 @@ class _MetricCard extends StatelessWidget {
             child: Icon(
               data.icon,
               color: data.iconColor,
-              size: 16,
+              size: 15,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           Text(
             data.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: ReportHubPage._muted,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
               height: 1,
             ),
           ),
@@ -1344,9 +1718,9 @@ class _MetricCard extends StatelessWidget {
               data.value,
               style: TextStyle(
                 color: data.valueColor,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
               ),
             ),
           ),
@@ -1372,17 +1746,10 @@ class _SectionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: ReportHubPage._border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x090F172A),
-            blurRadius: 12,
-            offset: Offset(0, 6),
-          ),
-        ],
       ),
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1393,54 +1760,17 @@ class _SectionCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: ReportHubPage._ink,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ),
               trailing,
             ],
           ),
+          const SizedBox(height: 8),
           child,
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterPill extends StatelessWidget {
-  const _FilterPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFDDE6F7)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: ReportHubPage._blue,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(width: 6),
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: ReportHubPage._blue,
-            size: 16,
-          ),
         ],
       ),
     );
@@ -1566,14 +1896,23 @@ class _SalesTrendPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    const leftPad = 62.0;
+    const rightPad = 24.0;
+    const topPad = 16.0;
+    const topInset = 20.0;
+    const bottomPad = 22.0;
     const labelBandHeight = 20.0;
     final chartRect = Rect.fromLTWH(
-      36,
-      16,
-      size.width - 42,
-      size.height - 38 - labelBandHeight,
+      leftPad,
+      topPad,
+      size.width - leftPad - rightPad,
+      size.height - topPad - bottomPad - labelBandHeight,
     );
     const lineColor = ReportHubPage._blue;
+
+    final showEveryNth = points.length > 5 ? 2 : 1;
+    bool shouldDrawLabel(int i) =>
+        i == 0 || i == points.length - 1 || i % showEveryNth == 0;
 
     final gridPaint = Paint()
       ..color = const Color(0xFFD8DFEA)
@@ -1611,7 +1950,8 @@ class _SalesTrendPainter extends CustomPainter {
     for (var index = 0; index < points.length; index++) {
       final x = chartRect.left + (stepX * index);
       final y = chartRect.bottom -
-          (points[index].value / chartMaxValue) * chartRect.height;
+          (points[index].value / chartMaxValue) *
+              (chartRect.height - topInset);
       offsets.add(Offset(x, y));
     }
 
@@ -1629,7 +1969,7 @@ class _SalesTrendPainter extends CustomPainter {
         _gridLabel(gridValue),
         _axisStyle,
         Offset(0, gridY - 8),
-        width: 28,
+        width: 40,
         align: TextAlign.right,
       );
     }
@@ -1658,31 +1998,29 @@ class _SalesTrendPainter extends CustomPainter {
       canvas.drawCircle(offset, 8, pointOuterPaint);
       canvas.drawCircle(offset, 5.2, pointInnerPaint);
 
-      _paintText(
-        canvas,
-        points[index].displayValue,
-        _valueStyle,
-        Offset(offset.dx, offset.dy - 34),
-        width: 30,
-        align: TextAlign.center,
-      );
-      _paintText(
-        canvas,
-        points[index].label,
-        _axisStyle,
-        Offset(offset.dx, chartRect.bottom + 6),
-        width: 42,
-        align: TextAlign.center,
-      );
+      if (shouldDrawLabel(index)) {
+        _paintText(
+          canvas,
+          points[index].displayValue,
+          _valueStyle,
+          Offset(offset.dx, offset.dy - 34),
+          width: 48,
+          align: TextAlign.center,
+        );
+        _paintText(
+          canvas,
+          points[index].label,
+          _axisStyle,
+          Offset(offset.dx, chartRect.bottom + 6),
+          width: 48,
+          align: TextAlign.center,
+        );
+      }
     }
   }
 
   static String _gridLabel(double value) {
-    if (value == 0) return '0';
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)}K';
-    }
-    return value.toStringAsFixed(0);
+    return _kLabel(value);
   }
 
   void _drawDashedLine(

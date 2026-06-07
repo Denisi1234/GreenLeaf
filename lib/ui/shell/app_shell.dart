@@ -6,6 +6,7 @@ import '../products/product_management_page.dart';
 import '../reports/reports_page.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/market_bottom_nav.dart';
+import '../more/duka_ai_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -118,6 +119,29 @@ class _AppShellState extends State<AppShell>
             titleSize: 22,
             titleWeight: FontWeight.w800,
             showBorder: true,
+            actions: [
+              HeaderActionButton(
+                icon: Icons.smart_toy_outlined,
+                background: Colors.white,
+                foreground: const Color(0xFF33363F),
+                borderColor: const Color(0xFFE7EAF0),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => DukaAiAdvisorPage(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+              HeaderActionButton(
+                icon: Icons.notifications_none_rounded,
+                background: Colors.white,
+                foreground: const Color(0xFF33363F),
+                borderColor: const Color(0xFFE7EAF0),
+                showDot: true,
+              ),
+            ],
           ),
           Expanded(
             child: AnimatedBuilder(

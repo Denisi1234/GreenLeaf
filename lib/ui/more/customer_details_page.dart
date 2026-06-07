@@ -180,19 +180,8 @@ class _HeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1F4FD8), Color(0xFF1A3FB8)],
-        ),
+        color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1F4FD8).withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Row(
         children: [
@@ -207,7 +196,7 @@ class _HeroCard extends StatelessWidget {
             child: Text(
               customer.initials,
               style: const TextStyle(
-                color: AppColors.primaryDeep,
+                color: Color(0xFF0F172A),
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -284,15 +273,25 @@ class _ContactActions extends StatelessWidget {
     String fallbackMsg,
   ) async {
     final uri = Uri.parse(scheme);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else if (context.mounted) {
-      showMarketNotice(
-        context,
-        title: 'Cannot Open',
-        message: fallbackMsg,
-        type: MarketNoticeType.warning,
-      );
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && context.mounted) {
+        showMarketNotice(
+          context,
+          title: 'Cannot Open',
+          message: fallbackMsg,
+          type: MarketNoticeType.warning,
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        showMarketNotice(
+          context,
+          title: 'Cannot Open',
+          message: fallbackMsg,
+          type: MarketNoticeType.warning,
+        );
+      }
     }
   }
 

@@ -87,9 +87,26 @@ class MorePage extends StatelessWidget {
                         ),
                       ),
                       actions: [
-                        _HeaderActionCircle(
-                          icon: Icons.person_outline_rounded,
-                          onTap: () {},
+                        HeaderActionButton(
+                          icon: Icons.smart_toy_outlined,
+                          background: Colors.white,
+                          foreground: const Color(0xFF33363F),
+                          borderColor: const Color(0xFFE7EAF0),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) => const DukaAiAdvisorPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        HeaderActionButton(
+                          icon: Icons.notifications_none_rounded,
+                          background: Colors.white,
+                          foreground: const Color(0xFF33363F),
+                          borderColor: const Color(0xFFE7EAF0),
+                          showDot: true,
                         ),
                       ],
                     ),
