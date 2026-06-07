@@ -1294,7 +1294,31 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   List<CustomerData> get customers => _customers;
+  List<SavedCart> get savedCarts => _savedCarts;
+
   final List<CustomerData> _customers = <CustomerData>[];
+  final List<SavedCart> _savedCarts = <SavedCart>[];
+
+  Future<void> saveForLater({required List<OrderLineItem> items}) async {
+    final savedCart = SavedCart(
+      id: 'CART-${DateTime.now().millisecondsSinceEpoch}',
+      items: List.from(items),
+      savedAt: DateTime.now().toString(),
+    );
+    _savedCarts.add(savedCart);
+    notifyListeners();
+  }
+
+  void restoreCart(String cartId) {
+    final cartIndex = _savedCarts.indexWhere((c) => c.id == cartId);
+    if (cartIndex != -1) {
+      final cart = _savedCarts.removeAt(cartIndex);
+      for (final item in cart.items) {
+        addToCart(item.product);
+      }
+      notifyListeners();
+    }
+  }
 
   Future<void> addCustomer(CustomerData customer) async {
     _customers.add(customer);
