@@ -5,7 +5,7 @@ import '../../service/pos_local_store.dart';
 import '../models/customer_data.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'create_customer_page.dart';
-import 'customer_details_page.dart';
+import 'package:possystem/ui/more/customer_details_page.dart';
 
 class CustomersPage extends StatefulWidget {
   const CustomersPage({
@@ -356,3 +356,5 @@ class _CustomerListItem extends StatelessWidget {
     );
   }
 }
+
+

@@ -438,48 +438,59 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            label: 'Total Spent',
-            value: 'TSh ${_formatMoney(totalSpent)}',
-            color: AppColors.primary,
-            icon: Icons.payments_outlined,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _StatCard(
-            label: 'Orders',
-            value: orderCount.toString(),
-            color: const Color(0xFF10B981),
-            icon: Icons.receipt_long_outlined,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _StatCard(
-            label: 'Avg Order',
-            value: 'TSh ${_formatMoney(avg)}',
-            color: const Color(0xFFF59E0B),
-            icon: Icons.trending_up_rounded,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _StatCard(
-            label: 'Last Visit',
-            value: lastOrder == null ? '—' : _formatDate(lastOrder!),
-            color: const Color(0xFF8B5CF6),
-            icon: Icons.event_outlined,
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 640 ? 4 : 2;
+        const gap = 10.0;
+        final itemWidth =
+            (constraints.maxWidth - (gap * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            SizedBox(
+              width: itemWidth,
+              child: _StatCard(
+                label: 'Total Spent',
+                value: 'TSh ${_formatMoney(totalSpent)}',
+                color: AppColors.primary,
+                icon: Icons.payments_outlined,
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _StatCard(
+                label: 'Orders',
+                value: orderCount.toString(),
+                color: const Color(0xFF10B981),
+                icon: Icons.receipt_long_outlined,
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _StatCard(
+                label: 'Avg Order',
+                value: 'TSh ${_formatMoney(avg)}',
+                color: const Color(0xFFF59E0B),
+                icon: Icons.trending_up_rounded,
+              ),
+            ),
+            SizedBox(
+              width: itemWidth,
+              child: _StatCard(
+                label: 'Last Visit',
+                value: lastOrder == null ? '—' : _formatDate(lastOrder!),
+                color: const Color(0xFF8B5CF6),
+                icon: Icons.event_outlined,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
-
 class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.label,
@@ -747,7 +758,7 @@ class _OrderTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${order.date} · ${order.time}',
+                    '${order.date} Â· ${order.time}',
                     style: const TextStyle(
                       color: AppColors.mutedText,
                       fontSize: 12,
@@ -798,3 +809,5 @@ String _formatDate(DateTime d) {
   ];
   return '${months[d.month - 1]} ${d.day}, ${d.year}';
 }
+
+
