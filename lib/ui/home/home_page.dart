@@ -55,6 +55,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   ProductArtType? _lastAddedType;
   String? _lastAddedImagePath;
   String _searchQuery = '';
+  String _selectedCategory = 'All';
   int _cartAnimationTicket = 0;
 
   @override
@@ -186,7 +187,14 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final query = _searchQuery.trim().toLowerCase();
+    final categories = <String>[
+      'All',
+      ...store.products.map((product) => product.type.name).toSet(),
+    ];
     final displayProducts = store.products.where((product) {
+      final categoryMatches =
+          _selectedCategory == 'All' || product.type.name == _selectedCategory;
+      if (!categoryMatches) return false;
       if (query.isEmpty) return true;
       final price = product.priceValue.toStringAsFixed(0);
       return product.name.toLowerCase().contains(query) ||
@@ -220,7 +228,17 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                       });
                     },
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
+                  _SalesCategoryStrip(
+                    categories: categories,
+                    selectedCategory: _selectedCategory,
+                    onSelected: (value) {
+                      setState(() {
+                        _selectedCategory = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -279,7 +297,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                         crossAxisCount: compact ? 2 : 3,
                         mainAxisSpacing: 10,
                         crossAxisSpacing: 10,
-                        childAspectRatio: compact ? 0.80 : 0.86,
+                        childAspectRatio: 0.72,
                       ),
                       itemBuilder: (context, index) {
                         final product = displayProducts[index];
@@ -382,23 +400,23 @@ class SearchBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 50,
+      height: 54,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5EAF0)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          const Icon(Icons.search, size: 24, color: Color(0xFF9CA3AF)),
+          const Icon(Icons.search, size: 22, color: Color(0xFF94A3B8)),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
-              style: const TextStyle(
+              style: GoogleFonts.manrope(
                 color: AppColors.ink,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -406,9 +424,10 @@ class SearchBox extends StatelessWidget {
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
                 hintText: 'Search products by name or SKU',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF94A3B8),
+                hintStyle: GoogleFonts.manrope(
+                  color: const Color(0xFF94A3B8),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -420,8 +439,14 @@ class SearchBox extends StatelessWidget {
                         },
                         icon: const Icon(
                           Icons.close_rounded,
-                          size: 18,
+                          size: 17,
                           color: Color(0xFF64748B),
+                        ),
+                        splashRadius: 18,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 28,
+                          height: 28,
                         ),
                       )
                     : null,
@@ -429,6 +454,86 @@ class SearchBox extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SalesCategoryStrip extends StatelessWidget {
+  const _SalesCategoryStrip({
+    required this.categories,
+    required this.selectedCategory,
+    required this.onSelected,
+  });
+
+  final List<String> categories;
+  final String selectedCategory;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.zero,
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final selected = category == selectedCategory;
+          return _SalesCategoryChip(
+            label: category,
+            selected: selected,
+            onTap: () => onSelected(category),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SalesCategoryChip extends StatelessWidget {
+  const _SalesCategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF1F6FEB) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? const Color(0xFF1F6FEB) : const Color(0xFFE5EAF0),
+            ),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              color: selected ? Colors.white : const Color(0xFF4B5563),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -459,80 +564,109 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: onTapDown,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: _DashboardTileArt(product: product),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: Text(
-                      product.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF33363F),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTapDown: onTapDown,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE1E5EB)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x050F172A),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 4,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(18),
+                        ),
+                        child: ColoredBox(
+                          color: const Color(0xFFF8FAFC),
+                          child: _DashboardTileArt(product: product),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: Text(
-                      _money(product.priceValue),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF7A859C),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w500,
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF4FF),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: const Color(0xFFD7E2FF)),
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Color(0xFF2563EB),
+                          size: 26,
+                        ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.ink,
+                          fontSize: 15,
+                          height: 1.15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        product.size,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF7A859C),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _money(product.priceValue),
+                        style: const TextStyle(
+                          color: Color(0xFF1B9B69),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                width: 26,
-                height: 26,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEFF4FF),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.add_rounded,
-                  color: Color(0xFF2563EB),
-                  size: 18,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -614,30 +748,37 @@ class CheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5EAF0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0C0F172A),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Stack(
             clipBehavior: Clip.none,
             children: [
-                Container(
-                  key: cartKey,
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFF3F4F6), width: 1.5),
-                  ),
-                  child: const Icon(
+              Container(
+                key: cartKey,
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F6FB),
+                  borderRadius: BorderRadius.circular(13),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Icon(
                   Icons.shopping_cart_outlined,
                   color: Color(0xFF1F2937),
-                  size: 24,
+                  size: 22,
                 ),
               ),
               Positioned(
@@ -672,17 +813,17 @@ class CheckoutBar extends StatelessWidget {
               children: [
                 Text(
                   '$itemCount Items',
-                  style: const TextStyle(
-                    color: Color(0xFF1F2937),
+                  style: GoogleFonts.manrope(
+                    color: const Color(0xFF111827),
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
                 const Text(
                   'View cart',
                   style: TextStyle(
-                    color: Color(0xFF7A859C),
+                    color: Color(0xFF6B7280),
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),
@@ -690,57 +831,59 @@ class CheckoutBar extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            width: 1,
-            height: 42,
-            color: const Color(0xFFE7EAF0),
-          ),
           const SizedBox(width: 12),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'TSH ${total.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  color: Color(0xFF1F2937),
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFF111827),
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
+              Text(
                 'Total',
-                style: TextStyle(
-                  color: Color(0xFF7A859C),
+                style: GoogleFonts.manrope(
+                  color: const Color(0xFF6B7280),
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 12),
+          const Spacer(),
           GestureDetector(
             onTap: onCheckout,
             child: Container(
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFE54040),
-                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFFEF4444),
+                borderRadius: BorderRadius.circular(13),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1FB91C1C),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Checkout',
-                    style: TextStyle(
+                    style: GoogleFonts.manrope(
                       color: Colors.white,
                       fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(width: 10),
-                  Icon(Icons.arrow_forward_rounded,
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_rounded,
                       color: Colors.white, size: 18),
                 ],
               ),

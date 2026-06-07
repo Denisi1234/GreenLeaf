@@ -12,7 +12,9 @@ import '../../receipt_brand_data.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../models/product_item.dart';
+import '../shell/app_shell.dart';
 import '../widgets/app_design.dart';
+import '../widgets/market_bottom_nav.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'receipt_pdf_service.dart';
 
@@ -350,12 +352,13 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
   }
 
   void _startNewSale(BuildContext context) {
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    showMarketNotice(
-      context,
-      title: 'Ready for a new sale',
-      message: 'Start ringing up items for the next customer.',
-      type: MarketNoticeType.success,
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(
+        builder: (context) => const AppShell(
+          initialTab: MarketTab.reports,
+        ),
+      ),
+      (route) => false,
     );
   }
 
@@ -517,7 +520,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                   width: double.infinity,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF67BE68),
+                    color: const Color(0xFFD94B4B),
                     borderRadius: BorderRadius.circular(2),
                     boxShadow: const [
                       BoxShadow(

@@ -97,34 +97,6 @@ class _PaymentPageState extends State<PaymentPage> {
     });
   }
 
-  Future<void> _saveForLater() async {
-    if (!_hasItems) {
-      showMarketNotice(
-        context,
-        title: 'Cart Is Empty',
-        message: 'Add items to save for later',
-        type: MarketNoticeType.warning,
-      );
-      return;
-    }
-    
-    await context.read<PosLocalStore>().saveForLater(
-      items: _orderLines,
-    );
-    
-    if (!mounted) return;
-    showMarketNotice(
-      context,
-      title: 'Cart Saved',
-      message: 'Cart saved for later',
-      type: MarketNoticeType.success,
-    );
-    
-    await _clearCart();
-    if (!mounted) return;
-    Navigator.of(context).pop(); // Return to Sales page
-  }
-
   Future<void> _clearCart() async {
     await context.read<PosLocalStore>().clearCart();
     if (!mounted) return;
@@ -269,15 +241,6 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
-  void _showComingSoon(String label) {
-    showMarketNotice(
-      context,
-      title: label,
-      message: '$label is not wired yet in this screen',
-      type: MarketNoticeType.warning,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -356,24 +319,10 @@ class _PaymentPageState extends State<PaymentPage> {
                     onRecordDebit: _recordDebit,
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _FooterActionButton(
-                          label: 'Clear',
-                          color: const Color(0xFFE66C73),
-                          onTap: _clearCart,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _FooterActionButton(
-                          label: 'Save for later',
-                          color: const Color(0xFFFFAF2E),
-                          onTap: () => _showComingSoon('Save for later'),
-                        ),
-                      ),
-                    ],
+                  _FooterActionButton(
+                    label: 'Clear',
+                    color: const Color(0xFFE66C73),
+                    onTap: _clearCart,
                   ),
                 ],
               ),

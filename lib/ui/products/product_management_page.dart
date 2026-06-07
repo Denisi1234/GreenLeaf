@@ -280,18 +280,17 @@ class _ProductsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketPageHeader(
       title: 'Products',
-      subtitle: 'Browse, filter, and edit items',
       showBackButton: false,
       centerTitle: false,
       showBorder: false,
-      titleSize: 28,
+      titleSize: 24,
       titleWeight: FontWeight.w700,
       actions: [
         HeaderActionButton(
           icon: Icons.smart_toy_outlined,
-          background: Colors.white,
+          background: const Color(0xFFF8FAFC),
           foreground: const Color(0xFF33363F),
-          borderColor: const Color(0xFFE7EAF0),
+          borderColor: const Color(0xFFE5EAF0),
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -303,9 +302,9 @@ class _ProductsHeader extends StatelessWidget {
         const SizedBox(width: 8),
         HeaderActionButton(
           icon: Icons.notifications_none_rounded,
-          background: Colors.white,
+          background: const Color(0xFFF8FAFC),
           foreground: const Color(0xFF33363F),
-          borderColor: const Color(0xFFE7EAF0),
+          borderColor: const Color(0xFFE5EAF0),
           showDot: true,
         ),
       ],
@@ -353,22 +352,22 @@ class _PinnedSearchPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE1E6ED)),
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE5EAF0)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x060E1726),
-              blurRadius: 6,
-              offset: Offset(0, 2),
+              color: Color(0x0C0F172A),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           child: _CatalogSearchBar(
             controller: controller,
             onChanged: onSearchChanged,
@@ -397,38 +396,32 @@ class _CatalogSearchBar extends StatelessWidget {
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE1E6ED)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x060E1726),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5EAF0)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 18, color: Color(0xFF7E8695)),
+          const Icon(Icons.search_rounded, size: 20, color: Color(0xFF94A3B8)),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
-              style: const TextStyle(
-                color: Color(0xFF33363F),
-                fontSize: 13.5,
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF111827),
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 hintText: 'Search products by name or SKU',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF7A859C),
-                  fontSize: 13.5,
+                contentPadding: EdgeInsets.zero,
+                hintStyle: GoogleFonts.manrope(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
                 suffixIcon: controller.text.isNotEmpty
@@ -436,8 +429,14 @@ class _CatalogSearchBar extends StatelessWidget {
                         onPressed: onClear,
                         icon: const Icon(
                           Icons.close_rounded,
-                          size: 18,
-                          color: Color(0xFF8A93A7),
+                          size: 17,
+                          color: Color(0xFF64748B),
+                        ),
+                        splashRadius: 18,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 28,
+                          height: 28,
                         ),
                       )
                     : null,
@@ -464,10 +463,11 @@ class _CategoryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.zero,
         itemCount: categories.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
@@ -505,31 +505,21 @@ class _CategoryChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
-          height: 38,
+          height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1B9B69) : Colors.white,
+            color: selected ? const Color(0xFF1F6FEB) : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color:
-                  selected ? const Color(0xFF1B9B69) : const Color(0xFFE2E8F0),
+              color: selected ? const Color(0xFF1F6FEB) : const Color(0xFFE5EAF0),
             ),
-            boxShadow: selected
-                ? const [
-                    BoxShadow(
-                      color: Color(0x221B9B69),
-                      blurRadius: 12,
-                      offset: Offset(0, 5),
-                    ),
-                  ]
-                : null,
           ),
           child: Text(
             label,
-            style: TextStyle(
-              color: selected ? Colors.white : const Color(0xFF425062),
-              fontSize: 13,
+            style: GoogleFonts.manrope(
+              color: selected ? Colors.white : const Color(0xFF4B5563),
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -558,18 +548,18 @@ class _ProductGridCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE1E5EB)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x050F172A),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE1E5EB)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x070F172A),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -623,7 +613,7 @@ class _ProductGridCard extends StatelessWidget {
                                 Text(
                                   _money(product.sellingPrice),
                                   style: const TextStyle(
-                                    color: Color(0xFF1B9B69),
+                                    color: Color(0xFF1F6FEB),
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -744,7 +734,7 @@ class _AddProductFab extends StatelessWidget {
       offset: const Offset(0, -10),
       child: FloatingActionButton.extended(
         onPressed: onPressed,
-        backgroundColor: const Color(0xFF16825B),
+        backgroundColor: const Color(0xFFD94B4B),
         foregroundColor: Colors.white,
         elevation: 12,
         highlightElevation: 14,

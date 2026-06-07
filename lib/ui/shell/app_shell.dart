@@ -9,7 +9,12 @@ import '../widgets/market_bottom_nav.dart';
 import '../more/duka_ai_page.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({
+    super.key,
+    this.initialTab = MarketTab.products,
+  });
+
+  final MarketTab initialTab;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -19,7 +24,7 @@ class _AppShellState extends State<AppShell>
     with SingleTickerProviderStateMixin {
   static const _transitionDuration = Duration(milliseconds: 300);
 
-  MarketTab _currentTab = MarketTab.products;
+  late MarketTab _currentTab;
   MarketTab? _previousTab;
   bool _moveForward = true;
   late final AnimationController _transitionController;
@@ -34,6 +39,7 @@ class _AppShellState extends State<AppShell>
   @override
   void initState() {
     super.initState();
+    _currentTab = widget.initialTab;
     _transitionController = AnimationController(
       vsync: this,
       duration: _transitionDuration,

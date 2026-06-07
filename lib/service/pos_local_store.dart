@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 
 import '../ui/models/product_item.dart';
 import '../ui/models/customer_data.dart';
-import '../ui/models/saved_cart.dart';
 import '../ui/products/inventory_product_item.dart';
 import 'daftari_recovery_models.dart';
 import 'duka_ai_service.dart';
@@ -1314,32 +1313,8 @@ class PosLocalStore extends ChangeNotifier {
     );
   }
 
-  List<CustomerData> get customers => _customers;
-  List<SavedCart> get savedCarts => _savedCarts;
-
   final List<CustomerData> _customers = <CustomerData>[];
-  final List<SavedCart> _savedCarts = <SavedCart>[];
-
-  Future<void> saveForLater({required List<OrderLineItem> items}) async {
-    final savedCart = SavedCart(
-      id: 'CART-${DateTime.now().millisecondsSinceEpoch}',
-      items: List.from(items),
-      savedAt: DateTime.now().toString(),
-    );
-    _savedCarts.add(savedCart);
-    notifyListeners();
-  }
-
-  void restoreCart(String cartId) {
-    final cartIndex = _savedCarts.indexWhere((c) => c.id == cartId);
-    if (cartIndex != -1) {
-      final cart = _savedCarts.removeAt(cartIndex);
-      for (final item in cart.items) {
-        addToCart(item.product);
-      }
-      notifyListeners();
-    }
-  }
+  List<CustomerData> get customers => _customers;
 
   Future<void> addCustomer(CustomerData customer) async {
     _customers.add(customer);

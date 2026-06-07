@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../home/home_page.dart';
 import '../more/duka_ai_page.dart';
 import '../more/expenses_tracking_page.dart';
+import '../shell/app_shell.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../widgets/app_design.dart';
+import '../widgets/market_bottom_nav.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'report_hub_page.dart';
 import 'reports_catalog_page.dart';
@@ -102,53 +105,6 @@ class ReportsPage extends StatelessWidget {
       label: 'View Reports',
       iconColor: _blue,
       iconBackground: Color(0xFFECF2FF),
-    ),
-  ];
-
-  static const List<_ActivityItemData> _activityItems = [
-    _ActivityItemData(
-      icon: Icons.shopping_cart_outlined,
-      iconColor: Color(0xFF2AA24F),
-      iconBackground: Color(0xFFEAF8EE),
-      title: 'Order #1038',
-      subtitle: '2 items - card payment',
-      amount: '\$129.50',
-      time: '10:24 AM',
-    ),
-    _ActivityItemData(
-      icon: Icons.shopping_cart_outlined,
-      iconColor: Color(0xFF2E6EE8),
-      iconBackground: Color(0xFFECF3FF),
-      title: 'Order #1037',
-      subtitle: '1 item - cash payment',
-      amount: '\$45.00',
-      time: '10:12 AM',
-    ),
-    _ActivityItemData(
-      icon: Icons.shopping_cart_outlined,
-      iconColor: Color(0xFF9747FF),
-      iconBackground: Color(0xFFF3EAFE),
-      title: 'Order #1036',
-      subtitle: '3 items - card payment',
-      amount: '\$199.99',
-      time: '9:58 AM',
-    ),
-    _ActivityItemData(
-      icon: Icons.point_of_sale_outlined,
-      iconColor: Color(0xFFC38A13),
-      iconBackground: Color(0xFFFEF5E3),
-      title: 'Drawer opened',
-      subtitle: 'Sarah Johnson',
-      time: '9:45 AM',
-    ),
-    _ActivityItemData(
-      icon: Icons.shopping_cart_outlined,
-      iconColor: Color(0xFF2AA24F),
-      iconBackground: Color(0xFFEAF8EE),
-      title: 'Order #1035',
-      subtitle: '1 item - cash payment',
-      amount: '\$28.00',
-      time: '9:33 AM',
     ),
   ];
 
@@ -253,13 +209,20 @@ class ReportsPage extends StatelessWidget {
         0,
         (sum, line) => sum + line.quantity,
       );
+      final paymentMethod = order.paymentMethod.toLowerCase();
       return _ActivityItemData(
-        icon: Icons.shopping_cart_outlined,
-        iconColor: const Color(0xFF2AA24F),
-        iconBackground: const Color(0xFFEAF8EE),
+        icon: paymentMethod == 'cash'
+            ? Icons.payments_outlined
+            : Icons.shopping_cart_outlined,
+        iconColor: paymentMethod == 'cash'
+            ? const Color(0xFF2E6EE8)
+            : const Color(0xFF2AA24F),
+        iconBackground: paymentMethod == 'cash'
+            ? const Color(0xFFECF3FF)
+            : const Color(0xFFEAF8EE),
         title: 'Order ${order.id}',
         subtitle:
-            '$itemCount item${itemCount == 1 ? '' : 's'} - ${order.paymentMethod.toLowerCase()} payment',
+            '$itemCount item${itemCount == 1 ? '' : 's'} - $paymentMethod payment',
         amount: 'TSH ${order.total.toStringAsFixed(0)}',
         time: order.time,
       );
@@ -296,7 +259,8 @@ class ReportsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final summary = _buildDashboardSummary();
+    final store = context.watch<PosLocalStore>();
+    final summary = _buildDashboardSummary(store);
     final todayLabel = _formatToday();
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
@@ -330,7 +294,7 @@ class ReportsPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _SummaryPanel(summary: summary),
+                          _SummaryPanel(summary: summary, orders: store.orders),
                         ],
                       ),
                     ),
@@ -342,16 +306,18 @@ class ReportsPage extends StatelessWidget {
                 bottom: 14,
                 child: Transform.translate(
                   offset: const Offset(0, -8),
-                  child: _NewSaleFloatingButton(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const MarketHomePage(),
+                child: _NewSaleFloatingButton(
+                  onTap: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const AppShell(
+                          initialTab: MarketTab.reports,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
+              ),
               ),
               Positioned(
                 right: 14,
@@ -379,39 +345,126 @@ class _DashboardSummaryData {
     required this.totalRevenue,
     required this.monthlySales,
     required this.activeClients,
+    required this.todayOrdersCount,
+    required this.yesterdaySales,
+    required this.todayExpenses,
     required this.conversionRate,
     required this.deltaText,
     required this.deltaIsPositive,
+    required this.bestSeller,
+    required this.bestSellerCount,
+    required this.recentRevenueValues,
+    required this.recentRevenueLabel,
   });
 
   final double totalRevenue;
   final int monthlySales;
   final int activeClients;
+  final int todayOrdersCount;
+  final double yesterdaySales;
+  final double todayExpenses;
   final double conversionRate;
   final String? deltaText;
   final bool? deltaIsPositive;
+  final String bestSeller;
+  final int? bestSellerCount;
+  final List<double> recentRevenueValues;
+  final String recentRevenueLabel;
 
   double get revenue => totalRevenue;
   int get orders => monthlySales;
   double get averageOrder =>
       monthlySales == 0 ? 0.0 : totalRevenue / monthlySales;
-  String get bestSeller => 'No sales yet';
-  int? get bestSellerCount => activeClients;
 }
 
-_DashboardSummaryData _buildDashboardSummary() {
-  const totalRevenue = 728450.0;
-  const monthlySales = 1284;
-  const activeClients = 642;
-  const conversionRate = 4.8;
-  const deltaText = '7.4%';
-  return const _DashboardSummaryData(
+_DashboardSummaryData _buildDashboardSummary(PosLocalStore store) {
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final monthStart = DateTime(now.year, now.month, 1);
+  final orders = store.orders;
+  final todayOrders = orders.where((order) {
+    final parsed = DateTime.tryParse(order.dateTime);
+    return parsed != null &&
+        parsed.year == now.year &&
+        parsed.month == now.month &&
+        parsed.day == now.day;
+  }).toList();
+  final yesterday = now.subtract(const Duration(days: 1));
+  final yesterdayOrders = orders.where((order) {
+    final parsed = DateTime.tryParse(order.dateTime);
+    return parsed != null &&
+        parsed.year == yesterday.year &&
+        parsed.month == yesterday.month &&
+        parsed.day == yesterday.day;
+  }).toList();
+
+  final monthOrders = orders.where((order) {
+    final parsed = DateTime.tryParse(order.dateTime);
+    return parsed != null &&
+        !parsed.isBefore(monthStart) &&
+        !parsed.isAfter(now);
+  }).toList();
+  final monthRevenue = monthOrders.fold<double>(0, (sum, order) => sum + order.total);
+  final todayRevenue = todayOrders.fold<double>(0, (sum, order) => sum + order.total);
+  final yesterdayRevenue =
+      yesterdayOrders.fold<double>(0, (sum, order) => sum + order.total);
+  final totalRevenue = monthRevenue;
+  final monthlySales = monthOrders.length;
+  final activeClients = monthOrders
+      .map((order) => order.customerName?.trim() ?? '')
+      .where((name) => name.isNotEmpty)
+      .toSet()
+      .length;
+  final todayExpenses = store.expenses.where((expense) {
+    final parsed = expense.date;
+    return parsed.year == now.year &&
+        parsed.month == now.month &&
+        parsed.day == now.day;
+  }).fold<double>(0, (sum, expense) => sum + expense.amount);
+  final conversionRate = orders.isEmpty
+      ? 0.0
+      : (monthOrders.length / orders.length) * 100;
+  final deltaText = yesterdayRevenue <= 0
+      ? null
+      : '${(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100).abs().toStringAsFixed(1)}%';
+  final deltaIsPositive = yesterdayRevenue <= 0 ? null : todayRevenue >= yesterdayRevenue;
+
+  final soldCounts = <String, int>{};
+  for (final order in todayOrders) {
+    for (final line in order.lines) {
+      soldCounts[line.itemName] = (soldCounts[line.itemName] ?? 0) + line.quantity;
+    }
+  }
+  final bestSellerEntry = soldCounts.entries.isEmpty
+      ? null
+      : soldCounts.entries.reduce((a, b) => a.value >= b.value ? a : b);
+
+  final revenueTrendValues = List<double>.generate(7, (index) {
+    final day = todayStart.subtract(Duration(days: 6 - index));
+    final dayRevenue = orders.where((order) {
+      final parsed = DateTime.tryParse(order.dateTime);
+      return parsed != null &&
+          parsed.year == day.year &&
+          parsed.month == day.month &&
+          parsed.day == day.day;
+    }).fold<double>(0, (sum, order) => sum + order.total);
+    return dayRevenue;
+  });
+
+  return _DashboardSummaryData(
     totalRevenue: totalRevenue,
     monthlySales: monthlySales,
     activeClients: activeClients,
+    todayOrdersCount: todayOrders.length,
+    yesterdaySales: yesterdayRevenue,
+    todayExpenses: todayExpenses,
     conversionRate: conversionRate,
     deltaText: deltaText,
-    deltaIsPositive: true,
+    deltaIsPositive: deltaIsPositive,
+    bestSeller: bestSellerEntry?.key ?? 'No sales yet',
+    bestSellerCount: bestSellerEntry?.value,
+    recentRevenueValues: revenueTrendValues,
+    recentRevenueLabel: 'Last 7 days',
   );
 }
 
@@ -493,8 +546,8 @@ class _NewSaleFloatingButton extends StatelessWidget {
       curve: Curves.easeOut,
       child: Material(
         color: Colors.transparent,
-        elevation: 18,
-        shadowColor: const Color(0x40208F5A),
+        elevation: 10,
+        shadowColor: const Color(0x2AD94B4B),
         borderRadius: BorderRadius.circular(999),
         child: InkWell(
           onTap: onTap,
@@ -504,7 +557,7 @@ class _NewSaleFloatingButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF28B26D), Color(0xFF18824E)],
+                colors: [Color(0xFFD94B4B), Color(0xFFB93C3C)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -515,10 +568,10 @@ class _NewSaleFloatingButton extends StatelessWidget {
               ),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x40208F5A),
-                  blurRadius: 30,
-                  spreadRadius: 1,
-                  offset: Offset(0, 16),
+                  color: Color(0x22D94B4B),
+                  blurRadius: 18,
+                  spreadRadius: 0,
+                  offset: Offset(0, 8),
                 ),
               ],
             ),
@@ -1011,9 +1064,11 @@ class _QuickActionCard extends StatelessWidget {
   void _handleTap(BuildContext context) {
     switch (action.label) {
       case 'Start Sale':
-        Navigator.of(context).push(
+        Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
-            builder: (context) => const MarketHomePage(),
+            builder: (context) => const AppShell(
+              initialTab: MarketTab.reports,
+            ),
           ),
         );
         break;
@@ -1156,9 +1211,13 @@ class _PremiumQuickActionsRow extends StatelessWidget {
 }
 
 class _SummaryPanel extends StatelessWidget {
-  const _SummaryPanel({required this.summary});
+  const _SummaryPanel({
+    required this.summary,
+    required this.orders,
+  });
 
   final _DashboardSummaryData summary;
+  final List<CompletedOrder> orders;
 
   @override
   Widget build(BuildContext context) {
@@ -1168,8 +1227,280 @@ class _SummaryPanel extends StatelessWidget {
         const SizedBox(height: 12),
         const _InsightsPromoCard(),
         const SizedBox(height: 12),
-        _GrowthOverviewCard(summary: summary),
+        _LiveGrowthOverviewCard(summary: summary, orders: orders),
       ],
+    );
+  }
+}
+
+enum _LiveGrowthPeriod { today, week, month, all }
+
+extension _LiveGrowthPeriodLabel on _LiveGrowthPeriod {
+  String get label {
+    switch (this) {
+      case _LiveGrowthPeriod.today:
+        return 'Today';
+      case _LiveGrowthPeriod.week:
+        return 'This Week';
+      case _LiveGrowthPeriod.month:
+        return 'This Month';
+      case _LiveGrowthPeriod.all:
+        return 'All Time';
+    }
+  }
+}
+
+class _LiveGrowthOverviewCard extends StatefulWidget {
+  const _LiveGrowthOverviewCard({
+    required this.summary,
+    required this.orders,
+  });
+
+  final _DashboardSummaryData summary;
+  final List<CompletedOrder> orders;
+
+  @override
+  State<_LiveGrowthOverviewCard> createState() => _LiveGrowthOverviewCardState();
+}
+
+class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
+  _LiveGrowthPeriod _selectedPeriod = _LiveGrowthPeriod.week;
+
+  DateTime _startOfDay(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  DateTime _startOfWeek(DateTime value) {
+    final start = value.subtract(Duration(days: value.weekday - 1));
+    return _startOfDay(start);
+  }
+
+  DateTime _startOfMonth(DateTime value) => DateTime(value.year, value.month, 1);
+
+  DateTime _periodStart(_LiveGrowthPeriod period, DateTime now) {
+    switch (period) {
+      case _LiveGrowthPeriod.today:
+        return _startOfDay(now);
+      case _LiveGrowthPeriod.week:
+        return _startOfWeek(now);
+      case _LiveGrowthPeriod.month:
+        return _startOfMonth(now);
+      case _LiveGrowthPeriod.all:
+        final orderDates = widget.orders
+            .map((order) => DateTime.tryParse(order.dateTime))
+            .whereType<DateTime>()
+            .toList()
+          ..sort();
+        return orderDates.isEmpty ? _startOfDay(now) : orderDates.first;
+    }
+  }
+
+  List<CompletedOrder> _ordersInRange(DateTime start, DateTime end) {
+    return widget.orders.where((order) {
+      final parsed = DateTime.tryParse(order.dateTime);
+      return parsed != null && !parsed.isBefore(start) && !parsed.isAfter(end);
+    }).toList();
+  }
+
+  List<double> _buildSeries(
+    List<CompletedOrder> orders,
+    DateTime start,
+    DateTime end,
+  ) {
+    final spanSeconds = end.difference(start).inSeconds;
+    final safeSpan = spanSeconds <= 0 ? 1 : spanSeconds;
+    final buckets = List<double>.filled(7, 0);
+    for (final order in orders) {
+      final parsed = DateTime.tryParse(order.dateTime);
+      if (parsed == null) continue;
+      final offset = parsed.difference(start).inSeconds.clamp(0, safeSpan);
+      final index = ((offset / safeSpan) * 6).floor().clamp(0, 6);
+      buckets[index] += order.total;
+    }
+    return buckets;
+  }
+
+  List<String> _buildLabels(
+    DateTime start,
+    DateTime end,
+    _LiveGrowthPeriod period,
+  ) {
+    final spanSeconds = end.difference(start).inSeconds;
+    final safeSpan = spanSeconds <= 0 ? 1 : spanSeconds;
+    const weekdayNames = <String>[
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun',
+    ];
+    return List<String>.generate(7, (index) {
+      final point = start.add(Duration(seconds: ((safeSpan / 6) * index).round()));
+      switch (period) {
+        case _LiveGrowthPeriod.today:
+          final hour = point.hour % 12 == 0 ? 12 : point.hour % 12;
+          final amPm = point.hour >= 12 ? 'PM' : 'AM';
+          return '$hour$amPm';
+        case _LiveGrowthPeriod.week:
+          return weekdayNames[point.weekday - 1];
+        case _LiveGrowthPeriod.month:
+        case _LiveGrowthPeriod.all:
+          return '${point.month}/${point.day}';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final start = _periodStart(_selectedPeriod, now);
+    final end = now;
+    final selectedOrders = _ordersInRange(start, end);
+    final previousStart = start.subtract(end.difference(start));
+    final previousOrders = _ordersInRange(previousStart, start);
+    final currentRevenue =
+        selectedOrders.fold<double>(0, (sum, order) => sum + order.total);
+    final previousRevenue =
+        previousOrders.fold<double>(0, (sum, order) => sum + order.total);
+    final delta = previousRevenue <= 0
+        ? null
+        : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+    final series = _buildSeries(selectedOrders, start, end);
+    final labels = _buildLabels(start, end, _selectedPeriod);
+    final chartMaxValue = series.isEmpty
+        ? 1.0
+        : series
+            .fold<double>(0, (max, value) => value > max ? value : max)
+            .clamp(1.0, double.infinity);
+    final normalized = series.map((value) => value / chartMaxValue).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE7EAF0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0E1726),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Sales Growth Overview',
+                  style: TextStyle(
+                    color: ReportsPage._ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE7EAF0)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<_LiveGrowthPeriod>(
+                    value: _selectedPeriod,
+                    borderRadius: BorderRadius.circular(12),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: Color(0xFF7A859C),
+                    ),
+                    style: const TextStyle(
+                      color: Color(0xFF3E4758),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    items: _LiveGrowthPeriod.values
+                        .map(
+                          (period) => DropdownMenuItem<_LiveGrowthPeriod>(
+                            value: period,
+                            child: Text(period.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _selectedPeriod = value);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'TSH ${currentRevenue.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  color: ReportsPage._ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  delta == null
+                      ? _selectedPeriod.label
+                      : '${delta >= 0 ? '+' : '-'}${delta.abs().toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    color: Color(0xFF2FA24A),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 2),
+                child: Icon(
+                  Icons.arrow_upward_rounded,
+                  size: 12,
+                  color: Color(0xFF2FA24A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'total revenue • ${_selectedPeriod.label}',
+            style: const TextStyle(
+              color: ReportsPage._muted,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 166,
+            child: _OverviewChart(
+              values: normalized,
+              rawValues: series,
+              scaleMax: chartMaxValue,
+              labels: labels,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1192,56 +1523,58 @@ class _OverviewStatsGrid extends StatelessWidget {
           children: [
             SizedBox(
               width: itemWidth,
-              child: const _OverviewStatCard(
+              child: _OverviewStatCard(
                 icon: Icons.payments_outlined,
                 iconColor: Color(0xFF6BA5FF),
                 iconBackground: Color(0xFFF4F8FF),
                 title: 'Today Revenue',
-                value: '\$728,450',
-                footer: '+7.4%',
-                footerColor: Color(0xFF2FA24A),
+                value: 'TSH ${summary.revenue.toStringAsFixed(0)}',
+                footer: summary.deltaText ?? 'Updated just now',
+                footerColor: summary.deltaIsPositive == false
+                    ? const Color(0xFFD65555)
+                    : const Color(0xFF2FA24A),
                 showTrend: true,
-                trendUp: true,
+                trendUp: summary.deltaIsPositive ?? true,
               ),
             ),
             SizedBox(
               width: itemWidth,
-              child: const _OverviewStatCard(
+              child: _OverviewStatCard(
                 icon: Icons.shopping_bag_outlined,
                 iconColor: Color(0xFFF6B34A),
                 iconBackground: Color(0xFFFFF7ED),
-                title: 'Monthly Sales',
-                value: '1,284',
-                footer: '+5.9%',
-                footerColor: Color(0xFF2FA24A),
+                title: 'Yesterday Sales',
+                value: 'TSH ${summary.yesterdaySales.toStringAsFixed(0)}',
+                footer: 'Compared to today',
+                footerColor: const Color(0xFF7A859C),
                 showTrend: true,
                 trendUp: true,
               ),
             ),
             SizedBox(
               width: itemWidth,
-              child: const _OverviewStatCard(
+              child: _OverviewStatCard(
                 icon: Icons.groups_rounded,
                 iconColor: Color(0xFFEF6A7A),
                 iconBackground: Color(0xFFFFEEF1),
-                title: 'Active Clients',
-                value: '642',
-                footer: '+3.2%',
-                footerColor: Color(0xFF2FA24A),
+                title: 'Today Orders',
+                value: summary.todayOrdersCount.toString(),
+                footer: 'Updated today',
+                footerColor: const Color(0xFF7A859C),
                 showTrend: true,
                 trendUp: true,
               ),
             ),
             SizedBox(
               width: itemWidth,
-              child: const _OverviewStatCard(
+              child: _OverviewStatCard(
                 icon: Icons.bolt_rounded,
                 iconColor: Color(0xFF8B5CF6),
                 iconBackground: Color(0xFFF5F1FF),
                 title: 'Today Expenses',
-                value: '4.8%',
-                footer: '-1.1%',
-                footerColor: Color(0xFFD65555),
+                value: 'TSH ${summary.todayExpenses.toStringAsFixed(0)}',
+                footer: 'Updated today',
+                footerColor: const Color(0xFF7A859C),
                 showTrend: true,
                 trendUp: false,
               ),
@@ -1560,6 +1893,15 @@ class _GrowthOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chartMaxValue = summary.recentRevenueValues.isEmpty
+        ? 1.0
+        : summary.recentRevenueValues
+            .fold<double>(0, (max, value) => value > max ? value : max)
+            .clamp(1.0, double.infinity);
+    final normalized = summary.recentRevenueValues
+        .map((value) => value / chartMaxValue)
+        .toList();
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1597,12 +1939,12 @@ class _GrowthOverviewCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: const Color(0xFFE7EAF0)),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'This year',
-                      style: TextStyle(
+                      summary.recentRevenueLabel,
+                      style: const TextStyle(
                         color: Color(0xFF3E4758),
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
@@ -1620,31 +1962,33 @@ class _GrowthOverviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Row(
+          Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '701.34K',
-                style: TextStyle(
+                'TSH ${summary.revenue.toStringAsFixed(0)}',
+                style: const TextStyle(
                   color: ReportsPage._ink,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.4,
                 ),
               ),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Padding(
-                padding: EdgeInsets.only(bottom: 2),
+                padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
-                  '+14.5%',
-                  style: TextStyle(
+                  summary.deltaText == null
+                      ? 'Today'
+                      : '${summary.deltaIsPositive == false ? '-' : '+'}${summary.deltaText}',
+                  style: const TextStyle(
                     color: Color(0xFF2FA24A),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              Padding(
+              const Padding(
                 padding: EdgeInsets.only(bottom: 2),
                 child: Icon(
                   Icons.arrow_upward_rounded,
@@ -1655,19 +1999,22 @@ class _GrowthOverviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 2),
-          const Text(
-            'total revenue',
-            style: TextStyle(
+          Text(
+            'total revenue • ${summary.recentRevenueLabel}',
+            style: const TextStyle(
               color: ReportsPage._muted,
               fontSize: 10.5,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 10),
-          const SizedBox(
+          SizedBox(
             height: 166,
             child: _OverviewChart(
-              values: [0.32, 0.78, 0.58, 0.44, 0.76, 0.50, 0.29],
+              values: normalized,
+              rawValues: summary.recentRevenueValues,
+              scaleMax: chartMaxValue,
+              labels: labels,
             ),
           ),
         ],
@@ -1677,14 +2024,24 @@ class _GrowthOverviewCard extends StatelessWidget {
 }
 
 class _OverviewChart extends StatelessWidget {
-  const _OverviewChart({required this.values});
+  const _OverviewChart({
+    required this.values,
+    required this.rawValues,
+    required this.scaleMax,
+    required this.labels,
+  });
 
   final List<double> values;
+  final List<double> rawValues;
+  final double scaleMax;
+  final List<String> labels;
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
-    final yLabels = [r'0$', r'10$', r'20$', r'30$', r'40$'];
+    final yLabels = List<String>.generate(5, (index) {
+      final ratio = 1 - (index / 4);
+      return _compactTsh(scaleMax * ratio);
+    });
 
     return Column(
       children: [
@@ -1713,7 +2070,10 @@ class _OverviewChart extends StatelessWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: CustomPaint(
-                  painter: _OverviewChartPainter(values: values),
+                  painter: _OverviewChartPainter(
+                    values: values,
+                    rawValues: rawValues,
+                  ),
                   child: const SizedBox.expand(),
                 ),
               ),
@@ -1744,9 +2104,13 @@ class _OverviewChart extends StatelessWidget {
 }
 
 class _OverviewChartPainter extends CustomPainter {
-  const _OverviewChartPainter({required this.values});
+  const _OverviewChartPainter({
+    required this.values,
+    required this.rawValues,
+  });
 
   final List<double> values;
+  final List<double> rawValues;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1791,7 +2155,7 @@ class _OverviewChartPainter extends CustomPainter {
     final points = <Offset>[];
     for (var i = 0; i < values.length; i++) {
       final x = leftPad + (chartWidth / (values.length - 1)) * i;
-      final y = topPad + values[i].clamp(0.0, 1.0) * chartHeight;
+      final y = topPad + (1 - values[i].clamp(0.0, 1.0)) * chartHeight;
       points.add(Offset(x, y));
     }
 
@@ -1850,8 +2214,10 @@ class _OverviewChartPainter extends CustomPainter {
         final bubblePaint = Paint()..color = const Color(0xFF5B8CFF);
         canvas.drawRRect(bubble, bubblePaint);
         final tp = TextPainter(
-          text: const TextSpan(
-            text: '\$37,420',
+          text: TextSpan(
+            text: _compactTsh(
+              rawValues.length > highlightIndex ? rawValues[highlightIndex] : 0,
+            ),
             style: TextStyle(
               color: Colors.white,
               fontSize: 11,
@@ -1867,20 +2233,21 @@ class _OverviewChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _OverviewChartPainter oldDelegate) {
-    return oldDelegate.values != values;
+    return oldDelegate.values != values ||
+        oldDelegate.rawValues != rawValues;
   }
   }
 
 
 
-String _compactMoney(double value) {
+String _compactTsh(double value) {
   if (value >= 1000000) {
-    return 'TSH ${(value / 1000000).toStringAsFixed(2)}M';
+    return 'TSh ${(value / 1000000).toStringAsFixed(2)}M';
   }
   if (value >= 1000) {
-    return 'TSH ${(value / 1000).toStringAsFixed(1)}K';
+    return 'TSh ${(value / 1000).toStringAsFixed(1)}K';
   }
-  return 'TSH ${value.toStringAsFixed(0)}';
+  return 'TSh ${value.toStringAsFixed(0)}';
 }
 
 class _EmptySummary extends StatelessWidget {
@@ -2606,6 +2973,9 @@ class _RecentActivityPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final items = ReportsPage._buildActivityItems(
+      context.watch<PosLocalStore>().orders,
+    );
     return Scaffold(
       backgroundColor: const Color(0xFFFFFEFC),
       appBar: AppBar(
@@ -2616,8 +2986,8 @@ class _RecentActivityPage extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
-        children: const [
-          _RecentActivityCard(items: ReportsPage._activityItems),
+        children: [
+          _RecentActivityCard(items: items),
         ],
       ),
     );

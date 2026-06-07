@@ -9,6 +9,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../service/duka_ai_service.dart';
+import '../models/customer_data.dart';
+import '../../service/expense_model.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../models/product_item.dart';
@@ -160,6 +162,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
     try {
       final aiSummary = await _buildAiExecutiveSummary(store, report);
       pdfBytes = await _buildSalesReportPdfBytes(
+        store,
         report,
         aiSummary,
         store.profile,
@@ -270,6 +273,8 @@ class _ReportHubPageState extends State<ReportHubPage> {
     return _ReportSnapshot(
       periodLabel: period.label,
       dateRangeLabel: range.label,
+      startDate: range.start,
+      endDate: range.end,
       metrics: [
         _MetricData(
           title: 'Total Revenue',
@@ -303,6 +308,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
   }
 
   Future<Uint8List> _buildSalesReportPdfBytes(
+    PosLocalStore store,
     _ReportSnapshot report,
     String aiSummary,
     AppProfileData profile,
@@ -313,29 +319,122 @@ class _ReportHubPageState extends State<ReportHubPage> {
     final logoImage = await _loadPdfLogoImage(profile);
     final generatedAt = DateTime.now();
 
+    final currentOrders =
+        _ordersWithinRange(store.orders, report.startDate, report.endDate);
+    final previousRange =
+        _previousComparableRange(report.startDate, report.endDate);
+    final previousOrders = _ordersWithinRange(
+      store.orders,
+      previousRange.start,
+      previousRange.end,
+    );
+    final currentExpenses = _expensesWithinRange(
+      store.expenses,
+      report.startDate,
+      report.endDate,
+    );
+    final previousExpenses = _expensesWithinRange(
+      store.expenses,
+      previousRange.start,
+      previousRange.end,
+    );
+    final currentStats = _buildPdfStats(
+      orders: currentOrders,
+      customers: store.customers,
+      expenses: currentExpenses,
+      startDate: report.startDate,
+      endDate: report.endDate,
+    );
+    final previousStats = _buildPdfStats(
+      orders: previousOrders,
+      customers: store.customers,
+      expenses: previousExpenses,
+      startDate: previousRange.start,
+      endDate: previousRange.end,
+    );
+    final reportTitle = _reportTitleFor(report);
+    final reportId = _reportId(generatedAt);
+    final watermarkLabel = profile.storeName.trim().isEmpty
+        ? 'OFFICIAL REPORT'
+        : '${profile.storeName.trim().toUpperCase()} OFFICIAL REPORT';
+    final executiveSummary = _buildPdfExecutiveSummary(
+      report: report,
+      stats: currentStats,
+      profile: profile,
+    );
+    final conclusion = _buildPdfConclusion(report, currentStats);
+
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(24),
-        theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
+        pageTheme: pw.PageTheme(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.fromLTRB(24, 20, 24, 26),
+          theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
+          buildBackground: (context) => pw.FullPage(
+            ignoreMargins: true,
+            child: pw.Watermark.text(
+              watermarkLabel,
+              style: pw.TextStyle(
+                color: PdfColor.fromHex('#F0F4F8'),
+                fontSize: 30,
+                fontWeight: pw.FontWeight.bold,
+              ),
+              angle: -math.pi / 4,
+            ),
+          ),
+        ),
+        header: (context) => pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 10),
+          child: _pdfReportHeader(
+            reportTitle: reportTitle,
+            report: report,
+            profile: profile,
+            logoImage: logoImage,
+            reportId: reportId,
+          ),
+        ),
         build: (context) => [
-          _pdfHeader(report, profile, logoImage),
+          _pdfIntroSection(executiveSummary, report),
+          pw.SizedBox(height: 12),
+          _pdfSectionDivider(),
+          _pdfSectionTitle('1. Key Performance Indicators'),
+          pw.SizedBox(height: 8),
+          _pdfKpiTable(currentStats, previousStats),
           pw.SizedBox(height: 14),
-          _pdfAiSummarySection(aiSummary),
-          pw.SizedBox(height: 18),
-          _pdfHighlightsSection(report),
-          pw.SizedBox(height: 18),
-          _pdfStoreDetails(profile),
-          pw.SizedBox(height: 18),
-          _pdfMetricRow(report.metrics),
-          pw.SizedBox(height: 18),
-          _pdfSectionHeader('Sales Trend'),
-          pw.SizedBox(height: 10),
-          _pdfTrendSummaryClean(report.trendPoints),
-          pw.SizedBox(height: 18),
-          _pdfSectionHeader('Top Selling Products'),
-          pw.SizedBox(height: 10),
+          _pdfSectionDivider(),
+          _pdfSectionTitle('2. Sales Trends'),
+          pw.SizedBox(height: 8),
+          _pdfSalesTrendSection(report, currentStats),
+          pw.SizedBox(height: 14),
+          _pdfSectionDivider(),
+          _pdfSectionTitle('3. Top Selling Products'),
+          pw.SizedBox(height: 8),
           _pdfProductTable(report.products),
+          pw.SizedBox(height: 14),
+          _pdfSectionDivider(),
+          _pdfSectionTitle('4. Customer Insights'),
+          pw.SizedBox(height: 8),
+          _pdfCustomerInsightsSection(currentOrders, store, currentStats),
+          pw.SizedBox(height: 14),
+          _pdfSectionDivider(),
+          _pdfSectionTitle('5. Expense Analysis'),
+          pw.SizedBox(height: 8),
+          _pdfExpenseAnalysisSection(currentExpenses),
+          pw.SizedBox(height: 14),
+          _pdfSectionDivider(),
+          _pdfSectionTitle('6. AI-Powered Business Hints & Recommendations'),
+          pw.SizedBox(height: 8),
+          _pdfAiSummarySection(aiSummary),
+          pw.SizedBox(height: 14),
+          _pdfSectionDivider(),
+          _pdfSectionTitle('7. Conclusion'),
+          pw.SizedBox(height: 8),
+          _pdfConclusionSection(conclusion),
+          pw.SizedBox(height: 14),
+          _pdfSectionDivider(),
+          _pdfSectionTitle('References'),
+          pw.SizedBox(height: 8),
+          _pdfReferencesSection(report),
         ],
         footer: (context) => pw.Padding(
           padding: const pw.EdgeInsets.only(top: 10),
@@ -343,16 +442,14 @@ class _ReportHubPageState extends State<ReportHubPage> {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                'Generated ${_formatPdfDateTime(generatedAt)}',
+                'Official record | $reportId | ${_formatPdfDateTime(generatedAt)}',
                 style: const pw.TextStyle(
                   fontSize: 8.5,
                   color: PdfColors.grey600,
                 ),
               ),
               pw.Text(
-                profile.storeName.trim().isEmpty
-                    ? 'Sales Report'
-                    : profile.storeName.trim(),
+                '${context.pageNumber}/${context.pagesCount}',
                 style: const pw.TextStyle(
                   fontSize: 8.5,
                   color: PdfColors.grey600,
@@ -397,6 +494,926 @@ class _ReportHubPageState extends State<ReportHubPage> {
 
     await Printing.sharePdf(bytes: bytes, filename: fileName);
     return true;
+  }
+
+  pw.Widget _pdfReportHeader({
+    required String reportTitle,
+    required _ReportSnapshot report,
+    required AppProfileData profile,
+    required pw.ImageProvider? logoImage,
+    required String reportId,
+  }) {
+    final storeName =
+        profile.storeName.trim().isEmpty ? 'Store report' : profile.storeName;
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(
+          color: PdfColor.fromHex('#DDE4EE'),
+          width: 0.8,
+        ),
+      ),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          if (logoImage != null) ...[
+            pw.Container(
+              width: 52,
+              height: 52,
+              decoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#F3F6FB'),
+                borderRadius: pw.BorderRadius.circular(4),
+                border: pw.Border.all(color: PdfColor.fromHex('#DDE4EE')),
+              ),
+              child: pw.ClipRRect(
+                horizontalRadius: 4,
+                verticalRadius: 4,
+                child: pw.Image(logoImage, fit: pw.BoxFit.cover),
+              ),
+            ),
+            pw.SizedBox(width: 12),
+          ] else ...[
+            pw.Container(
+              width: 52,
+              height: 52,
+              decoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#EAF1FF'),
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              child: pw.Center(
+                child: pw.Text(
+                  storeName.isNotEmpty ? storeName[0].toUpperCase() : 'R',
+                  style: pw.TextStyle(
+                    color: PdfColor.fromHex('#1E67E8'),
+                    fontSize: 22,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            pw.SizedBox(width: 12),
+          ],
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(
+                  children: [
+                    pw.Text(
+                      'OFFICIAL RECORD',
+                      style: pw.TextStyle(
+                        fontSize: 8.8,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColor.fromHex('#64748B'),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    pw.SizedBox(width: 8),
+                    pw.Text(
+                      reportId,
+                      style: const pw.TextStyle(
+                        fontSize: 8.5,
+                        color: PdfColors.grey600,
+                      ),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  'Official Financial Record',
+                  style: pw.TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColor.fromHex('#334155'),
+                  ),
+                ),
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  storeName,
+                  style: pw.TextStyle(
+                    fontSize: 16.5,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColor.fromHex('#0F172A'),
+                  ),
+                ),
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  reportTitle,
+                  style: pw.TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColor.fromHex('#0F172A'),
+                  ),
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  report.dateRangeLabel,
+                  style: const pw.TextStyle(
+                    fontSize: 10.2,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+                pw.SizedBox(height: 6),
+                _pdfHeaderMetaLine(
+                  storeName: storeName,
+                  report: report,
+                  reportId: reportId,
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(width: 12),
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: pw.BoxDecoration(
+              color: PdfColor.fromHex('#F8FAFC'),
+              borderRadius: pw.BorderRadius.circular(4),
+              border: pw.Border.all(color: PdfColor.fromHex('#DDE4EE')),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                pw.Text(
+                  report.periodLabel,
+                  style: pw.TextStyle(
+                    color: PdfColor.fromHex('#334155'),
+                    fontSize: 10.5,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'Executive report',
+                  style: const pw.TextStyle(
+                    fontSize: 8.5,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfHeaderMetaLine({
+    required String storeName,
+    required _ReportSnapshot report,
+    required String reportId,
+  }) {
+    return pw.Wrap(
+      spacing: 10,
+      runSpacing: 4,
+      children: [
+        _pdfMetaText('Prepared for: $storeName'),
+        _pdfMetaText('Period: ${report.periodLabel}'),
+        _pdfMetaText('Range: ${report.dateRangeLabel}'),
+        _pdfMetaText('Reference: $reportId'),
+        _pdfMetaText('Status: Official record'),
+      ],
+    );
+  }
+
+  pw.Widget _pdfMetaText(String text) {
+    return pw.Text(
+      text,
+      style: const pw.TextStyle(
+        fontSize: 8.8,
+        color: PdfColors.grey600,
+      ),
+    );
+  }
+
+  pw.Widget _pdfIntroSection(String executiveSummary, _ReportSnapshot report) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(
+          color: PdfColor.fromHex('#E6EBF2'),
+          width: 0.7,
+        ),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Executive Summary',
+            style: pw.TextStyle(
+              fontSize: 13.5,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#0F172A'),
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            executiveSummary,
+            style: const pw.TextStyle(
+              fontSize: 10.2,
+              color: PdfColors.grey800,
+              lineSpacing: 4,
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Row(
+            children: [
+              pw.Expanded(
+                child: _pdfIntroStat(
+                  'Document',
+                  'Official report',
+                ),
+              ),
+              pw.SizedBox(width: 8),
+              pw.Expanded(
+                child: _pdfIntroStat(
+                  'Format',
+                  'Executive summary',
+                ),
+              ),
+              pw.SizedBox(width: 8),
+              pw.Expanded(
+                child: _pdfIntroStat(
+                  'Scope',
+                  report.dateRangeLabel,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfIntroStat(String label, String value) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(3),
+        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.6),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            label.toUpperCase(),
+            style: pw.TextStyle(
+              fontSize: 7.8,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#64748B'),
+            ),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              fontSize: 9.4,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#0F172A'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfSectionTitle(String title) {
+    return pw.Text(
+      title,
+      style: pw.TextStyle(
+        fontSize: 13.5,
+        fontWeight: pw.FontWeight.bold,
+        color: PdfColor.fromHex('#0F172A'),
+      ),
+    );
+  }
+
+  pw.Widget _pdfSectionDivider() {
+    return pw.Container(
+      height: 1,
+      margin: const pw.EdgeInsets.only(top: 2),
+      color: PdfColor.fromHex('#EEF3F8'),
+    );
+  }
+
+  pw.Widget _pdfKpiTable(
+    _PdfReportStats currentStats,
+    _PdfReportStats previousStats,
+  ) {
+    final rows = <pw.TableRow>[
+      pw.TableRow(
+        children: [
+          _pdfTableCell('Metric', bold: true),
+          _pdfTableCell('Value', bold: true),
+          _pdfTableCell('Change from Previous', bold: true),
+        ],
+      ),
+      _pdfKpiRow(
+        'Total Revenue',
+        _moneyLabel(currentStats.revenue),
+        _changeLabel(currentStats.revenue, previousStats.revenue),
+      ),
+      _pdfKpiRow(
+        'Total Orders',
+        currentStats.orderCount.toString(),
+        _changeLabel(currentStats.orderCount, previousStats.orderCount),
+      ),
+      _pdfKpiRow(
+        'Average Order Value',
+        _moneyLabel(currentStats.averageOrderValue),
+        _changeLabel(
+          currentStats.averageOrderValue,
+          previousStats.averageOrderValue,
+        ),
+      ),
+      _pdfKpiRow(
+        'New Customers',
+        currentStats.newCustomers.toString(),
+        _changeLabel(currentStats.newCustomers, previousStats.newCustomers),
+      ),
+      _pdfKpiRow(
+        'Returning Customers',
+        currentStats.returningCustomers.toString(),
+        _changeLabel(
+          currentStats.returningCustomers,
+          previousStats.returningCustomers,
+        ),
+      ),
+    ];
+
+    return pw.Table(
+      border: pw.TableBorder.all(
+        color: PdfColor.fromHex('#EDF2F7'),
+        width: 0.35,
+      ),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(3.5),
+        1: pw.FlexColumnWidth(2),
+        2: pw.FlexColumnWidth(2.2),
+      },
+      children: rows,
+    );
+  }
+
+  pw.TableRow _pdfKpiRow(
+    String label,
+    String value,
+    String change,
+  ) {
+    return pw.TableRow(
+      children: [
+        _pdfTableCell(label),
+        _pdfTableCell(value),
+        _pdfTableCell(change),
+      ],
+    );
+  }
+
+  pw.Widget _pdfSalesTrendSection(
+    _ReportSnapshot report,
+    _PdfReportStats stats,
+  ) {
+    final firstPoint = report.trendPoints.isNotEmpty ? report.trendPoints.first : null;
+    final lastPoint = report.trendPoints.isNotEmpty ? report.trendPoints.last : null;
+    final peakPoint = report.trendPoints.isEmpty
+        ? null
+        : report.trendPoints.reduce(
+            (a, b) => a.value >= b.value ? a : b,
+          );
+    final averageTrend = report.trendPoints.isEmpty
+        ? 0.0
+        : report.trendPoints.fold<double>(
+              0,
+              (sum, point) => sum + point.value,
+            ) /
+            report.trendPoints.length;
+    final direction = firstPoint == null || lastPoint == null
+        ? 'The period does not have enough sales activity for a directional trend.'
+        : lastPoint.value >= firstPoint.value
+            ? 'Revenue closed stronger than it started, which suggests sales momentum improved over the selected period.'
+            : 'Revenue ended below its starting point, suggesting a softer close to the selected period.';
+
+    final peakText = peakPoint == null
+        ? 'No completed sales were recorded in the period.'
+        : 'The highest revenue day was ${peakPoint.label} at ${peakPoint.displayValue}.';
+
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(
+          color: PdfColor.fromHex('#E6EBF2'),
+          width: 0.7,
+        ),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Sales revenue showed ${_trendDirectionWord(firstPoint, lastPoint)} across the selected period. $peakText',
+            style: const pw.TextStyle(
+              fontSize: 10.2,
+              color: PdfColors.grey800,
+              lineSpacing: 4,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Average daily revenue: ${_moneyLabel(averageTrend)}',
+            style: const pw.TextStyle(
+              fontSize: 9.8,
+              color: PdfColors.grey700,
+            ),
+          ),
+          pw.SizedBox(height: 5),
+          pw.Text(
+            direction,
+            style: const pw.TextStyle(
+              fontSize: 10.2,
+              color: PdfColors.grey800,
+              lineSpacing: 4,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Table(
+      border: pw.TableBorder.all(
+        color: PdfColor.fromHex('#EDF2F7'),
+        width: 0.35,
+      ),
+            columnWidths: const {
+              0: pw.FlexColumnWidth(2.5),
+              1: pw.FlexColumnWidth(2),
+            },
+            children: [
+              pw.TableRow(
+                children: [
+                  _pdfTableCell('Date', bold: true),
+                  _pdfTableCell('Revenue', bold: true),
+                ],
+              ),
+              ...report.trendPoints.map(
+                (point) => pw.TableRow(
+                  children: [
+                    _pdfTableCell(point.label),
+                    _pdfTableCell(point.displayValue),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfCustomerInsightsSection(
+    List<CompletedOrder> orders,
+    PosLocalStore store,
+    _PdfReportStats stats,
+  ) {
+    final activeCustomerNames = orders
+        .map((order) => order.customerName?.trim())
+        .whereType<String>()
+        .where((name) => name.isNotEmpty)
+        .toSet();
+    final activeCustomers = activeCustomerNames.length;
+    final repeatCustomers = orders
+        .where((order) => (order.customerName ?? '').trim().isNotEmpty)
+        .fold<Map<String, int>>({}, (map, order) {
+      final name = order.customerName!.trim();
+      map[name] = (map[name] ?? 0) + 1;
+      return map;
+    }).values.where((count) => count > 1).length;
+    final customerStats = store.customerStats();
+    final topCustomerName = customerStats['topName'] as String?;
+    final topCustomerValue = (customerStats['topValue'] as num?)?.toDouble() ?? 0.0;
+    final createdThisPeriod = store.customers
+        .where((customer) =>
+            !customer.createdAt.isBefore(stats.startDate) &&
+            !customer.createdAt.isAfter(stats.endDate.add(const Duration(days: 1))))
+        .length;
+
+    final insight = topCustomerName == null || topCustomerName.trim().isEmpty
+        ? 'Customer records are present, but there is no clear top customer yet.'
+        : '$topCustomerName generated ${_moneyLabel(topCustomerValue)} in lifetime sales, which makes them a valuable repeat-buyer to keep engaged.';
+
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(
+          color: PdfColor.fromHex('#E6EBF2'),
+          width: 0.7,
+        ),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Customer activity remained at $activeCustomers active customer${activeCustomers == 1 ? '' : 's'} in this period, with $repeatCustomers repeat buyer${repeatCustomers == 1 ? '' : 's'} and $createdThisPeriod newly registered customer${createdThisPeriod == 1 ? '' : 's'}.',
+            style: const pw.TextStyle(
+              fontSize: 10.2,
+              color: PdfColors.grey800,
+              lineSpacing: 4,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            insight,
+            style: const pw.TextStyle(
+              fontSize: 10.0,
+              color: PdfColors.grey800,
+              lineSpacing: 4,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Table(
+      border: pw.TableBorder.all(
+        color: PdfColor.fromHex('#EDF2F7'),
+        width: 0.35,
+      ),
+            columnWidths: const {
+              0: pw.FlexColumnWidth(2.7),
+              1: pw.FlexColumnWidth(2),
+            },
+            children: [
+              pw.TableRow(
+                children: [
+                  _pdfTableCell('Customer insight', bold: true),
+                  _pdfTableCell('Value', bold: true),
+                ],
+              ),
+              _pdfTableRow('Registered customers', store.customers.length.toString()),
+              _pdfTableRow('Active customers', activeCustomers.toString()),
+              _pdfTableRow('Returning customers', repeatCustomers.toString()),
+              _pdfTableRow(
+                'Top customer',
+                topCustomerName == null || topCustomerName.trim().isEmpty
+                    ? 'Not available'
+                    : '$topCustomerName (${_moneyLabel(topCustomerValue)})',
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          pw.Text(
+            'Customer loyalty continues to matter because repeat buyers reduce acquisition pressure and usually respond well to small reminders, bundles, or limited-time offers.',
+            style: const pw.TextStyle(
+              fontSize: 10.0,
+              color: PdfColors.grey800,
+              lineSpacing: 4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.TableRow _pdfTableRow(String label, String value) {
+    return pw.TableRow(
+      children: [
+        _pdfTableCell(label),
+        _pdfTableCell(value),
+      ],
+    );
+  }
+
+  pw.Widget _pdfExpenseAnalysisSection(List<Expense> expenses) {
+    final total = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+    final categories = <String, double>{};
+    for (final expense in expenses) {
+      categories[expense.category] =
+          (categories[expense.category] ?? 0) + expense.amount;
+    }
+    final topCategories = categories.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topExpense = topCategories.isEmpty ? null : topCategories.first;
+
+    final expenseSummary = total <= 0
+        ? 'No expenses were recorded in the selected period.'
+        : 'Total expenses for the selected period were ${_moneyLabel(total)}. Inventory, rent, and utilities should be monitored closely because they usually take the largest share of operating cost.';
+
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(
+          color: PdfColor.fromHex('#E6EBF2'),
+          width: 0.7,
+        ),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            expenseSummary,
+            style: const pw.TextStyle(
+              fontSize: 10.2,
+              color: PdfColors.grey800,
+              lineSpacing: 4,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Table(
+            border: pw.TableBorder.all(
+              color: PdfColor.fromHex('#E3EAF2'),
+              width: 0.45,
+            ),
+            columnWidths: const {
+              0: pw.FlexColumnWidth(2.4),
+              1: pw.FlexColumnWidth(1.6),
+              2: pw.FlexColumnWidth(1.2),
+            },
+            children: [
+              pw.TableRow(
+                children: [
+                  _pdfTableCell('Category', bold: true),
+                  _pdfTableCell('Amount', bold: true),
+                  _pdfTableCell('% of total', bold: true),
+                ],
+              ),
+              ...topCategories.map(
+                (entry) => pw.TableRow(
+                  children: [
+                    _pdfTableCell(entry.key),
+                    _pdfTableCell(_moneyLabel(entry.value)),
+                    _pdfTableCell(
+                      total <= 0 ? '0%' : '${((entry.value / total) * 100).toStringAsFixed(0)}%',
+                    ),
+                  ],
+                ),
+              ),
+              pw.TableRow(
+                children: [
+                  _pdfTableCell('Total expenses', bold: true),
+                  _pdfTableCell(_moneyLabel(total), bold: true),
+                  _pdfTableCell('100%', bold: true),
+                ],
+              ),
+            ],
+          ),
+          if (topExpense != null) ...[
+            pw.SizedBox(height: 8),
+            pw.Text(
+              'Largest category: ${topExpense.key} at ${_moneyLabel(topExpense.value)}.',
+              style: const pw.TextStyle(
+                fontSize: 10.0,
+                color: PdfColors.grey800,
+                lineSpacing: 4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfConclusionSection(String conclusion) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(
+          color: PdfColor.fromHex('#E6EBF2'),
+          width: 0.7,
+        ),
+      ),
+      child: pw.Text(
+        conclusion,
+        style: const pw.TextStyle(
+          fontSize: 10.2,
+          color: PdfColors.grey800,
+          lineSpacing: 4,
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _pdfReferencesSection(_ReportSnapshot report) {
+    final reportLabel = report.dateRangeLabel;
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(
+          color: PdfColor.fromHex('#E6EBF2'),
+          width: 0.7,
+        ),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          _pdfBullet('Internal POS Sales Data - $reportLabel'),
+          pw.SizedBox(height: 4),
+          _pdfBullet('Internal Customer Database - $reportLabel'),
+          pw.SizedBox(height: 4),
+          _pdfBullet('Internal Expense Records - $reportLabel'),
+          pw.SizedBox(height: 4),
+          _pdfBullet('Store profile and branding settings inside the app'),
+        ],
+      ),
+    );
+  }
+
+  String _trendDirectionWord(_TrendPoint? firstPoint, _TrendPoint? lastPoint) {
+    if (firstPoint == null || lastPoint == null) {
+      return 'limited movement';
+    }
+    if (lastPoint.value > firstPoint.value) return 'a positive momentum';
+    if (lastPoint.value < firstPoint.value) return 'a softer finish';
+    return 'steady movement';
+  }
+
+  String _reportTitleFor(_ReportSnapshot report) {
+    if (report.periodLabel == 'This Month') {
+      return 'Store Performance Report - ${_monthYearLabel(report.endDate)}';
+    }
+    if (report.periodLabel == 'Today') {
+      return 'Store Performance Report - ${_dateLabel(report.endDate)}';
+    }
+    if (report.periodLabel == 'This Week') {
+      return 'Store Performance Report - ${_dateLabel(report.startDate)} - ${_dateLabel(report.endDate)}';
+    }
+    return 'Store Performance Report - ${report.dateRangeLabel}';
+  }
+
+  String _buildPdfExecutiveSummary({
+    required _ReportSnapshot report,
+    required _PdfReportStats stats,
+    required AppProfileData profile,
+  }) {
+    final storeName =
+        profile.storeName.trim().isEmpty ? 'The store' : profile.storeName.trim();
+    final trendWord = stats.revenueTrend >= 0 ? 'growth' : 'softness';
+    final revenueDirection = stats.revenueTrend >= 0 ? 'increased' : 'declined';
+    final topProduct = report.products.isNotEmpty
+        ? 'The top selling product was ${report.products.first.title}.'
+        : 'No completed sales were recorded in the selected period.';
+
+    return '$storeName recorded ${_moneyLabel(stats.revenue)} in completed sales across ${stats.orderCount} orders during ${report.dateRangeLabel}. '
+        'Average order value was ${_moneyLabel(stats.averageOrderValue)}, while customer activity showed ${stats.activeCustomers} active customer${stats.activeCustomers == 1 ? '' : 's'} and ${stats.returningCustomers} repeat buyer${stats.returningCustomers == 1 ? '' : 's'}. '
+        'The sales trend shows $trendWord in the selected period, and revenue $revenueDirection compared with the previous comparable period. '
+        '$topProduct';
+  }
+
+  String _buildPdfConclusion(_ReportSnapshot report, _PdfReportStats stats) {
+    final revenue = _moneyLabel(stats.revenue);
+    final expenses = _moneyLabel(stats.totalExpenses);
+    final margin = stats.revenue - stats.totalExpenses;
+    final marginLabel = _moneyLabel(margin.abs());
+    final marginText = margin >= 0 ? 'profit cushion' : 'cost pressure';
+
+    return '${report.dateRangeLabel} demonstrated a clear picture of current store performance. Revenue closed at $revenue, expenses totaled $expenses, and the net position reflected a $marginText of $marginLabel. '
+        'The strongest next steps are to protect best-selling products, keep a close eye on the largest expense categories, and continue using customer follow-ups to improve repeat sales in the next reporting period.';
+  }
+
+  _PdfReportStats _buildPdfStats({
+    required List<CompletedOrder> orders,
+    required List<CustomerData> customers,
+    required List<Expense> expenses,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    final revenue = orders.fold<double>(0, (sum, order) => sum + order.total);
+    final orderCount = orders.length;
+    final averageOrderValue = orderCount == 0 ? 0.0 : revenue / orderCount;
+    final totalExpenses = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+
+    final activeCustomerNames = orders
+        .map((order) => order.customerName?.trim())
+        .whereType<String>()
+        .where((name) => name.isNotEmpty)
+        .toSet();
+    final activeCustomers = activeCustomerNames.length;
+    final returningCustomers = orders
+        .where((order) => (order.customerName ?? '').trim().isNotEmpty)
+        .fold<Map<String, int>>({}, (map, order) {
+      final name = order.customerName!.trim();
+      map[name] = (map[name] ?? 0) + 1;
+      return map;
+    }).values.where((count) => count > 1).length;
+    final newCustomers = customers
+        .where((customer) =>
+            !customer.createdAt.isBefore(startDate) &&
+            !customer.createdAt.isAfter(endDate.add(const Duration(days: 1))))
+        .length;
+    final topCustomerSpend = <String, double>{};
+    for (final order in orders) {
+      final customerName = order.customerName?.trim();
+      if (customerName == null || customerName.isEmpty) continue;
+      topCustomerSpend[customerName] =
+          (topCustomerSpend[customerName] ?? 0) + order.total;
+    }
+    String? topCustomerName;
+    double topCustomerValue = 0;
+    topCustomerSpend.forEach((name, value) {
+      if (value > topCustomerValue) {
+        topCustomerValue = value;
+        topCustomerName = name;
+      }
+    });
+
+    final peakOrder = orders.isEmpty
+        ? null
+        : orders.reduce((a, b) => a.total >= b.total ? a : b);
+
+    return _PdfReportStats(
+      revenue: revenue,
+      orderCount: orderCount,
+      averageOrderValue: averageOrderValue,
+      totalExpenses: totalExpenses,
+      activeCustomers: activeCustomers,
+      returningCustomers: returningCustomers,
+      newCustomers: newCustomers,
+      topCustomerName: topCustomerName,
+      topCustomerValue: topCustomerValue,
+      peakOrderId: peakOrder?.id,
+      revenueTrend: orders.isEmpty
+          ? 0
+          : orders.last.total - orders.first.total,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  String _changeLabel(num current, num previous) {
+    if (previous == 0) {
+      if (current == 0) return '0%';
+      return '+100% vs previous';
+    }
+    final change = ((current - previous) / previous) * 100;
+    final sign = change >= 0 ? '+' : '';
+    return '$sign${change.abs().toStringAsFixed(change.abs() >= 10 ? 0 : 1)}% vs previous';
+  }
+
+  String _monthYearLabel(DateTime date) {
+    const monthNames = <String>[
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return '${monthNames[date.month - 1]} ${date.year}';
+  }
+
+  List<CompletedOrder> _ordersWithinRange(
+    List<CompletedOrder> orders,
+    DateTime start,
+    DateTime end,
+  ) {
+    return orders.where((order) {
+      final orderDate = DateTime.tryParse(order.dateTime);
+      if (orderDate == null) return false;
+      final day = DateTime(orderDate.year, orderDate.month, orderDate.day);
+      return !day.isBefore(start) && !day.isAfter(end);
+    }).toList();
+  }
+
+  List<Expense> _expensesWithinRange(
+    List<Expense> expenses,
+    DateTime start,
+    DateTime end,
+  ) {
+    return expenses
+        .where((expense) {
+          final day = DateTime(expense.date.year, expense.date.month, expense.date.day);
+          return !day.isBefore(start) && !day.isAfter(end);
+        })
+        .toList();
+  }
+
+  _ReportRange _previousComparableRange(DateTime start, DateTime end) {
+    final days = end.difference(start).inDays + 1;
+    final previousEnd = start.subtract(const Duration(days: 1));
+    final previousStart = previousEnd.subtract(Duration(days: days - 1));
+    return _ReportRange(
+      start: previousStart,
+      end: previousEnd,
+      label: '${_dateLabel(previousStart)} - ${_dateLabel(previousEnd)}',
+    );
   }
 
   pw.Widget _pdfHeader(
@@ -768,47 +1785,24 @@ class _ReportHubPageState extends State<ReportHubPage> {
 
   pw.Widget _pdfAiSummarySection(String aiSummary) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(14),
+      padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
-        color: PdfColor.fromHex('#FAFCFF'),
-        borderRadius: pw.BorderRadius.circular(14),
-        border: pw.Border.all(color: PdfColor.fromHex('#DCE6F5')),
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.7),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Row(
-            children: [
-              pw.Container(
-                width: 24,
-                height: 24,
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#EAF1FF'),
-                  shape: pw.BoxShape.circle,
-                ),
-                child: pw.Center(
-                  child: pw.Text(
-                    'AI',
-                    style: pw.TextStyle(
-                      color: PdfColor.fromHex('#1E67E8'),
-                      fontSize: 8.5,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Text(
-                'AI Executive Analysis',
-                style: pw.TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColor.fromHex('#0F172A'),
-                ),
-              ),
-            ],
+          pw.Text(
+            'AI-Powered Business Hints & Recommendations',
+            style: pw.TextStyle(
+              fontSize: 13,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#0F172A'),
+            ),
           ),
-          pw.SizedBox(height: 10),
+          pw.SizedBox(height: 6),
           pw.Text(
             aiSummary,
             style: const pw.TextStyle(
@@ -925,7 +1919,10 @@ class _ReportHubPageState extends State<ReportHubPage> {
 
   pw.Widget _pdfProductTable(List<_ProductData> products) {
     return pw.Table(
-      border: pw.TableBorder.all(color: PdfColor.fromHex('#E6EBF2')),
+      border: pw.TableBorder.symmetric(
+        inside: pw.BorderSide(color: PdfColor.fromHex('#E6EBF2'), width: 0.7),
+        outside: pw.BorderSide(color: PdfColor.fromHex('#E6EBF2'), width: 0.7),
+      ),
       columnWidths: const {
         0: pw.FlexColumnWidth(4),
         1: pw.FlexColumnWidth(2),
@@ -990,6 +1987,15 @@ class _ReportHubPageState extends State<ReportHubPage> {
     final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
     return '${monthNames[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year} '
         '$hour:$minute $amPm';
+  }
+
+  String _reportId(DateTime dateTime) {
+    final year = dateTime.year.toString();
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return 'SR-$year$month$day-$hour$minute';
   }
 
   String _hexForMetric(Color color) {
@@ -1141,9 +2147,9 @@ class _ReportHubPageState extends State<ReportHubPage> {
     }
 
     final response = await service
-        .sendMessage(
+      .sendMessage(
           prompt:
-              'Write a professional executive sales analysis for this report.',
+              'Write a polished business insights section for a store performance report. Focus on sales momentum, customer activity, expense pressure, and practical next actions.',
           storeContext: _buildReportContext(store, report),
           history: const <DukaAiMessage>[],
           systemPromptOverride: _professionalReportSystemPrompt(),
@@ -1222,40 +2228,27 @@ class _ReportHubPageState extends State<ReportHubPage> {
 
     return '''
 Executive summary
-$storeName recorded $revenue across $orders completed orders, with an average order value of $average.
-
-Key observations
-- $topProduct
-- $trendNote
-- This report is based on completed sales stored in the app, so the figures reflect finalized transactions only.
-
-Watch-outs
-- Review slower-moving products and tighten stock planning around them.
-- Keep an eye on the sales rhythm in the selected period for any soft spots.
+$storeName recorded $revenue across $orders completed orders, with an average order value of $average. $topProduct $trendNote
 
 Recommended actions
-- Protect stock for the best sellers.
-- Consider small promos or bundles for slower items.
+- Protect stock for the strongest sellers.
+- Review slower-moving items and tighten purchasing where needed.
+- Keep using customer follow-ups and bundles to improve repeat sales.
 '''
         .trim();
   }
 
   String _professionalReportSystemPrompt() {
     return '''
-You are a senior retail analyst writing a polished executive sales report.
+You are a senior retail analyst writing a polished business insights section for a store report.
 
 Write in a formal, concise, businesslike tone.
 Use only the numbers and facts in the provided data.
 Do not invent data or mention unsupported assumptions.
 Use plain text only. No markdown. No greetings. No sign-off.
 
-Structure the response with these short sections:
-Executive summary
-Key observations
-Watch-outs
-Recommended actions
-
-Keep each section brief and readable in a PDF.
+Keep the response compact, readable, and suitable for a PDF section.
+Focus on sales momentum, customer patterns, expense pressure, and practical next actions.
 ''';
   }
 
@@ -1438,6 +2431,8 @@ class _ReportSnapshot {
   const _ReportSnapshot({
     required this.periodLabel,
     required this.dateRangeLabel,
+    required this.startDate,
+    required this.endDate,
     required this.metrics,
     required this.trendPoints,
     required this.products,
@@ -1446,10 +2441,44 @@ class _ReportSnapshot {
 
   final String periodLabel;
   final String dateRangeLabel;
+  final DateTime startDate;
+  final DateTime endDate;
   final List<_MetricData> metrics;
   final List<_TrendPoint> trendPoints;
   final List<_ProductData> products;
   final double chartMaxValue;
+}
+
+class _PdfReportStats {
+  const _PdfReportStats({
+    required this.revenue,
+    required this.orderCount,
+    required this.averageOrderValue,
+    required this.totalExpenses,
+    required this.activeCustomers,
+    required this.returningCustomers,
+    required this.newCustomers,
+    required this.topCustomerName,
+    required this.topCustomerValue,
+    required this.peakOrderId,
+    required this.revenueTrend,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  final double revenue;
+  final int orderCount;
+  final double averageOrderValue;
+  final double totalExpenses;
+  final int activeCustomers;
+  final int returningCustomers;
+  final int newCustomers;
+  final String? topCustomerName;
+  final double topCustomerValue;
+  final String? peakOrderId;
+  final double revenueTrend;
+  final DateTime startDate;
+  final DateTime endDate;
 }
 
 class _ReportRange {
