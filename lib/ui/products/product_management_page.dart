@@ -92,9 +92,11 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              final store = context.read<PosLocalStore>();
               Navigator.pop(context);
-              context.read<PosLocalStore>().removeProduct(product.code);
+              await store.removeProduct(product.code);
+              if (!context.mounted) return;
               showMarketNotice(
                 context,
                 title: 'Product Deleted',
@@ -299,28 +301,23 @@ class _PinnedSearchPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: MarketSurfaceCard(
-        backgroundColor: const Color(0xFFF8FAFC),
-        borderColor: const Color(0xFFE5EAF0),
-        radius: 18,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: MarketSearchField(
-            controller: controller,
-            hintText: 'Search products by name, SKU, or category',
-            onChanged: onSearchChanged,
-            onClear: onClearSearch,
-            backgroundColor: const Color(0xFFF8FAFC),
-            borderColor: const Color(0xFFE5EAF0),
-            radius: 14,
-            height: 52,
-            paddingHorizontal: 14,
-            iconColor: const Color(0xFF94A3B8),
-            hintColor: const Color(0xFF94A3B8),
-            textColor: const Color(0xFF111827),
-            iconSize: 20,
-          ),
-        ),
+      child: MarketSearchField(
+        controller: controller,
+        hintText: 'Search products by name, SKU, or category',
+        onChanged: onSearchChanged,
+        onClear: onClearSearch,
+        onScanTap: () {
+          showMarketNotice(
+            context,
+            title: 'Scanner Active',
+            message: 'SKU Barcode scanner would open here',
+          );
+        },
+        backgroundColor: Colors.white,
+        borderColor: const Color(0xFFF1F5F9),
+        radius: 30,
+        height: 60,
+        showShadow: true,
       ),
     );
   }
@@ -378,25 +375,25 @@ class _CategoryChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.rounded),
         child: Container(
-          height: 36,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1F6FEB) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(18),
+            color: selected ? AppColors.primary : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.rounded),
             border: Border.all(
-              color:
-                  selected ? const Color(0xFF1F6FEB) : const Color(0xFFE5EAF0),
+              color: selected ? AppColors.primary : AppColors.border,
+              width: 1,
             ),
+            boxShadow: selected ? AppShadows.primary : null,
           ),
           child: Text(
             label,
-            style: GoogleFonts.manrope(
-              color: selected ? Colors.white : const Color(0xFF4B5563),
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
+            style: AppTypography.bodySmall.copyWith(
+              color: selected ? Colors.white : AppColors.textMain,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
             ),
           ),
         ),
@@ -418,43 +415,45 @@ class _ProductGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: MarketSurfaceCard(
-          borderColor: const Color(0xFFE1E5EB),
-          radius: 18,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 flex: 4,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(18),
-                        ),
-                        child: ColoredBox(
-                          color: const Color(0xFFF8FAFC),
-                          child: _ProductArtFrame(product: product),
-                        ),
-                      ),
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceSecondary,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.standard),
                     ),
-                  ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.standard),
+                    ),
+                    child: _ProductArtFrame(product: product),
+                  ),
                 ),
               ),
               Expanded(
                 flex: 2,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -466,42 +465,50 @@ class _ProductGridCard extends StatelessWidget {
                               children: [
                                 Text(
                                   product.name,
-                                  maxLines: 2,
+                                  maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: AppTypography.bodySmall.copyWith(
+                                    fontWeight: FontWeight.w800,
                                     color: AppColors.ink,
-                                    fontSize: 15,
-                                    height: 1.15,
-                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 2),
                                 Text(
                                   _formatPrice(product.sellingPrice),
-                                  style: const TextStyle(
-                                    color: Color(0xFF1F6FEB),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${product.stockCount} in stock',
-                                  style: const TextStyle(
-                                    color: Color(0xFF7A859C),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 0),
-                            child: _EditActionsButton(
-                              onEdit: onTap,
-                              onDelete: onDelete,
+                          _EditActionsButton(
+                            onEdit: onTap,
+                            onDelete: onDelete,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: product.stockCount > 5
+                                  ? AppColors.success
+                                  : (product.stockCount > 0
+                                      ? AppColors.warning
+                                      : AppColors.danger),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${product.stockCount} in stock',
+                            style: AppTypography.helperText.copyWith(
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -547,19 +554,20 @@ class _EditActionsButton extends StatelessWidget {
       },
       offset: const Offset(0, 42),
       position: PopupMenuPosition.over,
-      color: Colors.white,
+      color: AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE1E6ED)),
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        side: const BorderSide(color: AppColors.border),
       ),
-      itemBuilder: (context) => const [
+      itemBuilder: (context) => [
         PopupMenuItem<_ProductCardAction>(
           value: _ProductCardAction.edit,
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1B9B69)),
-              SizedBox(width: 10),
-              Text('Edit'),
+              const Icon(Icons.edit_outlined,
+                  size: 18, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.md),
+              Text('Edit', style: AppTypography.bodyMedium),
             ],
           ),
         ),
@@ -567,20 +575,26 @@ class _EditActionsButton extends StatelessWidget {
           value: _ProductCardAction.delete,
           child: Row(
             children: [
-              Icon(Icons.delete_outline_rounded,
-                  size: 18, color: Color(0xFFEF4444)),
-              SizedBox(width: 10),
-              Text('Delete'),
+              const Icon(Icons.delete_outline_rounded,
+                  size: 18, color: AppColors.danger),
+              const SizedBox(width: AppSpacing.md),
+              Text('Delete',
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.danger)),
             ],
           ),
         ),
       ],
-      child: const Padding(
-        padding: EdgeInsets.all(6),
-        child: Icon(
-          Icons.edit_outlined,
-          color: Color(0xFF1B9B69),
-          size: 28,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.xs),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceSecondary,
+          borderRadius: BorderRadius.circular(AppRadius.sharp),
+        ),
+        child: const Icon(
+          Icons.more_vert_rounded,
+          color: AppColors.textMuted,
+          size: 18,
         ),
       ),
     );
@@ -596,30 +610,26 @@ class _AddProductFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: const Offset(0, -10),
-      child: FloatingActionButton.extended(
-        onPressed: onPressed,
-        backgroundColor: const Color(0xFFD94B4B),
-        foregroundColor: Colors.white,
-        elevation: 12,
-        highlightElevation: 14,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        extendedPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        icon: const Icon(
-          Icons.add_rounded,
-          size: 24,
-        ),
-        label: const Text(
-          'Add product',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.1,
-          ),
+    return FloatingActionButton.extended(
+      onPressed: onPressed,
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      elevation: 8,
+      highlightElevation: 12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+      ),
+      extendedPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      icon: const Icon(
+        Icons.add_rounded,
+        size: 24,
+      ),
+      label: Text(
+        'Add Product',
+        style: AppTypography.bodyMedium.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -652,7 +662,7 @@ class _ProductArtFrame extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: FittedBox(
           fit: BoxFit.contain,
           child: ProductArt(type: product.artType),
@@ -678,92 +688,58 @@ class _ProductsEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      padding: const EdgeInsets.all(24),
-      borderColor: const Color(0xFFE3E7ED),
-      radius: 28,
+      padding: const EdgeInsets.all(AppSpacing.xxxl),
+      radius: AppRadius.extraRounded,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 92,
-            height: 92,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F8F6),
-              borderRadius: BorderRadius.circular(28),
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(AppRadius.rounded),
             ),
             child: const Icon(
               Icons.inventory_2_outlined,
               size: 40,
-              color: Color(0xFF1B9B69),
+              color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.xl),
           Text(
             query.isEmpty && category == 'All'
                 ? 'No products yet'
                 : 'No products found',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.ink,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
-            ),
+            style: AppTypography.h3,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             query.isEmpty && category == 'All'
                 ? 'Your inventory will appear here once products are added.'
                 : 'Try another search or switch to a different category.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF7A859C),
-              fontSize: 13.5,
-              height: 1.35,
-              fontWeight: FontWeight.w500,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textMuted,
+              height: 1.5,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.xxl),
           if (query.isEmpty && category == 'All')
-            ElevatedButton(
-              onPressed: onAddTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B9B69),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'Add product',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+            MarketButton(
+              label: 'Add Product',
+              onTap: onAddTap,
+              isFullWidth: false,
+              icon: Icons.add_rounded,
             )
           else
-            OutlinedButton(
-              onPressed: onClearFilter,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.ink,
-                side: const BorderSide(color: Color(0xFFD9E2EC)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'Clear filters',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+            MarketButton(
+              label: 'Clear Filters',
+              onTap: onClearFilter,
+              isPrimary: false,
+              isFullWidth: false,
+              icon: Icons.filter_list_off_rounded,
             ),
         ],
       ),

@@ -5,7 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 
+import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../models/product_item.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -105,6 +107,45 @@ class _AddProductPageState extends State<AddProductPage> {
     );
 
     Navigator.of(context).pop(product);
+  }
+
+  Future<void> _deleteProduct() async {
+    final product = widget.product;
+    if (product == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Product?'),
+        content: Text(
+          'Remove "${product.name}" from inventory? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    await context.read<PosLocalStore>().removeProduct(product.code);
+    if (!mounted) return;
+
+    showMarketNotice(
+      context,
+      title: 'Product Deleted',
+      message: '${product.name} has been removed from inventory',
+      type: MarketNoticeType.warning,
+    );
+    Navigator.of(context).pop();
   }
 
   Future<void> _pickImage() async {
@@ -367,6 +408,22 @@ class _AddProductPageState extends State<AddProductPage> {
               bottom: 16,
               child: Row(
                 children: [
+                  if (widget.product != null) ...[
+                    Expanded(
+                      child: MarketButton(
+                        label: 'Delete',
+                        onTap: _deleteProduct,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        foregroundColor: AppColors.danger,
+                        borderColor: const Color(0xFFF3C5C5),
+                        height: 64,
+                        radius: 8,
+                        paddingHorizontal: 0,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                  ],
                   Expanded(
                     child: MarketButton(
                       label: 'Cancel',

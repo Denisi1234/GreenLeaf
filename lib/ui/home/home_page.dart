@@ -11,7 +11,6 @@ import '../products/product_management_page.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
-import '../more/duka_ai_page.dart';
 
 class MarketHomePage extends StatelessWidget {
   const MarketHomePage({
@@ -24,10 +23,9 @@ class MarketHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer:
-          useSharedShell ? null : const MarketAppDrawer(selectedItem: 'Sales'),
+      drawer: useSharedShell ? null : const MarketAppDrawer(),
       body: MarketDashboardView(
-        showHeader: !useSharedShell,
+        useSharedShell: useSharedShell,
       ),
     );
   }
@@ -36,10 +34,10 @@ class MarketHomePage extends StatelessWidget {
 class MarketDashboardView extends StatefulWidget {
   const MarketDashboardView({
     super.key,
-    this.showHeader = true,
+    this.useSharedShell = false,
   });
 
-  final bool showHeader;
+  final bool useSharedShell;
 
   @override
   State<MarketDashboardView> createState() => _MarketDashboardViewState();
@@ -212,13 +210,16 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
     final content = Stack(
       children: [
         const Positioned.fill(
-          child: ColoredBox(color: Colors.white),
+          child: ColoredBox(color: AppColors.pageBackground),
         ),
         Column(
           children: [
-            if (widget.showHeader) const TopBar(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.zero,
+                  AppSpacing.lg,
+                  AppSpacing.zero),
               child: Column(
                 children: [
                   SearchBox(
@@ -229,7 +230,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                       });
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpacing.md),
                   _SalesCategoryStrip(
                     categories: categories,
                     selectedCategory: _selectedCategory,
@@ -239,51 +240,44 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                       });
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                 ],
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 138),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md, AppSpacing.zero, AppSpacing.md, 138),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final compact = constraints.maxWidth < 620;
                     if (displayProducts.isEmpty) {
                       return Center(
                         child: MarketSurfaceCard(
-                          padding: const EdgeInsets.all(18),
-                          borderColor: const Color(0xFFE7EAF0),
-                          radius: 18,
+                          padding: const EdgeInsets.all(AppSpacing.xxl),
+                          radius: AppRadius.rounded,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(
                                 Icons.search_off_rounded,
-                                size: 34,
-                                color: Color(0xFF7A859C),
+                                size: 48,
+                                color: AppColors.textLight,
                               ),
-                              const SizedBox(height: 10),
-                              const Text(
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
                                 'No products found',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xFF33363F),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: AppTypography.h3,
                               ),
-                              const SizedBox(height: 4),
-                              const Text(
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
                                 'Try another name or clear the search.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xFF7A859C),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: AppTypography.bodySmall
+                                    .copyWith(color: AppColors.textMuted),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: AppSpacing.xl),
                               MarketButton(
                                 label: 'Add Product',
                                 icon: Icons.add_rounded,
@@ -295,9 +289,10 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                                     ),
                                   );
                                 },
-                                height: 44,
-                                radius: 14,
+                                height: 48,
+                                radius: AppRadius.standard,
                                 fontSize: 14,
+                                isFullWidth: false,
                               ),
                             ],
                           ),
@@ -306,10 +301,11 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                     }
                     return GridView.builder(
                       itemCount: displayProducts.length,
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: compact ? 2 : 3,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
+                        mainAxisSpacing: AppSpacing.md,
+                        crossAxisSpacing: AppSpacing.md,
                         childAspectRatio: 0.72,
                       ),
                       itemBuilder: (context, index) {
@@ -329,8 +325,8 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
         ),
         if (_successMessage != null)
           Positioned(
-            left: 16,
-            right: 16,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
             bottom: 102,
             child: SuccessMessageBanner(
               message: _successMessage!,
@@ -339,9 +335,9 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
             ),
           ),
         Positioned(
-          left: 14,
-          right: 14,
-          bottom: 12,
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          bottom: AppSpacing.md,
           child: CheckoutBar(
             cartKey: _cartKey,
             itemCount: store.cartCount,
@@ -354,36 +350,10 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
 
     return Theme(
       data: interTheme,
-      child: widget.showHeader
-          ? SafeArea(child: content)
-          : SafeArea(top: false, child: content),
-    );
-  }
-}
-
-// ... (other imports)
-
-class TopBar extends StatelessWidget {
-  const TopBar({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketPageHeader(
-      title: 'Sales',
-      centerTitle: false,
-      showBackButton: false,
-      leading: const DrawerMenuButton(),
-      actions: [
-        MarketHeaderActionButtons(
-          onDukaAiTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (context) => const DukaAiAdvisorPage(),
-              ),
-            );
-          },
-        ),
-      ],
+      child: SafeArea(
+        top: !widget.useSharedShell,
+        child: content,
+      ),
     );
   }
 }
@@ -408,15 +378,13 @@ class SearchBox extends StatelessWidget {
         controller.clear();
         onChanged('');
       },
-      backgroundColor: const Color(0xFFF8FAFC),
-      borderColor: const Color(0xFFE5EAF0),
-      radius: 18,
-      height: 54,
-      paddingHorizontal: 14,
-      iconColor: const Color(0xFF94A3B8),
-      hintColor: const Color(0xFF94A3B8),
-      textColor: AppColors.ink,
-      iconSize: 22,
+      onScanTap: () {
+        showMarketNotice(
+          context,
+          title: 'Scanner Active',
+          message: 'Barcode scanner would open here',
+        );
+      },
     );
   }
 }
@@ -435,13 +403,13 @@ class _SalesCategoryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 38,
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.zero,
         itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final category = categories[index];
           final selected = category == selectedCategory;
@@ -473,24 +441,25 @@ class _SalesCategoryChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          height: 36,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+        borderRadius: BorderRadius.circular(AppRadius.rounded),
+        child: AnimatedContainer(
+          duration: AppDurations.fast,
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(18),
+            color: selected ? AppColors.primary : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.rounded),
             border: Border.all(
-              color: selected ? AppColors.primary : const Color(0xFFE5EAF0),
+              color: selected ? AppColors.primary : AppColors.border,
             ),
+            boxShadow: selected ? AppShadows.soft : null,
           ),
           child: Text(
             label,
-            style: GoogleFonts.manrope(
-              color: selected ? Colors.white : const Color(0xFF4B5563),
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
+            style: AppTypography.bodySmall.copyWith(
+              color: selected ? Colors.white : AppColors.textMain,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
         ),
@@ -519,82 +488,92 @@ class ProductCard extends StatelessWidget {
         buffer.write(',');
       }
     }
-    return 'TSh$buffer';
+    return 'TSh $buffer';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTapDown: onTapDown,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE1E5EB)),
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        boxShadow: AppShadows.soft,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTapDown: onTapDown,
+          borderRadius: BorderRadius.circular(AppRadius.card),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 flex: 4,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(18),
-                        ),
-                        child: ColoredBox(
-                          color: const Color(0xFFF8FAFC),
-                          child: _DashboardTileArt(product: product),
-                        ),
-                      ),
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceSecondary,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.card),
                     ),
-                  ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.card),
+                    ),
+                    child: _DashboardTileArt(product: product),
+                  ),
                 ),
               ),
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        product.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.ink,
-                          fontSize: 15,
-                          height: 1.15,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodySmall.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.ink,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            product.size,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.helperText.copyWith(
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        product.size,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF7A859C),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _money(product.priceValue),
-                        style: const TextStyle(
-                          color: Color(0xFF1B9B69),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _money(product.priceValue),
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.add_circle_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -618,14 +597,11 @@ class _DashboardTileArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (product.imagePath != null && product.imagePath!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Image.file(
-          File(product.imagePath!),
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              _DashboardFallbackArt(label: product.name),
-        ),
+      return Image.file(
+        File(product.imagePath!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            _DashboardFallbackArt(label: product.name),
       );
     }
     return _DashboardFallbackArt(label: product.name);
@@ -645,20 +621,20 @@ class _DashboardFallbackArt extends StatelessWidget {
 
     return Center(
       child: Container(
-        width: 64,
-        height: 64,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE3E8EF)),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.sharp),
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppShadows.soft,
         ),
         alignment: Alignment.center,
         child: Text(
           initials,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 23,
-            fontWeight: FontWeight.w500,
+          style: AppTypography.h3.copyWith(
+            color: AppColors.textMuted,
+            fontSize: 20,
           ),
         ),
       ),
@@ -683,11 +659,12 @@ class CheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5EAF0)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.rounded),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.medium,
       ),
       child: Row(
         children: [
@@ -699,41 +676,38 @@ class CheckoutBar extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F6FB),
-                  borderRadius: BorderRadius.circular(13),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
                 ),
                 child: const Icon(
                   Icons.shopping_cart_outlined,
-                  color: Color(0xFF1F2937),
-                  size: 22,
+                  color: AppColors.primary,
+                  size: 24,
                 ),
               ),
               Positioned(
-                top: -2,
-                right: -2,
+                top: -4,
+                right: -4,
                 child: Container(
-                  width: 22,
-                  height: 22,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE54040),
-                    borderRadius: BorderRadius.circular(11),
+                    color: AppColors.danger,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(color: AppColors.surface, width: 2),
                   ),
-                  child: Center(
-                    child: Text(
-                      '$itemCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  child: Text(
+                    '$itemCount',
+                    style: AppTypography.helperText.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -741,74 +715,48 @@ class CheckoutBar extends StatelessWidget {
               children: [
                 Text(
                   '$itemCount Items',
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xFF111827),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 2),
-                const Text(
-                  'View cart',
-                  style: TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                Text(
+                  'Current Cart',
+                  style: AppTypography.helperText.copyWith(
+                    color: AppColors.textMuted,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
           Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'TSH ${total.toStringAsFixed(0)}',
-                style: GoogleFonts.manrope(
-                  color: const Color(0xFF111827),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.ink,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 2),
               Text(
-                'Total',
-                style: GoogleFonts.manrope(
-                  color: const Color(0xFF6B7280),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+                'Total Amount',
+                style: AppTypography.helperText.copyWith(
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
           ),
-          const Spacer(),
-          GestureDetector(
+          const SizedBox(width: AppSpacing.lg),
+          MarketButton(
+            label: 'Checkout',
             onTap: onCheckout,
-            child: Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Checkout',
-                    style: GoogleFonts.manrope(
-                      color: Colors.white,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_rounded,
-                      color: Colors.white, size: 18),
-                ],
-              ),
-            ),
+            height: 48,
+            isFullWidth: false,
+            radius: AppRadius.standard,
+            paddingHorizontal: AppSpacing.lg,
+            icon: Icons.arrow_forward_rounded,
           ),
         ],
       ),
@@ -830,37 +778,34 @@ class SuccessMessageBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E7A47),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            AnimatedCartToken(
-              type: type,
-              imagePath: imagePath,
-              compact: true,
-            ),
-            const SizedBox(width: 10),
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.success,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        boxShadow: AppShadows.medium,
+      ),
+      child: Row(
+        children: [
+          AnimatedCartToken(
+            type: type,
+            imagePath: imagePath,
+            compact: true,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTypography.bodySmall.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

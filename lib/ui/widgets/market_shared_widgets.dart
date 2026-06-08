@@ -2,17 +2,13 @@ import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'app_design.dart';
 import '../models/product_item.dart';
-import '../home/home_page.dart';
 import '../more/customers_page.dart';
 import '../more/expenses_tracking_page.dart';
 import '../more/help_support_page.dart';
-import '../products/product_management_page.dart';
-import '../reports/reports_page.dart';
 import '../more/about_app_page.dart';
 import '../../service/pos_local_store.dart';
 
@@ -38,7 +34,7 @@ class ScrollHandle extends StatelessWidget {
         height: 118,
         decoration: BoxDecoration(
           color: AppColors.divider,
-          borderRadius: BorderRadius.circular(99),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
         ),
       ),
     );
@@ -63,7 +59,7 @@ class DrawerMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) => InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         onTap: () => Scaffold.of(context).openDrawer(),
         child: SizedBox(
           width: 40,
@@ -72,7 +68,7 @@ class DrawerMenuButton extends StatelessWidget {
             children: [
               _DrawerMenuLine(width: 30, color: iconColor),
               const SizedBox(height: 6),
-              _DrawerMenuLine(width: 24, color: iconColor),
+              _DrawerMenuLine(width: 20, color: iconColor),
               const SizedBox(height: 6),
               _DrawerMenuLine(width: 30, color: iconColor),
             ],
@@ -99,7 +95,7 @@ class _DrawerMenuLine extends StatelessWidget {
       height: 3,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(99),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
     );
   }
@@ -108,6 +104,7 @@ class _DrawerMenuLine extends StatelessWidget {
 enum MarketNoticeType {
   success,
   warning,
+  error,
 }
 
 class HeaderActionButton extends StatelessWidget {
@@ -132,7 +129,7 @@ class HeaderActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(99),
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: Container(
         width: 40,
         height: 40,
@@ -140,20 +137,22 @@ class HeaderActionButton extends StatelessWidget {
           color: background,
           shape: BoxShape.circle,
           border: borderColor != null ? Border.all(color: borderColor!) : null,
+          boxShadow: AppShadows.soft,
         ),
         child: Stack(
           children: [
             Center(child: Icon(icon, color: foreground, size: 20)),
             if (showDot)
-                Positioned(
+              Positioned(
                 right: 11,
                 top: 11,
                 child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: AppColors.danger,
                     shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                 ),
               ),
@@ -169,14 +168,14 @@ class MarketHeaderActionButtons extends StatelessWidget {
     super.key,
     required this.onDukaAiTap,
     this.onNotificationTap,
-    this.aiBackground = Colors.white,
-    this.aiForeground = const Color(0xFF33363F),
-    this.aiBorderColor = const Color(0xFFE7EAF0),
-    this.notificationBackground = Colors.white,
-    this.notificationForeground = const Color(0xFF33363F),
-    this.notificationBorderColor = const Color(0xFFE7EAF0),
+    this.aiBackground = AppColors.surface,
+    this.aiForeground = AppColors.textMain,
+    this.aiBorderColor = AppColors.border,
+    this.notificationBackground = AppColors.surface,
+    this.notificationForeground = AppColors.textMain,
+    this.notificationBorderColor = AppColors.border,
     this.showNotificationDot = false,
-    this.spacing = 8,
+    this.spacing = AppSpacing.sm,
   });
 
   final VoidCallback onDukaAiTap;
@@ -231,8 +230,8 @@ class MarketPageHeader extends StatelessWidget {
     this.showShadow = false,
     this.showBorder = true,
     this.centerTitle = true,
-    this.titleSize = 20,
-    this.titleWeight = FontWeight.w800,
+    this.titleSize,
+    this.titleWeight,
   });
 
   final String title;
@@ -247,8 +246,8 @@ class MarketPageHeader extends StatelessWidget {
   final bool showShadow;
   final bool showBorder;
   final bool centerTitle;
-  final double titleSize;
-  final FontWeight titleWeight;
+  final double? titleSize;
+  final FontWeight? titleWeight;
 
   void _handleBack(BuildContext context) {
     if (onBack != null) {
@@ -268,9 +267,10 @@ class MarketPageHeader extends StatelessWidget {
     final hasBorder = showBorder && !transparent && !hasGradient;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.pagePadding, AppSpacing.md, AppSpacing.pagePadding, AppSpacing.lg),
       decoration: BoxDecoration(
-        color: hasBackground ? Colors.white : null,
+        color: hasBackground ? AppColors.surface : null,
         gradient: hasGradient
             ? const LinearGradient(
                 begin: Alignment.topLeft,
@@ -279,20 +279,13 @@ class MarketPageHeader extends StatelessWidget {
               )
             : null,
         borderRadius: hasGradient
-            ? const BorderRadius.vertical(bottom: Radius.circular(28))
+            ? const BorderRadius.vertical(
+                bottom: Radius.circular(AppRadius.extraRounded))
             : null,
         border: hasBorder
             ? const Border(bottom: BorderSide(color: AppColors.divider))
             : null,
-        boxShadow: showShadow
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
+        boxShadow: showShadow ? AppShadows.soft : null,
       ),
       child: SafeArea(
         bottom: false,
@@ -301,7 +294,7 @@ class MarketPageHeader extends StatelessWidget {
           children: [
             if (leading != null)
               Padding(
-                padding: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.only(right: AppSpacing.md),
                 child: leading!,
               )
             else if (showBackButton)
@@ -323,11 +316,10 @@ class MarketPageHeader extends StatelessWidget {
                     textAlign: centerTitle ? TextAlign.center : TextAlign.start,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: AppTypography.h3.copyWith(
                       color: effectiveColor,
                       fontSize: titleSize,
                       fontWeight: titleWeight,
-                      letterSpacing: -0.2,
                     ),
                   ),
                   if (subtitle != null) ...[
@@ -338,12 +330,10 @@ class MarketPageHeader extends StatelessWidget {
                           centerTitle ? TextAlign.center : TextAlign.start,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: AppTypography.label.copyWith(
                         color: hasGradient
-                            ? Colors.white.withValues(alpha: 0.85)
-                            : AppColors.mutedText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                            ? Colors.white.withOpacity(0.85)
+                            : AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -354,8 +344,6 @@ class MarketPageHeader extends StatelessWidget {
               trailing!
             else if (actions != null)
               Row(mainAxisSize: MainAxisSize.min, children: actions!)
-            else if (showBackButton || leading != null)
-              const SizedBox(width: 42)
             else
               const SizedBox(width: 42),
           ],
@@ -380,18 +368,17 @@ class _BackButton extends StatelessWidget {
         height: 42,
         decoration: BoxDecoration(
           color:
-              isGradient ? Colors.white.withValues(alpha: 0.16) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+              isGradient ? Colors.white.withOpacity(0.16) : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
           border: Border.all(
-            color: isGradient
-                ? Colors.white.withValues(alpha: 0.18)
-                : AppColors.border,
+            color:
+                isGradient ? Colors.white.withOpacity(0.18) : AppColors.border,
           ),
         ),
         child: Icon(
           Icons.arrow_back_ios_new_rounded,
           color: isGradient ? Colors.white : AppColors.ink,
-          size: 20,
+          size: 18,
         ),
       ),
     );
@@ -409,14 +396,14 @@ class MarketButton extends StatelessWidget {
     this.color,
     this.foregroundColor,
     this.borderColor,
-    this.height = 56,
-    this.radius = AppRadius.rounded,
-    this.paddingHorizontal = 24,
+    this.height = 48,
+    this.radius = AppRadius.button,
+    this.paddingHorizontal = AppSpacing.xl,
     this.boxShadow,
-    this.fontSize = 16,
-    this.fontWeight = FontWeight.w700,
-    this.iconSize = 22,
-    this.iconSpacing = 10,
+    this.fontSize,
+    this.fontWeight,
+    this.iconSize = 18,
+    this.iconSpacing = AppSpacing.sm,
   });
 
   final String label;
@@ -431,22 +418,23 @@ class MarketButton extends StatelessWidget {
   final double radius;
   final double paddingHorizontal;
   final List<BoxShadow>? boxShadow;
-  final double fontSize;
-  final FontWeight fontWeight;
+  final double? fontSize;
+  final FontWeight? fontWeight;
   final double iconSize;
   final double iconSpacing;
 
   @override
   Widget build(BuildContext context) {
     final effectiveColor =
-        color ?? (isPrimary ? AppColors.primary : Colors.white);
+        color ?? (isPrimary ? AppColors.primary : AppColors.surface);
     final effectiveForeground =
-        foregroundColor ?? (isPrimary ? Colors.white : AppColors.ink);
+        foregroundColor ?? (isPrimary ? Colors.white : AppColors.textMain);
     final effectiveBorderColor =
         borderColor ?? (isPrimary ? null : AppColors.border);
 
-    final button = GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(radius),
       child: Container(
         height: height,
         padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
@@ -456,7 +444,7 @@ class MarketButton extends StatelessWidget {
           border: effectiveBorderColor != null
               ? Border.all(color: effectiveBorderColor)
               : null,
-          boxShadow: boxShadow,
+          boxShadow: boxShadow ?? (isPrimary ? AppShadows.primary : null),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -472,20 +460,17 @@ class MarketButton extends StatelessWidget {
             ],
             Text(
               label,
-              style: TextStyle(
+              style: AppTypography.bodyMain.copyWith(
                 color: effectiveForeground,
                 fontSize: fontSize,
-                fontWeight: fontWeight,
-                letterSpacing: -0.1,
+                fontWeight: fontWeight ?? FontWeight.w800,
+                letterSpacing: 0.2,
               ),
             ),
           ],
         ),
       ),
     );
-
-    if (isFullWidth) return button;
-    return Center(child: button);
   }
 }
 
@@ -496,22 +481,25 @@ class MarketSearchField extends StatelessWidget {
     required this.hintText,
     required this.onChanged,
     this.onClear,
+    this.onScanTap,
     this.height = 56,
-    this.radius = 16,
-    this.backgroundColor = Colors.white,
+    this.radius = AppRadius.input,
+    this.backgroundColor = AppColors.surface,
     this.borderColor = AppColors.border,
-    this.iconColor = const Color(0xFF94A3B8),
-    this.hintColor = const Color(0xFF94A3B8),
-    this.textColor = const Color(0xFF111827),
+    this.iconColor = Colors.white,
+    this.hintColor = AppColors.textLight,
+    this.textColor = AppColors.textMain,
     this.leadingIcon = Icons.search_rounded,
-    this.paddingHorizontal = 14,
+    this.paddingHorizontal = AppSpacing.lg,
     this.iconSize = 20,
+    this.showShadow = true,
   });
 
   final TextEditingController controller;
   final String hintText;
   final ValueChanged<String> onChanged;
   final VoidCallback? onClear;
+  final VoidCallback? onScanTap;
   final double height;
   final double radius;
   final Color backgroundColor;
@@ -522,61 +510,70 @@ class MarketSearchField extends StatelessWidget {
   final IconData leadingIcon;
   final double paddingHorizontal;
   final double iconSize;
+  final bool showShadow;
 
   @override
   Widget build(BuildContext context) {
     final hasValue = controller.text.isNotEmpty;
+
     return Container(
       height: height,
-      padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderColor),
+        boxShadow: showShadow ? AppShadows.soft : null,
       ),
       child: Row(
         children: [
-          Icon(leadingIcon, size: iconSize, color: iconColor),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.sm),
+          Icon(
+            leadingIcon,
+            size: iconSize,
+            color: AppColors.textLight,
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
               textInputAction: TextInputAction.search,
-              style: GoogleFonts.manrope(
-                color: textColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              textAlignVertical: TextAlignVertical.center,
+              style: AppTypography.bodyMain.copyWith(color: textColor),
               decoration: InputDecoration(
                 isDense: true,
-                border: InputBorder.none,
-                hintText: hintText,
                 contentPadding: EdgeInsets.zero,
-                hintStyle: GoogleFonts.manrope(
-                  color: hintColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-                suffixIcon: onClear != null && hasValue
-                    ? IconButton(
-                        onPressed: onClear,
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          size: 17,
-                          color: Color(0xFF64748B),
-                        ),
-                        splashRadius: 18,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints.tightFor(
-                          width: 28,
-                          height: 28,
-                        ),
-                      )
-                    : null,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                hintText: hintText,
+                hintStyle: AppTypography.bodyMain
+                    .copyWith(color: hintColor, fontWeight: FontWeight.w500),
               ),
             ),
           ),
+          if (hasValue && onClear != null)
+            IconButton(
+              onPressed: onClear,
+              icon: const Icon(
+                Icons.cancel_rounded,
+                size: 20,
+                color: AppColors.textLight,
+              ),
+              splashRadius: 20,
+            ),
+          if (onScanTap != null)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.xs),
+              child: IconButton(
+                onPressed: onScanTap,
+                icon: const Icon(
+                  Icons.qr_code_scanner_rounded,
+                  size: 22,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -589,15 +586,15 @@ class MarketSectionHeader extends StatelessWidget {
     required this.title,
     required this.trailing,
     this.titleColor = AppColors.ink,
-    this.titleSize = 17,
-    this.titleWeight = FontWeight.w800,
+    this.titleSize,
+    this.titleWeight,
   });
 
   final String title;
   final Widget trailing;
   final Color titleColor;
-  final double titleSize;
-  final FontWeight titleWeight;
+  final double? titleSize;
+  final FontWeight? titleWeight;
 
   @override
   Widget build(BuildContext context) {
@@ -605,11 +602,10 @@ class MarketSectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: AppTypography.sectionHeader.copyWith(
             color: titleColor,
             fontSize: titleSize,
             fontWeight: titleWeight,
-            letterSpacing: -0.2,
           ),
         ),
         const Spacer(),
@@ -624,9 +620,10 @@ class MarketSurfaceCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = EdgeInsets.zero,
-    this.backgroundColor = Colors.white,
+    this.backgroundColor = AppColors.surface,
     this.borderColor = AppColors.border,
     this.radius = AppRadius.standard,
+    this.showShadow = true,
   });
 
   final Widget child;
@@ -634,6 +631,7 @@ class MarketSurfaceCard extends StatelessWidget {
   final Color backgroundColor;
   final Color borderColor;
   final double radius;
+  final bool showShadow;
 
   @override
   Widget build(BuildContext context) {
@@ -643,6 +641,7 @@ class MarketSurfaceCard extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderColor),
+        boxShadow: showShadow ? AppShadows.soft : null,
       ),
       child: child,
     );
@@ -658,20 +657,29 @@ void showMarketNotice(
   final overlay = Overlay.of(context);
   late final OverlayEntry entry;
 
-  final accent =
-      type == MarketNoticeType.success ? AppColors.green : AppColors.warning;
+  final accent = type == MarketNoticeType.success
+      ? AppColors.success
+      : (type == MarketNoticeType.warning
+          ? AppColors.warning
+          : AppColors.danger);
+
   final iconBg = type == MarketNoticeType.success
-      ? const Color(0xFFEFFBF4)
-      : const Color(0xFFFFF8EB);
+      ? AppColors.successLight
+      : (type == MarketNoticeType.warning
+          ? AppColors.warningLight
+          : AppColors.dangerLight);
+
   final icon = type == MarketNoticeType.success
       ? Icons.check_circle_rounded
-      : Icons.error_outline_rounded;
+      : (type == MarketNoticeType.warning
+          ? Icons.error_outline_rounded
+          : Icons.cancel_rounded);
 
   entry = OverlayEntry(
     builder: (context) => Positioned(
-      left: 18,
-      right: 18,
-      top: MediaQuery.of(context).padding.top + 14,
+      left: AppSpacing.lg,
+      right: AppSpacing.lg,
+      top: MediaQuery.of(context).padding.top + AppSpacing.md,
       child: _MarketNoticeCard(
         title: title,
         message: message,
@@ -683,7 +691,7 @@ void showMarketNotice(
   );
 
   overlay.insert(entry);
-  Future<void>.delayed(const Duration(milliseconds: 2200)).then((_) {
+  Future<void>.delayed(const Duration(milliseconds: 2500)).then((_) {
     entry.remove();
   });
 }
@@ -708,24 +716,26 @@ class _MarketNoticeCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.standard),
           border: Border.all(color: AppColors.border),
+          boxShadow: AppShadows.medium,
         ),
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: iconBg,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.sharp),
               ),
               child: Icon(icon, color: accent, size: 24),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -733,19 +743,16 @@ class _MarketNoticeCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Color(0xFF202938),
-                      fontSize: 13.5,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.ink,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     message,
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
-                      fontSize: 11.8,
-                      fontWeight: FontWeight.w500,
+                    style: AppTypography.helperText.copyWith(
+                      color: AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -774,17 +781,18 @@ class AnimatedCartToken extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasImage = imagePath != null && imagePath!.isNotEmpty;
     return Container(
-      width: compact ? 30 : 44,
-      height: compact ? 30 : 44,
-      padding: hasImage ? EdgeInsets.zero : EdgeInsets.all(compact ? 4 : 6),
+      width: compact ? 32 : 48,
+      height: compact ? 32 : 48,
+      padding: hasImage ? EdgeInsets.zero : EdgeInsets.all(compact ? 4 : 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.sharp),
         border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.soft,
       ),
       child: hasImage
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.sharp),
               child: Image.file(
                 File(imagePath!),
                 fit: BoxFit.cover,
@@ -840,9 +848,6 @@ class MarketAppDrawer extends StatelessWidget {
 
   final String selectedItem;
 
-  static const Color _drawerBlue = Color(0xFF2B6FE8);
-  static const Color _drawerIcon = Color(0xFF667085);
-
   static const _primaryItems = [
     _DrawerItemData('Customers', Icons.people_outline_rounded),
   ];
@@ -858,22 +863,24 @@ class MarketAppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final drawerWidth = MediaQuery.of(context).size.width * 0.82;
+    final drawerWidth = MediaQuery.of(context).size.width * 0.85;
 
     return Drawer(
       width: drawerWidth,
-      backgroundColor: const Color(0xFFFDFDFC),
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(),
       child: SafeArea(
         child: Column(
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(22, 22, 22, 18),
+              padding: EdgeInsets.fromLTRB(AppSpacing.xxl, AppSpacing.xxl,
+                  AppSpacing.xxl, AppSpacing.lg),
               child: _DrawerProfileHeader(),
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -881,23 +888,23 @@ class MarketAppDrawer extends StatelessWidget {
                       items: _primaryItems,
                       selectedItem: selectedItem,
                     ),
-                    const SizedBox(height: 10),
-                    const Divider(color: Color(0xFFE7EAF0), height: 1),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: AppSpacing.md),
+                    const Divider(color: AppColors.divider, height: 1),
+                    const SizedBox(height: AppSpacing.lg),
                     _DrawerSection(
                       items: _operationsItems,
                       selectedItem: selectedItem,
                     ),
-                    const SizedBox(height: 10),
-                    const Divider(color: Color(0xFFE7EAF0), height: 1),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: AppSpacing.md),
+                    const Divider(color: AppColors.divider, height: 1),
+                    const SizedBox(height: AppSpacing.lg),
                     _DrawerSection(
                       items: _supportItems,
                       selectedItem: selectedItem,
                     ),
-                    const SizedBox(height: 16),
-                    const Divider(color: Color(0xFFE7EAF0), height: 1),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.xl),
+                    const Divider(color: AppColors.divider, height: 1),
+                    const SizedBox(height: AppSpacing.xl),
                     const _LogoutButton(),
                   ],
                 ),
@@ -926,65 +933,60 @@ class _DrawerProfileHeader extends StatelessWidget {
     final category = profile.businessCategory.isEmpty
         ? (profile.roleTitle.isEmpty ? 'Business Owner' : profile.roleTitle)
         : profile.businessCategory;
-    final storeDetail = profile.storeName.isEmpty || profile.storeName == ownerName
-        ? ''
-        : profile.storeName;
+    final storeDetail =
+        profile.storeName.isEmpty || profile.storeName == ownerName
+            ? ''
+            : profile.storeName;
 
     return Row(
       children: [
-        CircleAvatar(
-          radius: 52,
-          backgroundColor: const Color(0xFFE8EEF8),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.xs),
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+          ),
           child: CircleAvatar(
-            radius: 48,
+            radius: 44,
             backgroundColor: Colors.white,
             child: profile.logoPath == null
                 ? const Icon(
                     Icons.storefront_rounded,
-                    color: MarketAppDrawer._drawerBlue,
-                    size: 54,
+                    color: AppColors.primary,
+                    size: 40,
                   )
                 : ClipOval(
                     child: Image.file(
                       File(profile.logoPath!),
-                      width: 96,
-                      height: 96,
+                      width: 88,
+                      height: 88,
                       fit: BoxFit.cover,
                     ),
                   ),
           ),
         ),
-        const SizedBox(width: 18),
+        const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 ownerName,
-                style: const TextStyle(
-                  color: Color(0xFF1D2939),
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: AppTypography.h3.copyWith(fontSize: 18),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 category,
-                style: const TextStyle(
-                  color: Color(0xFF667085),
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: AppTypography.label.copyWith(color: AppColors.textLight),
               ),
-              const SizedBox(height: 6),
               if (storeDetail.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
                   storeDetail,
-                  style: const TextStyle(
-                    color: Color(0xFF2B6FE8),
-                    fontSize: 13.2,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1013,7 +1015,7 @@ class _DrawerSection extends StatelessWidget {
       children: items
           .map(
             (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: _DrawerTile(
                 item: item,
                 isSelected: item.label == selectedItem,
@@ -1037,7 +1039,7 @@ class _DrawerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(AppRadius.standard),
       onTap: () {
         Navigator.of(context).pop();
         if (isSelected) {
@@ -1049,43 +1051,38 @@ class _DrawerTile extends StatelessWidget {
         }
       },
       child: Container(
-        height: 62,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF1F6FF) : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sharp),
+          color: isSelected ? AppColors.primaryLight : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color:
-                    isSelected ? const Color(0xFFE8F0FF) : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppRadius.sharp),
-              ),
-              child: Icon(
-                item.icon,
-                color: isSelected
-                    ? MarketAppDrawer._drawerBlue
-                    : MarketAppDrawer._drawerIcon,
-                size: 27,
-              ),
+            Icon(
+              item.icon,
+              color: isSelected ? AppColors.primary : AppColors.textLight,
+              size: 24,
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSpacing.lg),
             Expanded(
               child: Text(
                 item.label,
-                style: TextStyle(
-                  color: isSelected
-                      ? MarketAppDrawer._drawerBlue
-                      : const Color(0xFF344054),
-                  fontSize: 14.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                style: AppTypography.bodyMain.copyWith(
+                  color: isSelected ? AppColors.primary : AppColors.textMain,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
             ),
+            if (isSelected)
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
           ],
         ),
       ),
@@ -1095,21 +1092,9 @@ class _DrawerTile extends StatelessWidget {
 
 Route<void>? _routeForLabel(String label) {
   switch (label) {
-    case 'Sales':
-      return MaterialPageRoute<void>(
-        builder: (context) => const MarketHomePage(),
-      );
-    case 'Products':
-      return MaterialPageRoute<void>(
-        builder: (context) => const ProductManagementPage(),
-      );
     case 'Customers':
       return MaterialPageRoute<void>(
         builder: (context) => const CustomersPage(),
-      );
-    case 'Dashboard':
-      return MaterialPageRoute<void>(
-        builder: (context) => const ReportsPage(),
       );
     case 'Expenses Tracking':
       return MaterialPageRoute<void>(
@@ -1134,7 +1119,7 @@ class _LogoutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(AppRadius.standard),
       onTap: () {
         Navigator.of(context).pop();
         showMarketNotice(
@@ -1144,25 +1129,24 @@ class _LogoutButton extends StatelessWidget {
         );
       },
       child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        height: 60,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF4F2),
-          borderRadius: BorderRadius.circular(4),
+          color: AppColors.dangerLight,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.logout_rounded,
-              color: Color(0xFFD92D20),
-              size: 26,
+              color: AppColors.danger,
+              size: 24,
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: AppSpacing.lg),
             Text(
               'Logout',
-              style: TextStyle(
-                color: Color(0xFFD92D20),
-                fontSize: 15,
+              style: AppTypography.bodyMain.copyWith(
+                color: AppColors.danger,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1213,7 +1197,7 @@ class _BottleArt extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [Color(0xFFF9FCFF), Color(0xFFD6E4F3)],
                 ),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppRadius.rounded),
                 border: Border.all(color: const Color(0xFFB8CBE0)),
               ),
               child: Stack(
@@ -1265,7 +1249,7 @@ class _CanArt extends StatelessWidget {
           end: Alignment.centerRight,
           colors: [Color(0xFFB30810), Color(0xFFFF3434), Color(0xFFC70F17)],
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.standard),
       ),
       child: Stack(
         children: [
@@ -1277,7 +1261,8 @@ class _CanArt extends StatelessWidget {
               height: 10,
               decoration: const BoxDecoration(
                 color: Color(0xFFD7D7D7),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+                borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.standard)),
               ),
             ),
           ),
@@ -1289,8 +1274,8 @@ class _CanArt extends StatelessWidget {
               height: 10,
               decoration: const BoxDecoration(
                 color: Color(0xFFD7D7D7),
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(14)),
+                borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(AppRadius.standard)),
               ),
             ),
           ),
@@ -1320,8 +1305,8 @@ class _CanArt extends StatelessWidget {
               child: Container(
                 width: 10,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(99),
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
               ),
             ),
@@ -1346,7 +1331,7 @@ class _ChipsBagArt extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [Color(0xFFFEEB6B), Color(0xFFF9CF1E)],
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.sharp),
       ),
       child: Stack(
         children: [
@@ -1358,7 +1343,7 @@ class _ChipsBagArt extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: const Color(0xFFE32A1C),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppRadius.rounded),
               ),
               child: const Center(
                 child: Text(
@@ -1407,7 +1392,7 @@ class _ChocolateArt extends StatelessWidget {
           gradient: const LinearGradient(
             colors: [Color(0xFFF9F5F0), Color(0xFFE6D7C7)],
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sharp),
           boxShadow: const [
             BoxShadow(
                 color: Color(0x12000000), blurRadius: 8, offset: Offset(0, 2)),
@@ -1440,7 +1425,7 @@ class _ChocolateArt extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(8),
+                    bottomRight: Radius.circular(AppRadius.sharp),
                   ),
                 ),
               ),
@@ -1462,7 +1447,7 @@ class _CerealBoxArt extends StatelessWidget {
       height: 102,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppRadius.sharp),
         border: Border.all(color: const Color(0xFFE4E6EA)),
       ),
       child: Stack(
@@ -1534,7 +1519,7 @@ class _SoapBoxArt extends StatelessWidget {
         gradient: const LinearGradient(
           colors: [Color(0xFFFDFEFF), Color(0xFFF0F4FB)],
         ),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppRadius.sharp),
         border: Border.all(color: const Color(0xFFDEE3EC)),
       ),
       child: const Stack(
@@ -1576,7 +1561,7 @@ class _ToothpasteArt extends StatelessWidget {
         gradient: const LinearGradient(
           colors: [Color(0xFFC3141B), Color(0xFF1C6BCE)],
         ),
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppRadius.sharp),
       ),
       child: const Row(
         children: [
@@ -1614,7 +1599,7 @@ class _PumpBottleArt extends StatelessWidget {
               height: 14,
               decoration: BoxDecoration(
                 color: const Color(0xFF9FD776),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sharp),
               ),
             ),
           ),
@@ -1625,7 +1610,7 @@ class _PumpBottleArt extends StatelessWidget {
               height: 16,
               decoration: BoxDecoration(
                 color: const Color(0xFF9FD776),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sharp),
               ),
             ),
           ),
@@ -1640,7 +1625,7 @@ class _PumpBottleArt extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [Color(0xFFF0FFF0), Color(0xFFCCEEB2)],
                 ),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppRadius.rounded),
               ),
               child: const Center(
                 child: CircleAvatar(
@@ -1678,7 +1663,7 @@ class _DetergentBagArt extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [Color(0xFFFF591D), Color(0xFFF33209)],
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sharp),
       ),
       child: Center(
         child: Container(
@@ -1720,4 +1705,162 @@ class _BottleRibsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class MarketFormField extends StatelessWidget {
+  const MarketFormField({
+    super.key,
+    required this.label,
+    required this.hintText,
+    this.controller,
+    this.initialValue,
+    this.onChanged,
+    this.validator,
+    this.keyboardType,
+    this.obscureText = false,
+    this.maxLines = 1,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.readOnly = false,
+    this.onTap,
+  });
+
+  final String label;
+  final String hintText;
+  final TextEditingController? controller;
+  final String? initialValue;
+  final ValueChanged<String>? onChanged;
+  final FormFieldValidator<String>? validator;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+  final int maxLines;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
+  final bool readOnly;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.label,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        TextFormField(
+          controller: controller,
+          initialValue: initialValue,
+          onChanged: onChanged,
+          validator: validator,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          maxLines: maxLines,
+          readOnly: readOnly,
+          onTap: onTap,
+          style: AppTypography.bodyMain,
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: AppTypography.bodyMain.copyWith(color: AppColors.textLight),
+            filled: true,
+            fillColor: AppColors.surface,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            prefixIcon: prefixIcon,
+            suffixIcon: suffixIcon,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              borderSide: const BorderSide(color: AppColors.danger),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class MarketTable extends StatelessWidget {
+  const MarketTable({
+    super.key,
+    required this.columns,
+    required this.rows,
+    this.headerColor = AppColors.surfaceSecondary,
+  });
+
+  final List<String> columns;
+  final List<List<Widget>> rows;
+  final Color headerColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: headerColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.standard)),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: columns.map((col) => Expanded(
+              child: Text(
+                col.toUpperCase(),
+                style: AppTypography.tableHeader,
+              ),
+            )).toList(),
+          ),
+        ),
+        // Rows
+        ...rows.asMap().entries.map((entry) {
+          final index = entry.key;
+          final row = entry.value;
+          final isLast = index == rows.length - 1;
+
+          return Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.lg,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(
+                left: const BorderSide(color: AppColors.border),
+                right: const BorderSide(color: AppColors.border),
+                bottom: BorderSide(
+                  color: AppColors.border,
+                  width: isLast ? 1 : 0.5,
+                ),
+              ),
+              borderRadius: isLast 
+                ? const BorderRadius.vertical(bottom: Radius.circular(AppRadius.standard))
+                : null,
+            ),
+            child: Row(
+              children: row.map((cell) => Expanded(child: cell)).toList(),
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
 }

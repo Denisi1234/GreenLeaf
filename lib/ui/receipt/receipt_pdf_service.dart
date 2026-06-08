@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
@@ -8,7 +7,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../models/product_item.dart';
-import '../../receipt_brand_data.dart';
 
 class ReceiptPdfService {
   static Future<File> createReceiptPdf({
@@ -21,6 +19,9 @@ class ReceiptPdfService {
     required String register,
     required String date,
     required String time,
+    required String storeName,
+    required String storeAddress,
+    required String storePhone,
     String? customerName,
     double? discountAmount,
     String? discountLabel,
@@ -29,9 +30,13 @@ class ReceiptPdfService {
     final baseFont = await PdfGoogleFonts.notoSansRegular();
     final boldFont = await PdfGoogleFonts.notoSansBold();
 
-    final subtotal = items.fold<double>(0, (sum, line) => sum + line.totalPrice);
+    final subtotal =
+        items.fold<double>(0, (sum, line) => sum + line.totalPrice);
     final discount = discountAmount ?? 0;
     final itemCount = items.fold<int>(0, (sum, line) => sum + line.quantity);
+    final cleanStoreName = _cleanValue(storeName, 'Store receipt');
+    final cleanStoreAddress = storeAddress.trim();
+    final cleanStorePhone = storePhone.trim();
     final safeCustomer = customerName == null || customerName.trim().isEmpty
         ? 'Walk-in customer'
         : customerName.trim();
@@ -40,73 +45,78 @@ class ReceiptPdfService {
       pw.MultiPage(
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.fromLTRB(24, 22, 24, 26),
+          margin: const pw.EdgeInsets.symmetric(horizontal: 32, vertical: 28),
           theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
-          buildBackground: (context) => pw.FullPage(
-            ignoreMargins: true,
-            child: pw.Watermark.text(
-              'OFFICIAL RECEIPT',
-              style: pw.TextStyle(
-                color: PdfColor.fromHex('#F4F7FB'),
-                fontSize: 28,
-                fontWeight: pw.FontWeight.bold,
-              ),
-              angle: -math.pi / 4,
-            ),
-          ),
         ),
-        header: (context) => pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 10),
-          child: _receiptHeader(
-            receiptNumber: receiptNumber,
-            date: date,
-            time: time,
-            cashier: cashier,
-            register: register,
-            customerName: safeCustomer,
-          ),
+        header: (context) => _receiptHeader(
+          storeName: cleanStoreName,
+          storeAddress: cleanStoreAddress,
+          storePhone: cleanStorePhone,
+          receiptNumber: receiptNumber,
+          date: date,
+          time: time,
+          customerName: safeCustomer,
         ),
         build: (context) => [
+          pw.SizedBox(height: 16),
           _receiptIntro(
             itemCount: itemCount,
             total: total,
             cashTendered: cashTendered,
             changeDue: changeDue,
           ),
-          pw.SizedBox(height: 12),
-          _sectionTitle('Items Purchased'),
-          pw.SizedBox(height: 6),
+          pw.SizedBox(height: 20),
+          _sectionTitle('Transaction Details'),
+          pw.SizedBox(height: 8),
           _itemsTable(items),
-          pw.SizedBox(height: 12),
-          _sectionTitle('Payment Summary'),
-          pw.SizedBox(height: 6),
-          _paymentSummary(
-            subtotal: subtotal,
-            discount: discount,
-            discountLabel: discountLabel,
-            total: total,
-            cashTendered: cashTendered,
-            changeDue: changeDue,
+          pw.SizedBox(height: 20),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                flex: 1,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _sectionTitle('Notes'),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'This is an official receipt for your purchase. Please keep it for your records.',
+                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: 40),
+              pw.Expanded(
+                flex: 1,
+                child: _paymentSummary(
+                  subtotal: subtotal,
+                  discount: discount,
+                  discountLabel: discountLabel,
+                  total: total,
+                  cashTendered: cashTendered,
+                  changeDue: changeDue,
+                ),
+              ),
+            ],
           ),
         ],
-        footer: (context) => pw.Padding(
-          padding: const pw.EdgeInsets.only(top: 10),
+        footer: (context) => pw.Container(
+          padding: const pw.EdgeInsets.only(top: 12),
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
+          ),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                '${ReceiptBrandData.storeName} | Official sale receipt',
-                style: const pw.TextStyle(
-                  fontSize: 8.3,
-                  color: PdfColors.grey600,
-                ),
+                'Thank you for shopping at $cleanStoreName',
+                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500, fontStyle: pw.FontStyle.italic),
               ),
               pw.Text(
-                'Page ${context.pageNumber}/${context.pagesCount}',
-                style: const pw.TextStyle(
-                  fontSize: 8.3,
-                  color: PdfColors.grey600,
-                ),
+                'Page ${context.pageNumber} of ${context.pagesCount}',
+                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
               ),
             ],
           ),
@@ -131,7 +141,13 @@ class ReceiptPdfService {
     return 'TSh ${buffer.toString()}';
   }
 
-  static Future<File> _writePdfFile(Uint8List bytes, String receiptNumber) async {
+  static String _cleanValue(String value, String fallback) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? fallback : trimmed;
+  }
+
+  static Future<File> _writePdfFile(
+      Uint8List bytes, String receiptNumber) async {
     final directory = await getTemporaryDirectory();
     final receiptsDir = Directory('${directory.path}/shared_receipts');
     if (!receiptsDir.existsSync()) {
@@ -145,119 +161,84 @@ class ReceiptPdfService {
   }
 
   static pw.Widget _receiptHeader({
+    required String storeName,
+    required String storeAddress,
+    required String storePhone,
     required String receiptNumber,
     required String date,
     required String time,
-    required String cashier,
-    required String register,
     required String customerName,
   }) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(4),
-        border: pw.Border.all(color: PdfColor.fromHex('#DCE4EE'), width: 0.8),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text(
-                'OFFICIAL RECEIPT',
-                style: pw.TextStyle(
-                  fontSize: 8.8,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColor.fromHex('#64748B'),
-                  letterSpacing: 0.8,
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  storeName.toUpperCase(),
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColor.fromHex('#1E293B'),
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
-              pw.Text(
-                receiptNumber,
-                style: const pw.TextStyle(
-                  fontSize: 8.5,
-                  color: PdfColors.grey600,
+                pw.SizedBox(height: 4),
+                if (storeAddress.isNotEmpty)
+                  pw.Text(
+                    storeAddress,
+                    style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                  ),
+                if (storePhone.isNotEmpty)
+                  pw.Text(
+                    'Tel: $storePhone',
+                    style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                  ),
+              ],
+            ),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                pw.Text(
+                  'RECEIPT',
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColor.fromHex('#E2E8F0'),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            ReceiptBrandData.storeName,
-            style: pw.TextStyle(
-              fontSize: 18,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromHex('#0F172A'),
+                pw.Text(
+                  '#$receiptNumber',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColor.fromHex('#64748B'),
+                  ),
+                ),
+              ],
             ),
-          ),
-          pw.SizedBox(height: 2),
-          pw.Text(
-            'Official sale receipt',
-            style: pw.TextStyle(
-              fontSize: 11,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromHex('#334155'),
-            ),
-          ),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            '${ReceiptBrandData.address} | ${ReceiptBrandData.cityStateZip}',
-            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-          ),
-          pw.SizedBox(height: 2),
-          pw.Text(
-            'Tel: ${ReceiptBrandData.phone}',
-            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-          ),
-          pw.SizedBox(height: 8),
-          pw.Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              _metaTag('Date', '$date $time'),
-              _metaTag('Cashier', cashier),
-              _metaTag('Register', register),
-              _metaTag('Customer', customerName),
-              _metaTag('Receipt', receiptNumber),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  static pw.Widget _metaTag(String label, String value) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(3),
-        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.6),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(
-            label.toUpperCase(),
-            style: pw.TextStyle(
-              fontSize: 7.6,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromHex('#64748B'),
-            ),
-          ),
-          pw.SizedBox(height: 2),
-          pw.Text(
-            value,
-            style: pw.TextStyle(
-              fontSize: 9,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromHex('#0F172A'),
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
+        pw.SizedBox(height: 12),
+        pw.Container(
+          height: 2,
+          color: PdfColor.fromHex('#334155'),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            _metaLine('Date', date),
+            if (customerName != 'Walk-in customer')
+              _metaLine('Customer', customerName),
+          ],
+        ),
+      ],
     );
   }
 
@@ -269,89 +250,101 @@ class ReceiptPdfService {
   }) {
     return pw.Container(
       width: double.infinity,
-      padding: const pw.EdgeInsets.all(10),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(4),
-        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.7),
+        color: PdfColor.fromHex('#F8FAFC'),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
       ),
       child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Expanded(child: _miniStat('Items', itemCount.toString())),
-          pw.SizedBox(width: 8),
-          pw.Expanded(child: _miniStat('Total', _money(total))),
-          pw.SizedBox(width: 8),
-          pw.Expanded(child: _miniStat('Tendered', _money(cashTendered))),
-          pw.SizedBox(width: 8),
-          pw.Expanded(child: _miniStat('Change', _money(changeDue))),
+          _miniMeta('TOTAL ITEMS', itemCount.toString()),
+          _miniMeta('GRAND TOTAL', _money(total), highlight: true),
+          _miniMeta('CHANGE DUE', _money(changeDue)),
         ],
       ),
     );
   }
 
-  static pw.Widget _miniStat(String label, String value) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(3),
-        border: pw.Border.all(color: PdfColor.fromHex('#EDF2F7'), width: 0.5),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(
-            label.toUpperCase(),
-            style: pw.TextStyle(
-              fontSize: 7.6,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromHex('#64748B'),
-            ),
+  static pw.Widget _miniMeta(String label, String value, {bool highlight = false}) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          label,
+          style: pw.TextStyle(
+            fontSize: 7,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColor.fromHex('#94A3B8'),
+            letterSpacing: 0.5,
           ),
-          pw.SizedBox(height: 2),
-          pw.Text(
-            value,
-            style: pw.TextStyle(
-              fontSize: 9.2,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromHex('#0F172A'),
-            ),
+        ),
+        pw.SizedBox(height: 2),
+        pw.Text(
+          value,
+          style: pw.TextStyle(
+            fontSize: highlight ? 12 : 10,
+            fontWeight: pw.FontWeight.bold,
+            color: highlight ? PdfColor.fromHex('#0F172A') : PdfColor.fromHex('#475569'),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   static pw.Widget _sectionTitle(String title) {
     return pw.Text(
-      title,
+      title.toUpperCase(),
       style: pw.TextStyle(
-        fontSize: 12.5,
+        fontSize: 9,
         fontWeight: pw.FontWeight.bold,
-        color: PdfColor.fromHex('#0F172A'),
+        color: PdfColor.fromHex('#475569'),
+        letterSpacing: 0.8,
       ),
+    );
+  }
+
+  static pw.Widget _metaLine(String label, String value) {
+    return pw.Row(
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Text(
+          '$label: ',
+          style: pw.TextStyle(
+            fontSize: 9,
+            color: PdfColor.fromHex('#64748B'),
+          ),
+        ),
+        pw.Text(
+          value,
+          style: pw.TextStyle(
+            fontSize: 9,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColor.fromHex('#1E293B'),
+          ),
+        ),
+      ],
     );
   }
 
   static pw.Widget _itemsTable(List<OrderLineItem> items) {
     return pw.Table(
-      border: pw.TableBorder.all(
-        color: PdfColor.fromHex('#EDF2F7'),
-        width: 0.35,
-      ),
       columnWidths: const {
-        0: pw.FlexColumnWidth(5),
+        0: pw.FlexColumnWidth(6),
         1: pw.FlexColumnWidth(2),
         2: pw.FlexColumnWidth(3),
         3: pw.FlexColumnWidth(4),
       },
       children: [
         pw.TableRow(
+          decoration: pw.BoxDecoration(
+            color: PdfColor.fromHex('#F1F5F9'),
+          ),
           children: [
-            _tableCell('Item', bold: true),
-            _tableCell('Qty', bold: true, align: pw.TextAlign.center),
-            _tableCell('Price', bold: true, align: pw.TextAlign.right),
-            _tableCell('Total', bold: true, align: pw.TextAlign.right),
+            _tableCell('ITEM DESCRIPTION', bold: true, fontSize: 8),
+            _tableCell('QTY', bold: true, fontSize: 8, align: pw.TextAlign.center),
+            _tableCell('PRICE', bold: true, fontSize: 8, align: pw.TextAlign.right),
+            _tableCell('TOTAL', bold: true, fontSize: 8, align: pw.TextAlign.right),
           ],
         ),
         ...items.map(
@@ -376,62 +369,42 @@ class ReceiptPdfService {
     required double cashTendered,
     required double changeDue,
   }) {
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.all(10),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(4),
-        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.7),
-      ),
-      child: pw.Column(
-        children: [
-          _summaryLine('Subtotal', _money(subtotal)),
-          if (discount > 0)
-            _summaryLine(
-              discountLabel ?? 'Discount',
-              '- ${_money(discount)}',
-              color: PdfColor.fromHex('#C81E5B'),
-            ),
-          pw.Divider(color: PdfColor.fromHex('#E6EBF2'), height: 14),
-          _summaryLine('Grand Total', _money(total), isBold: true, fontSize: 14),
-          pw.Divider(color: PdfColor.fromHex('#E6EBF2'), height: 14),
-          _summaryLine('Cash Received', _money(cashTendered)),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        _summaryLine('Subtotal', _money(subtotal)),
+        if (discount > 0)
           _summaryLine(
-            'Change Due',
-            _money(changeDue),
-            color: PdfColor.fromHex('#166534'),
-            isBold: true,
+            discountLabel ?? 'Discount',
+            '- ${_money(discount)}',
+            color: PdfColor.fromHex('#E11D48'),
           ),
-          pw.SizedBox(height: 8),
-          pw.Text(
-            'Thank you for your business',
-            style: pw.TextStyle(
-              fontSize: 10,
-              fontWeight: pw.FontWeight.bold,
-              letterSpacing: 0.8,
-              color: PdfColor.fromHex('#334155'),
-            ),
-          ),
-        ],
-      ),
+        pw.SizedBox(height: 4),
+        pw.Container(height: 1, color: PdfColor.fromHex('#E2E8F0')),
+        pw.SizedBox(height: 4),
+        _summaryLine('Total Amount', _money(total), isBold: true, fontSize: 11),
+        pw.SizedBox(height: 8),
+        _summaryLine('Cash Tendered', _money(cashTendered), fontSize: 9),
+        _summaryLine('Change Due', _money(changeDue), color: PdfColor.fromHex('#059669'), isBold: true, fontSize: 10),
+      ],
     );
   }
 
   static pw.Widget _tableCell(
     String value, {
     bool bold = false,
+    double fontSize = 8.5,
     pw.TextAlign align = pw.TextAlign.left,
   }) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: pw.Text(
         value,
         textAlign: align,
         style: pw.TextStyle(
-          fontSize: 9.2,
+          fontSize: fontSize,
           fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: PdfColor.fromHex('#0F172A'),
+          color: PdfColor.fromHex('#1E293B'),
         ),
       ),
     );
@@ -441,7 +414,7 @@ class ReceiptPdfService {
     String label,
     String value, {
     bool isBold = false,
-    double fontSize = 10.5,
+    double fontSize = 9,
     PdfColor? color,
   }) {
     return pw.Padding(
@@ -454,7 +427,7 @@ class ReceiptPdfService {
             style: pw.TextStyle(
               fontSize: fontSize,
               fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-              color: PdfColor.fromHex('#334155'),
+              color: PdfColor.fromHex('#475569'),
             ),
           ),
           pw.Text(

@@ -72,11 +72,11 @@ class _AppShellState extends State<AppShell>
   String _drawerSelectedItemForTab(MarketTab tab) {
     switch (tab) {
       case MarketTab.dashboard:
-        return 'Dashboard';
+        return '';
       case MarketTab.products:
-        return 'Products';
+        return '';
       case MarketTab.reports:
-        return 'Sales';
+        return '';
       case MarketTab.more:
         return 'More';
     }

@@ -18,15 +18,15 @@ class CustomerDetailsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Selector<PosLocalStore, CustomerData?>(
       selector: (_, store) {
-        for (final c in store.customers) {
-          if (c.id == customerId) return c;
+        for (final customer in store.customers) {
+          if (customer.id == customerId) return customer;
         }
         return null;
       },
       builder: (context, customer, _) {
         if (customer == null) {
           return const Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.pageBackground,
             body: SafeArea(
               child: Column(
                 children: [
@@ -47,6 +47,7 @@ class CustomerDetailsPage extends StatelessWidget {
             ),
           );
         }
+
         return _CustomerDetailsView(customer: customer);
       },
     );
@@ -62,15 +63,15 @@ class _CustomerDetailsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final orders = store.ordersForCustomer(customer.name);
-    final totalSpent = orders.fold<double>(0, (s, o) => s + o.total);
-    final debitBalance = customer.debitBalance;
-    final avg = orders.isEmpty ? 0.0 : totalSpent / orders.length;
+    final totalSpent =
+        orders.fold<double>(0, (sum, order) => sum + order.total);
+    final averageOrder = orders.isEmpty ? 0.0 : totalSpent / orders.length;
     final lastOrder = orders.isEmpty ? null : orders.first;
     final lastOrderDate =
         lastOrder == null ? null : DateTime.tryParse(lastOrder.dateTime);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -98,36 +99,31 @@ class _CustomerDetailsView extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 children: [
                   _HeroCard(customer: customer),
-                  const SizedBox(height: 14),
-                  if (debitBalance > 0)
-                    _DueBanner(amount: debitBalance)
-                  else
-                    const _DueBanner(amount: 0),
-                  const SizedBox(height: 14),
+                  if (customer.debitBalance > 0) ...[
+                    const SizedBox(height: 12),
+                    _DueBanner(amount: customer.debitBalance),
+                  ],
+                  const SizedBox(height: 12),
                   _ContactActions(customer: customer),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
                   _StatsGrid(
                     totalSpent: totalSpent,
                     orderCount: orders.length,
-                    avg: avg,
+                    averageOrder: averageOrder,
                     lastOrder: lastOrderDate,
                   ),
-                  const SizedBox(height: 18),
-                  if (customer.tags.isNotEmpty) ...[
-                    _TagsRow(tags: customer.tags),
-                    const SizedBox(height: 18),
-                  ],
                   if (customer.address.isNotEmpty) ...[
+                    const SizedBox(height: 16),
                     _InfoBlock(
                       icon: Icons.location_on_outlined,
                       label: 'Address',
                       value: customer.address,
                     ),
-                    const SizedBox(height: 18),
                   ],
+                  const SizedBox(height: 16),
                   _OrdersSection(orders: orders),
                 ],
               ),
@@ -183,30 +179,30 @@ class _HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      padding: const EdgeInsets.all(18),
-      backgroundColor: const Color(0xFF0F172A),
-      borderColor: const Color(0xFF0F172A),
-      radius: 16,
+      padding: const EdgeInsets.all(16),
+      backgroundColor: AppColors.surface,
+      borderColor: AppColors.border,
+      radius: 14,
       child: Row(
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 60,
+            height: 60,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
-              color: Colors.white,
+              color: AppColors.pageBackground,
               shape: BoxShape.circle,
             ),
             child: Text(
               customer.initials,
               style: const TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 20,
+                color: AppColors.ink,
+                fontSize: 19,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,7 +210,7 @@ class _HeroCard extends StatelessWidget {
                 Text(
                   customer.name,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.ink,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
@@ -222,8 +218,8 @@ class _HeroCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   customer.phone,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
+                  style: const TextStyle(
+                    color: AppColors.mutedText,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -232,8 +228,8 @@ class _HeroCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     customer.email,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
+                    style: const TextStyle(
+                      color: AppColors.mutedText,
                       fontSize: 13,
                     ),
                   ),
@@ -244,13 +240,13 @@ class _HeroCard extends StatelessWidget {
                     const Icon(
                       Icons.event_outlined,
                       size: 14,
-                      color: Colors.white70,
+                      color: AppColors.mutedText,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Customer since ${_formatDate(customer.createdAt)}',
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: AppColors.mutedText,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -273,25 +269,26 @@ class _DueBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (amount <= 0) return const SizedBox.shrink();
-
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
-      backgroundColor: const Color(0xFFFEF2F2),
-      borderColor: const Color(0xFFFECACA),
+      backgroundColor: AppColors.surface,
+      borderColor: AppColors.border,
       radius: 12,
       child: Row(
         children: [
-          const Icon(Icons.receipt_long_outlined,
-              color: Color(0xFFB91C1C), size: 20),
+          const Icon(
+            Icons.receipt_long_outlined,
+            color: AppColors.warning,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Outstanding debit due: TSh ${amount.toStringAsFixed(0)}',
               style: const TextStyle(
-                color: Color(0xFF7F1D1D),
+                color: AppColors.ink,
                 fontSize: 13.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -344,7 +341,6 @@ class _ContactActions extends StatelessWidget {
           child: _ActionTile(
             icon: Icons.call_rounded,
             label: 'Call',
-            color: AppColors.primary,
             onTap: () =>
                 _open(context, 'tel:$phone', 'Phone dialer unavailable'),
           ),
@@ -354,7 +350,6 @@ class _ContactActions extends StatelessWidget {
           child: _ActionTile(
             icon: Icons.message_rounded,
             label: 'SMS',
-            color: const Color(0xFF10B981),
             onTap: () => _open(context, 'sms:$phone', 'SMS app unavailable'),
           ),
         ),
@@ -363,7 +358,6 @@ class _ContactActions extends StatelessWidget {
           child: _ActionTile(
             icon: Icons.chat_bubble_rounded,
             label: 'WhatsApp',
-            color: const Color(0xFF15803D),
             onTap: () {
               final cleaned = phone.replaceAll(RegExp(r'[^0-9+]'), '');
               _open(
@@ -383,13 +377,11 @@ class _ActionTile extends StatelessWidget {
   const _ActionTile({
     required this.icon,
     required this.label,
-    required this.color,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
-  final Color color;
   final VoidCallback onTap;
 
   @override
@@ -397,22 +389,22 @@ class _ActionTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: MarketSurfaceCard(
-        backgroundColor: color.withValues(alpha: 0.08),
-        borderColor: color.withValues(alpha: 0.18),
+        backgroundColor: AppColors.surface,
+        borderColor: AppColors.border,
         radius: 12,
         child: SizedBox(
           height: 64,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 22),
+              Icon(icon, color: AppColors.ink, size: 21),
               const SizedBox(height: 4),
               Text(
                 label,
-                style: TextStyle(
-                  color: color,
+                style: const TextStyle(
+                  color: AppColors.ink,
                   fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -427,13 +419,13 @@ class _StatsGrid extends StatelessWidget {
   const _StatsGrid({
     required this.totalSpent,
     required this.orderCount,
-    required this.avg,
+    required this.averageOrder,
     required this.lastOrder,
   });
 
   final double totalSpent;
   final int orderCount;
-  final double avg;
+  final double averageOrder;
   final DateTime? lastOrder;
 
   @override
@@ -454,7 +446,6 @@ class _StatsGrid extends StatelessWidget {
               child: _StatCard(
                 label: 'Total Spent',
                 value: 'TSh ${_formatMoney(totalSpent)}',
-                color: AppColors.primary,
                 icon: Icons.payments_outlined,
               ),
             ),
@@ -463,7 +454,6 @@ class _StatsGrid extends StatelessWidget {
               child: _StatCard(
                 label: 'Orders',
                 value: orderCount.toString(),
-                color: const Color(0xFF10B981),
                 icon: Icons.receipt_long_outlined,
               ),
             ),
@@ -471,8 +461,7 @@ class _StatsGrid extends StatelessWidget {
               width: itemWidth,
               child: _StatCard(
                 label: 'Avg Order',
-                value: 'TSh ${_formatMoney(avg)}',
-                color: const Color(0xFFF59E0B),
+                value: 'TSh ${_formatMoney(averageOrder)}',
                 icon: Icons.trending_up_rounded,
               ),
             ),
@@ -481,7 +470,6 @@ class _StatsGrid extends StatelessWidget {
               child: _StatCard(
                 label: 'Last Visit',
                 value: lastOrder == null ? '—' : _formatDate(lastOrder!),
-                color: const Color(0xFF8B5CF6),
                 icon: Icons.event_outlined,
               ),
             ),
@@ -491,17 +479,16 @@ class _StatsGrid extends StatelessWidget {
     );
   }
 }
+
 class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.label,
     required this.value,
-    required this.color,
     required this.icon,
   });
 
   final String label;
   final String value;
-  final Color color;
   final IconData icon;
 
   @override
@@ -513,17 +500,17 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 18),
+          Icon(icon, color: AppColors.ink, size: 18),
           const SizedBox(height: 8),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.ink,
               fontSize: 14,
               fontWeight: FontWeight.w800,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(
@@ -536,54 +523,6 @@ class _StatCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _TagsRow extends StatelessWidget {
-  const _TagsRow({required this.tags});
-
-  final List<String> tags;
-
-  Color _colorFor(String tag) {
-    switch (tag) {
-      case 'VIP':
-        return const Color(0xFFF59E0B);
-      case 'Wholesale':
-        return const Color(0xFF2563EB);
-      case 'Retail':
-        return const Color(0xFF10B981);
-      case 'Credit':
-        return const Color(0xFFEF4444);
-      default:
-        return AppColors.mutedText;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: tags.map((tag) {
-        final color = _colorFor(tag);
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withValues(alpha: 0.35)),
-          ),
-          child: Text(
-            tag,
-            style: TextStyle(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }
@@ -665,8 +604,8 @@ class _OrdersSection extends StatelessWidget {
         if (orders.isEmpty)
           const MarketSurfaceCard(
             padding: EdgeInsets.all(20),
-            backgroundColor: AppColors.pageBackground,
-            borderColor: AppColors.pageBackground,
+            backgroundColor: AppColors.surface,
+            borderColor: AppColors.border,
             radius: 12,
             child: Column(
               children: [
@@ -697,7 +636,7 @@ class _OrdersSection extends StatelessWidget {
             ),
           )
         else
-          ...orders.take(25).map((o) => _OrderTile(order: o)),
+          ...orders.take(25).map((order) => _OrderTile(order: order)),
         if (orders.length > 25)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -729,21 +668,12 @@ class _OrderTile extends StatelessWidget {
         radius: 12,
         child: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.receipt_rounded,
-                color: AppColors.primary,
-                size: 18,
-              ),
+            const Icon(
+              Icons.receipt_rounded,
+              color: AppColors.mutedText,
+              size: 18,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -758,7 +688,7 @@ class _OrderTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${order.date} Â· ${order.time}',
+                    '${order.date} · ${order.time}',
                     style: const TextStyle(
                       color: AppColors.mutedText,
                       fontSize: 12,
@@ -782,18 +712,18 @@ class _OrderTile extends StatelessWidget {
   }
 }
 
-String _formatMoney(double v) {
-  if (v >= 1000000) {
-    return '${(v / 1000000).toStringAsFixed(1)}M';
+String _formatMoney(double value) {
+  if (value >= 1000000) {
+    return '${(value / 1000000).toStringAsFixed(1)}M';
   }
-  if (v >= 1000) {
-    return '${(v / 1000).toStringAsFixed(1)}K';
+  if (value >= 1000) {
+    return '${(value / 1000).toStringAsFixed(1)}K';
   }
-  return v.toStringAsFixed(0);
+  return value.toStringAsFixed(0);
 }
 
-String _formatDate(DateTime d) {
-  const months = [
+String _formatDate(DateTime date) {
+  const months = <String>[
     'Jan',
     'Feb',
     'Mar',
@@ -807,7 +737,5 @@ String _formatDate(DateTime d) {
     'Nov',
     'Dec',
   ];
-  return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }
-
-

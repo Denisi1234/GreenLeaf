@@ -22,67 +22,57 @@ class MarketBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      _NavItem(MarketTab.dashboard, 'Dashboard', Icons.grid_view_rounded),
-      _NavItem(MarketTab.products, 'Products', Icons.shopping_bag_outlined),
-      _NavItem(MarketTab.reports, 'Sales', Icons.shopping_bag_outlined),
-      _NavItem(MarketTab.more, 'More', Icons.more_horiz_rounded),
+      _NavItem(MarketTab.dashboard, 'Home', Icons.home_rounded),
+      _NavItem(MarketTab.products, 'Inventory', Icons.inventory_2_outlined),
+      _NavItem(MarketTab.reports, 'Sales', Icons.bar_chart_rounded),
+      _NavItem(MarketTab.more, 'More', Icons.menu_rounded),
     ];
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFFFCFCFD),
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.divider)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 12,
-            offset: Offset(0, -2),
+            color: Color(0x05000000),
+            blurRadius: 10,
+            offset: Offset(0, -4),
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(10, 7, 10, 10),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       child: SafeArea(
         top: false,
         child: Row(
           children: items.map((item) {
             final selected = item.tab == currentTab;
             return Expanded(
-              child: GestureDetector(
+              child: InkWell(
                 onTap: () => onChanged(item.tab),
-                child: Container(
-                  color: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOut,
-                        height: 2.5,
-                        width: selected ? 44 : 0,
-                        margin: const EdgeInsets.only(bottom: 7),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                      ),
                       Icon(
                         item.icon,
                         color: selected
                             ? AppColors.primary
-                            : const Color(0xFF7A8393),
-                        size: 23,
+                            : AppColors.textLight,
+                        size: 24,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         item.label,
-                        style: TextStyle(
+                        style: AppTypography.helperText.copyWith(
                           color: selected
                               ? AppColors.primary
-                              : const Color(0xFF7A8393),
-                          fontSize: 11,
+                              : AppColors.textLight,
                           fontWeight:
-                              selected ? FontWeight.w700 : FontWeight.w500,
+                              selected ? FontWeight.w800 : FontWeight.w600,
+                          fontSize: 10,
                         ),
                       ),
                     ],

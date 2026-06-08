@@ -24,8 +24,7 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _picker = ImagePicker();
-  static final _emailPattern =
-      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+  static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   static const _categories = <String>[
     'Retail',

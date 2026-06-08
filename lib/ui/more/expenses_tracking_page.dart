@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../../service/expense_model.dart';
 import '../../service/pos_local_store.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_expense_page.dart';
 
@@ -35,141 +36,127 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
     return Theme(
       data: theme,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          toolbarHeight: 64,
-          automaticallyImplyLeading: false,
-          leadingWidth: 56,
-          leading: IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(
-              CupertinoIcons.chevron_left,
-              color: Color(0xFF0F172A),
-              size: 22,
-            ),
-            splashRadius: 24,
-            tooltip: 'Back',
-          ),
-          title: const Text(
-            'Expenses',
-            style: TextStyle(
-              color: Color(0xFF0F172A),
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-          ),
-          actions: [
-            TextButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (context) => const AddExpensePage(),
-                  ),
-                );
-              },
-              icon: const Icon(CupertinoIcons.add, size: 18),
-              label: const Text('Add Expense'),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF2563EB),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                textStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: Consumer<PosLocalStore>(
-          builder: (context, store, child) {
-            final sourceExpenses =
-                store.expenses.isEmpty ? _demoExpenses() : store.expenses;
-            final recentSourceExpenses = List<Expense>.from(sourceExpenses)
-              ..sort((a, b) => b.date.compareTo(a.date));
-            final filteredExpenses = _filteredExpenses(sourceExpenses);
-            final summary = _buildSummary(sourceExpenses, filteredExpenses);
-            final recentExpenses = _selectedDay == null
-                ? recentSourceExpenses.take(6).toList()
-                : filteredExpenses.take(6).toList();
-            final comparisonLabel =
-                _selectedDay == null ? 'vs last month' : 'vs previous day';
-
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                  sliver: SliverToBoxAdapter(
-                    child: _ExpenseSummaryCard(
-                      summary: summary,
-                      filterLabel: _selectedFilter.label,
-                      selectedFilter: _selectedFilter,
-                      dayLabel: _selectedDay == null
-                          ? null
-                          : _formatDayLabel(_selectedDay!),
-                      comparisonLabel: comparisonLabel,
-                      onFilterSelected: _setFilter,
-                      onPickDay: _pickExpenseDay,
-                      onClearDay:
-                          _selectedDay == null ? null : _clearSelectedDay,
+        backgroundColor: AppColors.pageBackground,
+        body: SafeArea(
+          child: Column(
+            children: [
+              MarketPageHeader(
+                title: 'Expenses',
+                showBackButton: true,
+                centerTitle: false,
+                actions: [
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const AddExpensePage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 20),
+                    label: const Text('Add Expense'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      textStyle: AppTypography.bodyMedium
+                          .copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                  sliver: SliverToBoxAdapter(
-                    child: MarketSectionHeader(
-                      title: 'Recent Expenses',
-                      trailing: TextButton(
-                        onPressed: recentSourceExpenses.isEmpty
-                            ? null
-                            : () => _showAllExpenses(
-                                  context,
-                                  recentSourceExpenses,
-                                ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF2563EB),
-                          padding: EdgeInsets.zero,
-                          textStyle: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                ],
+              ),
+              Expanded(
+                child: Consumer<PosLocalStore>(
+                  builder: (context, store, child) {
+                    final sourceExpenses = store.expenses.isEmpty
+                        ? _demoExpenses()
+                        : store.expenses;
+                    final recentSourceExpenses =
+                        List<Expense>.from(sourceExpenses)
+                          ..sort((a, b) => b.date.compareTo(a.date));
+                    final filteredExpenses = _filteredExpenses(sourceExpenses);
+                    final summary =
+                        _buildSummary(sourceExpenses, filteredExpenses);
+                    final recentExpenses = _selectedDay == null
+                        ? recentSourceExpenses.take(6).toList()
+                        : filteredExpenses.take(6).toList();
+                    final comparisonLabel = _selectedDay == null
+                        ? 'vs last month'
+                        : 'vs previous day';
+
+                    return CustomScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+                          sliver: SliverToBoxAdapter(
+                            child: _ExpenseSummaryCard(
+                              summary: summary,
+                              filterLabel: _selectedFilter.label,
+                              selectedFilter: _selectedFilter,
+                              dayLabel: _selectedDay == null
+                                  ? null
+                                  : _formatDayLabel(_selectedDay!),
+                              comparisonLabel: comparisonLabel,
+                              onFilterSelected: _setFilter,
+                              onPickDay: _pickExpenseDay,
+                              onClearDay: _selectedDay == null
+                                  ? null
+                                  : _clearSelectedDay,
+                            ),
                           ),
                         ),
-                        child: const Text('View All'),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  sliver: SliverToBoxAdapter(
-                    child: recentExpenses.isEmpty
-                        ? _EmptyExpensesState(
-                            onAddExpenseTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const AddExpensePage(),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
+                              AppSpacing.xxl, AppSpacing.lg, AppSpacing.md),
+                          sliver: SliverToBoxAdapter(
+                            child: MarketSectionHeader(
+                              title: 'Recent Transactions',
+                              trailing: TextButton(
+                                onPressed: recentSourceExpenses.isEmpty
+                                    ? null
+                                    : () => _showAllExpenses(
+                                          context,
+                                          recentSourceExpenses,
+                                        ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  textStyle: AppTypography.bodySmall
+                                      .copyWith(fontWeight: FontWeight.w700),
                                 ),
-                              );
-                            },
-                          )
-                        : _RecentExpensesCard(
-                            expenses: recentExpenses,
-                            onExpenseTap: (expense) =>
-                                _showExpenseDetails(context, expense),
+                                child: const Text('View All'),
+                              ),
+                            ),
                           ),
-                  ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xxl),
+                          sliver: SliverToBoxAdapter(
+                            child: recentExpenses.isEmpty
+                                ? _EmptyExpensesState(
+                                    onAddExpenseTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (context) =>
+                                              const AddExpensePage(),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : _RecentExpensesCard(
+                                    expenses: recentExpenses,
+                                    onExpenseTap: (expense) =>
+                                        _showExpenseDetails(context, expense),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-              ],
-            );
-          },
+              ),
+            ],
+          ),
         ),
       ),
     );

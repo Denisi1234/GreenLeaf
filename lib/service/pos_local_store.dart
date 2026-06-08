@@ -937,11 +937,25 @@ class PosLocalStore extends ChangeNotifier {
     }
   }
 
-  void removeProduct(String code) {
+  Future<void> removeProduct(String code) async {
+    final removedIndex = _allInventory.indexWhere((item) => item.code == code);
+    final removedItem = removedIndex == -1 ? null : _allInventory[removedIndex];
+
     _allInventory.removeWhere((item) => item.code == code);
+    _cartItems.removeWhere((item) => item.code?.trim() == code);
     _syncProductsFromInventory();
+    _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceInventory(_allInventory));
+    await _database.replaceInventory(_allInventory);
+    await _database.replaceCart(_cartItems);
+
+    final imagePath = removedItem?.imagePath;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      final file = File(imagePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
   }
 
   Future<void> applyInventoryAdjustments(

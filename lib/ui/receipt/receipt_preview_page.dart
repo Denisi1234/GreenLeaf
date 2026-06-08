@@ -8,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../receipt_brand_data.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../models/product_item.dart';
@@ -47,10 +46,6 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
 
   double get _subtotal =>
       widget.order.lines.fold(0, (sum, line) => sum + line.lineTotal);
-  double get _tax => 0;
-  int get _itemTypeCount => widget.order.lines.length;
-  int get _unitCount =>
-      widget.order.lines.fold<int>(0, (sum, line) => sum + line.quantity);
 
   @override
   void initState() {
@@ -74,11 +69,21 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     return 'TSh${buffer.toString()}.$decimal';
   }
 
+  String _cleanValue(String value, String fallback) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? fallback : trimmed;
+  }
+
+  AppProfileData _storeProfile() {
+    return context.read<PosLocalStore>().profile;
+  }
+
   Future<void> _preparePdf() async {
     if (_isPreparing) return;
     setState(() => _isPreparing = true);
 
     try {
+      final profile = _storeProfile();
       final pdfFile = await ReceiptPdfService.createReceiptPdf(
         items: _pdfItems,
         total: widget.order.total,
@@ -92,6 +97,9 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         customerName: widget.order.customerName,
         discountAmount: widget.order.discountAmount,
         discountLabel: widget.order.discountLabel,
+        storeName: profile.storeName,
+        storeAddress: profile.physicalAddress,
+        storePhone: profile.contactNumber,
       );
       if (!mounted) return;
       setState(() {
@@ -125,6 +133,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     if (pdfFile != null) return pdfFile;
 
     try {
+      final profile = _storeProfile();
       pdfFile = await ReceiptPdfService.createReceiptPdf(
         items: _pdfItems,
         total: widget.order.total,
@@ -138,6 +147,9 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         customerName: widget.order.customerName,
         discountAmount: widget.order.discountAmount,
         discountLabel: widget.order.discountLabel,
+        storeName: profile.storeName,
+        storeAddress: profile.physicalAddress,
+        storePhone: profile.contactNumber,
       );
       if (!mounted) return null;
       setState(() => _preparedPdf = pdfFile);
@@ -168,23 +180,38 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
   }
 
   String _buildWhatsAppMessage() {
+    final profile = _storeProfile();
+    final storeName = _cleanValue(profile.storeName, 'Store');
+    final storeAddress = profile.physicalAddress.trim();
+    final storePhone = profile.contactNumber.trim();
     final buffer = StringBuffer()
-      ..writeln('*${ReceiptBrandData.storeName.toUpperCase()}*')
-      ..writeln('Receipt: ${widget.order.id}')
-      ..writeln('Date: ${widget.order.date} ${widget.order.time}')
+      ..writeln('━━━━━ *${storeName.toUpperCase()}* ━━━━━')
+      ..writeln('📄 *Receipt:* #${widget.order.id}')
+      ..writeln('📅 *Date:* ${widget.order.date}')
       ..writeln('');
 
-    if (widget.order.customerName != null) {
-      buffer.writeln('Customer: ${widget.order.customerName}');
+    if (storeAddress.isNotEmpty) {
+      buffer.writeln('📍 $storeAddress');
+    }
+    if (storePhone.isNotEmpty) {
+      buffer.writeln('📞 Tel: $storePhone');
+    }
+    if (storeAddress.isNotEmpty || storePhone.isNotEmpty) {
+      buffer.writeln('');
     }
 
-    buffer.writeln('--------------------');
+    if (widget.order.customerName != null && widget.order.customerName!.trim().isNotEmpty) {
+      buffer.writeln('👤 *Customer:* ${widget.order.customerName}');
+      buffer.writeln('');
+    }
+
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
     for (final line in widget.order.lines) {
       buffer.writeln(
-        '${line.itemName} x${line.quantity} - ${_money(line.lineTotal)}',
+        '• ${line.itemName} (x${line.quantity}) — ${_money(line.lineTotal)}',
       );
     }
-    buffer.writeln('--------------------');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
     buffer.writeln('Subtotal: ${_money(_subtotal)}');
 
     if (widget.order.discountAmount != null &&
@@ -193,11 +220,12 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
           '${widget.order.discountLabel ?? 'Discount'}: -${_money(widget.order.discountAmount!)}');
     }
 
-    buffer.writeln('*Total: ${_money(widget.order.total)}*');
-    buffer.writeln('Cash Received: ${_money(widget.order.cashTendered)}');
+    buffer.writeln('💰 *Total: ${_money(widget.order.total)}*');
+    buffer.writeln('');
+    buffer.writeln('Cash Tendered: ${_money(widget.order.cashTendered)}');
     buffer.writeln('Change Due: ${_money(widget.order.changeDue)}');
-    buffer.writeln('--------------------');
-    buffer.writeln('THANK YOU!');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('✨ *Thank you for your business!*');
 
     return buffer.toString();
   }
@@ -392,8 +420,13 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = context.watch<PosLocalStore>().profile;
+    final storeName = _cleanValue(profile.storeName, 'Store receipt');
+    final storeAddress = profile.physicalAddress.trim();
+    final storePhone = profile.contactNumber.trim();
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: const Color(0xFFF6F7F8),
       body: SafeArea(
         child: Column(
           children: [
@@ -406,37 +439,37 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon:
-                        const Icon(Icons.arrow_back, color: Color(0xFF4C68D6)),
+                        const Icon(Icons.arrow_back, color: Color(0xFF334155)),
                   ),
                   const Spacer(),
                   IconButton(
                     onPressed: _sharePdf,
-                    icon: const Icon(Icons.share, color: Color(0xFF4C68D6)),
+                    icon: const Icon(Icons.share, color: Color(0xFF334155)),
                   ),
                   IconButton(
                     onPressed: () => _showPlaceholderAction(context, 'SMS'),
-                    icon: const Icon(Icons.sms, color: Color(0xFF4C68D6)),
+                    icon: const Icon(Icons.sms, color: Color(0xFF334155)),
                   ),
                   IconButton(
                     onPressed: _shareToWhatsApp,
-                    icon: const Icon(Icons.chat, color: Color(0xFF4C68D6)),
+                    icon: const Icon(Icons.chat, color: Color(0xFF334155)),
                   ),
                   IconButton(
                     onPressed: _downloadReceipt,
-                    icon: const Icon(Icons.download, color: Color(0xFF4C68D6)),
+                    icon: const Icon(Icons.download, color: Color(0xFF334155)),
                   ),
                   IconButton(
                     onPressed: _printReceipt,
-                    icon: const Icon(Icons.print, color: Color(0xFF4C68D6)),
+                    icon: const Icon(Icons.print, color: Color(0xFF334155)),
                   ),
                   IconButton(
                     onPressed: () => _showPlaceholderAction(context, 'More'),
-                    icon: const Icon(Icons.more_vert, color: Color(0xFF4C68D6)),
+                    icon: const Icon(Icons.more_vert, color: Color(0xFF334155)),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFD7D7D7)),
+            const Divider(height: 1, color: Color(0xFFE5E7EB)),
             Padding(
               padding: const EdgeInsets.fromLTRB(6, 10, 6, 8),
               child: Row(
@@ -444,13 +477,13 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                 children: [
                   _TopActionButton(
                     label: 'RETURN',
-                    color: const Color(0xFF476ADB),
+                    color: const Color(0xFF334155),
                     onTap: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 6),
                   _TopActionButton(
                     label: 'DELETE',
-                    color: const Color(0xFFF24840),
+                    color: const Color(0xFF9B1C1C),
                     onTap: () async {
                       final store = context.read<PosLocalStore>();
                       final confirmed = await _showConfirmDialog(
@@ -471,7 +504,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                   const SizedBox(width: 6),
                   _TopActionButton(
                     label: 'EDIT',
-                    color: const Color(0xFF476ADB),
+                    color: const Color(0xFF334155),
                     onTap: () async {
                       final store = context.read<PosLocalStore>();
                       final confirmed = await _showConfirmDialog(
@@ -493,19 +526,17 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 94),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 94),
                 child: _ReceiptPaper(
-                  phone: ReceiptBrandData.phone,
+                  storeName: storeName,
+                  storeAddress: storeAddress,
+                  storePhone: storePhone,
                   receiptNumber: widget.order.id,
                   date: widget.order.date,
                   time: widget.order.time,
                   paymentMethod: widget.order.paymentMethod,
-                  itemTypes: _itemTypeCount,
-                  unitCount: _unitCount,
-                  amount: widget.order.total,
                   items: widget.order.lines,
                   subtotal: _subtotal,
-                  tax: _tax,
                   customerName: widget.order.customerName,
                   discountAmount: widget.order.discountAmount,
                   discountLabel: widget.order.discountLabel,
@@ -524,15 +555,8 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                   width: double.infinity,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD94B4B),
-                    borderRadius: BorderRadius.circular(2),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x22000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
                   child: const Text(
@@ -571,8 +595,8 @@ class _TopActionButton extends StatelessWidget {
       child: MarketSurfaceCard(
         padding: EdgeInsets.zero,
         backgroundColor: color,
-        borderColor: const Color(0xFFCFD3DE),
-        radius: 4,
+        borderColor: const Color(0xFFE5E7EB),
+        radius: 6,
         child: SizedBox(
           width: 82,
           height: 34,
@@ -594,17 +618,15 @@ class _TopActionButton extends StatelessWidget {
 
 class _ReceiptPaper extends StatelessWidget {
   const _ReceiptPaper({
-    required this.phone,
+    required this.storeName,
+    required this.storeAddress,
+    required this.storePhone,
     required this.receiptNumber,
     required this.date,
     required this.time,
     required this.paymentMethod,
-    required this.itemTypes,
-    required this.unitCount,
-    required this.amount,
     required this.items,
     required this.subtotal,
-    required this.tax,
     this.customerName,
     this.discountAmount,
     this.discountLabel,
@@ -614,17 +636,15 @@ class _ReceiptPaper extends StatelessWidget {
     required this.money,
   });
 
-  final String phone;
+  final String storeName;
+  final String storeAddress;
+  final String storePhone;
   final String receiptNumber;
   final String date;
   final String time;
   final String paymentMethod;
-  final int itemTypes;
-  final int unitCount;
-  final double amount;
   final List<OrderLine> items;
   final double subtotal;
-  final double tax;
   final String? customerName;
   final double? discountAmount;
   final String? discountLabel;
@@ -637,47 +657,121 @@ class _ReceiptPaper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            ReceiptBrandData.storeName,
-            style: TextStyle(
-              color: AppColors.ink,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      storeName.toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFF1E293B),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    if (storeAddress.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        storeAddress,
+                        style: const TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                    if (storePhone.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        storePhone,
+                        style: const TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'RECEIPT',
+                    style: TextStyle(
+                      color: Color(0xFFCBD5E1),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Text(
+                    '#$receiptNumber',
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            phone,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-          ),
-          _MetaLine(label: 'Receipt #', value: receiptNumber),
-          _MetaLine(label: 'Date', value: '$date $time'),
-          if (customerName != null)
-            _MetaLine(label: 'Customer', value: customerName!),
-          _MetaLine(label: 'Payment', value: paymentMethod),
           const SizedBox(height: 20),
+          Container(
+            height: 1.5,
+            color: const Color(0xFF334155),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _MetaLine(label: 'Date', value: date),
+              _MetaLine(label: 'Payment', value: paymentMethod),
+            ],
+          ),
+          if (customerName != null && customerName!.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: _MetaLine(label: 'Customer', value: customerName!),
+            ),
+          const SizedBox(height: 24),
           const _TableHeader(
-            cells: ['Item', 'Qty', 'Price', 'Total'],
+            cells: ['ITEM', 'QTY', 'PRICE', 'TOTAL'],
             alignments: [
               TextAlign.left,
               TextAlign.center,
               TextAlign.right,
               TextAlign.right,
             ],
-            flexes: [5, 2, 3, 4],
+            flexes: [6, 2, 3, 4],
           ),
           ...items.map(
             (line) => _TableRow(
@@ -693,13 +787,12 @@ class _ReceiptPaper extends StatelessWidget {
                 TextAlign.right,
                 TextAlign.right,
               ],
-              flexes: const [5, 2, 3, 4],
+              flexes: const [6, 2, 3, 4],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(height: 1, thickness: 1.5, color: AppColors.ink),
-          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 16),
           _SummaryLine(label: 'Subtotal', value: money(subtotal)),
           if (discountAmount != null && discountAmount! > 0)
             _SummaryLine(
@@ -709,42 +802,37 @@ class _ReceiptPaper extends StatelessWidget {
             ),
           const SizedBox(height: 8),
           _SummaryLine(
-            label: 'Grand Total',
+            label: 'Total Amount',
             value: money(grandTotal),
             isBold: true,
             fontSize: 16,
+            labelColor: const Color(0xFF1E293B),
           ),
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1, color: Color(0xFFE2E8F0), indent: 40),
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Divider(height: 1, color: Color(0xFFF1F5F9), indent: 40),
           ),
           _SummaryLine(
-            label: 'Cash Received',
+            label: 'Cash Tendered',
             value: money(cashReceived),
+            fontSize: 13,
           ),
           _SummaryLine(
             label: 'Change Due',
             value: money(changeAmount),
-            valueColor: const Color(0xFF15803D),
+            valueColor: const Color(0xFF059669),
             isBold: true,
+            fontSize: 14,
           ),
           const SizedBox(height: 32),
           const Text(
-            'THANK YOU FOR SHOPPING!',
+            'THANK YOU FOR YOUR BUSINESS',
+            textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppColors.ink,
-              fontSize: 13,
+              color: Color(0xFF94A3B8),
+              fontSize: 10,
               fontWeight: FontWeight.w800,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Please come again',
-            style: TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              letterSpacing: 1.5,
             ),
           ),
         ],
@@ -761,23 +849,25 @@ class _MetaLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 2),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '$label:',
+            '$label: ',
             style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 12,
-                fontWeight: FontWeight.w500),
+              color: Color(0xFF94A3B8),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(width: 8),
           Text(
             value,
             style: const TextStyle(
-                color: AppColors.ink,
-                fontSize: 12,
-                fontWeight: FontWeight.w600),
+              color: Color(0xFF1E293B),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -799,8 +889,11 @@ class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF0F0F0),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: List.generate(cells.length, (index) {
           return Expanded(
@@ -809,9 +902,10 @@ class _TableHeader extends StatelessWidget {
               cells[index],
               textAlign: alignments[index],
               style: const TextStyle(
-                color: AppColors.ink,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+                color: Color(0xFF64748B),
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
               ),
             ),
           );
@@ -835,7 +929,7 @@ class _TableRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Row(
         children: List.generate(cells.length, (index) {
           return Expanded(
@@ -843,10 +937,10 @@ class _TableRow extends StatelessWidget {
             child: Text(
               cells[index],
               textAlign: alignments[index],
-              style: const TextStyle(
-                color: AppColors.ink,
+              style: TextStyle(
+                color: const Color(0xFF334155),
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
+                fontWeight: index == cells.length - 1 ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           );
@@ -862,6 +956,7 @@ class _SummaryLine extends StatelessWidget {
     required this.value,
     this.isBold = false,
     this.valueColor,
+    this.labelColor,
     this.fontSize,
   });
 
@@ -869,38 +964,42 @@ class _SummaryLine extends StatelessWidget {
   final String value;
   final bool isBold;
   final Color? valueColor;
+  final Color? labelColor;
   final double? fontSize;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 16),
-            child: Text(
-              label,
-              style: TextStyle(
-                color: AppColors.ink,
-                fontSize: fontSize ?? 13,
-                fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: labelColor ?? const Color(0xFF64748B),
+                  fontSize: fontSize ?? 13,
+                  fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+                ),
               ),
             ),
           ),
-        ),
-        SizedBox(
-          width: 140,
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: valueColor ?? AppColors.ink,
-              fontSize: fontSize ?? 13,
-              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+          SizedBox(
+            width: 150,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: valueColor ?? const Color(0xFF1E293B),
+                fontSize: fontSize ?? 13,
+                fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

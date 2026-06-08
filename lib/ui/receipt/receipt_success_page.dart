@@ -185,39 +185,69 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            'RECEIPT ID: ${order.id}',
-                            style: const TextStyle(
-                              color: AppColors.ink,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'RECEIPT',
+                                style: TextStyle(
+                                  color: Color(0xFF94A3B8),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                order.id,
+                                style: const TextStyle(
+                                  color: Color(0xFF1E293B),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          'ITEM COUNT: $_itemCount',
-                          style: const TextStyle(
-                            color: AppColors.ink,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'ITEMS',
+                              style: TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$_itemCount',
+                              style: const TextStyle(
+                                color: Color(0xFF1E293B),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 24),
                     MarketButton(
-                      label: 'GET RECEIPT',
-                      color: const Color(0xFF67BE68),
+                      label: 'VIEW RECEIPT',
+                      color: const Color(0xFF059669),
                       foregroundColor: Colors.white,
                       borderColor: Colors.transparent,
-                      height: 44,
-                      radius: 2,
+                      height: 48,
+                      radius: 8,
                       paddingHorizontal: 0,
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: Color(0x22000000),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
+                          color: const Color(0xFF059669).withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                       onTap: () => _openReceipt(context),
@@ -225,19 +255,12 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                     const SizedBox(height: 12),
                     MarketButton(
                       label: 'NEW SALE',
-                      color: const Color(0xFFD94B4B),
+                      color: const Color(0xFF1E293B),
                       foregroundColor: Colors.white,
                       borderColor: Colors.transparent,
-                      height: 44,
-                      radius: 2,
+                      height: 48,
+                      radius: 8,
                       paddingHorizontal: 0,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x22000000),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
                       onTap: () => _startNewSale(context),
                     ),
                   ],
