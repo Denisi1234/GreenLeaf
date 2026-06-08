@@ -60,7 +60,7 @@ class ReportHubPage extends StatefulWidget {
   static const MethodChannel _shareChannel =
       MethodChannel('possystem/report_share');
 
-  static const Color _bg = Color(0xFFF7FAFC);
+  static const Color _bg = Color(0xFFF6F8FC);
   static const Color _ink = Color(0xFF0F172A);
   static const Color _muted = Color(0xFF667085);
   static const Color _border = Color(0xFFE6EBF2);
@@ -74,12 +74,12 @@ class ReportHubPage extends StatefulWidget {
 
 class _ReportHubPageState extends State<ReportHubPage> {
   bool _isDownloading = false;
-  _ReportPeriod _selectedPeriod = _ReportPeriod.week;
+  _ReportPeriod _selectedPeriod = _ReportPeriod.month;
 
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
-    final report = _buildReportSnapshot(store.orders, _selectedPeriod);
+    final report = _buildReportSnapshot(store, _selectedPeriod);
     final baseTheme = Theme.of(context);
     final theme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
@@ -92,70 +92,222 @@ class _ReportHubPageState extends State<ReportHubPage> {
       child: Scaffold(
         backgroundColor: ReportHubPage._bg,
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _TopBar(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+                child: _TopBar(
                   onBackTap: () => Navigator.of(context).maybePop(),
-                  onDownloadTap: () => _downloadReport(context),
+                  onShareTap: () => _downloadReport(context),
                   isDownloading: _isDownloading,
                 ),
-                const SizedBox(height: 12),
-                _RangeCard(
-                  dateRange: report.dateRangeLabel,
-                  periodLabel: _selectedPeriod.shortLabel,
-                  onPeriodSelected: (period) {
-                    setState(() => _selectedPeriod = period);
-                  },
-                ),
-                const SizedBox(height: 12),
-                _MetricGrid(metrics: report.metrics),
-                const SizedBox(height: 10),
-                Expanded(
-                  flex: 2,
-                  child: _SectionCard(
-                    title: 'Sales Trend',
-                    trailing: const SizedBox.shrink(),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: _SalesTrendChart(
-                        points: report.trendPoints,
-                        maxValue: report.chartMaxValue,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  flex: 1,
-                  child: _SectionCard(
-                    title: 'Top Selling Products',
-                    trailing: _LinkAction(
-                      label: 'View All',
-                      onTap: report.allProducts.isEmpty
-                          ? null
-                          : () => _showTopSellingProducts(context, report),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: _TopSellingProductsList(
-                          products: report.products,
-                          emptyMessage: 'No completed sales in this period.',
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight - 24,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _RangeCard(
+                              dateRange: report.dateRangeLabel,
+                              periodLabel: _selectedPeriod.shortLabel,
+                              onPeriodSelected: (period) {
+                                setState(() => _selectedPeriod = period);
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            _ExecutiveSummaryCard(
+                              title: 'Executive Summary',
+                              summary:
+                                  _buildExecutiveSummary(report, store.profile),
+                            ),
+                            const SizedBox(height: 16),
+                            _MetricGrid(metrics: report.metrics),
+                            const SizedBox(height: 18),
+                            _SectionCard(
+                              title: 'Top Selling Products',
+                              trailing: _LinkAction(
+                                label: 'View All',
+                                onTap: () =>
+                                    _showTopSellingProducts(context, report),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: _TopSellingProductsList(
+                                  products: report.allProducts.take(5).toList(),
+                                  emptyMessage:
+                                      'No completed sales in this period.',
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  String _buildExecutiveSummary(
+    _ReportSnapshot report,
+    AppProfileData profile,
+  ) {
+    final revenue = report.metrics.firstWhere(
+      (metric) => metric.title == 'Total Revenue',
+    );
+    final orders = report.metrics.firstWhere(
+      (metric) => metric.title == 'Total Orders',
+    );
+    final customers = report.metrics.firstWhere(
+      (metric) => metric.title == 'New Customers',
+    );
+
+    final revenueChange = (revenue.deltaText ?? '0%').replaceFirst(
+      RegExp(r'^[+-]'),
+      '',
+    );
+    final revenueVerb =
+        revenue.deltaIsPositive == false ? 'decreased' : 'increased';
+    final customerChange = (customers.deltaText ?? '0%').replaceFirst(
+      RegExp(r'^[+-]'),
+      '',
+    );
+    final customerVerb =
+        customers.deltaIsPositive == false ? 'decrease' : 'increase';
+
+    final ownerName = profile.ownerName.trim().isEmpty
+        ? 'Store owner'
+        : profile.ownerName.trim();
+    final greeting = _greetingForNow();
+
+    return '$greeting, $ownerName. '
+        'Your store performed well this ${_selectedPeriod.shortLabel.toLowerCase()}! '
+        'Revenue $revenueVerb by $revenueChange compared to last ${_selectedPeriod.shortLabel.toLowerCase()}. '
+        'You received ${customers.value} new customers, a $customerChange $customerVerb. '
+        'Total orders reached ${orders.value}.';
+  }
+
+  String _greetingForNow() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  List<_StockAlertItem> _lowStockItems(PosLocalStore store) {
+    final items = store.inventory
+        .where((item) => item.stockCount <= 20)
+        .map(
+          (item) => _StockAlertItem(
+            name: item.name,
+            category: item.category,
+            stockCount: item.stockCount,
+            statusLabel: item.stockCount <= 0
+                ? 'Out of stock'
+                : '${item.stockCount} left',
+            severity: item.stockCount <= 5
+                ? _StockAlertSeverity.high
+                : _StockAlertSeverity.medium,
+          ),
+        )
+        .toList()
+      ..sort((left, right) => left.stockCount.compareTo(right.stockCount));
+
+    return items.take(4).toList();
+  }
+
+  List<_TrendPoint> _buildProfitTrendPoints({
+    required Map<DateTime, double> dailyRevenue,
+    required Map<DateTime, double> dailyExpenses,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
+    final totalDays = endDate.difference(startDate).inDays + 1;
+    if (totalDays <= 0) {
+      return <_TrendPoint>[
+        _TrendPoint(
+          label: _trendLabel(startDate),
+          value: 0,
+          displayValue: _compactAmount(0),
+        ),
+      ];
+    }
+
+    if (totalDays <= 7) {
+      return List.generate(totalDays, (index) {
+        final day = startDate.add(Duration(days: index));
+        final value = (dailyRevenue[day] ?? 0) - (dailyExpenses[day] ?? 0);
+        return _TrendPoint(
+          label: _trendLabel(day),
+          value: value,
+          displayValue: _moneyLabelSigned(value),
+        );
+      });
+    }
+
+    const bucketCount = 6;
+    final bucketSize = (totalDays / bucketCount).ceil();
+    final points = <_TrendPoint>[];
+
+    for (var index = 0; index < bucketCount; index++) {
+      final bucketStart = startDate.add(Duration(days: index * bucketSize));
+      if (bucketStart.isAfter(endDate)) break;
+
+      var bucketEnd = bucketStart.add(Duration(days: bucketSize - 1));
+      if (bucketEnd.isAfter(endDate)) {
+        bucketEnd = endDate;
+      }
+
+      final revenue = _sumRevenueForRange(
+        dailyRevenue: dailyRevenue,
+        startDate: bucketStart,
+        endDate: bucketEnd,
+      );
+      final expenses = _sumRevenueForRange(
+        dailyRevenue: dailyExpenses,
+        startDate: bucketStart,
+        endDate: bucketEnd,
+      );
+      final value = revenue - expenses;
+
+      points.add(
+        _TrendPoint(
+          label: _trendBucketLabel(bucketStart, bucketEnd),
+          value: value,
+          displayValue: _moneyLabelSigned(value),
+        ),
+      );
+    }
+
+    return points.isEmpty
+        ? <_TrendPoint>[
+            _TrendPoint(
+              label: _trendLabel(startDate),
+              value: 0,
+              displayValue: _compactAmount(0),
+            ),
+          ]
+        : points;
+  }
+
+  String _moneyLabelSigned(double amount) {
+    final formatted = _formatWithCommas(amount.abs());
+    if (amount < 0) return '-TSH $formatted';
+    return 'TSH $formatted';
   }
 
   Future<void> _downloadReport(BuildContext context) async {
@@ -164,7 +316,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
     Uint8List? pdfBytes;
     final fileName = _reportFileName();
     final store = context.read<PosLocalStore>();
-    final report = _buildReportSnapshot(store.orders, _selectedPeriod);
+    final report = _buildReportSnapshot(store, _selectedPeriod);
     try {
       final aiSummary = await _buildAiExecutiveSummary(store, report);
       pdfBytes = await _buildSalesReportPdfBytes(
@@ -255,6 +407,8 @@ class _ReportHubPageState extends State<ReportHubPage> {
                               itemBuilder: (context, index) {
                                 return _ProductRow(
                                   data: report.allProducts[index],
+                                  rank: index + 1,
+                                  highlightTop: index == 0,
                                 );
                               },
                             ),
@@ -270,9 +424,10 @@ class _ReportHubPageState extends State<ReportHubPage> {
   }
 
   _ReportSnapshot _buildReportSnapshot(
-    List<CompletedOrder> orders,
+    PosLocalStore store,
     _ReportPeriod period,
   ) {
+    final orders = store.orders;
     final range = _resolveReportRange(orders, period);
 
     final ordersInRange = orders.where((order) {
@@ -283,6 +438,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
     }).toList();
 
     final dailyRevenue = <DateTime, double>{};
+    final dailyExpenses = <DateTime, double>{};
     final productTally = <String, _ProductTally>{};
 
     for (final order in ordersInRange) {
@@ -310,8 +466,55 @@ class _ReportHubPageState extends State<ReportHubPage> {
       }
     }
 
+    for (final expense in _expensesWithinRange(
+      store.expenses,
+      range.start,
+      range.end,
+    )) {
+      final day = DateTime(
+        expense.date.year,
+        expense.date.month,
+        expense.date.day,
+      );
+      dailyExpenses[day] = (dailyExpenses[day] ?? 0) + expense.amount;
+    }
+
+    final currentStats = _buildPdfStats(
+      orders: ordersInRange,
+      customers: store.customers,
+      expenses: _expensesWithinRange(
+        store.expenses,
+        range.start,
+        range.end,
+      ),
+      startDate: range.start,
+      endDate: range.end,
+    );
+    final previousRange = _previousComparableRange(range.start, range.end);
+    final previousStats = _buildPdfStats(
+      orders: _ordersWithinRange(
+        orders,
+        previousRange.start,
+        previousRange.end,
+      ),
+      customers: store.customers,
+      expenses: _expensesWithinRange(
+        store.expenses,
+        previousRange.start,
+        previousRange.end,
+      ),
+      startDate: previousRange.start,
+      endDate: previousRange.end,
+    );
+
     final trendPoints = _buildTrendPoints(
       dailyRevenue: dailyRevenue,
+      startDate: range.start,
+      endDate: range.end,
+    );
+    final profitTrendPoints = _buildProfitTrendPoints(
+      dailyRevenue: dailyRevenue,
+      dailyExpenses: dailyExpenses,
       startDate: range.start,
       endDate: range.end,
     );
@@ -320,9 +523,13 @@ class _ReportHubPageState extends State<ReportHubPage> {
       0,
       (sum, order) => sum + order.total,
     );
+    final totalExpenses = _expensesWithinRange(
+      store.expenses,
+      range.start,
+      range.end,
+    ).fold<double>(0, (sum, expense) => sum + expense.amount);
+    final totalProfit = totalRevenue - totalExpenses;
     final totalOrders = ordersInRange.length;
-    final averageOrderValue =
-        totalOrders == 0 ? 0.0 : totalRevenue / totalOrders;
     final topProducts = productTally.values.toList()
       ..sort((left, right) {
         final quantityCompare = right.quantity.compareTo(left.quantity);
@@ -358,6 +565,12 @@ class _ReportHubPageState extends State<ReportHubPage> {
           iconColor: ReportHubPage._blue,
           tint: const Color(0xFFEAF1FF),
           valueColor: ReportHubPage._blue,
+          deltaText: _comparisonPercentLabel(
+            currentStats.revenue,
+            previousStats.revenue,
+          ),
+          deltaLabel: _comparisonPeriodLabel(period),
+          deltaIsPositive: currentStats.revenue >= previousStats.revenue,
         ),
         _MetricData(
           title: 'Total Orders',
@@ -366,17 +579,50 @@ class _ReportHubPageState extends State<ReportHubPage> {
           iconColor: ReportHubPage._green,
           tint: const Color(0xFFEAF8EF),
           valueColor: ReportHubPage._green,
+          deltaText: _comparisonPercentLabel(
+            currentStats.orderCount,
+            previousStats.orderCount,
+          ),
+          deltaLabel: _comparisonPeriodLabel(period),
+          deltaIsPositive: currentStats.orderCount >= previousStats.orderCount,
         ),
         _MetricData(
-          title: 'Average Order Value',
-          value: _moneyLabel(averageOrderValue),
-          icon: Icons.account_balance_wallet_rounded,
+          title: 'New Customers',
+          value: currentStats.newCustomers.toString(),
+          icon: Icons.person_outline_rounded,
           iconColor: ReportHubPage._purple,
           tint: const Color(0xFFF1EAFB),
           valueColor: ReportHubPage._purple,
+          deltaText: _comparisonPercentLabel(
+            currentStats.newCustomers,
+            previousStats.newCustomers,
+          ),
+          deltaLabel: _comparisonPeriodLabel(period),
+          deltaIsPositive:
+              currentStats.newCustomers >= previousStats.newCustomers,
+        ),
+        _MetricData(
+          title: 'Profit',
+          value: _moneyLabelSigned(totalProfit),
+          icon: Icons.account_balance_wallet_outlined,
+          iconColor:
+              totalProfit >= 0 ? ReportHubPage._green : const Color(0xFFDC2626),
+          tint: totalProfit >= 0
+              ? const Color(0xFFEAF8EF)
+              : const Color(0xFFFDECEC),
+          valueColor:
+              totalProfit >= 0 ? ReportHubPage._green : const Color(0xFFDC2626),
+          deltaText: _comparisonPercentLabel(
+            totalProfit,
+            previousStats.revenue - previousStats.totalExpenses,
+          ),
+          deltaLabel: _comparisonPeriodLabel(period),
+          deltaIsPositive: totalProfit >=
+              (previousStats.revenue - previousStats.totalExpenses),
         ),
       ],
       trendPoints: trendPoints,
+      profitTrendPoints: profitTrendPoints,
       products: productData,
       allProducts: topProducts
           .map(
@@ -390,7 +636,33 @@ class _ReportHubPageState extends State<ReportHubPage> {
           )
           .toList(),
       chartMaxValue: _resolveChartMax(trendPoints),
+      profitChartMaxValue: _resolveProfitChartMax(profitTrendPoints),
     );
+  }
+
+  String _comparisonPeriodLabel(_ReportPeriod period) {
+    switch (period) {
+      case _ReportPeriod.today:
+        return 'vs yesterday';
+      case _ReportPeriod.week:
+        return 'vs last week';
+      case _ReportPeriod.month:
+        return 'vs last month';
+      case _ReportPeriod.allTime:
+        return 'vs previous period';
+    }
+  }
+
+  String? _comparisonPercentLabel(num current, num previous) {
+    if (previous == 0) {
+      if (current == 0) return null;
+      return '+100%';
+    }
+
+    final change = ((current - previous) / previous) * 100;
+    final sign = change >= 0 ? '+' : '-';
+    final rounded = change.abs().toStringAsFixed(change.abs() >= 10 ? 0 : 1);
+    return '$sign$rounded%';
   }
 
   Future<Uint8List> _buildSalesReportPdfBytes(
@@ -571,8 +843,8 @@ class _ReportHubPageState extends State<ReportHubPage> {
         <String, Object?>{
           'fileName': fileName,
           'bytes': bytes,
-          'subject': 'Sales Report',
-          'text': 'Sales report attached',
+          'subject': 'Store Report',
+          'text': 'Store report attached',
         },
       );
       return result ?? false;
@@ -1591,7 +1863,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
               ),
               pw.SizedBox(height: 2),
               pw.Text(
-                'Sales Report',
+                'Store Report',
                 style: pw.TextStyle(
                   fontSize: 11.5,
                   fontWeight: pw.FontWeight.bold,
@@ -2066,7 +2338,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
   }
 
   String _reportFileName() {
-    return 'sales_report_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    return 'store_report_${DateTime.now().millisecondsSinceEpoch}.pdf';
   }
 
   String _formatPdfDateTime(DateTime dateTime) {
@@ -2186,6 +2458,24 @@ class _ReportHubPageState extends State<ReportHubPage> {
     return (highestValue / 5000).ceilToDouble() * 5000;
   }
 
+  double _resolveProfitChartMax(List<_TrendPoint> points) {
+    if (points.isEmpty) return 500;
+    final highestValue = points.fold<double>(
+      0,
+      (maxValue, point) => math.max(maxValue, point.value.abs()),
+    );
+    if (highestValue <= 0) return 500;
+    if (highestValue <= 500) return 500;
+    if (highestValue <= 1000) return 1000;
+    if (highestValue <= 2500) {
+      return (highestValue / 500).ceilToDouble() * 500;
+    }
+    if (highestValue <= 10000) {
+      return (highestValue / 1000).ceilToDouble() * 1000;
+    }
+    return (highestValue / 5000).ceilToDouble() * 5000;
+  }
+
   IconData _iconForLine(OrderLine line) {
     switch (line.artType) {
       case ProductArtType.aquafina:
@@ -2281,7 +2571,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
         report.metrics.length > 2 ? report.metrics[2].value : 'TSH 0';
 
     final buffer = StringBuffer();
-    buffer.writeln('Report title: Sales Report');
+    buffer.writeln('Report title: Store Report');
     buffer.writeln(
       'Store name: ${profile.storeName.isEmpty ? 'Unnamed store' : profile.storeName}',
     );
@@ -2537,9 +2827,11 @@ class _ReportSnapshot {
     required this.endDate,
     required this.metrics,
     required this.trendPoints,
+    required this.profitTrendPoints,
     required this.products,
     required this.allProducts,
     required this.chartMaxValue,
+    required this.profitChartMaxValue,
   });
 
   final String periodLabel;
@@ -2548,9 +2840,11 @@ class _ReportSnapshot {
   final DateTime endDate;
   final List<_MetricData> metrics;
   final List<_TrendPoint> trendPoints;
+  final List<_TrendPoint> profitTrendPoints;
   final List<_ProductData> products;
   final List<_ProductData> allProducts;
   final double chartMaxValue;
+  final double profitChartMaxValue;
 }
 
 class _PdfReportStats {
@@ -2616,55 +2910,512 @@ class _ProductTally {
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.onBackTap,
-    required this.onDownloadTap,
+    required this.onShareTap,
     required this.isDownloading,
   });
 
   final VoidCallback onBackTap;
-  final VoidCallback onDownloadTap;
+  final VoidCallback onShareTap;
   final bool isDownloading;
 
   @override
   Widget build(BuildContext context) {
-    return MarketPageHeader(
-      title: 'Sales Report',
-      titleSize: 22,
-      titleWeight: FontWeight.w800,
-      showBorder: false,
-      showShadow: true,
-      onBack: onBackTap,
-      trailing: Material(
-        color: const Color(0x1A1E67E8),
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: isDownloading ? null : onDownloadTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 42,
-            height: 42,
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                child: isDownloading
-                    ? const SizedBox(
-                        key: ValueKey('download-loading'),
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.4,
-                          valueColor: AlwaysStoppedAnimation(
-                            ReportHubPage._blue,
+    return Row(
+      children: [
+        IconButton(
+          onPressed: onBackTap,
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: ReportHubPage._blue,
+            size: 32,
+          ),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+          splashRadius: 24,
+        ),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            'Store Report',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: ReportHubPage._ink,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.7,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: isDownloading ? null : onShareTap,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: isDownloading
+                      ? const SizedBox(
+                          key: ValueKey('download-loading'),
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.4,
+                            valueColor: AlwaysStoppedAnimation(
+                              ReportHubPage._blue,
+                            ),
                           ),
+                        )
+                      : const Icon(
+                          Icons.ios_share_rounded,
+                          key: ValueKey('download-icon'),
+                          color: ReportHubPage._blue,
+                          size: 25,
                         ),
-                      )
-                    : const Icon(
-                        Icons.share_rounded,
-                        key: ValueKey('download-icon'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExecutiveSummaryCard extends StatelessWidget {
+  const _ExecutiveSummaryCard({
+    required this.title,
+    required this.summary,
+  });
+
+  final String title;
+  final String summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+      borderColor: ReportHubPage._border,
+      radius: 22,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF1FF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
                         color: ReportHubPage._blue,
                         size: 22,
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: ReportHubPage._ink,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  summary,
+                  style: const TextStyle(
+                    color: ReportHubPage._muted,
+                    fontSize: 15,
+                    height: 1.68,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          const SizedBox(
+            width: 154,
+            height: 122,
+            child: _SummaryIllustration(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryIllustration extends StatelessWidget {
+  const _SummaryIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF8FBFF), Color(0xFFF2F7FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 8,
+            right: 8,
+            bottom: 12,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                _MiniBar(height: 34, tint: Color(0xFFE4EEFF)),
+                _MiniBar(height: 44, tint: Color(0xFFD7E6FF)),
+                _MiniBar(height: 58, tint: Color(0xFFBBD0FF)),
+                _MiniBar(height: 72, tint: Color(0xFF7FABFF)),
+                _MiniBar(height: 88, tint: Color(0xFF1E67E8)),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 10,
+            right: 10,
+            top: 14,
+            height: 48,
+            child: CustomPaint(
+              painter: _SummaryCurvePainter(),
+            ),
+          ),
+          const Positioned(
+            right: 6,
+            top: 8,
+            child: Icon(
+              Icons.north_east_rounded,
+              color: ReportHubPage._blue,
+              size: 24,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniBar extends StatelessWidget {
+  const _MiniBar({
+    required this.height,
+    required this.tint,
+  });
+
+  final double height;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: height,
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(9),
+      ),
+    );
+  }
+}
+
+class _SummaryCurvePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = ReportHubPage._blue.withValues(alpha: 0.35)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.6
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      ..moveTo(4, size.height - 8)
+      ..quadraticBezierTo(
+        size.width * 0.28,
+        size.height - 6,
+        size.width * 0.48,
+        size.height - 24,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.72,
+        size.height - 40,
+        size.width - 16,
+        6,
+      );
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SummaryCurvePainter oldDelegate) => false;
+}
+
+class _StockAlertCard extends StatelessWidget {
+  const _StockAlertCard({
+    required this.title,
+    required this.subtitle,
+    required this.items,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<_StockAlertItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      borderColor: ReportHubPage._border,
+      radius: 22,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F4FA),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              color: ReportHubPage._blue,
+              size: 22,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              color: ReportHubPage._ink,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: ReportHubPage._muted,
+              fontSize: 14.5,
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (items.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
               ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFD),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE7EBF2)),
+              ),
+              child: const Text(
+                'Hakuna bidhaa zilizo chini ya kiwango cha tahadhari.',
+                style: TextStyle(
+                  color: ReportHubPage._muted,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            Column(
+              children: [
+                for (int index = 0; index < items.length; index++) ...[
+                  _StockAlertRow(item: items[index]),
+                  if (index != items.length - 1)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: ReportHubPage._border,
+                      ),
+                    ),
+                ],
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StockAlertRow extends StatelessWidget {
+  const _StockAlertRow({required this.item});
+
+  final _StockAlertItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeColor = item.severity == _StockAlertSeverity.high
+        ? const Color(0xFFDC2626)
+        : const Color(0xFFB45309);
+    final badgeBackground = item.severity == _StockAlertSeverity.high
+        ? const Color(0xFFFDECEC)
+        : const Color(0xFFFEF3DC);
+
+    return Row(
+      children: [
+        Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            color: badgeBackground,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(
+            Icons.warning_amber_rounded,
+            color: badgeColor,
+            size: 28,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.name,
+                style: const TextStyle(
+                  color: ReportHubPage._ink,
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.category,
+                style: const TextStyle(
+                  color: ReportHubPage._muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: badgeBackground,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                item.statusLabel,
+                style: TextStyle(
+                  color: badgeColor,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${item.stockCount} left',
+              style: const TextStyle(
+                color: ReportHubPage._muted,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StockAlertItem {
+  const _StockAlertItem({
+    required this.name,
+    required this.category,
+    required this.stockCount,
+    required this.statusLabel,
+    required this.severity,
+  });
+
+  final String name;
+  final String category;
+  final int stockCount;
+  final String statusLabel;
+  final _StockAlertSeverity severity;
+}
+
+enum _StockAlertSeverity { medium, high }
+
+class _TrendMetricChip extends StatelessWidget {
+  const _TrendMetricChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFEAF1FF) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color:
+                  selected ? const Color(0xFFD0DEF7) : const Color(0xFFE1E6F0),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? ReportHubPage._blue : ReportHubPage._muted,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -2686,83 +3437,83 @@ class _RangeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-      borderColor: ReportHubPage._border,
-      radius: 16,
-      child: Row(
-        children: [
-          const Icon(
-            Icons.calendar_month_rounded,
-            color: ReportHubPage._muted,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
+    return Row(
+      children: [
+        Expanded(
+          child: _PillButton(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            borderColor: ReportHubPage._border,
             child: Row(
               children: [
+                const Icon(
+                  Icons.calendar_month_rounded,
+                  color: ReportHubPage._blue,
+                  size: 23,
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     dateRange,
                     style: const TextStyle(
                       color: ReportHubPage._ink,
-                      fontSize: 13.5,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                PopupMenuButton<_ReportPeriod>(
-                  onSelected: onPeriodSelected,
-                  position: PopupMenuPosition.under,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  offset: const Offset(0, 10),
-                  itemBuilder: (context) => _ReportPeriod.values
-                      .map(
-                        (period) => PopupMenuItem<_ReportPeriod>(
-                          value: period,
-                          child: Text(period.label),
-                        ),
-                      )
-                      .toList(),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: ReportHubPage._border),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          periodLabel,
-                          style: const TextStyle(
-                            color: ReportHubPage._ink,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: ReportHubPage._muted,
-                          size: 16,
-                        ),
-                      ],
-                    ),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: ReportHubPage._muted,
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        PopupMenuButton<_ReportPeriod>(
+          onSelected: onPeriodSelected,
+          position: PopupMenuPosition.under,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          offset: const Offset(0, 10),
+          itemBuilder: (context) => _ReportPeriod.values
+              .map(
+                (period) => PopupMenuItem<_ReportPeriod>(
+                  value: period,
+                  child: Text(period.label),
+                ),
+              )
+              .toList(),
+          child: _PillButton(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+            borderColor: const Color(0xFFD9E2F2),
+            backgroundColor: const Color(0xFFF4F8FF),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  color: ReportHubPage._blue,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  periodLabel,
+                  style: const TextStyle(
+                    color: ReportHubPage._blue,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -2776,8 +3527,8 @@ class _MetricGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth < 420 ? 2 : 3;
-        const gap = 6.0;
+        final columns = constraints.maxWidth < 520 ? 2 : 4;
+        const gap = 12.0;
         final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
 
         return Wrap(
@@ -2805,17 +3556,17 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       borderColor: ReportHubPage._border,
-      radius: 16,
+      radius: 20,
       child: SizedBox(
-        height: 104,
+        height: 176,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 30,
-              height: 30,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: data.tint,
                 shape: BoxShape.circle,
@@ -2823,22 +3574,22 @@ class _MetricCard extends StatelessWidget {
               child: Icon(
                 data.icon,
                 color: data.iconColor,
-                size: 15,
+                size: 20,
               ),
             ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 12),
             Text(
               data.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: ReportHubPage._muted,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                height: 1,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.05,
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 10),
             FittedBox(
               alignment: Alignment.centerLeft,
               fit: BoxFit.scaleDown,
@@ -2846,11 +3597,68 @@ class _MetricCard extends StatelessWidget {
                 data.value,
                 style: TextStyle(
                   color: data.valueColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.9,
                 ),
               ),
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                if (data.deltaText != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: data.deltaIsPositive == false
+                          ? const Color(0xFFFDECEC)
+                          : data.tint.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          data.deltaIsPositive == false
+                              ? Icons.south_west_rounded
+                              : Icons.north_east_rounded,
+                          size: 14,
+                          color: data.deltaIsPositive == false
+                              ? const Color(0xFFDC2626)
+                              : data.iconColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          data.deltaText!,
+                          style: TextStyle(
+                            color: data.deltaIsPositive == false
+                                ? const Color(0xFFDC2626)
+                                : data.iconColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    data.deltaLabel,
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: ReportHubPage._muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -2875,9 +3683,9 @@ class _SectionCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       borderColor: ReportHubPage._border,
-      radius: 16,
+      radius: 20,
       child: Column(
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -2897,7 +3705,7 @@ class _SectionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Expanded(child: child),
+          child,
         ],
       ),
     );
@@ -2949,6 +3757,212 @@ class _LinkAction extends StatelessWidget {
   }
 }
 
+class _PeriodChip extends StatelessWidget {
+  const _PeriodChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F8FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD9E2F2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.calendar_month_outlined,
+            color: ReportHubPage._blue,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: ReportHubPage._blue,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 2),
+          const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: ReportHubPage._blue,
+            size: 20,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PillButton extends StatelessWidget {
+  const _PillButton({
+    required this.child,
+    required this.padding,
+    required this.borderColor,
+    this.backgroundColor = Colors.white,
+  });
+
+  final Widget child;
+  final EdgeInsets padding;
+  final Color borderColor;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Padding(
+        padding: padding,
+        child: child,
+      ),
+    );
+  }
+}
+
+class _InsightsList extends StatelessWidget {
+  const _InsightsList({required this.insights});
+
+  final List<_InsightData> insights;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (int index = 0; index < insights.length; index++) ...[
+          _InsightTile(data: insights[index]),
+          if (index != insights.length - 1)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: ReportHubPage._border,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _InsightTile extends StatelessWidget {
+  const _InsightTile({required this.data});
+
+  final _InsightData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: data.background,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              data.icon,
+              color: data.iconColor,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.title,
+                  style: const TextStyle(
+                    color: ReportHubPage._ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  data.description,
+                  style: const TextStyle(
+                    color: ReportHubPage._muted,
+                    fontSize: 12.5,
+                    height: 1.42,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: data.impactBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  data.impactLabel,
+                  style: TextStyle(
+                    color: data.impactColor,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF8A94A6),
+                size: 24,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightData {
+  const _InsightData({
+    required this.icon,
+    required this.iconColor,
+    required this.background,
+    required this.title,
+    required this.description,
+    required this.impactLabel,
+    required this.impactColor,
+    required this.impactBackground,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color background;
+  final String title;
+  final String description;
+  final String impactLabel;
+  final Color impactColor;
+  final Color impactBackground;
+}
+
 class _TopSellingProductsList extends StatelessWidget {
   const _TopSellingProductsList({
     required this.products,
@@ -2978,7 +3992,11 @@ class _TopSellingProductsList extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (int index = 0; index < products.length; index++) ...[
-          _ProductRow(data: products[index]),
+          _ProductRow(
+            data: products[index],
+            rank: index + 1,
+            highlightTop: index == 0,
+          ),
           if (index != products.length - 1)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 2),
@@ -3042,7 +4060,6 @@ class _SalesTrendPainter extends CustomPainter {
     const leftPad = 62.0;
     const rightPad = 24.0;
     const topPad = 16.0;
-    const topInset = 20.0;
     const bottomPad = 22.0;
     const labelBandHeight = 20.0;
     final chartRect = Rect.fromLTWH(
@@ -3081,9 +4098,24 @@ class _SalesTrendPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final chartMaxValue = maxValue <= 0 ? 1.0 : maxValue;
+    final minSeriesValue = points.isEmpty
+        ? 0.0
+        : points.fold<double>(
+            points.first.value,
+            (minValue, point) => math.min(minValue, point.value),
+          );
+    final maxSeriesValue = points.isEmpty
+        ? chartMaxValue
+        : points.fold<double>(
+            points.first.value,
+            (maxValue, point) => math.max(maxValue, point.value),
+          );
+    final minY = math.min(0, minSeriesValue);
+    final maxY = math.max(chartMaxValue, maxSeriesValue);
+    final range = (maxY - minY).abs() < 0.0001 ? 1.0 : (maxY - minY);
     final gridValues = List<double>.generate(
       6,
-      (index) => chartMaxValue * index / 5,
+      (index) => minY + (range * index / 5),
     );
 
     final stepX =
@@ -3092,20 +4124,33 @@ class _SalesTrendPainter extends CustomPainter {
 
     for (var index = 0; index < points.length; index++) {
       final x = chartRect.left + (stepX * index);
-      final y = chartRect.bottom -
-          (points[index].value / chartMaxValue) * (chartRect.height - topInset);
+      final normalized = (points[index].value - minY) / range;
+      final y = chartRect.bottom - normalized * chartRect.height;
       offsets.add(Offset(x, y));
     }
 
+    final zeroY = minY < 0 && maxY > 0
+        ? chartRect.bottom - ((0 - minY) / range) * chartRect.height
+        : chartRect.bottom;
+
     for (final gridValue in gridValues) {
       final gridY =
-          chartRect.bottom - (gridValue / chartMaxValue) * chartRect.height;
+          chartRect.bottom - ((gridValue - minY) / range) * chartRect.height;
       _drawDashedLine(
         canvas,
         Offset(chartRect.left, gridY),
         Offset(chartRect.right, gridY),
         gridPaint,
       );
+      if ((gridValue - 0).abs() < 0.0001) {
+        canvas.drawLine(
+          Offset(chartRect.left, gridY),
+          Offset(chartRect.right, gridY),
+          Paint()
+            ..color = const Color(0xFFB9C4D6)
+            ..strokeWidth = 1.4,
+        );
+      }
       _paintText(
         canvas,
         _gridLabel(gridValue),
@@ -3119,13 +4164,13 @@ class _SalesTrendPainter extends CustomPainter {
     if (offsets.isEmpty) return;
 
     final areaPath = Path()
-      ..moveTo(offsets.first.dx, chartRect.bottom)
+      ..moveTo(offsets.first.dx, zeroY)
       ..lineTo(offsets.first.dx, offsets.first.dy);
     for (var index = 1; index < offsets.length; index++) {
       areaPath.lineTo(offsets[index].dx, offsets[index].dy);
     }
     areaPath
-      ..lineTo(offsets.last.dx, chartRect.bottom)
+      ..lineTo(offsets.last.dx, zeroY)
       ..close();
     canvas.drawPath(areaPath, fillPaint);
 
@@ -3162,7 +4207,9 @@ class _SalesTrendPainter extends CustomPainter {
   }
 
   static String _gridLabel(double value) {
-    return _kLabel(value);
+    if (value == 0) return '0';
+    final prefix = value < 0 ? '-' : '';
+    return '$prefix${_kLabel(value.abs())}';
   }
 
   void _drawDashedLine(
@@ -3218,37 +4265,94 @@ class _SalesTrendPainter extends CustomPainter {
 }
 
 class _ProductRow extends StatelessWidget {
-  const _ProductRow({required this.data});
+  const _ProductRow({
+    required this.data,
+    required this.rank,
+    required this.highlightTop,
+  });
 
   final _ProductData data;
+  final int rank;
+  final bool highlightTop;
 
   @override
   Widget build(BuildContext context) {
+    final badgeColor =
+        highlightTop ? const Color(0xFF1E67E8) : const Color(0xFF8A94A6);
+    final badgeBg =
+        highlightTop ? const Color(0xFFEAF1FF) : const Color(0xFFF4F6FA);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: badgeBg,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '$rank',
+              style: TextStyle(
+                color: badgeColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
           _ProductThumb(data: data),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  data.title,
-                  style: const TextStyle(
-                    color: ReportHubPage._ink,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.15,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        data.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: ReportHubPage._ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.15,
+                        ),
+                      ),
+                    ),
+                    if (highlightTop)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAF8EE),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'Top',
+                          style: TextStyle(
+                            color: Color(0xFF169B4A),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 Text(
-                  data.orders,
+                  '${data.orders} sold',
                   style: const TextStyle(
                     color: ReportHubPage._muted,
-                    fontSize: 10,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w500,
                     letterSpacing: -0.15,
                   ),
@@ -3256,15 +4360,29 @@ class _ProductRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 6),
-          Text(
-            data.amount,
-            style: const TextStyle(
-              color: ReportHubPage._blue,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.15,
-            ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                data.amount,
+                style: const TextStyle(
+                  color: ReportHubPage._blue,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.15,
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Revenue',
+                style: TextStyle(
+                  color: ReportHubPage._muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 4),
           const Icon(
@@ -3322,6 +4440,9 @@ class _MetricData {
     required this.iconColor,
     required this.tint,
     required this.valueColor,
+    required this.deltaText,
+    required this.deltaLabel,
+    required this.deltaIsPositive,
   });
 
   final String title;
@@ -3330,6 +4451,9 @@ class _MetricData {
   final Color iconColor;
   final Color tint;
   final Color valueColor;
+  final String? deltaText;
+  final String deltaLabel;
+  final bool? deltaIsPositive;
 }
 
 class _TrendPoint {

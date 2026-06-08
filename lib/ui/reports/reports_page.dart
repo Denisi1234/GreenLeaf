@@ -10,6 +10,9 @@ import '../../service/pos_order_models.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'components/activity_tile.dart';
+import 'components/overview_card.dart';
+import 'components/quick_action_card.dart';
 import 'report_hub_page.dart';
 import 'reports_catalog_page.dart';
 
@@ -78,31 +81,31 @@ class ReportsPage extends StatelessWidget {
 
   final bool useSharedShell;
 
-  static const Color _ink = Color(0xFF33363F);
-  static const Color _muted = Color(0xFF7A859C);
-  static const Color _border = Color(0xFFE8EBF1);
-  static const Color _blue = Color(0xFF2B6FE8);
-  static const Color _green = Color(0xFF30B05C);
+  static const Color _ink = AppColors.reportsInk;
+  static const Color _muted = AppColors.reportsMuted;
+  static const Color _border = AppColors.reportsBorder;
+  static const Color _blue = AppColors.reportsBlue;
+  static const Color _green = AppColors.reportsGreen;
 
-  static const List<_QuickActionData> _quickActions = [
-    _QuickActionData(
+  static const List<QuickActionData> _quickActions = [
+    QuickActionData(
       icon: Icons.shopping_bag_outlined,
       label: 'Start Sale',
-      iconColor: _blue,
+      iconColor: AppColors.reportsBlue,
       background: null,
       foreground: null,
       iconBackground: Color(0xFFEAF0FF),
     ),
-    _QuickActionData(
+    QuickActionData(
       icon: Icons.point_of_sale_outlined,
       label: 'Open Drawer',
       iconColor: Color(0xFF2AA24F),
       iconBackground: Color(0xFFE9F8ED),
     ),
-    _QuickActionData(
+    QuickActionData(
       icon: Icons.insert_chart_outlined_rounded,
       label: 'View Reports',
-      iconColor: _blue,
+      iconColor: AppColors.reportsBlue,
       iconBackground: Color(0xFFECF2FF),
     ),
   ];
@@ -199,7 +202,7 @@ class ReportsPage extends StatelessWidget {
     ];
   }
 
-  static List<_ActivityItemData> _buildActivityItems(
+  static List<ActivityItemData> buildActivityItems(
     List<CompletedOrder> orders,
   ) {
     return orders.take(5).map((order) {
@@ -208,7 +211,7 @@ class ReportsPage extends StatelessWidget {
         (sum, line) => sum + line.quantity,
       );
       final paymentMethod = order.paymentMethod.toLowerCase();
-      return _ActivityItemData(
+      return ActivityItemData(
         icon: paymentMethod == 'cash'
             ? Icons.payments_outlined
             : Icons.shopping_cart_outlined,
@@ -639,7 +642,34 @@ class _OverviewGrid extends StatelessWidget {
           children: cards
               .map((card) => SizedBox(
                     width: itemWidth,
-                    child: _OverviewCard(card: card),
+                    child: OverviewCard(
+                        card: OverviewCardData(
+                            icon: card.icon,
+                            iconColor: card.iconColor,
+                            iconBackground: card.iconBackground,
+                            title: card.title,
+                            value: card.value,
+                            footer: card.footer,
+                            delta: card.delta,
+                            deltaIsPositive: card.deltaIsPositive,
+                            highlightValue: card.highlightValue),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => _OverviewDetailPage(
+                                  card: _OverviewCardData(
+                                      icon: card.icon,
+                                      iconColor: card.iconColor,
+                                      iconBackground: card.iconBackground,
+                                      title: card.title,
+                                      value: card.value,
+                                      footer: card.footer,
+                                      delta: card.delta,
+                                      deltaIsPositive: card.deltaIsPositive,
+                                      highlightValue: card.highlightValue)),
+                            ),
+                          );
+                        }),
                   ))
               .toList(),
         );
@@ -648,134 +678,12 @@ class _OverviewGrid extends StatelessWidget {
   }
 }
 
-class _OverviewCard extends StatelessWidget {
-  const _OverviewCard({required this.card});
 
-  final _OverviewCardData card;
-
-  void _openDetails(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => _OverviewDetailPage(card: card),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 138,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(4),
-          onTap: () => _openDetails(context),
-          child: MarketSurfaceCard(
-            padding: const EdgeInsets.fromLTRB(11, 10, 11, 9),
-            backgroundColor: Colors.white.withValues(alpha: 0.92),
-            borderColor: ReportsPage._border,
-            radius: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: card.iconBackground,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Icon(card.icon, color: card.iconColor, size: 18),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        card.title,
-                        style: const TextStyle(
-                          color: ReportsPage._muted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  card.value,
-                  maxLines: card.highlightValue ? 2 : 1,
-                  overflow: TextOverflow.visible,
-                  style: TextStyle(
-                    color: ReportsPage._ink,
-                    fontSize: card.highlightValue ? 13 : 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (card.delta != null) ...[
-                  Row(
-                    children: [
-                      Icon(
-                        card.deltaIsPositive == false
-                            ? Icons.arrow_downward_rounded
-                            : Icons.arrow_upward_rounded,
-                        color: card.deltaIsPositive == false
-                            ? const Color(0xFFC65B4A)
-                            : ReportsPage._green,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        card.delta!,
-                        style: TextStyle(
-                          color: card.deltaIsPositive == false
-                              ? const Color(0xFFC65B4A)
-                              : ReportsPage._green,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Expanded(
-                        child: Text(
-                          card.footer,
-                          style: const TextStyle(
-                            color: ReportsPage._muted,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Text(
-                    card.footer,
-                    style: const TextStyle(
-                      color: ReportsPage._muted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _QuickActionsRow extends StatelessWidget {
   const _QuickActionsRow({required this.actions});
 
-  final List<_QuickActionData> actions;
+  final List<QuickActionData> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -795,7 +703,10 @@ class _QuickActionsRow extends StatelessWidget {
               .map(
                 (action) => SizedBox(
                   width: itemWidth,
-                  child: _QuickActionCard(action: action),
+                  child: QuickActionCard(
+                    action: action,
+                    onTap: () => _handleActionTap(context, action.label),
+                  ),
                 ),
               )
               .toList(),
@@ -803,12 +714,40 @@ class _QuickActionsRow extends StatelessWidget {
       },
     );
   }
+
+  void _handleActionTap(BuildContext context, String label) {
+    switch (label) {
+      case 'Start Sale':
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (context) => AppShell(
+              initialTab: MarketTab.reports,
+            ),
+          ),
+        );
+        break;
+      case 'Open Drawer':
+        showMarketNotice(
+          context,
+          title: 'Cash Drawer',
+          message: 'Cash drawer opened successfully.',
+        );
+        break;
+      case 'View Reports':
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => ReportsCatalogPage(),
+          ),
+        );
+        break;
+    }
+  }
 }
 
 class _QuickActionCard extends StatelessWidget {
   const _QuickActionCard({required this.action, this.hero = false});
 
-  final _QuickActionData action;
+  final QuickActionData action;
   final bool hero;
 
   void _handleTap(BuildContext context) {
@@ -832,7 +771,35 @@ class _QuickActionCard extends StatelessWidget {
       case 'View Reports':
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (context) => const ReportsCatalogPage(),
+            builder: (context) => ReportsCatalogPage(),
+          ),
+        );
+        break;
+    }
+  }
+
+  void _handleActionTap(BuildContext context, String label) {
+    switch (label) {
+      case 'Start Sale':
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (context) => AppShell(
+              initialTab: MarketTab.reports,
+            ),
+          ),
+        );
+        break;
+      case 'Open Drawer':
+        showMarketNotice(
+          context,
+          title: 'Cash Drawer',
+          message: 'Cash drawer opened successfully.',
+        );
+        break;
+      case 'View Reports':
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => ReportsCatalogPage(),
           ),
         );
         break;
@@ -912,7 +879,7 @@ class _QuickActionCard extends StatelessWidget {
 class _PremiumQuickActionsRow extends StatelessWidget {
   const _PremiumQuickActionsRow({required this.actions});
 
-  final List<_QuickActionData> actions;
+  final List<QuickActionData> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -1522,7 +1489,7 @@ class _InsightsPromoCard extends StatelessWidget {
                               onPressed: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(
-                                    builder: (context) => const ReportHubPage(),
+                                    builder: (context) => ReportHubPage(),
                                   ),
                                 );
                               },
@@ -2295,7 +2262,7 @@ class _LatestActivityHeader extends StatelessWidget {
 class _PremiumRecentActivityCard extends StatelessWidget {
   const _PremiumRecentActivityCard({required this.items});
 
-  final List<_ActivityItemData> items;
+  final List<ActivityItemData> items;
 
   @override
   Widget build(BuildContext context) {
@@ -2377,7 +2344,7 @@ class _RecentHeader extends StatelessWidget {
 class _RecentActivityCard extends StatelessWidget {
   const _RecentActivityCard({required this.items});
 
-  final List<_ActivityItemData> items;
+  final List<ActivityItemData> items;
 
   @override
   Widget build(BuildContext context) {
@@ -2409,7 +2376,7 @@ class _RecentActivityCard extends StatelessWidget {
 class _ActivityTile extends StatelessWidget {
   const _ActivityTile({required this.item});
 
-  final _ActivityItemData item;
+  final ActivityItemData item;
 
   void _openDetails(BuildContext context) {
     Navigator.of(context).push(
@@ -2646,7 +2613,7 @@ class _RecentActivityPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = ReportsPage._buildActivityItems(
+    final items = ReportsPage.buildActivityItems(
       context.watch<PosLocalStore>().orders,
     );
     return Scaffold(
@@ -2670,7 +2637,7 @@ class _RecentActivityPage extends StatelessWidget {
 class _ActivityDetailPage extends StatelessWidget {
   const _ActivityDetailPage({required this.item});
 
-  final _ActivityItemData item;
+  final ActivityItemData item;
 
   @override
   Widget build(BuildContext context) {
@@ -2756,40 +2723,3 @@ class _OverviewCardData {
   final bool highlightValue;
 }
 
-class _QuickActionData {
-  const _QuickActionData({
-    required this.icon,
-    required this.label,
-    required this.iconColor,
-    this.background,
-    this.foreground,
-    this.iconBackground,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color iconColor;
-  final Gradient? background;
-  final Color? foreground;
-  final Color? iconBackground;
-}
-
-class _ActivityItemData {
-  const _ActivityItemData({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBackground,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    this.amount,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBackground;
-  final String title;
-  final String subtitle;
-  final String time;
-  final String? amount;
-}

@@ -31,6 +31,13 @@ class AppColors {
   static const danger = Color(0xFFEF4444);
   static const dangerLight = Color(0xFFFEF2F2);
 
+  // Reports Page Specific Colors (to be consolidated later)
+  static const reportsInk = Color(0xFF33363F);
+  static const reportsMuted = Color(0xFF7A859C);
+  static const reportsBorder = Color(0xFFE8EBF1);
+  static const reportsBlue = Color(0xFF2B6FE8);
+  static const reportsGreen = Color(0xFF30B05C);
+
   // Chart Colors (Standardized)
   static const chart1 = Color(0xFF2563EB);
   static const chart2 = Color(0xFF10B981);

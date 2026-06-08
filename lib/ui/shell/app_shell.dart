@@ -89,7 +89,7 @@ class _AppShellState extends State<AppShell>
       case MarketTab.products:
         return 'Products';
       case MarketTab.reports:
-        return 'Sales';
+        return 'Reports';
       case MarketTab.more:
         return 'More';
     }

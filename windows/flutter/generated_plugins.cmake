@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_windows
-  flutter_ocr_native
   printing
   share_plus
   speech_to_text_windows

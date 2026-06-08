@@ -24,7 +24,7 @@ class MarketBottomNav extends StatelessWidget {
     const items = [
       _NavItem(MarketTab.dashboard, 'Home', Icons.home_rounded),
       _NavItem(MarketTab.products, 'Inventory', Icons.inventory_2_outlined),
-      _NavItem(MarketTab.reports, 'Sales', Icons.bar_chart_rounded),
+      _NavItem(MarketTab.reports, 'Reports', Icons.bar_chart_rounded),
       _NavItem(MarketTab.more, 'More', Icons.menu_rounded),
     ];
 
@@ -40,7 +40,8 @@ class MarketBottomNav extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       child: SafeArea(
         top: false,
         child: Row(
@@ -58,9 +59,8 @@ class MarketBottomNav extends StatelessWidget {
                     children: [
                       Icon(
                         item.icon,
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.textLight,
+                        color:
+                            selected ? AppColors.primary : AppColors.textLight,
                         size: 24,
                       ),
                       const SizedBox(height: 4),

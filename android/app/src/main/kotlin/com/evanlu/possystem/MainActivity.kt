@@ -242,7 +242,7 @@ class MainActivity: FlutterFragmentActivity() {
                 clipData = ClipData.newRawUri(fileName, uri)
             }
 
-            val chooser = Intent.createChooser(intent, "Share Sales Report").apply {
+            val chooser = Intent.createChooser(intent, "Share Store Report").apply {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 

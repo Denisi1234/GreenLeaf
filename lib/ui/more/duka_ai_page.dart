@@ -11,6 +11,8 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../service/duka_ai_service.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
+import 'components/duka_ai_hero_header.dart';
+import 'components/duka_ai_intro_card.dart';
 
 class DukaAiPage extends StatefulWidget {
   const DukaAiPage({super.key});
@@ -121,7 +123,7 @@ class _DukaAiPageState extends State<DukaAiPage> {
                 constraints: BoxConstraints(maxWidth: width),
                 child: Column(
                   children: [
-                    _DukaAiHeroHeader(
+                    DukaAiHeroHeader(
                       onBackTap: () => Navigator.of(context).pop(),
                       onMoreTap: () => _showThreadPicker(context, store),
                       onSubtitleTap: _showTipsSheet,
