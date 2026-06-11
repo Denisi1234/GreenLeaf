@@ -40,6 +40,7 @@ class _AddProductPageState extends State<AddProductPage> {
   String? _selectedImagePath;
   late BusinessCategory _businessCategory;
   late List<String> _categoryOptions;
+  late AppStrings strings;
 
   @override
   void initState() {
@@ -61,7 +62,9 @@ class _AddProductPageState extends State<AddProductPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final config = context.read<PosLocalStore>().businessCategoryConfig;
+    final store = context.read<PosLocalStore>();
+    strings = AppStrings.of(store.languageCode);
+    final config = store.businessCategoryConfig;
     _businessCategory = config.category;
     _categoryOptions = _productCategoriesFor(_businessCategory);
 
@@ -85,8 +88,8 @@ class _AddProductPageState extends State<AddProductPage> {
     if (form == null || !form.validate()) {
       showMarketNotice(
         context,
-        title: 'Check The Form',
-        message: 'Complete the required fields before saving',
+        title: strings.checkTheForm,
+        message: strings.completeRequiredFields,
         type: MarketNoticeType.warning,
       );
       return;
@@ -152,19 +155,19 @@ class _AddProductPageState extends State<AddProductPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Product?'),
+        title: Text(strings.deleteProduct),
         content: Text(
-          'Remove "${product.name}" from inventory? This cannot be undone.',
+          strings.removeProductFromInventory(product.name),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Delete'),
+            child: Text(strings.delete),
           ),
         ],
       ),
@@ -177,8 +180,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
     showMarketNotice(
       context,
-      title: 'Product Deleted',
-      message: '${product.name} has been removed from inventory',
+      title: strings.productDeleted,
+      message: strings.productRemovedFromInventory(product.name),
       type: MarketNoticeType.warning,
     );
     Navigator.of(context).pop();
@@ -202,15 +205,15 @@ class _AddProductPageState extends State<AddProductPage> {
 
       showMarketNotice(
         context,
-        title: 'Image Selected',
-        message: 'Product image is ready to save',
+        title: strings.imageSelected,
+        message: strings.productImageReady,
       );
     } catch (_) {
       if (!mounted) return;
       showMarketNotice(
         context,
-        title: 'Upload Failed',
-        message: 'Could not open the gallery on this device',
+        title: strings.uploadFailed,
+        message: strings.couldNotOpenGallery,
         type: MarketNoticeType.warning,
       );
     }
@@ -284,9 +287,9 @@ class _AddProductPageState extends State<AddProductPage> {
     final store = context.watch<PosLocalStore>();
     final config = store.businessCategoryConfig;
     final categoryTitle = switch (config.category) {
-      BusinessCategory.pharmacy => 'Medicine Item',
-      BusinessCategory.electronics => 'Device Item',
-      BusinessCategory.retail => 'Product',
+      BusinessCategory.pharmacy => strings.medicineItem,
+      BusinessCategory.electronics => strings.deviceItem,
+      BusinessCategory.retail => strings.product,
     };
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
@@ -308,8 +311,8 @@ class _AddProductPageState extends State<AddProductPage> {
               children: [
                 MarketPageHeader(
                   title: widget.product == null
-                      ? 'Add $categoryTitle'
-                      : 'Edit $categoryTitle',
+                      ? strings.addProduct(categoryTitle)
+                      : strings.editProduct(categoryTitle),
                   subtitle: config.productHint,
                 ),
                 Expanded(
@@ -327,18 +330,18 @@ class _AddProductPageState extends State<AddProductPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const _FieldLabel(
-                              'Product Name',
+                            _FieldLabel(
+                              strings.productName,
                               requiredField: true,
                             ),
                             const SizedBox(height: 8),
                             _TextInputField(
                               controller: _nameController,
-                              hint: 'Enter product name',
+                              hint: strings.enterProductName,
                               trailingIcon: Icons.sell_outlined,
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Product name is required';
+                                  return strings.productNameRequired;
                                 }
                                 return null;
                               },
@@ -351,8 +354,8 @@ class _AddProductPageState extends State<AddProductPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const _FieldLabel(
-                                        'Purchase Price',
+                                      _FieldLabel(
+                                        strings.purchasePrice,
                                         requiredField: true,
                                       ),
                                       const SizedBox(height: 8),
@@ -364,7 +367,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                             .numberWithOptions(
                                           decimal: true,
                                         ),
-                                        validator: _validateMoney,
+                                        validator: (val) => _validateMoney(val, strings),
                                       ),
                                     ],
                                   ),
@@ -375,8 +378,8 @@ class _AddProductPageState extends State<AddProductPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const _FieldLabel(
-                                        'Selling Price',
+                                      _FieldLabel(
+                                        strings.sellingPrice,
                                         requiredField: true,
                                       ),
                                       const SizedBox(height: 8),
@@ -388,7 +391,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                             .numberWithOptions(
                                           decimal: true,
                                         ),
-                                        validator: _validateMoney,
+                                        validator: (val) => _validateMoney(val, strings),
                                       ),
                                     ],
                                   ),
@@ -396,46 +399,47 @@ class _AddProductPageState extends State<AddProductPage> {
                               ],
                             ),
                             const SizedBox(height: 18),
-                            const _FieldLabel('Category', requiredField: true),
+                            _FieldLabel(strings.category, requiredField: true),
                             const SizedBox(height: 8),
                             _DropdownInputField(
                               value: _selectedCategory,
-                              hint: 'Select category',
+                              hint: strings.selectCategory,
                               items: _categoryOptions,
                               onChanged: (value) {
                                 setState(() => _selectedCategory = value);
                               },
                               validator: (value) =>
-                                  value == null ? 'Category is required' : null,
+                                  value == null ? strings.categoryRequired : null,
                             ),
-                            const _FieldLabel(
-                              'Stock Quantity',
+                            _FieldLabel(
+                              strings.stockQuantity,
                               requiredField: true,
                             ),
                             const SizedBox(height: 8),
                             _TextInputField(
                               controller: _stockController,
-                              hint: 'Enter stock quantity',
+                              hint: strings.enterStockQuantity,
                               trailingIcon: Icons.inventory_2_outlined,
                               keyboardType: TextInputType.number,
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Stock quantity is required';
+                                  return strings.stockQuantityRequired;
                                 }
                                 final parsed = int.tryParse(value.trim());
                                 if (parsed == null || parsed < 0) {
-                                  return 'Enter a valid stock quantity';
+                                  return strings.validStockQuantityRequired;
                                 }
                                 return null;
                               },
                             ),
                             const SizedBox(height: 18),
-                            const _FieldLabel('Product Image'),
+                            _FieldLabel(strings.productImage),
                             const SizedBox(height: 10),
                             GestureDetector(
                               onTap: _pickImage,
                               child: _UploadBox(
                                 imagePath: _selectedImagePath,
+                                strings: strings,
                               ),
                             ),
                           ],
@@ -455,7 +459,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   if (widget.product != null) ...[
                     Expanded(
                       child: MarketButton(
-                        label: 'Delete',
+                        label: strings.delete,
                         onTap: _deleteProduct,
                         color: Colors.white.withValues(alpha: 0.92),
                         foregroundColor: AppColors.danger,
@@ -470,7 +474,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   ],
                   Expanded(
                     child: MarketButton(
-                      label: 'Cancel',
+                      label: strings.cancel,
                       onTap: () => Navigator.of(context).pop(),
                       color: Colors.white.withValues(alpha: 0.92),
                       foregroundColor: AppColors.ink,
@@ -484,7 +488,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   const SizedBox(width: 14),
                   Expanded(
                     child: MarketButton(
-                      label: 'Save',
+                      label: strings.save,
                       icon: Icons.save_outlined,
                       onTap: _saveProduct,
                       color: const Color(0xFF5B8CFF),
@@ -507,13 +511,13 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  String? _validateMoney(String? value) {
+  String? _validateMoney(String? value, AppStrings strings) {
     if (value == null || value.trim().isEmpty) {
-      return 'This price is required';
+      return strings.priceRequired;
     }
     final parsed = double.tryParse(value.trim());
     if (parsed == null || parsed < 0) {
-      return 'Enter a valid amount';
+      return strings.validAmountRequired;
     }
     return null;
   }
@@ -714,9 +718,11 @@ class _DropdownInputField extends FormField<String> {
 class _UploadBox extends StatelessWidget {
   const _UploadBox({
     this.imagePath,
+    required this.strings,
   });
 
   final String? imagePath;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -752,18 +758,18 @@ class _UploadBox extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.96),
                         borderRadius: BorderRadius.circular(99),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.edit_outlined,
                             color: Color(0xFF2B6FF3),
                             size: 16,
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
-                            'Change',
-                            style: TextStyle(
+                            strings.change,
+                            style: const TextStyle(
                               color: Color(0xFF2B6FF3),
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
@@ -776,10 +782,10 @@ class _UploadBox extends StatelessWidget {
                 ],
               ),
             )
-          : const Column(
+          : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 34,
                   backgroundColor: Color(0xFFEAF3FF),
                   child: Icon(
@@ -788,28 +794,28 @@ class _UploadBox extends StatelessWidget {
                     size: 32,
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
-                  'Upload product image',
-                  style: TextStyle(
+                  strings.uploadProductImage,
+                  style: const TextStyle(
                     color: Color(0xFF33363F),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  'Tap to choose image from gallery',
-                  style: TextStyle(
+                  strings.tapToChooseImage,
+                  style: const TextStyle(
                     color: Color(0xFF7B8598),
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
-                  'JPG, PNG up to 5MB',
-                  style: TextStyle(
+                  strings.imageFormatInfo,
+                  style: const TextStyle(
                     color: Color(0xFF8A93A7),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,

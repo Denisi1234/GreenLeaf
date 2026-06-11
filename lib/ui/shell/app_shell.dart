@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../business_category_config.dart';
 import '../home/sales_page.dart';
@@ -76,60 +77,61 @@ class _AppShellState extends State<AppShell>
     });
   }
 
-  String _drawerSelectedItemForTab(MarketTab tab) {
+  String _drawerSelectedItemForTab(MarketTab tab, AppStrings strings) {
     switch (tab) {
       case MarketTab.dashboard:
-        return '';
+        return strings.home;
       case MarketTab.products:
-        return '';
+        return strings.inventory;
       case MarketTab.sales:
-        return '';
+        return strings.sales;
       case MarketTab.reports:
-        return '';
+        return strings.reports;
       case MarketTab.more:
-        return 'More';
+        return strings.more;
     }
   }
 
-  String _headerTitleForTab(MarketTab tab) {
+  String _headerTitleForTab(MarketTab tab, AppStrings strings) {
     switch (tab) {
       case MarketTab.dashboard:
-        return 'Dashboard';
+        return strings.dashboard;
       case MarketTab.products:
-        return 'Products';
+        return strings.products;
       case MarketTab.sales:
-        return 'Sales';
+        return strings.sales;
       case MarketTab.reports:
-        return 'Reports';
+        return strings.reports;
       case MarketTab.more:
-        return 'More';
+        return strings.more;
     }
   }
 
-  String _headerSubtitleForTab(MarketTab tab) {
+  String _headerSubtitleForTab(MarketTab tab, AppStrings strings) {
     switch (tab) {
       case MarketTab.dashboard:
-        return 'Track today\'s activity at a glance';
+        return strings.dashboardSubtitle;
       case MarketTab.products:
-        return 'Manage stock, pricing, and edits';
+        return strings.productsSubtitle;
       case MarketTab.sales:
-        return 'Manage sales and cart activity';
+        return strings.salesSubtitle;
       case MarketTab.reports:
-        return 'View insights, trends, and downloads';
+        return strings.reportsSubtitle;
       case MarketTab.more:
-        return 'Store profile, staff, and tools';
+        return strings.moreSubtitle;
     }
   }
 
   String _primaryActionLabel(
     MarketTab tab,
     BusinessCategory category,
+    AppStrings strings,
   ) {
     final isAddFlow = tab == MarketTab.products || tab == MarketTab.sales;
     return switch (category) {
-      BusinessCategory.pharmacy => isAddFlow ? 'Add Medicine' : 'New Dispense',
-      BusinessCategory.electronics => isAddFlow ? 'Add Device' : 'New Sale',
-      BusinessCategory.retail => isAddFlow ? 'Add Product' : 'New Sale',
+      BusinessCategory.pharmacy => isAddFlow ? 'Ongeza Dawa' : 'Mauzo Mapya',
+      BusinessCategory.electronics => isAddFlow ? 'Ongeza Kifaa' : strings.sales,
+      BusinessCategory.retail => isAddFlow ? 'Ongeza Bidhaa' : strings.sales,
     };
   }
 
@@ -183,15 +185,16 @@ class _AppShellState extends State<AppShell>
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final config = store.businessCategoryConfig;
+    final strings = AppStrings.of(store.languageCode);
     return Scaffold(
       drawer: MarketAppDrawer(
-        selectedItem: _drawerSelectedItemForTab(_currentTab),
+        selectedItem: _drawerSelectedItemForTab(_currentTab, strings),
       ),
       body: Column(
         children: [
           MarketPageHeader(
-            title: _headerTitleForTab(_currentTab),
-            subtitle: _headerSubtitleForTab(_currentTab),
+            title: _headerTitleForTab(_currentTab, strings),
+            subtitle: _headerSubtitleForTab(_currentTab, strings),
             showBackButton: false,
             leading: const DrawerMenuButton(),
             centerTitle: false,
@@ -301,7 +304,7 @@ class _AppShellState extends State<AppShell>
               backgroundColor: config.primaryColor,
               foregroundColor: Colors.white,
               icon: Icon(_primaryActionIcon(_currentTab, config.category)),
-              label: Text(_primaryActionLabel(_currentTab, config.category)),
+              label: Text(_primaryActionLabel(_currentTab, config.category, strings)),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: MarketBottomNav(

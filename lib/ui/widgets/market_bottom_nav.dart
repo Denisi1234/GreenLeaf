@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'app_design.dart';
+import '../../service/pos_local_store.dart';
+import '../../l10n/app_strings.dart';
 
 enum MarketTab {
   dashboard,
@@ -22,12 +25,14 @@ class MarketBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      _NavItem(MarketTab.dashboard, 'Home', Icons.home_rounded),
-      _NavItem(MarketTab.products, 'Inventory', Icons.inventory_2_rounded),
-      _NavItem(MarketTab.sales, 'Sales', Icons.point_of_sale_rounded),
-      _NavItem(MarketTab.reports, 'Reports', Icons.assessment_outlined),
-      _NavItem(MarketTab.more, 'More', Icons.menu_rounded),
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
+    final items = [
+      _NavItem(MarketTab.dashboard, strings.home, Icons.home_rounded),
+      _NavItem(
+          MarketTab.products, strings.inventory, Icons.inventory_2_rounded),
+      _NavItem(MarketTab.sales, strings.sales, Icons.point_of_sale_rounded),
+      _NavItem(MarketTab.reports, strings.reports, Icons.assessment_outlined),
+      _NavItem(MarketTab.more, strings.more, Icons.menu_rounded),
     ];
 
     return Container(

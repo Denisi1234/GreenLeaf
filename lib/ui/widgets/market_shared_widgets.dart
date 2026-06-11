@@ -4,17 +4,21 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_strings.dart';
 import '../business_category_config.dart';
 import 'app_design.dart';
 import '../models/product_item.dart';
 import '../home/sales_page.dart';
 import '../products/product_management_page.dart';
-import '../reports/dashboard_page.dart';
 import '../more/customers_page.dart';
 import '../more/expenses_tracking_page.dart';
 import '../more/help_support_page.dart';
 import '../more/about_app_page.dart';
 import '../../service/pos_local_store.dart';
+
+String _dual(AppStrings strings, String english, String swahili) {
+  return strings.isSwahili ? swahili : english;
+}
 
 class BackdropGlow extends StatelessWidget {
   const BackdropGlow({super.key});
@@ -859,74 +863,99 @@ class MarketAppDrawer extends StatelessWidget {
 
   List<_DrawerItemData> _quickActionsFor(
     BusinessCategoryConfig config,
+    AppStrings strings,
   ) {
     return switch (config.category) {
       BusinessCategory.pharmacy => [
           _DrawerItemData(
-            'Scan Prescription',
+            strings.scanPrescription,
             Icons.medication_rounded,
             onTap: (context) {
               showMarketNotice(
                 context,
-                title: 'Prescription Scan',
-                message: 'Prescription search and scan flow goes here.',
+                title: strings.scanPrescription,
+                message: _dual(
+                  strings,
+                  'Prescription search and scan flow goes here.',
+                  'Utafutaji na uchambuzi wa dawa utawekwa hapa.',
+                ),
               );
             },
           ),
           _DrawerItemData(
-            'Expiry Check',
+            strings.expiryCheck,
             Icons.event_busy_rounded,
             onTap: (context) {
               showMarketNotice(
                 context,
-                title: 'Expiry Check',
-                message: 'Expiry tracking needs product-level metadata.',
+                title: strings.expiryCheck,
+                message: _dual(
+                  strings,
+                  'Expiry tracking needs product-level metadata.',
+                  'Ufuatiliaji wa muda wa kuisha unahitaji taarifa za bidhaa.',
+                ),
               );
             },
           ),
           _DrawerItemData(
-            'Refill Queue',
+            strings.refillQueue,
             Icons.queue_rounded,
             onTap: (context) {
               showMarketNotice(
                 context,
-                title: 'Refill Queue',
-                message: 'Prescription refill workflow is ready to add.',
+                title: strings.refillQueue,
+                message: _dual(
+                  strings,
+                  'Prescription refill workflow is ready to add.',
+                  'Mtiririko wa kuongeza dawa upya uko tayari kuongezwa.',
+                ),
               );
             },
           ),
         ],
       BusinessCategory.electronics => [
           _DrawerItemData(
-            'Scan Serial',
+            _dual(strings, 'Scan Serial', 'Changanua Serial'),
             Icons.qr_code_scanner_rounded,
             onTap: (context) {
               showMarketNotice(
                 context,
-                title: 'Serial Scan',
-                message: 'Serial capture is ready to connect.',
+                title: _dual(strings, 'Serial Scan', 'Uchanganuzi wa Serial'),
+                message: _dual(
+                  strings,
+                  'Serial capture is ready to connect.',
+                  'Kukusanya serial iko tayari kuunganishwa.',
+                ),
               );
             },
           ),
           _DrawerItemData(
-            'Register Warranty',
+            _dual(strings, 'Register Warranty', 'Sajili Dhamana'),
             Icons.verified_user_outlined,
             onTap: (context) {
               showMarketNotice(
                 context,
-                title: 'Warranty Register',
-                message: 'Warranty registration can be attached here.',
+                title: _dual(strings, 'Warranty Register', 'Usajili wa Dhamana'),
+                message: _dual(
+                  strings,
+                  'Warranty registration can be attached here.',
+                  'Usajili wa dhamana unaweza kuwekwa hapa.',
+                ),
               );
             },
           ),
           _DrawerItemData(
-            'Service Plans',
+            _dual(strings, 'Service Plans', 'Mipango ya Huduma'),
             Icons.handyman_outlined,
             onTap: (context) {
               showMarketNotice(
                 context,
-                title: 'Service Plans',
-                message: 'Service plan upsells can be added next.',
+                title: _dual(strings, 'Service Plans', 'Mipango ya Huduma'),
+                message: _dual(
+                  strings,
+                  'Service plan upsells can be added next.',
+                  'Mipango ya huduma inaweza kuongezwa baadaye.',
+                ),
               );
             },
           ),
@@ -935,11 +964,14 @@ class MarketAppDrawer extends StatelessWidget {
     };
   }
 
-  List<_DrawerItemData> _operationsItemsFor(BusinessCategoryConfig config) {
+  List<_DrawerItemData> _operationsItemsFor(
+    BusinessCategoryConfig config,
+    AppStrings strings,
+  ) {
     return switch (config.category) {
       BusinessCategory.pharmacy => [
           _DrawerItemData(
-            'Medicine Catalog',
+            strings.medicineCatalog,
             Icons.medical_services_outlined,
             onTap: (context) {
               Navigator.of(context).push(
@@ -950,7 +982,7 @@ class MarketAppDrawer extends StatelessWidget {
             },
           ),
           _DrawerItemData(
-            'Prescription Sales',
+            strings.prescriptionSales,
             Icons.receipt_long_outlined,
             onTap: (context) {
               Navigator.of(context).push(
@@ -963,7 +995,7 @@ class MarketAppDrawer extends StatelessWidget {
         ],
       BusinessCategory.electronics => [
           _DrawerItemData(
-            'Device Catalog',
+            strings.deviceCatalog,
             Icons.devices_other_outlined,
             onTap: (context) {
               Navigator.of(context).push(
@@ -974,20 +1006,24 @@ class MarketAppDrawer extends StatelessWidget {
             },
           ),
           _DrawerItemData(
-            'Warranty Claims',
+            _dual(strings, 'Warranty Claims', 'Madai ya Dhamana'),
             Icons.shield_outlined,
             onTap: (context) {
               showMarketNotice(
                 context,
-                title: 'Warranty Claims',
-                message: 'Claims tracking can be added next.',
+                title: _dual(strings, 'Warranty Claims', 'Madai ya Dhamana'),
+                message: _dual(
+                  strings,
+                  'Claims tracking can be added next.',
+                  'Ufuatiliaji wa madai unaweza kuongezwa baadaye.',
+                ),
               );
             },
           ),
         ],
       BusinessCategory.retail => [
           _DrawerItemData(
-            'Customers',
+            strings.customers,
             Icons.people_alt_outlined,
             onTap: (context) {
               Navigator.of(context).push(
@@ -998,7 +1034,7 @@ class MarketAppDrawer extends StatelessWidget {
             },
           ),
           _DrawerItemData(
-            'Expenses Tracking',
+            strings.expensesTracking,
             Icons.receipt_long_outlined,
             onTap: (context) {
               Navigator.of(context).push(
@@ -1012,16 +1048,19 @@ class MarketAppDrawer extends StatelessWidget {
     };
   }
 
-  static const _supportItems = [
-    _DrawerItemData('Help & Support', Icons.support_agent_outlined),
-    _DrawerItemData('About App', Icons.info_outline_rounded),
-  ];
+  List<_DrawerItemData> _supportItems(AppStrings strings) {
+    return [
+      _DrawerItemData(strings.helpSupport, Icons.support_agent_outlined),
+      _DrawerItemData(strings.aboutApp, Icons.info_outline_rounded),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     final drawerWidth = MediaQuery.of(context).size.width * 0.85;
     final store = context.watch<PosLocalStore>();
     final config = store.businessCategoryConfig;
+    final strings = AppStrings.of(store.languageCode);
 
     return Drawer(
       width: drawerWidth,
@@ -1043,29 +1082,29 @@ class MarketAppDrawer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _DrawerSectionHeader(
-                      title: _quickActionsTitle(config.category),
+                      title: _quickActionsTitle(config.category, strings),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _DrawerSection(
-                      items: _quickActionsFor(config),
+                      items: _quickActionsFor(config, strings),
                       selectedItem: selectedItem,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     const Divider(color: AppColors.divider, height: 1),
                     const SizedBox(height: AppSpacing.lg),
                     _DrawerSectionHeader(
-                      title: _operationsTitle(config.category),
+                      title: _operationsTitle(config.category, strings),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _DrawerSection(
-                      items: _operationsItemsFor(config),
+                      items: _operationsItemsFor(config, strings),
                       selectedItem: selectedItem,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     const Divider(color: AppColors.divider, height: 1),
                     const SizedBox(height: AppSpacing.lg),
                     _DrawerSection(
-                      items: _supportItems,
+                      items: _supportItems(strings),
                       selectedItem: selectedItem,
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -1090,15 +1129,16 @@ class _DrawerProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final profile = context.watch<PosLocalStore>().profile;
     final config = context.read<PosLocalStore>().businessCategoryConfig;
+    final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
     final ownerName = profile.ownerName.isEmpty
         ? (profile.storeName.isEmpty
             ? (profile.businessCategory.isEmpty
-                ? 'Set up store profile'
+                ? strings.setupStoreProfile
                 : profile.businessCategory)
             : profile.storeName)
         : profile.ownerName;
     final category = profile.businessCategory.isEmpty
-        ? (profile.roleTitle.isEmpty ? 'Business Owner' : profile.roleTitle)
+        ? (profile.roleTitle.isEmpty ? strings.businessOwner : profile.roleTitle)
         : profile.businessCategory;
     final storeDetail =
         profile.storeName.isEmpty || profile.storeName == ownerName
@@ -1283,18 +1323,22 @@ class _DrawerTile extends StatelessWidget {
 Route<void>? _routeForLabel(String label) {
   switch (label) {
     case 'Customers':
+    case 'Wateja':
       return MaterialPageRoute<void>(
         builder: (context) => const CustomersPage(),
       );
     case 'Expenses Tracking':
+    case 'Ufuatiliaji wa Matumizi':
       return MaterialPageRoute<void>(
         builder: (context) => const ExpensesTrackingPage(),
       );
     case 'Help & Support':
+    case 'Msaada na Usaidizi':
       return MaterialPageRoute<void>(
         builder: (context) => const HelpSupportPage(),
       );
     case 'About App':
+    case 'Kuhusu Programu':
       return MaterialPageRoute<void>(
         builder: (context) => const AboutAppPage(),
       );
@@ -1308,14 +1352,19 @@ class _LogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.standard),
       onTap: () {
         Navigator.of(context).pop();
         showMarketNotice(
           context,
-          title: 'Logged Out',
-          message: 'You can connect the real auth flow next',
+          title: _dual(strings, 'Logged Out', 'Umetoka'),
+          message: _dual(
+            strings,
+            'You can connect the real auth flow next',
+            'Unaweza kuunganisha uthibitisho halisi baadaye',
+          ),
         );
       },
       child: Container(
@@ -1334,7 +1383,7 @@ class _LogoutButton extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.lg),
             Text(
-              'Logout',
+              strings.logout,
               style: AppTypography.bodyMain.copyWith(
                 color: AppColors.danger,
                 fontWeight: FontWeight.w700,
@@ -1355,20 +1404,16 @@ class _DrawerItemData {
   final void Function(BuildContext context)? onTap;
 }
 
-String _quickActionsTitle(BusinessCategory category) {
+String _quickActionsTitle(BusinessCategory category, AppStrings strings) {
   return switch (category) {
-    BusinessCategory.pharmacy => 'Pharmacy Actions',
-    BusinessCategory.electronics => 'Device Actions',
-    BusinessCategory.retail => 'Retail Actions',
+    BusinessCategory.pharmacy => strings.pharmacyActions,
+    BusinessCategory.electronics => strings.deviceActions,
+    BusinessCategory.retail => strings.retailActions,
   };
 }
 
-String _operationsTitle(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Operations',
-    BusinessCategory.electronics => 'Operations',
-    BusinessCategory.retail => 'Operations',
-  };
+String _operationsTitle(BusinessCategory category, AppStrings strings) {
+  return strings.operations;
 }
 
 class _BottleArt extends StatelessWidget {

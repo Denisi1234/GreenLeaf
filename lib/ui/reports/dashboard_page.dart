@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_strings.dart';
 import '../more/duka_ai_page.dart';
 import '../more/expenses_tracking_page.dart';
 import '../more/multi_store_management_page.dart';
@@ -83,22 +84,25 @@ class DashboardPage extends StatelessWidget {
 
   final bool useSharedShell;
 
-  static const List<QuickActionData> _quickActions = [
-    QuickActionData(
-      icon: Icons.point_of_sale_outlined,
-      label: 'Open Drawer',
-      iconColor: Color(0xFF2AA24F),
-      iconBackground: Color(0xFFE9F8ED),
-    ),
-    QuickActionData(
-      icon: Icons.insert_chart_outlined_rounded,
-      label: 'View Reports',
-      iconColor: AppColors.reportsBlue,
-      iconBackground: Color(0xFFECF2FF),
-    ),
-  ];
+  static List<QuickActionData> _quickActions(AppStrings strings) => [
+        QuickActionData(
+          icon: Icons.point_of_sale_outlined,
+          label: strings.openDrawer,
+          iconColor: Color(0xFF2AA24F),
+          iconBackground: Color(0xFFE9F8ED),
+        ),
+        QuickActionData(
+          icon: Icons.insert_chart_outlined_rounded,
+          label: strings.viewReports,
+          iconColor: AppColors.reportsBlue,
+          iconBackground: Color(0xFFECF2FF),
+        ),
+      ];
 
-  static List<_OverviewCardData> _buildOverviewCards(PosLocalStore store) {
+  static List<_OverviewCardData> _buildOverviewCards(
+    PosLocalStore store,
+    AppStrings strings,
+  ) {
     final today = _eastAfricaNow();
     final todayOrders = store.orders.where((order) {
       final orderDate = DateTime.tryParse(order.dateTime);
@@ -152,38 +156,38 @@ class DashboardPage extends StatelessWidget {
         icon: Icons.shopping_bag_outlined,
         iconColor: const Color(0xFF26A042),
         iconBackground: const Color(0xFFEAF8EE),
-        title: 'Sales today',
+        title: strings.salesToday,
         value: 'TSH ${totalSales.toStringAsFixed(0)}',
         delta: salesChangePercent == null
             ? null
             : '${salesChangePercent.abs().toStringAsFixed(0)}% vs yesterday',
         deltaIsPositive: salesWentUp,
-        footer: 'Updated today',
+        footer: strings.updatedToday,
       ),
       _OverviewCardData(
         icon: Icons.shopping_cart_outlined,
         iconColor: const Color(0xFF2E6EE8),
         iconBackground: const Color(0xFFECF3FF),
-        title: 'Orders today',
+        title: strings.ordersToday,
         value: transactionCount.toString(),
-        footer: 'Updated today',
+        footer: strings.updatedToday,
       ),
       _OverviewCardData(
         icon: Icons.sell_outlined,
         iconColor: const Color(0xFF9747FF),
         iconBackground: const Color(0xFFF3EAFE),
-        title: 'Average order',
+        title: strings.averageOrder,
         value: 'TSH ${averageValue.toStringAsFixed(0)}',
-        footer: 'Updated today',
+        footer: strings.updatedToday,
       ),
       _OverviewCardData(
         icon: Icons.inventory_2_outlined,
         iconColor: const Color(0xFFC38A13),
         iconBackground: const Color(0xFFFEF5E3),
-        title: 'Best seller',
-        value: topProductEntry?.key ?? 'No sales yet',
+        title: strings.bestSeller,
+        value: topProductEntry?.key ?? strings.noSalesYet,
         footer: topProductEntry == null
-            ? 'No items sold yet'
+            ? strings.noItemsSoldYet
             : '${topProductEntry.value} sold today',
         highlightValue: true,
       ),
@@ -192,6 +196,7 @@ class DashboardPage extends StatelessWidget {
 
   static List<ActivityItemData> buildActivityItems(
     List<CompletedOrder> orders,
+    AppStrings strings,
   ) {
     return orders.take(5).map((order) {
       final itemCount = order.lines.fold<int>(
@@ -209,9 +214,9 @@ class DashboardPage extends StatelessWidget {
         iconBackground: paymentMethod == 'cash'
             ? const Color(0xFFECF3FF)
             : const Color(0xFFEAF8EE),
-        title: 'Order ${order.id}',
+        title: '${strings.order} ${order.id}',
         subtitle:
-            '$itemCount item${itemCount == 1 ? '' : 's'} - $paymentMethod payment',
+            '$itemCount ${strings.item}${itemCount == 1 ? '' : 's'} - $paymentMethod ${strings.payment}',
         amount: 'TSH ${order.total.toStringAsFixed(0)}',
         time: order.time,
       );
@@ -250,6 +255,7 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final config = store.businessCategoryConfig;
+    final strings = AppStrings.of(store.languageCode);
     final summary = _buildDashboardSummary(store);
     final todayLabel = _formatToday();
     final baseTheme = Theme.of(context);
@@ -264,7 +270,7 @@ class DashboardPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
         drawer:
-            useSharedShell ? null : const MarketAppDrawer(selectedItem: 'Home'),
+            useSharedShell ? null : MarketAppDrawer(selectedItem: strings.home),
         body: SafeArea(
           top: !useSharedShell,
           child: Stack(
@@ -286,11 +292,12 @@ class DashboardPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _SummaryPanel(
+                        _SummaryPanel(
                             summary: summary,
                             orders: store.orders,
                             config: config,
                             store: store,
+                            strings: strings,
                           ),
                         ],
                       ),
@@ -2810,8 +2817,10 @@ class _RecentActivityPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     final items = DashboardPage.buildActivityItems(
       context.watch<PosLocalStore>().orders,
+      strings,
     );
     return Scaffold(
       backgroundColor: const Color(0xFFFFFEFC),
@@ -2819,7 +2828,7 @@ class _RecentActivityPage extends StatelessWidget {
         backgroundColor: const Color(0xFFFFFEFC),
         elevation: 0,
         foregroundColor: AppColors.ink,
-        title: const Text('Latest activity'),
+        title: Text(_pick('Latest activity', 'Shughuli za hivi karibuni')),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),

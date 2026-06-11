@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:track_mauzo/service/pos_local_store.dart';
@@ -12,6 +13,7 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
     const baseInk = AppColors.ink;
     final baseTextTheme = Typography.material2021().black.apply(
           bodyColor: baseInk,
@@ -83,6 +85,16 @@ class App extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'TrackMauzo',
+      locale: Locale(store.languageCode),
+      supportedLocales: const [
+        Locale('sw'),
+        Locale('en'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: GoogleFonts.manrope().fontFamily,
@@ -180,13 +192,9 @@ class App extends StatelessWidget {
           selectionHandleColor: AppColors.primary,
         ),
       ),
-      home: Consumer<PosLocalStore>(
-        builder: (context, store, child) {
-          return CapabilityProvider(
-            capabilities: store.activeCapabilities,
-            child: const AppShell(),
-          );
-        },
+      home: CapabilityProvider(
+        capabilities: store.activeCapabilities,
+        child: const AppShell(),
       ),
     );
   }

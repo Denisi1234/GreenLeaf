@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_strings.dart';
 import '../ui/business_category_config.dart';
 import '../ui/models/product_item.dart';
 import '../ui/models/customer_data.dart';
@@ -437,15 +438,31 @@ class PosLocalStore extends ChangeNotifier {
   static const String _defaultGeminiApiKey = '';
   static const String _defaultGroqApiKey = '';
   static const String _defaultGroqModel = 'llama-3.1-8b-instant';
+  static const String _defaultLanguageCode = 'sw';
   String _geminiApiKey = _defaultGeminiApiKey;
   String _groqApiKey = _defaultGroqApiKey;
   String _groqModel = _defaultGroqModel;
+  String _languageCode = _defaultLanguageCode;
   bool _useLiveGeminiOcr = true;
 
   String get geminiApiKey => _geminiApiKey;
   String get groqApiKey => _groqApiKey;
   String get groqModel => _groqModel;
+  String get languageCode => _languageCode;
   bool get useLiveGeminiOcr => _useLiveGeminiOcr;
+
+  Future<List<Map<String, Object?>>> loadAllStores() async {
+    return await _database.loadAllStores();
+  }
+
+  void setActiveStore(String storeId) {
+    if (_activeStoreId != storeId) {
+      _activeStoreId = storeId;
+      notifyListeners();
+      _isInitialized = false;
+      initialize();
+    }
+  }
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
@@ -478,12 +495,12 @@ class PosLocalStore extends ChangeNotifier {
 
     _syncProductsFromInventory();
 
-    final storedCart = await _database.loadCart();
+    final storedCart = await _database.loadCart(_activeStoreId);
     if (storedCart.isEmpty) {
       _cartItems
         ..clear()
         ..addAll(_products.take(3));
-      await _database.replaceCart(_cartItems);
+      await _database.replaceCart(_cartItems, _activeStoreId);
     } else {
       _cartItems
         ..clear()
@@ -492,9 +509,9 @@ class PosLocalStore extends ChangeNotifier {
 
     _orders
       ..clear()
-      ..addAll(await _database.loadOrders());
+      ..addAll(await _database.loadOrders(_activeStoreId));
 
-    final storedRoles = await _database.loadStaffRoles();
+    final storedRoles = await _database.loadStaffRoles(_activeStoreId);
     if (storedRoles.isEmpty) {
       _staffRoles
         ..clear()
@@ -576,20 +593,20 @@ class PosLocalStore extends ChangeNotifier {
 
     _daftariSessions
       ..clear()
-      ..addAll(await _database.loadDaftariSessions());
+      ..addAll(await _database.loadDaftariSessions(_activeStoreId));
     _daftariLearningRules
       ..clear()
-      ..addAll(await _database.loadDaftariLearningRules());
+      ..addAll(await _database.loadDaftariLearningRules(_activeStoreId));
     _dukaAiThreads
       ..clear()
-      ..addAll(await _database.loadDukaAiThreads());
+      ..addAll(await _database.loadDukaAiThreads(_activeStoreId));
 
-    final storedExpenses = await _database.loadExpenses();
+    final storedExpenses = await _database.loadExpenses(_activeStoreId);
     _expenses
       ..clear()
       ..addAll(storedExpenses.map(Expense.fromMap));
 
-    final storedCustomers = await _database.loadCustomers();
+    final storedCustomers = await _database.loadCustomers(_activeStoreId);
     _customers
       ..clear()
       ..addAll(storedCustomers.map(_customerFromMap));
@@ -604,7 +621,7 @@ class PosLocalStore extends ChangeNotifier {
         updatedAt: now,
       );
       _dukaAiThreads.add(defaultThread);
-      await _database.upsertDukaAiThread(defaultThread);
+      await _database.upsertDukaAiThread(defaultThread, _activeStoreId);
     }
 
     _activeDukaAiThreadId = _dukaAiThreads.first.id;
@@ -651,6 +668,8 @@ class PosLocalStore extends ChangeNotifier {
       // Ignore
     }
 
+    await _loadUiConfig();
+
     _updateCartTotals();
     _scheduleMidnightRefresh();
     _isInitialized = true;
@@ -679,7 +698,7 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> addExpense(Expense expense) async {
     _expenses.insert(0, expense);
     notifyListeners();
-    await _database.insertExpense(expense.toMap());
+    await _database.insertExpense(expense.toMap(), _activeStoreId);
   }
 
   Future<void> deleteExpense(int id) async {
@@ -709,6 +728,47 @@ class PosLocalStore extends ChangeNotifier {
         'groqModel': _groqModel,
         'useLiveOcr': _useLiveGeminiOcr,
       }));
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  Future<void> setLanguageCode(String code) async {
+    final nextCode = AppStrings.normalize(code);
+    if (_languageCode == nextCode) return;
+    _languageCode = nextCode;
+    notifyListeners();
+    await _saveUiConfig();
+  }
+
+  Future<void> _loadUiConfig() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/track_mauzo_ui_config.json');
+      if (!await file.exists()) {
+        await file.writeAsString(
+          jsonEncode({'languageCode': _defaultLanguageCode}),
+        );
+        return;
+      }
+
+      final jsonStr = await file.readAsString();
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+      _languageCode = AppStrings.normalize(
+        map['languageCode'] as String? ?? _defaultLanguageCode,
+      );
+    } catch (e) {
+      _languageCode = _defaultLanguageCode;
+    }
+  }
+
+  Future<void> _saveUiConfig() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/track_mauzo_ui_config.json');
+      await file.writeAsString(
+        jsonEncode({'languageCode': _languageCode}),
+      );
     } catch (e) {
       // Ignore
     }
@@ -836,7 +896,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.add(product);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems));
+    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
     return true;
   }
 
@@ -854,7 +914,7 @@ class PosLocalStore extends ChangeNotifier {
     }
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems));
+    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
     return true;
   }
 
@@ -864,7 +924,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems));
+    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
     return true;
   }
 
@@ -878,7 +938,7 @@ class PosLocalStore extends ChangeNotifier {
           .sort((left, right) => right.createdAt.compareTo(left.createdAt));
     }
     notifyListeners();
-    await _database.upsertDaftariSession(session);
+    await _database.upsertDaftariSession(session, _activeStoreId);
   }
 
   Future<void> rememberDaftariCorrection({
@@ -927,7 +987,7 @@ class PosLocalStore extends ChangeNotifier {
       return right.hitCount.compareTo(left.hitCount);
     });
     notifyListeners();
-    await _database.upsertDaftariLearningRule(updated);
+    await _database.upsertDaftariLearningRule(updated, _activeStoreId);
   }
 
   Future<void> replaceDukaAiMessages(List<DukaAiMessage> messages) async {
@@ -965,7 +1025,7 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(seedMessages ?? const <DukaAiMessage>[]);
     notifyListeners();
-    await _database.upsertDukaAiThread(thread);
+    await _database.upsertDukaAiThread(thread, _activeStoreId);
     await _database.replaceDukaAiMessages(thread.id, _dukaAiMessages);
     return thread;
   }
@@ -997,7 +1057,7 @@ class PosLocalStore extends ChangeNotifier {
     _dukaAiThreads
         .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
-    await _database.upsertDukaAiThread(updated);
+    await _database.upsertDukaAiThread(updated, _activeStoreId);
   }
 
   Future<void> updateDukaAiThreadPreview(
@@ -1015,7 +1075,7 @@ class PosLocalStore extends ChangeNotifier {
     _dukaAiThreads
         .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
-    await _database.upsertDukaAiThread(updated);
+    await _database.upsertDukaAiThread(updated, _activeStoreId);
   }
 
   Future<void> deleteDukaAiThread(String threadId) async {
@@ -1047,7 +1107,7 @@ class PosLocalStore extends ChangeNotifier {
             createdAt: DateTime.now().toIso8601String(),
           ),
         );
-      await _database.upsertDukaAiThread(defaultThread);
+      await _database.upsertDukaAiThread(defaultThread, _activeStoreId);
       await _database.replaceDukaAiMessages(defaultThread.id, _dukaAiMessages);
     } else if (wasActive) {
       _activeDukaAiThreadId = _dukaAiThreads.first.id;
@@ -1064,7 +1124,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems));
+    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
   }
 
   void updateQuantity(int index, int delta) {
@@ -1078,21 +1138,21 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems));
+    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
   }
 
   Future<void> clearCart() async {
     _cartItems.clear();
     _updateCartTotals();
     notifyListeners();
-    await _database.replaceCart(_cartItems);
+    await _database.replaceCart(_cartItems, _activeStoreId);
   }
 
   InventoryProductItem addProduct(InventoryProductItem product) {
     _allInventory.insert(0, product);
     _syncProductsFromInventory();
     notifyListeners();
-    unawaited(_database.replaceInventory(_allInventory));
+    unawaited(_database.replaceInventory(_allInventory, _activeStoreId));
     return product;
   }
 
@@ -1102,7 +1162,7 @@ class PosLocalStore extends ChangeNotifier {
       _allInventory[index] = product;
       _syncProductsFromInventory();
       notifyListeners();
-      unawaited(_database.replaceInventory(_allInventory));
+      unawaited(_database.replaceInventory(_allInventory, _activeStoreId));
     }
   }
 
@@ -1115,8 +1175,8 @@ class PosLocalStore extends ChangeNotifier {
     _syncProductsFromInventory();
     _updateCartTotals();
     notifyListeners();
-    await _database.replaceInventory(_allInventory);
-    await _database.replaceCart(_cartItems);
+    await _database.replaceInventory(_allInventory, _activeStoreId);
+    await _database.replaceCart(_cartItems, _activeStoreId);
 
     final imagePath = removedItem?.imagePath;
     if (imagePath != null && imagePath.isNotEmpty) {
@@ -1146,7 +1206,7 @@ class PosLocalStore extends ChangeNotifier {
 
     _syncProductsFromInventory();
     notifyListeners();
-    await _database.replaceInventory(_allInventory);
+    await _database.replaceInventory(_allInventory, _activeStoreId);
   }
 
   Future<CompletedOrder> completeCashSale({
@@ -1272,8 +1332,8 @@ class PosLocalStore extends ChangeNotifier {
     _updateCartTotals();
     notifyListeners();
 
-    await _database.replaceInventory(_allInventory);
-    await _database.replaceCart(_cartItems);
+    await _database.replaceInventory(_allInventory, _activeStoreId);
+    await _database.replaceCart(_cartItems, _activeStoreId);
     await _database.insertOrder(order);
     if (customerUpdated) {
       await _database.replaceCustomers(_customers.map(_customerToMap).toList());
@@ -1313,7 +1373,7 @@ class PosLocalStore extends ChangeNotifier {
     _syncProductsFromInventory();
     notifyListeners();
 
-    await _database.replaceInventory(_allInventory);
+    await _database.replaceInventory(_allInventory, _activeStoreId);
     await _database.deleteOrder(orderId);
   }
 

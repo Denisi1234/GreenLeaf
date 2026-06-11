@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_strings.dart';
 import 'multi_store_management_page.dart';
 import 'duka_ai_page.dart';
 import 'settings_page.dart';
@@ -14,6 +15,7 @@ import '../notifications/notifications_page.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import '../widgets/store_switcher.dart';
 
 class MorePage extends StatelessWidget {
   const MorePage({
@@ -25,26 +27,50 @@ class MorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      _MoreMenuItem('Store Profile', Icons.storefront_outlined),
-      _MoreMenuItem('Staff Management', Icons.groups_2_outlined),
-      _MoreMenuItem(
-          'Multi-Store Management', Icons.store_mall_directory_outlined),
-      _MoreMenuItem('Settings', Icons.settings_outlined),
-      _MoreMenuItem('DUKA AI', Icons.psychology_alt_outlined),
-      _MoreMenuItem('Subscription Plan', Icons.description_outlined),
-    ];
     final store = context.watch<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
+    final items = [
+      _MoreMenuItem(
+        label: strings.storeProfile,
+        icon: Icons.storefront_outlined,
+        action: _MoreMenuAction.storeProfile,
+      ),
+      _MoreMenuItem(
+        label: strings.staffManagement,
+        icon: Icons.groups_2_outlined,
+        action: _MoreMenuAction.staffManagement,
+      ),
+      _MoreMenuItem(
+        label: strings.multiStoreManagement,
+        icon: Icons.store_mall_directory_outlined,
+        action: _MoreMenuAction.multiStoreManagement,
+      ),
+      _MoreMenuItem(
+        label: strings.settings,
+        icon: Icons.settings_outlined,
+        action: _MoreMenuAction.settings,
+      ),
+      _MoreMenuItem(
+        label: strings.dukaAi,
+        icon: Icons.psychology_alt_outlined,
+        action: _MoreMenuAction.dukaAi,
+      ),
+      _MoreMenuItem(
+        label: strings.subscriptionPlan,
+        icon: Icons.description_outlined,
+        action: _MoreMenuAction.subscriptionPlan,
+      ),
+    ];
     final profile = store.profile;
     final totalSales = store.orders.fold<double>(
       0,
       (sum, order) => sum + order.total,
     );
     final totalSalesLabel = totalSales <= 0
-        ? 'No sales yet'
+        ? strings.noSalesYet
         : 'TSH ${totalSales.toStringAsFixed(0)}';
     final memberSince =
-        profile.memberSince.isEmpty ? 'Not set' : profile.memberSince;
+        profile.memberSince.isEmpty ? strings.notSet : profile.memberSince;
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
@@ -56,8 +82,9 @@ class MorePage extends StatelessWidget {
       data: interTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
-        drawer:
-            useSharedShell ? null : const MarketAppDrawer(selectedItem: 'More'),
+        drawer: useSharedShell
+            ? null
+            : MarketAppDrawer(selectedItem: strings.more),
         body: Stack(
           children: [
             const Positioned.fill(
@@ -65,11 +92,11 @@ class MorePage extends StatelessWidget {
             ),
             SafeArea(
               top: !useSharedShell,
-              child: Column(
+        child: Column(
                 children: [
                   if (!useSharedShell)
                     MarketPageHeader(
-                      title: 'More',
+                      title: strings.more,
                       centerTitle: false,
                       leading: const DrawerMenuButton(),
                       actions: [
@@ -107,15 +134,17 @@ class MorePage extends StatelessWidget {
                           memberSince: memberSince,
                         ),
                         const SizedBox(height: 12),
-                        const _MoreMenuCard(items: items),
+                        const StoreSwitcher(),
                         const SizedBox(height: 12),
+                        _MoreMenuCard(items: items),
+                        const SizedBox(height: 12),
+
                         _LogoutButton(
                           onTap: () {
                             showMarketNotice(
                               context,
-                              title: 'Logged Out',
-                              message:
-                                  'You can connect the real auth flow next',
+                              title: strings.loggedOut,
+                              message: strings.authNext,
                             );
                           },
                         ),
@@ -450,65 +479,50 @@ class _MoreListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        if (item.label == 'Store Profile') {
+        switch (item.action) {
+          case _MoreMenuAction.storeProfile:
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const StoreProfilePage(),
             ),
           );
-          return;
-        }
-
-        if (item.label == 'Staff Management') {
+            return;
+          case _MoreMenuAction.staffManagement:
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const StaffManagementPage(),
             ),
           );
-          return;
-        }
-
-        if (item.label == 'Multi-Store Management') {
+            return;
+          case _MoreMenuAction.multiStoreManagement:
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const MultiStoreManagementPage(),
             ),
           );
-          return;
-        }
-
-        if (item.label == 'Subscription Plan') {
+            return;
+          case _MoreMenuAction.subscriptionPlan:
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const SubscriptionPlanPage(),
             ),
           );
-          return;
-        }
-
-        if (item.label == 'Settings') {
+            return;
+          case _MoreMenuAction.settings:
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const SettingsPage(),
             ),
           );
-          return;
-        }
-
-        if (item.label == 'DUKA AI') {
+            return;
+          case _MoreMenuAction.dukaAi:
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const DukaAiPage(),
             ),
           );
-          return;
+            return;
         }
-
-        showMarketNotice(
-          context,
-          title: item.label,
-          message: '${item.label} module is ready for the next step',
-        );
       },
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -592,8 +606,22 @@ class _LogoutButton extends StatelessWidget {
 }
 
 class _MoreMenuItem {
-  const _MoreMenuItem(this.label, this.icon);
+  const _MoreMenuItem({
+    required this.label,
+    required this.icon,
+    required this.action,
+  });
 
   final String label;
   final IconData icon;
+  final _MoreMenuAction action;
+}
+
+enum _MoreMenuAction {
+  storeProfile,
+  staffManagement,
+  multiStoreManagement,
+  settings,
+  dukaAi,
+  subscriptionPlan,
 }

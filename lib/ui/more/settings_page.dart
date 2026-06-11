@@ -1,11 +1,13 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -20,12 +22,12 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String _language = 'Swahili';
   _ThemeChoice _themeChoice = _ThemeChoice.dark;
 
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
@@ -47,24 +49,25 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 12),
               _SectionCard(
                 icon: Icons.language_rounded,
-                title: 'Language',
-                subtitle: 'Select your preferred language',
+                title: strings.language,
+                subtitle: strings.preferredLanguage,
                 child: _DropdownButton(
-                  value: _language,
-                  items: const ['English (US)', 'English (UK)', 'Swahili'],
+                  value: store.languageCode == 'en'
+                      ? strings.english
+                      : strings.swahili,
+                  items: [strings.english, strings.swahili],
                   onChanged: (value) {
                     if (value == null) return;
-                    setState(() {
-                      _language = value;
-                    });
+                    unawaited(store.setLanguageCode(
+                        value == strings.english ? 'en' : 'sw'));
                   },
                 ),
               ),
               const SizedBox(height: 12),
               _SectionCard(
                 icon: Icons.brightness_6_rounded,
-                title: 'Appearance',
-                subtitle: 'Choose your preferred theme',
+                title: strings.appearance,
+                subtitle: strings.preferredTheme,
                 child: _ThemeChooser(
                   selected: _themeChoice,
                   onChanged: (choice) {
@@ -81,22 +84,29 @@ class _SettingsPageState extends State<SettingsPage> {
                     icon: Icons.shield_outlined,
                     iconColor: const Color(0xFF6E4AE2),
                     backgroundColor: const Color(0xFFF0EBFF),
-                    title: 'Security',
-                    subtitle: 'PIN, passcode and security options',
-                    onTap: () => _showSoon(context, 'Security'),
+                    title: strings.security,
+                    subtitle: strings.languageCode == 'en'
+                        ? 'PIN, passcode and security options'
+                        : 'PIN, nambari ya siri na chaguo za usalama',
+                    onTap: () => _showSoon(context, strings.security, strings.comingSoon),
                   ),
                   _SettingsItem(
                     icon: Icons.cloud_upload_outlined,
                     iconColor: const Color(0xFF2A6CE3),
                     backgroundColor: const Color(0xFFEAF2FF),
-                    title: 'Backup & Restore',
-                    subtitle: 'Backup your data and restore',
-                    onTap: () => _showSoon(context, 'Backup & Restore'),
+                    title: strings.backupRestore,
+                    subtitle: strings.languageCode == 'en'
+                        ? 'Backup your data and restore'
+                        : 'Hifadhi nakala ya data yako na urejeshe',
+                    onTap: () => _showSoon(context, strings.backupRestore, strings.comingSoon),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              _VersionCard(version: 'v1.0.0', storeName: store.profile.storeName),
+              _VersionCard(
+                version: 'v1.0.0',
+                storeName: store.profile.storeName,
+              ),
             ],
           ),
         ),
@@ -104,11 +114,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showSoon(BuildContext context, String title) {
+  void _showSoon(BuildContext context, String title, String message) {
     showMarketNotice(
       context,
       title: title,
-      message: '$title is coming next',
+      message: message,
     );
   }
 }
@@ -123,6 +133,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profile = store.profile;
+    final strings = AppStrings.of(store.languageCode);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -183,7 +194,7 @@ class _Header extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Settings',
+                strings.settings,
                 style: TextStyle(
                   color: AppColors.ink,
                   fontSize: 28,
@@ -193,9 +204,9 @@ class _Header extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Customize your POS experience',
-                style: TextStyle(
+              Text(
+                strings.customizePosExperience,
+                style: const TextStyle(
                   color: AppColors.mutedText,
                   fontSize: 15.5,
                   fontWeight: FontWeight.w500,
@@ -204,7 +215,7 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 14),
               _StoreStrip(
                 storeName: profile.storeName.isEmpty
-                    ? 'Current Store'
+                    ? strings.currentStore
                     : profile.storeName,
                 businessCategory: profile.businessCategory,
                 logoPath: profile.logoPath,
@@ -685,6 +696,8 @@ class _VersionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final store = context.read<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
     return MarketSurfaceCard(
       backgroundColor: Colors.white.withValues(alpha: 0.95),
       borderColor: const Color(0xFFE7EAF0),
@@ -703,7 +716,7 @@ class _VersionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  storeName.isEmpty ? 'Current Store' : storeName,
+                  storeName.isEmpty ? strings.currentStore : storeName,
                   style: const TextStyle(
                     color: AppColors.ink,
                     fontSize: 14,
@@ -712,7 +725,7 @@ class _VersionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'App version $version',
+                  '${strings.appVersion} $version',
                   style: const TextStyle(
                     color: AppColors.mutedText,
                     fontSize: 12,

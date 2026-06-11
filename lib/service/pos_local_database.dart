@@ -103,6 +103,7 @@ class PosLocalDatabase {
             sunday_schedule TEXT NOT NULL DEFAULT '',
             open_24_hours INTEGER NOT NULL DEFAULT 0,
             logo_path TEXT,
+            capability_overrides_json TEXT,
             member_since TEXT NOT NULL
           )
         ''');
@@ -418,6 +419,8 @@ class PosLocalDatabase {
               'sunday_schedule', 'sunday_schedule TEXT NOT NULL DEFAULT \'\'');
           await addColumn(
               'open_24_hours', 'open_24_hours INTEGER NOT NULL DEFAULT 0');
+          await addColumn(
+              'capability_overrides_json', 'capability_overrides_json TEXT');
         }
         if (oldVersion < 13) {
           final tableInfo = await db.rawQuery('PRAGMA table_info(customers)');
@@ -430,9 +433,18 @@ class PosLocalDatabase {
           }
         }
         if (oldVersion < 17) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS stores (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              address TEXT NOT NULL,
+              contact TEXT NOT NULL
+            )
+          ''');
+
           // 1. Create Default Store
           await db.execute('''
-            INSERT INTO stores (id, name, address, contact)
+            INSERT OR IGNORE INTO stores (id, name, address, contact)
             VALUES ('store-default', 'Default Store', 'N/A', 'N/A')
           ''');
 
@@ -454,9 +466,37 @@ class PosLocalDatabase {
             await db.execute('ALTER TABLE $table ADD COLUMN store_id TEXT NOT NULL DEFAULT "store-default"');
           }
         }
+        final appProfileInfo =
+            await db.rawQuery('PRAGMA table_info(app_profile)');
+        final hasCapabilityOverridesJson = appProfileInfo
+            .any((column) => column['name'] == 'capability_overrides_json');
+        if (!hasCapabilityOverridesJson) {
+          await db.execute(
+            'ALTER TABLE app_profile ADD COLUMN capability_overrides_json TEXT',
+          );
+        }
+      },
+      onOpen: (db) async {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS stores (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            address TEXT NOT NULL,
+            contact TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          INSERT OR IGNORE INTO stores (id, name, address, contact)
+          VALUES ('store-default', 'Default Store', 'N/A', 'N/A')
+        ''');
       },
     );
     return _database!;
+  }
+
+  Future<List<Map<String, Object?>>> loadAllStores() async {
+    final db = await database;
+    return db.query('stores', orderBy: 'name ASC');
   }
 
   Future<Map<String, Object?>?> loadAppProfile() async {
@@ -468,9 +508,20 @@ class PosLocalDatabase {
 
   Future<void> saveAppProfile(Map<String, Object?> profile) async {
     final db = await database;
+    final tableInfo = await db.rawQuery('PRAGMA table_info(app_profile)');
+    final availableColumns = tableInfo
+        .map((column) => column['name'] as String?)
+        .whereType<String>()
+        .toSet();
+    final writableProfile = <String, Object?>{'id': 1};
+    for (final entry in profile.entries) {
+      if (availableColumns.contains(entry.key)) {
+        writableProfile[entry.key] = entry.value;
+      }
+    }
     await db.insert(
       'app_profile',
-      <String, Object?>{'id': 1, ...profile},
+      writableProfile,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -592,35 +643,41 @@ class PosLocalDatabase {
     return rows.map(_inventoryFromMap).toList();
   }
 
-  Future<void> replaceInventory(List<InventoryProductItem> items) async {
+  Future<void> replaceInventory(List<InventoryProductItem> items, String storeId) async {
     final db = await database;
     final batch = db.batch();
-    batch.delete('inventory_products');
+    batch.delete('inventory_products', where: 'store_id = ?', whereArgs: <Object?>[storeId]);
     for (final item in items) {
       batch.insert(
         'inventory_products',
-        _inventoryToMap(item),
+        _inventoryToMap(item, storeId),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
     await batch.commit(noResult: true);
   }
 
-  Future<List<ProductItem>> loadCart() async {
+  Future<List<ProductItem>> loadCart(String storeId) async {
     final db = await database;
     final rows = await db.query(
       'cart_items',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
       orderBy: 'id ASC',
     );
     return rows.map(_productFromMap).toList();
   }
 
-  Future<void> replaceCart(List<ProductItem> items) async {
+  Future<void> replaceCart(List<ProductItem> items, String storeId) async {
     final db = await database;
     final batch = db.batch();
-    batch.delete('cart_items');
+    batch.delete(
+      'cart_items',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+    );
     for (final item in items) {
-      batch.insert('cart_items', _productToMap(item));
+      batch.insert('cart_items', _productToMap(item, storeId));
     }
     await batch.commit(noResult: true);
   }
@@ -734,29 +791,13 @@ class PosLocalDatabase {
     await db.delete('cart_items');
   }
 
-  Future<List<Map<String, dynamic>>> loadCustomers() async {
+  Future<List<Map<String, dynamic>>> loadCustomers(String storeId) async {
     final db = await database;
-    try {
-      return await db.query('customers');
-    } on DatabaseException catch (error) {
-      final message = error.toString().toLowerCase();
-      if (message.contains('no such table: customers')) {
-        await db.execute('''
-          CREATE TABLE IF NOT EXISTS customers (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL DEFAULT '',
-            phone TEXT NOT NULL,
-            address TEXT NOT NULL DEFAULT '',
-            debit_balance REAL NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL DEFAULT '',
-            tags TEXT NOT NULL DEFAULT ''
-          )
-        ''');
-        return <Map<String, dynamic>>[];
-      }
-      rethrow;
-    }
+    return db.query(
+      'customers',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+    );
   }
 
   Future<void> replaceCustomers(List<Map<String, Object?>> customers) async {
@@ -769,46 +810,52 @@ class PosLocalDatabase {
     });
   }
 
-  Future<List<DaftariRecoverySession>> loadDaftariSessions() async {
+  Future<List<DaftariRecoverySession>> loadDaftariSessions(String storeId) async {
     final db = await database;
     final rows = await db.query(
       'daftari_recovery_sessions',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
       orderBy: 'created_at DESC',
     );
     return rows.map(DaftariRecoverySession.fromMap).toList();
   }
 
-  Future<void> upsertDaftariSession(DaftariRecoverySession session) async {
+  Future<void> upsertDaftariSession(DaftariRecoverySession session, String storeId) async {
     final db = await database;
     await db.insert(
       'daftari_recovery_sessions',
-      session.toMap(),
+      {...session.toMap(), 'store_id': storeId},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  Future<List<DaftariLearningRule>> loadDaftariLearningRules() async {
+  Future<List<DaftariLearningRule>> loadDaftariLearningRules(String storeId) async {
     final db = await database;
     final rows = await db.query(
       'daftari_learning_rules',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
       orderBy: 'last_used_at DESC, hit_count DESC',
     );
     return rows.map(DaftariLearningRule.fromMap).toList();
   }
 
-  Future<void> upsertDaftariLearningRule(DaftariLearningRule rule) async {
+  Future<void> upsertDaftariLearningRule(DaftariLearningRule rule, String storeId) async {
     final db = await database;
     await db.insert(
       'daftari_learning_rules',
-      rule.toMap(),
+      {...rule.toMap(), 'store_id': storeId},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  Future<List<DukaAiThread>> loadDukaAiThreads() async {
+  Future<List<DukaAiThread>> loadDukaAiThreads(String storeId) async {
     final db = await database;
     final rows = await db.query(
       'myduka_ai_threads',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
       orderBy: 'updated_at DESC, created_at DESC',
     );
     return rows
@@ -824,12 +871,13 @@ class PosLocalDatabase {
         .toList();
   }
 
-  Future<void> upsertDukaAiThread(DukaAiThread thread) async {
+  Future<void> upsertDukaAiThread(DukaAiThread thread, String storeId) async {
     final db = await database;
     await db.insert(
       'myduka_ai_threads',
       <String, Object?>{
         'id': thread.id,
+        'store_id': storeId,
         'title': thread.title,
         'preview': thread.preview,
         'created_at': thread.createdAt,
@@ -975,14 +1023,19 @@ class PosLocalDatabase {
     );
   }
 
-  Future<List<Map<String, Object?>>> loadExpenses() async {
+  Future<List<Map<String, Object?>>> loadExpenses(String storeId) async {
     final db = await database;
-    return db.query('expenses', orderBy: 'date DESC');
+    return db.query(
+      'expenses',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+      orderBy: 'date DESC',
+    );
   }
 
-  Future<void> insertExpense(Map<String, Object?> expense) async {
+  Future<void> insertExpense(Map<String, Object?> expense, String storeId) async {
     final db = await database;
-    await db.insert('expenses', expense);
+    await db.insert('expenses', {...expense, 'store_id': storeId});
   }
 
   Future<void> deleteExpense(int id) async {

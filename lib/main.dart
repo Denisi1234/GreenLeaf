@@ -76,7 +76,7 @@ class _BootstrapScreen extends StatelessWidget {
             ),
             SizedBox(height: 16),
             Text(
-              'Starting TrackMauzo...',
+              'Inaanzisha TrackMauzo...',
               style: TextStyle(
                 color: AppColors.ink,
                 fontSize: 16,
@@ -114,7 +114,7 @@ class _BootstrapErrorScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                'TrackMauzo could not start',
+                'TrackMauzo haikuweza kuanza',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.ink,
@@ -124,7 +124,7 @@ class _BootstrapErrorScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                error?.toString() ?? 'Unknown startup error',
+                error?.toString() ?? 'Hitilafu isiyojulikana wakati wa kuanza',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.textMuted,
