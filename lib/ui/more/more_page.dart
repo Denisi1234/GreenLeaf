@@ -6,9 +6,11 @@ import 'package:provider/provider.dart';
 
 import 'multi_store_management_page.dart';
 import 'duka_ai_page.dart';
+import 'settings_page.dart';
 import 'store_profile_page.dart';
 import 'staff_management_page.dart';
 import 'subscription_plan_page.dart';
+import '../notifications/notifications_page.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -72,10 +74,18 @@ class MorePage extends StatelessWidget {
                       leading: const DrawerMenuButton(),
                       actions: [
                         MarketHeaderActionButtons(
+                          showNotificationDot: true,
                           onDukaAiTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
                                 builder: (context) => const DukaAiAdvisorPage(),
+                              ),
+                            );
+                          },
+                          onNotificationTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) => const NotificationsPage(),
                               ),
                             );
                           },
@@ -471,6 +481,15 @@ class _MoreListTile extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const SubscriptionPlanPage(),
+            ),
+          );
+          return;
+        }
+
+        if (item.label == 'Settings') {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const SettingsPage(),
             ),
           );
           return;

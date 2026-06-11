@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../business_category_config.dart';
+
 class AppColors {
   // Brand Colors
   static const primary = Color(0xFF2563EB);
@@ -48,6 +50,15 @@ class AppColors {
   // Legacy Aliases (for compatibility)
   static const mutedText = textMuted;
   static const green = success;
+
+  static Color categoryPrimary(BusinessCategory category) =>
+      BusinessCategoryConfig.forCategory(category).primaryColor;
+  static Color categoryPrimaryDeep(BusinessCategory category) =>
+      BusinessCategoryConfig.forCategory(category).primaryDeepColor;
+  static Color categoryPrimaryLight(BusinessCategory category) =>
+      BusinessCategoryConfig.forCategory(category).primaryLightColor;
+  static Color categoryAccent(BusinessCategory category) =>
+      BusinessCategoryConfig.forCategory(category).accentColor;
 }
 
 class AppTypography {
@@ -161,7 +172,7 @@ class AppRadius {
 class AppShadows {
   static List<BoxShadow> soft = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.03),
+      color: Colors.black.withValues(alpha: 0.03),
       blurRadius: 12,
       offset: const Offset(0, 4),
     ),
@@ -169,7 +180,7 @@ class AppShadows {
 
   static List<BoxShadow> medium = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.06),
+      color: Colors.black.withValues(alpha: 0.06),
       blurRadius: 18,
       offset: const Offset(0, 8),
     ),
@@ -177,7 +188,7 @@ class AppShadows {
 
   static List<BoxShadow> primary = [
     BoxShadow(
-      color: AppColors.primary.withOpacity(0.08),
+      color: AppColors.primary.withValues(alpha: 0.08),
       blurRadius: 24,
       offset: const Offset(0, 10),
     ),
@@ -191,4 +202,3 @@ class AppDurations {
   static const normal = Duration(milliseconds: 260);
   static const slow = Duration(milliseconds: 400);
 }
-

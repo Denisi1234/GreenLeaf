@@ -8,12 +8,13 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-import '../../service/duka_ai_service.dart';
+import '../business_category_config.dart';
 import '../models/customer_data.dart';
 import '../../service/expense_model.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../models/product_item.dart';
+import '../products/inventory_product_item.dart';
 import '../widgets/market_shared_widgets.dart';
 
 // ignore_for_file: unused_element
@@ -58,15 +59,13 @@ class ReportHubPage extends StatefulWidget {
   const ReportHubPage({super.key});
 
   static const MethodChannel _shareChannel =
-      MethodChannel('possystem/report_share');
+      MethodChannel('trackmauzo/report_share');
 
   static const Color _bg = Color(0xFFF6F8FC);
   static const Color _ink = Color(0xFF0F172A);
   static const Color _muted = Color(0xFF667085);
   static const Color _border = Color(0xFFE6EBF2);
   static const Color _blue = Color(0xFF1E67E8);
-  static const Color _green = Color(0xFF169B4A);
-  static const Color _purple = Color(0xFF8E3ED8);
 
   @override
   State<ReportHubPage> createState() => _ReportHubPageState();
@@ -79,7 +78,9 @@ class _ReportHubPageState extends State<ReportHubPage> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
-    final report = _buildReportSnapshot(store, _selectedPeriod);
+    final config = store.businessCategoryConfig;
+    final report =
+        _buildReportSnapshot(store, _selectedPeriod, config.category);
     final baseTheme = Theme.of(context);
     final theme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
@@ -96,11 +97,15 @@ class _ReportHubPageState extends State<ReportHubPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-                child: _TopBar(
-                  onBackTap: () => Navigator.of(context).maybePop(),
-                  onShareTap: () => _downloadReport(context),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                child: _ReportControlsBar(
+                  dateRange: report.dateRangeLabel,
+                  periodLabel: _selectedPeriod.shortLabel,
                   isDownloading: _isDownloading,
+                  onPeriodSelected: (period) {
+                    setState(() => _selectedPeriod = period);
+                  },
+                  onDownloadTap: () => _downloadReport(context),
                 ),
               ),
               Expanded(
@@ -116,18 +121,13 @@ class _ReportHubPageState extends State<ReportHubPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _RangeCard(
-                              dateRange: report.dateRangeLabel,
-                              periodLabel: _selectedPeriod.shortLabel,
-                              onPeriodSelected: (period) {
-                                setState(() => _selectedPeriod = period);
-                              },
-                            ),
                             const SizedBox(height: 18),
                             _ExecutiveSummaryCard(
-                              title: 'Executive Summary',
-                              summary:
-                                  _buildExecutiveSummary(report, store.profile),
+                              title: _reportOverviewTitle(config.category),
+                              summary: _buildExecutiveSummary(
+                                report,
+                                store.profile,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             _MetricGrid(metrics: report.metrics),
@@ -166,15 +166,42 @@ class _ReportHubPageState extends State<ReportHubPage> {
     _ReportSnapshot report,
     AppProfileData profile,
   ) {
-    final revenue = report.metrics.firstWhere(
-      (metric) => metric.title == 'Total Revenue',
-    );
-    final orders = report.metrics.firstWhere(
-      (metric) => metric.title == 'Total Orders',
-    );
-    final customers = report.metrics.firstWhere(
-      (metric) => metric.title == 'New Customers',
-    );
+    final revenue = _metricByTitle(report.metrics, 'Total Revenue') ??
+        const _MetricData(
+          title: 'Total Revenue',
+          value: '0',
+          icon: Icons.payments_outlined,
+          iconColor: ReportHubPage._blue,
+          tint: ReportHubPage._bg,
+          valueColor: ReportHubPage._ink,
+          deltaText: null,
+          deltaLabel: '',
+          deltaIsPositive: null,
+        );
+    final orders = _metricByTitle(report.metrics, 'Total Orders') ??
+        const _MetricData(
+          title: 'Total Orders',
+          value: '0',
+          icon: Icons.shopping_bag_outlined,
+          iconColor: ReportHubPage._blue,
+          tint: ReportHubPage._bg,
+          valueColor: ReportHubPage._ink,
+          deltaText: null,
+          deltaLabel: '',
+          deltaIsPositive: null,
+        );
+    final customers = _metricByTitle(report.metrics, 'New Customers') ??
+        const _MetricData(
+          title: 'New Customers',
+          value: '0',
+          icon: Icons.people_alt_outlined,
+          iconColor: ReportHubPage._blue,
+          tint: ReportHubPage._bg,
+          valueColor: ReportHubPage._ink,
+          deltaText: null,
+          deltaLabel: '',
+          deltaIsPositive: null,
+        );
 
     final revenueChange = (revenue.deltaText ?? '0%').replaceFirst(
       RegExp(r'^[+-]'),
@@ -199,6 +226,13 @@ class _ReportHubPageState extends State<ReportHubPage> {
         'Revenue $revenueVerb by $revenueChange compared to last ${_selectedPeriod.shortLabel.toLowerCase()}. '
         'You received ${customers.value} new customers, a $customerChange $customerVerb. '
         'Total orders reached ${orders.value}.';
+  }
+
+  _MetricData? _metricByTitle(List<_MetricData> metrics, String title) {
+    for (final metric in metrics) {
+      if (metric.title == title) return metric;
+    }
+    return null;
   }
 
   String _greetingForNow() {
@@ -316,13 +350,16 @@ class _ReportHubPageState extends State<ReportHubPage> {
     Uint8List? pdfBytes;
     final fileName = _reportFileName();
     final store = context.read<PosLocalStore>();
-    final report = _buildReportSnapshot(store, _selectedPeriod);
+    final config = store.businessCategoryConfig;
+    final report = _buildReportSnapshot(
+      store,
+      _selectedPeriod,
+      config.category,
+    );
     try {
-      final aiSummary = await _buildAiExecutiveSummary(store, report);
       pdfBytes = await _buildSalesReportPdfBytes(
         store,
         report,
-        aiSummary,
         store.profile,
       );
       final shared = await _shareReportPdf(pdfBytes, fileName);
@@ -426,6 +463,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
   _ReportSnapshot _buildReportSnapshot(
     PosLocalStore store,
     _ReportPeriod period,
+    BusinessCategory category,
   ) {
     final orders = store.orders;
     final range = _resolveReportRange(orders, period);
@@ -530,6 +568,32 @@ class _ReportHubPageState extends State<ReportHubPage> {
     ).fold<double>(0, (sum, expense) => sum + expense.amount);
     final totalProfit = totalRevenue - totalExpenses;
     final totalOrders = ordersInRange.length;
+    final averageOrderValue =
+        totalOrders == 0 ? 0.0 : totalRevenue / totalOrders;
+    final inventoryUnits =
+        store.inventory.fold<int>(0, (sum, item) => sum + item.stockCount);
+    final lowStockCount =
+        store.inventory.where((item) => item.stockCount <= 20).length;
+    final expiringSoonCount = _expiringSoonCount(store.inventory);
+    final prescriptionCount = _metadataValueCount(
+      store.inventory,
+      'prescription_flag',
+      expectedValue: 'yes',
+    );
+    final warrantyTrackedCount = _metadataNonEmptyCount(
+      store.inventory,
+      ['serial_number', 'warranty_months'],
+    );
+    final barcodeReadyCount =
+        _metadataNonEmptyCount(store.inventory, ['barcode']);
+    final locationBinsCount =
+        _metadataDistinctCount(store.inventory, ['location_bin']);
+    final topBrandLabel =
+        _topMetadataLabel(store.inventory, ['brand']) ?? 'No brand data';
+    final peakHourLabel = _peakHourLabel(ordersInRange);
+    final categoryMixLabel = _categoryMixLabel(store.inventory);
+    final highValueOrdersCount =
+        ordersInRange.where((order) => order.total >= averageOrderValue).length;
     final topProducts = productTally.values.toList()
       ..sort((left, right) {
         final quantityCompare = right.quantity.compareTo(left.quantity);
@@ -538,6 +602,8 @@ class _ReportHubPageState extends State<ReportHubPage> {
         if (revenueCompare != 0) return revenueCompare;
         return left.title.compareTo(right.title);
       });
+    final topProductLabel =
+        topProducts.isNotEmpty ? topProducts.first.title : 'No sales yet';
 
     final productData = topProducts
         .take(3)
@@ -553,74 +619,35 @@ class _ReportHubPageState extends State<ReportHubPage> {
         .toList();
 
     return _ReportSnapshot(
+      category: category,
       periodLabel: period.label,
       dateRangeLabel: range.label,
       startDate: range.start,
       endDate: range.end,
-      metrics: [
-        _MetricData(
-          title: 'Total Revenue',
-          value: _moneyLabel(totalRevenue),
-          icon: Icons.trending_up_rounded,
-          iconColor: ReportHubPage._blue,
-          tint: const Color(0xFFEAF1FF),
-          valueColor: ReportHubPage._blue,
-          deltaText: _comparisonPercentLabel(
-            currentStats.revenue,
-            previousStats.revenue,
-          ),
-          deltaLabel: _comparisonPeriodLabel(period),
-          deltaIsPositive: currentStats.revenue >= previousStats.revenue,
-        ),
-        _MetricData(
-          title: 'Total Orders',
-          value: totalOrders.toString(),
-          icon: Icons.shopping_bag_rounded,
-          iconColor: ReportHubPage._green,
-          tint: const Color(0xFFEAF8EF),
-          valueColor: ReportHubPage._green,
-          deltaText: _comparisonPercentLabel(
-            currentStats.orderCount,
-            previousStats.orderCount,
-          ),
-          deltaLabel: _comparisonPeriodLabel(period),
-          deltaIsPositive: currentStats.orderCount >= previousStats.orderCount,
-        ),
-        _MetricData(
-          title: 'New Customers',
-          value: currentStats.newCustomers.toString(),
-          icon: Icons.person_outline_rounded,
-          iconColor: ReportHubPage._purple,
-          tint: const Color(0xFFF1EAFB),
-          valueColor: ReportHubPage._purple,
-          deltaText: _comparisonPercentLabel(
-            currentStats.newCustomers,
-            previousStats.newCustomers,
-          ),
-          deltaLabel: _comparisonPeriodLabel(period),
-          deltaIsPositive:
-              currentStats.newCustomers >= previousStats.newCustomers,
-        ),
-        _MetricData(
-          title: 'Profit',
-          value: _moneyLabelSigned(totalProfit),
-          icon: Icons.account_balance_wallet_outlined,
-          iconColor:
-              totalProfit >= 0 ? ReportHubPage._green : const Color(0xFFDC2626),
-          tint: totalProfit >= 0
-              ? const Color(0xFFEAF8EF)
-              : const Color(0xFFFDECEC),
-          valueColor:
-              totalProfit >= 0 ? ReportHubPage._green : const Color(0xFFDC2626),
-          deltaText: _comparisonPercentLabel(
-            totalProfit,
-            previousStats.revenue - previousStats.totalExpenses,
-          ),
-          deltaLabel: _comparisonPeriodLabel(period),
-          deltaIsPositive: totalProfit >=
-              (previousStats.revenue - previousStats.totalExpenses),
-        ),
-      ],
+      metrics: _buildCategoryMetrics(
+        category: category,
+        period: period,
+        totalRevenue: totalRevenue,
+        totalOrders: totalOrders,
+        totalExpenses: totalExpenses,
+        totalProfit: totalProfit,
+        averageOrderValue: averageOrderValue,
+        lowStockCount: lowStockCount,
+        inventoryUnits: inventoryUnits,
+        expiringSoonCount: expiringSoonCount,
+        prescriptionCount: prescriptionCount,
+        warrantyTrackedCount: warrantyTrackedCount,
+        barcodeReadyCount: barcodeReadyCount,
+        locationBinsCount: locationBinsCount,
+        topBrandLabel: topBrandLabel,
+        peakHourLabel: peakHourLabel,
+        categoryMixLabel: categoryMixLabel,
+        highValueOrdersCount: highValueOrdersCount,
+        topProductLabel: topProductLabel,
+        inventoryItems: store.inventory,
+        currentStats: currentStats,
+        previousStats: previousStats,
+      ),
       trendPoints: trendPoints,
       profitTrendPoints: profitTrendPoints,
       products: productData,
@@ -665,10 +692,389 @@ class _ReportHubPageState extends State<ReportHubPage> {
     return '$sign$rounded%';
   }
 
+  String _reportOverviewTitle(BusinessCategory category) {
+    return switch (category) {
+      BusinessCategory.pharmacy => 'Pharmacy Intelligence',
+      BusinessCategory.electronics => 'Electronics Intelligence',
+      BusinessCategory.retail => 'Retail Operations Intelligence',
+    };
+  }
+
+  String _categoryFocusSentence(BusinessCategory category) {
+    return switch (category) {
+      BusinessCategory.pharmacy =>
+        'This report emphasizes expiry control, prescription demand, and margin protection for medicine sales.',
+      BusinessCategory.electronics =>
+        'This report emphasizes high-value devices, warranty readiness, and brand performance across the catalog.',
+      BusinessCategory.retail =>
+        'This report emphasizes basket size, fast-moving stock, markdown pressure, and reorder timing for store-floor decisions.',
+    };
+  }
+
+  String _forecastCategoryHint(BusinessCategory category) {
+    return switch (category) {
+      BusinessCategory.pharmacy =>
+        'Expiry and prescription demand are the main near-term forecast risks.',
+      BusinessCategory.electronics =>
+        'Warranty registration and premium device mix drive the forecast band.',
+      BusinessCategory.retail =>
+        'Demand should stay anchored around basket size, fast movers, and markdown activity.',
+    };
+  }
+
+  List<_MetricData> _buildCategoryMetrics({
+    required BusinessCategory category,
+    required _ReportPeriod period,
+    required double totalRevenue,
+    required int totalOrders,
+    required double totalExpenses,
+    required double totalProfit,
+    required double averageOrderValue,
+    required int lowStockCount,
+    required int inventoryUnits,
+    required int expiringSoonCount,
+    required int prescriptionCount,
+    required int warrantyTrackedCount,
+    required int barcodeReadyCount,
+    required int locationBinsCount,
+    required String topBrandLabel,
+    required String peakHourLabel,
+    required String categoryMixLabel,
+    required int highValueOrdersCount,
+    required String topProductLabel,
+    required List<InventoryProductItem> inventoryItems,
+    required _PdfReportStats currentStats,
+    required _PdfReportStats previousStats,
+  }) {
+    final config = BusinessCategoryConfig.forCategory(category);
+    final comparisonLabel = _comparisonPeriodLabel(period);
+    final revenueDelta = _comparisonPercentLabel(
+      currentStats.revenue,
+      previousStats.revenue,
+    );
+    final orderDelta = _comparisonPercentLabel(
+      currentStats.orderCount,
+      previousStats.orderCount,
+    );
+    final averageDelta = _comparisonPercentLabel(
+      currentStats.averageOrderValue,
+      previousStats.averageOrderValue,
+    );
+    final marginDelta = _comparisonPercentLabel(
+      totalProfit,
+      previousStats.revenue - previousStats.totalExpenses,
+    );
+
+    List<_MetricData> withColors(List<_MetricData> items) {
+      return items
+          .map(
+            (item) => _MetricData(
+              title: item.title,
+              value: item.value,
+              icon: item.icon,
+              iconColor: item.iconColor,
+              tint: item.tint,
+              valueColor: item.valueColor,
+              deltaText: item.deltaText,
+              deltaLabel: item.deltaLabel,
+              deltaIsPositive: item.deltaIsPositive,
+            ),
+          )
+          .toList();
+    }
+
+    final primaryTint = config.primaryLightColor;
+    final primaryColor = config.primaryColor;
+    final secondaryColor = config.accentColor;
+
+    return switch (category) {
+      BusinessCategory.pharmacy => withColors([
+          _MetricData(
+            title: 'Revenue',
+            value: _moneyLabel(totalRevenue),
+            icon: Icons.trending_up_rounded,
+            iconColor: primaryColor,
+            tint: primaryTint,
+            valueColor: primaryColor,
+            deltaText: revenueDelta,
+            deltaLabel: comparisonLabel,
+            deltaIsPositive: currentStats.revenue >= previousStats.revenue,
+          ),
+          _MetricData(
+            title: 'Expiring Soon',
+            value: expiringSoonCount.toString(),
+            icon: Icons.event_busy_rounded,
+            iconColor: secondaryColor,
+            tint: config.surfaceTintColor,
+            valueColor: secondaryColor,
+            deltaText: null,
+            deltaLabel: '30-day watchlist',
+            deltaIsPositive: null,
+          ),
+          _MetricData(
+            title: 'Prescription Items',
+            value: prescriptionCount.toString(),
+            icon: Icons.medication_liquid_outlined,
+            iconColor: primaryColor,
+            tint: primaryTint,
+            valueColor: primaryColor,
+            deltaText: null,
+            deltaLabel: 'Medicines flagged',
+            deltaIsPositive: null,
+          ),
+          _MetricData(
+            title: 'Margin',
+            value: _moneyLabelSigned(totalProfit),
+            icon: Icons.account_balance_wallet_outlined,
+            iconColor:
+                totalProfit >= 0 ? primaryColor : const Color(0xFFDC2626),
+            tint: totalProfit >= 0 ? primaryTint : const Color(0xFFFDECEC),
+            valueColor:
+                totalProfit >= 0 ? primaryColor : const Color(0xFFDC2626),
+            deltaText: marginDelta,
+            deltaLabel: comparisonLabel,
+            deltaIsPositive: totalProfit >=
+                (previousStats.revenue - previousStats.totalExpenses),
+          ),
+        ]),
+      BusinessCategory.electronics => withColors([
+          _MetricData(
+            title: 'Revenue',
+            value: _moneyLabel(totalRevenue),
+            icon: Icons.trending_up_rounded,
+            iconColor: primaryColor,
+            tint: primaryTint,
+            valueColor: primaryColor,
+            deltaText: revenueDelta,
+            deltaLabel: comparisonLabel,
+            deltaIsPositive: currentStats.revenue >= previousStats.revenue,
+          ),
+          _MetricData(
+            title: 'Warranty Items',
+            value: warrantyTrackedCount.toString(),
+            icon: Icons.verified_user_outlined,
+            iconColor: secondaryColor,
+            tint: config.surfaceTintColor,
+            valueColor: secondaryColor,
+            deltaText: null,
+            deltaLabel: 'Tracked devices',
+            deltaIsPositive: null,
+          ),
+          _MetricData(
+            title: 'High-Ticket Orders',
+            value: highValueOrdersCount.toString(),
+            icon: Icons.payments_outlined,
+            iconColor: primaryColor,
+            tint: primaryTint,
+            valueColor: primaryColor,
+            deltaText: orderDelta,
+            deltaLabel: comparisonLabel,
+            deltaIsPositive:
+                currentStats.orderCount >= previousStats.orderCount,
+          ),
+          _MetricData(
+            title: 'Top Brand',
+            value: topBrandLabel,
+            icon: Icons.branding_watermark_outlined,
+            iconColor: secondaryColor,
+            tint: config.surfaceTintColor,
+            valueColor: primaryColor,
+            deltaText: null,
+            deltaLabel: 'Brand mix',
+            deltaIsPositive: null,
+          ),
+          _MetricData(
+            title: 'Category Mix',
+            value: categoryMixLabel,
+            icon: Icons.grid_view_rounded,
+            iconColor: secondaryColor,
+            tint: config.surfaceTintColor,
+            valueColor: primaryColor,
+            deltaText: null,
+            deltaLabel: 'Shelf spread',
+            deltaIsPositive: null,
+          ),
+        ]),
+      BusinessCategory.retail => withColors([
+          _MetricData(
+            title: 'Sales',
+            value: _moneyLabel(totalRevenue),
+            icon: Icons.trending_up_rounded,
+            iconColor: primaryColor,
+            tint: primaryTint,
+            valueColor: primaryColor,
+            deltaText: revenueDelta,
+            deltaLabel: comparisonLabel,
+            deltaIsPositive: currentStats.revenue >= previousStats.revenue,
+          ),
+          _MetricData(
+            title: 'Transactions',
+            value: totalOrders.toString(),
+            icon: Icons.shopping_bag_rounded,
+            iconColor: secondaryColor,
+            tint: config.surfaceTintColor,
+            valueColor: secondaryColor,
+            deltaText: orderDelta,
+            deltaLabel: comparisonLabel,
+            deltaIsPositive:
+                currentStats.orderCount >= previousStats.orderCount,
+          ),
+          _MetricData(
+            title: 'Average Basket',
+            value: _moneyLabel(averageOrderValue),
+            icon: Icons.receipt_long_rounded,
+            iconColor: primaryColor,
+            tint: primaryTint,
+            valueColor: primaryColor,
+            deltaText: averageDelta,
+            deltaLabel: comparisonLabel,
+            deltaIsPositive: currentStats.averageOrderValue >=
+                previousStats.averageOrderValue,
+          ),
+          _MetricData(
+            title: 'Fast Mover',
+            value: topProductLabel,
+            icon: Icons.sell_outlined,
+            iconColor: secondaryColor,
+            tint: config.surfaceTintColor,
+            valueColor: primaryColor,
+            deltaText: null,
+            deltaLabel: 'Fast mover',
+            deltaIsPositive: null,
+          ),
+        ]),
+    };
+  }
+
+  String _averagePrepLabel(List<InventoryProductItem> items) {
+    final minutes = <int>[];
+    for (final item in items) {
+      final raw = item.categoryData['prep_time_minutes']?.toString().trim();
+      final parsed = int.tryParse(raw ?? '');
+      if (parsed != null && parsed > 0) {
+        minutes.add(parsed);
+      }
+    }
+    if (minutes.isEmpty) return 'Prep data';
+    final average = minutes.reduce((a, b) => a + b) / minutes.length;
+    return '${average.round()} mins';
+  }
+
+  int _expiringSoonCount(List<InventoryProductItem> items) {
+    final now = DateTime.now();
+    final threshold = now.add(const Duration(days: 30));
+    var count = 0;
+    for (final item in items) {
+      final expiry = _parseDateMetadata(item.categoryData['expiry_date']);
+      if (expiry == null) continue;
+      if (!expiry.isBefore(now) && !expiry.isAfter(threshold)) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  int _metadataValueCount(
+    List<InventoryProductItem> items,
+    String key, {
+    required String expectedValue,
+  }) {
+    final normalizedExpected = expectedValue.trim().toLowerCase();
+    return items.where((item) {
+      final value = item.categoryData[key];
+      return value != null &&
+          value.toString().trim().toLowerCase() == normalizedExpected;
+    }).length;
+  }
+
+  int _metadataNonEmptyCount(
+    List<InventoryProductItem> items,
+    List<String> keys,
+  ) {
+    return items.where((item) {
+      for (final key in keys) {
+        final value = item.categoryData[key]?.toString().trim() ?? '';
+        if (value.isNotEmpty) return true;
+      }
+      return false;
+    }).length;
+  }
+
+  int _metadataDistinctCount(
+    List<InventoryProductItem> items,
+    List<String> keys,
+  ) {
+    final values = <String>{};
+    for (final item in items) {
+      for (final key in keys) {
+        final value = item.categoryData[key]?.toString().trim() ?? '';
+        if (value.isNotEmpty) {
+          values.add(value);
+        }
+      }
+    }
+    return values.length;
+  }
+
+  String? _topMetadataLabel(
+    List<InventoryProductItem> items,
+    List<String> keys,
+  ) {
+    final counts = <String, int>{};
+    for (final item in items) {
+      for (final key in keys) {
+        final value = item.categoryData[key]?.toString().trim() ?? '';
+        if (value.isEmpty) continue;
+        counts[value] = (counts[value] ?? 0) + 1;
+      }
+    }
+    if (counts.isEmpty) return null;
+    final topEntry = counts.entries.reduce(
+      (left, right) => left.value >= right.value ? left : right,
+    );
+    return topEntry.key;
+  }
+
+  String _peakHourLabel(List<CompletedOrder> orders) {
+    if (orders.isEmpty) return 'No peak';
+    final counts = <int, int>{};
+    for (final order in orders) {
+      final parsed = DateTime.tryParse(order.dateTime);
+      if (parsed == null) continue;
+      counts[parsed.hour] = (counts[parsed.hour] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return 'No peak';
+    final topHour = counts.entries
+        .reduce(
+          (left, right) => left.value >= right.value ? left : right,
+        )
+        .key;
+    return _formatHour(topHour);
+  }
+
+  String _formatHour(int hour) {
+    final suffix = hour >= 12 ? 'PM' : 'AM';
+    final hour12 = hour % 12 == 0 ? 12 : hour % 12;
+    return '$hour12 $suffix';
+  }
+
+  String _categoryMixLabel(List<InventoryProductItem> items) {
+    final categories = items
+        .map((item) => item.category.trim())
+        .where((category) => category.isNotEmpty)
+        .toSet();
+    if (categories.isEmpty) return 'No mix data';
+    return '${categories.length} categories';
+  }
+
+  DateTime? _parseDateMetadata(Object? value) {
+    if (value == null) return null;
+    return DateTime.tryParse(value.toString().trim());
+  }
+
   Future<Uint8List> _buildSalesReportPdfBytes(
     PosLocalStore store,
     _ReportSnapshot report,
-    String aiSummary,
     AppProfileData profile,
   ) async {
     final pdf = pw.Document();
@@ -711,16 +1117,24 @@ class _ReportHubPageState extends State<ReportHubPage> {
       endDate: previousRange.end,
     );
     final reportTitle = _reportTitleFor(report);
-    final reportId = _reportId(generatedAt);
-    final watermarkLabel = profile.storeName.trim().isEmpty
-        ? 'OFFICIAL REPORT'
-        : '${profile.storeName.trim().toUpperCase()} OFFICIAL REPORT';
     final executiveSummary = _buildPdfExecutiveSummary(
       report: report,
       stats: currentStats,
+      previousStats: previousStats,
       profile: profile,
+      lowStockCount: _lowStockItems(store).length,
     );
-    final conclusion = _buildPdfConclusion(report, currentStats);
+    final forecast = _buildForecastSnapshot(
+      report: report,
+      currentStats: currentStats,
+      previousStats: previousStats,
+      store: store,
+    );
+    final conclusion = _buildPdfConclusion(
+      report,
+      currentStats,
+      _lowStockItems(store).length,
+    );
 
     pdf.addPage(
       pw.MultiPage(
@@ -728,31 +1142,27 @@ class _ReportHubPageState extends State<ReportHubPage> {
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.fromLTRB(24, 20, 24, 26),
           theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
-          buildBackground: (context) => pw.FullPage(
-            ignoreMargins: true,
-            child: pw.Watermark.text(
-              watermarkLabel,
-              style: pw.TextStyle(
-                color: PdfColor.fromHex('#F0F4F8'),
-                fontSize: 30,
-                fontWeight: pw.FontWeight.bold,
-              ),
-              angle: -math.pi / 4,
-            ),
-          ),
         ),
-        header: (context) => pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 10),
-          child: _pdfReportHeader(
-            reportTitle: reportTitle,
-            report: report,
-            profile: profile,
-            logoImage: logoImage,
-            reportId: reportId,
-          ),
-        ),
+        header: (context) => context.pageNumber == 1
+            ? pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 10),
+                child: _pdfReportHeader(
+                  reportTitle: reportTitle,
+                  report: report,
+                  profile: profile,
+                  logoImage: logoImage,
+                ),
+              )
+            : pw.SizedBox(height: 0),
         build: (context) => [
-          _pdfIntroSection(executiveSummary, report),
+          _pdfIntroSection(
+            executiveSummary,
+            report,
+            currentStats,
+            previousStats,
+          ),
+          pw.SizedBox(height: 12),
+          _pdfHighlightsSection(report, currentStats, previousStats, store),
           pw.SizedBox(height: 12),
           _pdfSectionDivider(),
           _pdfSectionTitle('1. Key Performance Indicators'),
@@ -780,9 +1190,9 @@ class _ReportHubPageState extends State<ReportHubPage> {
           _pdfExpenseAnalysisSection(currentExpenses),
           pw.SizedBox(height: 14),
           _pdfSectionDivider(),
-          _pdfSectionTitle('6. AI-Powered Business Hints & Recommendations'),
+          _pdfSectionTitle('6. Forecast & Planning Outlook'),
           pw.SizedBox(height: 8),
-          _pdfAiSummarySection(aiSummary),
+          _pdfForecastSection(forecast),
           pw.SizedBox(height: 14),
           _pdfSectionDivider(),
           _pdfSectionTitle('7. Conclusion'),
@@ -790,7 +1200,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
           _pdfConclusionSection(conclusion),
           pw.SizedBox(height: 14),
           _pdfSectionDivider(),
-          _pdfSectionTitle('References'),
+          _pdfSectionTitle('8. References'),
           pw.SizedBox(height: 8),
           _pdfReferencesSection(report),
         ],
@@ -800,7 +1210,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                'Official record | $reportId | ${_formatPdfDateTime(generatedAt)}',
+                _formatPdfDateTime(generatedAt),
                 style: const pw.TextStyle(
                   fontSize: 8.5,
                   color: PdfColors.grey600,
@@ -859,47 +1269,46 @@ class _ReportHubPageState extends State<ReportHubPage> {
     required _ReportSnapshot report,
     required AppProfileData profile,
     required pw.ImageProvider? logoImage,
-    required String reportId,
   }) {
     final storeName =
         profile.storeName.trim().isEmpty ? 'Store report' : profile.storeName;
 
     return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
+      padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
         color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(4),
+        borderRadius: pw.BorderRadius.circular(8),
         border: pw.Border.all(
           color: PdfColor.fromHex('#DDE4EE'),
           width: 0.8,
         ),
       ),
       child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           if (logoImage != null) ...[
             pw.Container(
-              width: 52,
-              height: 52,
+              width: 56,
+              height: 56,
               decoration: pw.BoxDecoration(
                 color: PdfColor.fromHex('#F3F6FB'),
-                borderRadius: pw.BorderRadius.circular(4),
+                borderRadius: pw.BorderRadius.circular(12),
                 border: pw.Border.all(color: PdfColor.fromHex('#DDE4EE')),
               ),
               child: pw.ClipRRect(
-                horizontalRadius: 4,
-                verticalRadius: 4,
+                horizontalRadius: 12,
+                verticalRadius: 12,
                 child: pw.Image(logoImage, fit: pw.BoxFit.cover),
               ),
             ),
             pw.SizedBox(width: 12),
           ] else ...[
             pw.Container(
-              width: 52,
-              height: 52,
+              width: 56,
+              height: 56,
               decoration: pw.BoxDecoration(
                 color: PdfColor.fromHex('#EAF1FF'),
-                borderRadius: pw.BorderRadius.circular(4),
+                borderRadius: pw.BorderRadius.circular(12),
               ),
               child: pw.Center(
                 child: pw.Text(
@@ -918,77 +1327,48 @@ class _ReportHubPageState extends State<ReportHubPage> {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Row(
-                  children: [
-                    pw.Text(
-                      'OFFICIAL RECORD',
-                      style: pw.TextStyle(
-                        fontSize: 8.8,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColor.fromHex('#64748B'),
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    pw.SizedBox(width: 8),
-                    pw.Text(
-                      reportId,
-                      style: const pw.TextStyle(
-                        fontSize: 8.5,
-                        color: PdfColors.grey600,
-                      ),
-                    ),
-                  ],
-                ),
-                pw.SizedBox(height: 3),
-                pw.Text(
-                  'Official Financial Record',
-                  style: pw.TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromHex('#334155'),
-                  ),
-                ),
-                pw.SizedBox(height: 2),
                 pw.Text(
                   storeName,
                   style: pw.TextStyle(
-                    fontSize: 16.5,
+                    fontSize: 17,
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColor.fromHex('#0F172A'),
                   ),
                 ),
-                pw.SizedBox(height: 2),
+                pw.SizedBox(height: 4),
                 pw.Text(
                   reportTitle,
                   style: pw.TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromHex('#0F172A'),
+                    color: PdfColor.fromHex('#1E67E8'),
                   ),
                 ),
-                pw.SizedBox(height: 3),
+                pw.SizedBox(height: 4),
                 pw.Text(
                   report.dateRangeLabel,
                   style: const pw.TextStyle(
-                    fontSize: 10.2,
+                    fontSize: 10,
                     color: PdfColors.grey700,
                   ),
                 ),
-                pw.SizedBox(height: 6),
-                _pdfHeaderMetaLine(
-                  storeName: storeName,
-                  report: report,
-                  reportId: reportId,
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Prepared for management review',
+                  style: const pw.TextStyle(
+                    fontSize: 8.8,
+                    color: PdfColors.grey600,
+                  ),
                 ),
               ],
             ),
           ),
           pw.SizedBox(width: 12),
           pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: pw.BoxDecoration(
               color: PdfColor.fromHex('#F8FAFC'),
-              borderRadius: pw.BorderRadius.circular(4),
+              borderRadius: pw.BorderRadius.circular(10),
               border: pw.Border.all(color: PdfColor.fromHex('#DDE4EE')),
             ),
             child: pw.Column(
@@ -998,13 +1378,13 @@ class _ReportHubPageState extends State<ReportHubPage> {
                   report.periodLabel,
                   style: pw.TextStyle(
                     color: PdfColor.fromHex('#334155'),
-                    fontSize: 10.5,
+                    fontSize: 10.2,
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
                 pw.SizedBox(height: 2),
                 pw.Text(
-                  'Executive report',
+                  '${report.category.displayName} intelligence brief',
                   style: const pw.TextStyle(
                     fontSize: 8.5,
                     color: PdfColors.grey600,
@@ -1018,41 +1398,27 @@ class _ReportHubPageState extends State<ReportHubPage> {
     );
   }
 
-  pw.Widget _pdfHeaderMetaLine({
-    required String storeName,
-    required _ReportSnapshot report,
-    required String reportId,
-  }) {
-    return pw.Wrap(
-      spacing: 10,
-      runSpacing: 4,
-      children: [
-        _pdfMetaText('Prepared for: $storeName'),
-        _pdfMetaText('Period: ${report.periodLabel}'),
-        _pdfMetaText('Range: ${report.dateRangeLabel}'),
-        _pdfMetaText('Reference: $reportId'),
-        _pdfMetaText('Status: Official record'),
-      ],
-    );
-  }
+  pw.Widget _pdfIntroSection(
+    String executiveSummary,
+    _ReportSnapshot report,
+    _PdfReportStats currentStats,
+    _PdfReportStats previousStats,
+  ) {
+    final revenueDelta =
+        _changeLabel(currentStats.revenue, previousStats.revenue);
+    final orderDelta =
+        _changeLabel(currentStats.orderCount, previousStats.orderCount);
+    final margin = currentStats.revenue - currentStats.totalExpenses;
+    final marginLabel =
+        margin >= 0 ? _moneyLabel(margin) : '-${_moneyLabel(margin.abs())}';
+    final marginTone = margin >= 0 ? 'Healthy' : 'Under pressure';
 
-  pw.Widget _pdfMetaText(String text) {
-    return pw.Text(
-      text,
-      style: const pw.TextStyle(
-        fontSize: 8.8,
-        color: PdfColors.grey600,
-      ),
-    );
-  }
-
-  pw.Widget _pdfIntroSection(String executiveSummary, _ReportSnapshot report) {
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
         color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(4),
+        borderRadius: pw.BorderRadius.circular(8),
         border: pw.Border.all(
           color: PdfColor.fromHex('#E6EBF2'),
           width: 0.7,
@@ -1062,7 +1428,7 @@ class _ReportHubPageState extends State<ReportHubPage> {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'Executive Summary',
+            '${report.category.displayName} management summary',
             style: pw.TextStyle(
               fontSize: 13.5,
               fontWeight: pw.FontWeight.bold,
@@ -1083,22 +1449,22 @@ class _ReportHubPageState extends State<ReportHubPage> {
             children: [
               pw.Expanded(
                 child: _pdfIntroStat(
-                  'Document',
-                  'Official report',
+                  'Revenue shift',
+                  revenueDelta,
                 ),
               ),
               pw.SizedBox(width: 8),
               pw.Expanded(
                 child: _pdfIntroStat(
-                  'Format',
-                  'Executive summary',
+                  'Orders',
+                  orderDelta,
                 ),
               ),
               pw.SizedBox(width: 8),
               pw.Expanded(
                 child: _pdfIntroStat(
-                  'Scope',
-                  report.dateRangeLabel,
+                  'Margin',
+                  '$marginTone $marginLabel',
                 ),
               ),
             ],
@@ -1610,46 +1976,171 @@ class _ReportHubPageState extends State<ReportHubPage> {
 
   String _reportTitleFor(_ReportSnapshot report) {
     if (report.periodLabel == 'This Month') {
-      return 'Store Performance Report - ${_monthYearLabel(report.endDate)}';
+      return '${report.category.displayName} Intelligence Report - ${_monthYearLabel(report.endDate)}';
     }
     if (report.periodLabel == 'Today') {
-      return 'Store Performance Report - ${_dateLabel(report.endDate)}';
+      return '${report.category.displayName} Intelligence Report - ${_dateLabel(report.endDate)}';
     }
     if (report.periodLabel == 'This Week') {
-      return 'Store Performance Report - ${_dateLabel(report.startDate)} - ${_dateLabel(report.endDate)}';
+      return '${report.category.displayName} Intelligence Report - ${_dateLabel(report.startDate)} - ${_dateLabel(report.endDate)}';
     }
-    return 'Store Performance Report - ${report.dateRangeLabel}';
+    return '${report.category.displayName} Intelligence Report - ${report.dateRangeLabel}';
   }
 
   String _buildPdfExecutiveSummary({
     required _ReportSnapshot report,
     required _PdfReportStats stats,
+    required _PdfReportStats previousStats,
     required AppProfileData profile,
+    required int lowStockCount,
   }) {
     final storeName = profile.storeName.trim().isEmpty
         ? 'The store'
         : profile.storeName.trim();
-    final trendWord = stats.revenueTrend >= 0 ? 'growth' : 'softness';
-    final revenueDirection = stats.revenueTrend >= 0 ? 'increased' : 'declined';
+    final focus = _categoryFocusSentence(report.category);
+    final revenueChange = _changeLabel(stats.revenue, previousStats.revenue);
+    final orderChange =
+        _changeLabel(stats.orderCount, previousStats.orderCount);
+    final margin = stats.revenue - stats.totalExpenses;
+    final expenseRatio =
+        stats.revenue <= 0 ? 0.0 : (stats.totalExpenses / stats.revenue) * 100;
     final topProduct = report.products.isNotEmpty
         ? 'The top selling product was ${report.products.first.title}.'
         : 'No completed sales were recorded in the selected period.';
+    final lowStockText = lowStockCount == 0
+        ? 'No inventory items are currently in the low-stock watchlist.'
+        : '$lowStockCount inventory item${lowStockCount == 1 ? '' : 's'} are now in the low-stock watchlist.';
+    final marginText = margin >= 0
+        ? 'The period closed with a positive margin of ${_moneyLabel(margin)}.'
+        : 'The period closed with a negative margin of ${_moneyLabel(margin.abs())}, which means expenses outpaced revenue.';
 
-    return '$storeName recorded ${_moneyLabel(stats.revenue)} in completed sales across ${stats.orderCount} orders during ${report.dateRangeLabel}. '
-        'Average order value was ${_moneyLabel(stats.averageOrderValue)}, while customer activity showed ${stats.activeCustomers} active customer${stats.activeCustomers == 1 ? '' : 's'} and ${stats.returningCustomers} repeat buyer${stats.returningCustomers == 1 ? '' : 's'}. '
-        'The sales trend shows $trendWord in the selected period, and revenue $revenueDirection compared with the previous comparable period. '
-        '$topProduct';
+    return '$storeName recorded ${_moneyLabel(stats.revenue)} across ${stats.orderCount} completed orders during ${report.dateRangeLabel}. '
+        '$focus '
+        'Revenue changed by $revenueChange while order volume changed by $orderChange compared with the previous comparable period. '
+        'Average order value was ${_moneyLabel(stats.averageOrderValue)}, with ${stats.activeCustomers} active customer${stats.activeCustomers == 1 ? '' : 's'} and ${stats.returningCustomers} repeat buyer${stats.returningCustomers == 1 ? '' : 's'}. '
+        '$marginText Expenses consumed ${expenseRatio.toStringAsFixed(0)}% of revenue, which puts the business in ${expenseRatio > 70 ? 'a pressure zone' : 'a manageable zone'}. '
+        '$lowStockText $topProduct';
   }
 
-  String _buildPdfConclusion(_ReportSnapshot report, _PdfReportStats stats) {
+  String _buildPdfConclusion(
+    _ReportSnapshot report,
+    _PdfReportStats stats,
+    int lowStockCount,
+  ) {
     final revenue = _moneyLabel(stats.revenue);
     final expenses = _moneyLabel(stats.totalExpenses);
     final margin = stats.revenue - stats.totalExpenses;
     final marginLabel = _moneyLabel(margin.abs());
     final marginText = margin >= 0 ? 'profit cushion' : 'cost pressure';
+    final inventoryText = lowStockCount == 0
+        ? 'Inventory levels are currently stable across the low-stock watchlist.'
+        : '$lowStockCount low-stock item${lowStockCount == 1 ? '' : 's'} deserve immediate restocking attention.';
 
-    return '${report.dateRangeLabel} demonstrated a clear picture of current store performance. Revenue closed at $revenue, expenses totaled $expenses, and the net position reflected a $marginText of $marginLabel. '
-        'The strongest next steps are to protect best-selling products, keep a close eye on the largest expense categories, and continue using customer follow-ups to improve repeat sales in the next reporting period.';
+    return '${report.category.displayName} reporting for ${report.dateRangeLabel} showed a fuller business picture than revenue alone. Revenue closed at $revenue, expenses totaled $expenses, and the net position reflected a $marginText of $marginLabel. '
+        '$inventoryText The forecast section below highlights near-term demand momentum, stock pressure, and margin protection opportunities.';
+  }
+
+  _ForecastSnapshot _buildForecastSnapshot({
+    required _ReportSnapshot report,
+    required _PdfReportStats currentStats,
+    required _PdfReportStats previousStats,
+    required PosLocalStore store,
+  }) {
+    final periodDays = math.max(
+      1,
+      report.endDate.difference(report.startDate).inDays + 1,
+    );
+    final averageDailyRevenue = currentStats.revenue / periodDays;
+    final revenueChangeRatio = _safeRatio(
+      currentStats.revenue,
+      previousStats.revenue,
+      positiveFallback: 0.12,
+    );
+    final orderChangeRatio = _safeRatio(
+      currentStats.orderCount.toDouble(),
+      previousStats.orderCount.toDouble(),
+      positiveFallback: 0.08,
+    );
+    final trendBias = _trendBias(report.trendPoints);
+    final momentum = (1 +
+            (revenueChangeRatio * 0.35) +
+            (orderChangeRatio * 0.15) +
+            (trendBias * 0.25))
+        .clamp(0.75, 1.35)
+        .toDouble();
+
+    final weekBase = averageDailyRevenue * 7 * momentum;
+    final monthBase = averageDailyRevenue * 30 * momentum;
+    final volatility = math.min(
+      0.22,
+      0.12 +
+          (report.trendPoints.length < 4 ? 0.06 : 0.0) +
+          (revenueChangeRatio.abs() * 0.05),
+    );
+    final monthVolatility = math.min(0.28, volatility + 0.05);
+    final lowStockCount = _lowStockItems(store).length;
+    final expenseRatio = currentStats.revenue <= 0
+        ? 0.0
+        : (currentStats.totalExpenses / currentStats.revenue) * 100;
+
+    final directionTone = momentum > 1.08
+        ? 'Upward momentum'
+        : momentum < 0.94
+            ? 'Softening momentum'
+            : 'Stable momentum';
+    final confidenceLabel = report.trendPoints.length >= 7
+        ? 'Moderate confidence'
+        : 'Directional estimate';
+
+    final riskParts = <String>[];
+    if (lowStockCount > 0) {
+      riskParts.add(
+        '$lowStockCount low-stock item${lowStockCount == 1 ? '' : 's'} may restrict growth',
+      );
+    }
+    if (expenseRatio > 70) {
+      riskParts.add(
+        'expenses are taking ${expenseRatio.toStringAsFixed(0)}% of revenue',
+      );
+    }
+    if (riskParts.isEmpty) {
+      riskParts.add('operating conditions are relatively balanced');
+    }
+    riskParts.add(_forecastCategoryHint(report.category));
+
+    return _ForecastSnapshot(
+      nextWeekBase: weekBase,
+      nextWeekLow: weekBase * (1 - volatility),
+      nextWeekHigh: weekBase * (1 + volatility),
+      nextMonthBase: monthBase,
+      nextMonthLow: monthBase * (1 - monthVolatility),
+      nextMonthHigh: monthBase * (1 + monthVolatility),
+      directionTone: directionTone,
+      confidenceLabel: confidenceLabel,
+      riskNote: riskParts.join(', '),
+    );
+  }
+
+  double _safeRatio(
+    double current,
+    double previous, {
+    required double positiveFallback,
+  }) {
+    if (previous == 0) {
+      if (current <= 0) return 0.0;
+      return positiveFallback;
+    }
+    return (current - previous) / previous;
+  }
+
+  double _trendBias(List<_TrendPoint> points) {
+    if (points.length < 2) return 0.0;
+    final first = points.first.value;
+    final last = points.last.value;
+    if (first <= 0) {
+      return last > 0 ? 0.12 : 0.0;
+    }
+    return ((last - first) / first).clamp(-0.25, 0.25).toDouble();
   }
 
   _PdfReportStats _buildPdfStats({
@@ -2041,31 +2532,45 @@ class _ReportHubPageState extends State<ReportHubPage> {
     );
   }
 
-  pw.Widget _pdfHighlightsSection(_ReportSnapshot report) {
+  pw.Widget _pdfHighlightsSection(
+    _ReportSnapshot report,
+    _PdfReportStats currentStats,
+    _PdfReportStats previousStats,
+    PosLocalStore store,
+  ) {
     final topProduct =
         report.products.isNotEmpty ? report.products.first : null;
-    final revenue =
-        report.metrics.isNotEmpty ? report.metrics[0].value : 'TSH 0';
-    final orders = report.metrics.length > 1 ? report.metrics[1].value : '0';
-    final average =
-        report.metrics.length > 2 ? report.metrics[2].value : 'TSH 0';
+    final revenueChange =
+        _changeLabel(currentStats.revenue, previousStats.revenue);
+    final average = _moneyLabel(currentStats.averageOrderValue);
+    final margin = currentStats.revenue - currentStats.totalExpenses;
+    final expenseRatio = currentStats.revenue <= 0
+        ? 0.0
+        : (currentStats.totalExpenses / currentStats.revenue) * 100;
+    final lowStockCount = _lowStockItems(store).length;
     final topProductText = topProduct == null
         ? 'No completed sales were recorded in this period.'
-        : '${topProduct.title} led the period with ${topProduct.orders} and ${topProduct.amount} revenue.';
+        : '${topProduct.title} led the period with ${topProduct.orders} and ${topProduct.amount} revenue, which suggests a clear demand concentration.';
+    final expenseText = currentStats.totalExpenses <= 0
+        ? 'No expenses were recorded during this period.'
+        : 'Expenses used ${expenseRatio.toStringAsFixed(0)}% of revenue, leaving a ${margin >= 0 ? 'positive' : 'negative'} margin of ${_moneyLabel(margin.abs())}.';
+    final stockText = lowStockCount == 0
+        ? 'No items are in the low-stock watchlist right now.'
+        : '$lowStockCount item${lowStockCount == 1 ? '' : 's'} need restocking attention before the next sales push.';
 
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
-        color: PdfColor.fromHex('#FBFCFE'),
-        borderRadius: pw.BorderRadius.circular(14),
-        border: pw.Border.all(color: PdfColor.fromHex('#E3E9F2')),
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.8),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'Key highlights',
+            '${report.category.displayName} intelligence signals',
             style: pw.TextStyle(
               fontSize: 13.5,
               fontWeight: pw.FontWeight.bold,
@@ -2074,13 +2579,17 @@ class _ReportHubPageState extends State<ReportHubPage> {
           ),
           pw.SizedBox(height: 8),
           _pdfBullet(
-            'Revenue for this period is $revenue across $orders completed orders, with an average order value of $average.',
+            'Revenue changed by $revenueChange across ${currentStats.orderCount} completed orders, with an average order value of $average.',
           ),
           pw.SizedBox(height: 5),
           _pdfBullet(topProductText),
           pw.SizedBox(height: 5),
           _pdfBullet(
-            'The report only includes completed sales stored in the app, so it reflects finalized business activity.',
+            expenseText,
+          ),
+          pw.SizedBox(height: 5),
+          _pdfBullet(
+            stockText,
           ),
         ],
       ),
@@ -2112,6 +2621,116 @@ class _ReportHubPageState extends State<ReportHubPage> {
           ),
         ),
       ],
+    );
+  }
+
+  pw.Widget _pdfForecastSection(_ForecastSnapshot forecast) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.8),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Forecast outlook',
+            style: pw.TextStyle(
+              fontSize: 13.5,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#0F172A'),
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'Projection assumes the current sales pattern, pricing, and stock availability remain broadly consistent.',
+            style: const pw.TextStyle(
+              fontSize: 9.8,
+              color: PdfColors.grey700,
+              lineSpacing: 4,
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Row(
+            children: [
+              pw.Expanded(
+                child: _pdfForecastCard(
+                  title: 'Next 7 days',
+                  amount: forecast.nextWeekBase,
+                  low: forecast.nextWeekLow,
+                  high: forecast.nextWeekHigh,
+                ),
+              ),
+              pw.SizedBox(width: 10),
+              pw.Expanded(
+                child: _pdfForecastCard(
+                  title: 'Next 30 days',
+                  amount: forecast.nextMonthBase,
+                  low: forecast.nextMonthLow,
+                  high: forecast.nextMonthHigh,
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 10),
+          _pdfBullet(
+            'Direction signal: ${forecast.directionTone}. Confidence: ${forecast.confidenceLabel}.',
+          ),
+          pw.SizedBox(height: 5),
+          _pdfBullet(
+            'Risk watch: ${forecast.riskNote}.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _pdfForecastCard({
+    required String title,
+    required double amount,
+    required double low,
+    required double high,
+  }) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.8),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title,
+            style: pw.TextStyle(
+              fontSize: 10.5,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#64748B'),
+            ),
+          ),
+          pw.SizedBox(height: 5),
+          pw.Text(
+            _moneyLabel(amount),
+            style: pw.TextStyle(
+              fontSize: 16,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColor.fromHex('#0F172A'),
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'Range: ${_moneyLabel(low)} - ${_moneyLabel(high)}',
+            style: const pw.TextStyle(
+              fontSize: 9.4,
+              color: PdfColors.grey700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2153,47 +2772,6 @@ class _ReportHubPageState extends State<ReportHubPage> {
           fontWeight: pw.FontWeight.bold,
           color: PdfColor.fromHex('#0F172A'),
         ),
-      ),
-    );
-  }
-
-  pw.Widget _pdfAiSummarySection(String aiSummary) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(4),
-        border: pw.Border.all(color: PdfColor.fromHex('#E6EBF2'), width: 0.7),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(
-            'AI-Powered Business Hints & Recommendations',
-            style: pw.TextStyle(
-              fontSize: 13,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromHex('#0F172A'),
-            ),
-          ),
-          pw.SizedBox(height: 6),
-          pw.Text(
-            aiSummary,
-            style: const pw.TextStyle(
-              fontSize: 10.2,
-              color: PdfColors.grey800,
-              lineSpacing: 4,
-            ),
-          ),
-          pw.SizedBox(height: 8),
-          pw.Text(
-            'Generated from completed sales, trend data, and top product performance inside the app.',
-            style: const pw.TextStyle(
-              fontSize: 8.6,
-              color: PdfColors.grey600,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -2363,15 +2941,6 @@ class _ReportHubPageState extends State<ReportHubPage> {
         '$hour:$minute $amPm';
   }
 
-  String _reportId(DateTime dateTime) {
-    final year = dateTime.year.toString();
-    final month = dateTime.month.toString().padLeft(2, '0');
-    final day = dateTime.day.toString().padLeft(2, '0');
-    final hour = dateTime.hour.toString().padLeft(2, '0');
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    return 'SR-$year$month$day-$hour$minute';
-  }
-
   String _hexForMetric(Color color) {
     final red = (color.r * 255.0).round().clamp(0, 255).toInt();
     final green = (color.g * 255.0).round().clamp(0, 255).toInt();
@@ -2520,135 +3089,6 @@ class _ReportHubPageState extends State<ReportHubPage> {
       case ProductArtType.tide:
         return const [Color(0xFF9A3412), Color(0xFFF59E0B)];
     }
-  }
-
-  Future<String> _buildAiExecutiveSummary(
-    PosLocalStore store,
-    _ReportSnapshot report,
-  ) async {
-    final fallback = _buildLocalExecutiveSummary(store, report);
-    final service = DukaAiService(
-      geminiApiKey: store.geminiApiKey,
-      groqApiKey: store.groqApiKey,
-      groqModel: store.groqModel,
-      timeout: const Duration(seconds: 18),
-    );
-
-    if (!service.isConfigured) {
-      return fallback;
-    }
-
-    final response = await service
-        .sendMessage(
-          prompt:
-              'Write a polished business insights section for a store performance report. Focus on sales momentum, customer activity, expense pressure, and practical next actions.',
-          storeContext: _buildReportContext(store, report),
-          history: const <DukaAiMessage>[],
-          systemPromptOverride: _professionalReportSystemPrompt(),
-        )
-        .timeout(
-          const Duration(seconds: 4),
-          onTimeout: () => const DukaAiResult(
-            reply: '',
-            errorKind: DukaAiErrorKind.timeout,
-          ),
-        );
-
-    final cleaned = _normalizeAiText(response.reply);
-    if (response.errorKind == DukaAiErrorKind.none && cleaned.isNotEmpty) {
-      return cleaned;
-    }
-
-    return fallback;
-  }
-
-  String _buildReportContext(PosLocalStore store, _ReportSnapshot report) {
-    final profile = store.profile;
-    final revenue =
-        report.metrics.isNotEmpty ? report.metrics[0].value : 'TSH 0';
-    final orders = report.metrics.length > 1 ? report.metrics[1].value : '0';
-    final average =
-        report.metrics.length > 2 ? report.metrics[2].value : 'TSH 0';
-
-    final buffer = StringBuffer();
-    buffer.writeln('Report title: Store Report');
-    buffer.writeln(
-      'Store name: ${profile.storeName.isEmpty ? 'Unnamed store' : profile.storeName}',
-    );
-    buffer.writeln(
-      'Owner: ${profile.ownerName.isEmpty ? 'Not set' : profile.ownerName}',
-    );
-    buffer.writeln('Period: ${report.dateRangeLabel}');
-    buffer.writeln('Period type: ${report.periodLabel}');
-    buffer.writeln('Total revenue: $revenue');
-    buffer.writeln('Completed orders: $orders');
-    buffer.writeln('Average order value: $average');
-    buffer.writeln('Top selling products:');
-    if (report.products.isEmpty) {
-      buffer.writeln('- No completed sales in this period.');
-    } else {
-      for (final product in report.products) {
-        buffer.writeln(
-            '- ${product.title} | ${product.orders} | ${product.amount}');
-      }
-    }
-    buffer.writeln('Sales trend:');
-    for (final point in report.trendPoints) {
-      buffer.writeln('- ${point.label}: ${point.displayValue}');
-    }
-    return buffer.toString();
-  }
-
-  String _buildLocalExecutiveSummary(
-    PosLocalStore store,
-    _ReportSnapshot report,
-  ) {
-    final storeName =
-        store.profile.storeName.isEmpty ? 'the shop' : store.profile.storeName;
-    final revenue =
-        report.metrics.isNotEmpty ? report.metrics[0].value : 'TSH 0';
-    final orders = report.metrics.length > 1 ? report.metrics[1].value : '0';
-    final average =
-        report.metrics.length > 2 ? report.metrics[2].value : 'TSH 0';
-    final topProduct = report.products.isNotEmpty
-        ? 'Top product: ${report.products.first.title} with ${report.products.first.orders}.'
-        : 'There were no completed sales in this period.';
-
-    final trendNote = report.trendPoints.isEmpty
-        ? 'The trend chart does not have enough completed sales to show a pattern.'
-        : 'The trend section summarizes activity across ${report.trendPoints.length} points.';
-
-    return '''
-Executive summary
-$storeName recorded $revenue across $orders completed orders, with an average order value of $average. $topProduct $trendNote
-
-Recommended actions
-- Protect stock for the strongest sellers.
-- Review slower-moving items and tighten purchasing where needed.
-- Keep using customer follow-ups and bundles to improve repeat sales.
-'''
-        .trim();
-  }
-
-  String _professionalReportSystemPrompt() {
-    return '''
-You are a senior retail analyst writing a polished business insights section for a store report.
-
-Write in a formal, concise, businesslike tone.
-Use only the numbers and facts in the provided data.
-Do not invent data or mention unsupported assumptions.
-Use plain text only. No markdown. No greetings. No sign-off.
-
-Keep the response compact, readable, and suitable for a PDF section.
-Focus on sales momentum, customer patterns, expense pressure, and practical next actions.
-''';
-  }
-
-  String _normalizeAiText(String text) {
-    return text
-        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
-        .replaceAll(RegExp(r'__([^_]+)__'), r'$1')
-        .trim();
   }
 
   _ReportRange _resolveReportRange(
@@ -2821,6 +3261,7 @@ Focus on sales momentum, customer patterns, expense pressure, and practical next
 
 class _ReportSnapshot {
   const _ReportSnapshot({
+    required this.category,
     required this.periodLabel,
     required this.dateRangeLabel,
     required this.startDate,
@@ -2834,6 +3275,7 @@ class _ReportSnapshot {
     required this.profitChartMaxValue,
   });
 
+  final BusinessCategory category;
   final String periodLabel;
   final String dateRangeLabel;
   final DateTime startDate;
@@ -2907,83 +3349,201 @@ class _ProductTally {
   final List<Color> colors;
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.onBackTap,
-    required this.onShareTap,
+class _ReportControlsBar extends StatelessWidget {
+  const _ReportControlsBar({
+    required this.dateRange,
+    required this.periodLabel,
     required this.isDownloading,
+    required this.onPeriodSelected,
+    required this.onDownloadTap,
   });
 
-  final VoidCallback onBackTap;
-  final VoidCallback onShareTap;
+  final String dateRange;
+  final String periodLabel;
   final bool isDownloading;
+  final ValueChanged<_ReportPeriod> onPeriodSelected;
+  final VoidCallback onDownloadTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onBackTap,
-          icon: const Icon(
-            Icons.chevron_left_rounded,
-            color: ReportHubPage._blue,
-            size: 32,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: ReportHubPage._border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 16,
+            offset: Offset(0, 6),
           ),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 44, height: 44),
-          splashRadius: 24,
-        ),
-        const SizedBox(width: 8),
-        const Expanded(
-          child: Text(
-            'Store Report',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: ReportHubPage._ink,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.7,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: isDownloading ? null : onShareTap,
-            customBorder: const CircleBorder(),
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: isDownloading
-                      ? const SizedBox(
-                          key: ValueKey('download-loading'),
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            valueColor: AlwaysStoppedAnimation(
-                              ReportHubPage._blue,
-                            ),
-                          ),
-                        )
-                      : const Icon(
-                          Icons.ios_share_rounded,
-                          key: ValueKey('download-icon'),
-                          color: ReportHubPage._blue,
-                          size: 25,
-                        ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF1FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.calendar_month_rounded,
+                    color: ReportHubPage._blue,
+                    size: 18,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Date',
+                        style: TextStyle(
+                          color: ReportHubPage._muted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        dateRange,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: ReportHubPage._ink,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(width: 8),
+          PopupMenuButton<_ReportPeriod>(
+            onSelected: onPeriodSelected,
+            position: PopupMenuPosition.under,
+            offset: const Offset(0, 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            itemBuilder: (context) => _ReportPeriod.values
+                .map(
+                  (period) => PopupMenuItem<_ReportPeriod>(
+                    value: period,
+                    child: Text(period.label),
+                  ),
+                )
+                .toList(),
+            child: _ActionChip(
+              icon: Icons.tune_rounded,
+              label: periodLabel,
+            ),
+          ),
+          const SizedBox(width: 8),
+          _ActionChipButton(
+            icon: Icons.ios_share_rounded,
+            loading: isDownloading,
+            onTap: onDownloadTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F8FF),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: ReportHubPage._blue, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: ReportHubPage._blue,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionChipButton extends StatelessWidget {
+  const _ActionChipButton({
+    required this.icon,
+    required this.loading,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool loading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF4F8FF),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: loading ? null : onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: loading
+                ? const SizedBox(
+                    key: ValueKey('download-loading'),
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2.2),
+                  )
+                : Icon(
+                    icon,
+                    key: const ValueKey('download-icon'),
+                    color: ReportHubPage._blue,
+                    size: 18,
+                  ),
+          ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -3000,178 +3560,35 @@ class _ExecutiveSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+      padding: const EdgeInsets.all(16),
       borderColor: ReportHubPage._border,
       radius: 22,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEAF1FF),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: ReportHubPage._blue,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          color: ReportHubPage._ink,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  summary,
-                  style: const TextStyle(
-                    color: ReportHubPage._muted,
-                    fontSize: 15,
-                    height: 1.68,
-                    letterSpacing: -0.1,
-                  ),
-                ),
-              ],
+          Text(
+            title,
+            style: const TextStyle(
+              color: ReportHubPage._ink,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(width: 14),
-          const SizedBox(
-            width: 154,
-            height: 122,
-            child: _SummaryIllustration(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryIllustration extends StatelessWidget {
-  const _SummaryIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF8FBFF), Color(0xFFF2F7FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: 8,
-            right: 8,
-            bottom: 12,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                _MiniBar(height: 34, tint: Color(0xFFE4EEFF)),
-                _MiniBar(height: 44, tint: Color(0xFFD7E6FF)),
-                _MiniBar(height: 58, tint: Color(0xFFBBD0FF)),
-                _MiniBar(height: 72, tint: Color(0xFF7FABFF)),
-                _MiniBar(height: 88, tint: Color(0xFF1E67E8)),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 10,
-            right: 10,
-            top: 14,
-            height: 48,
-            child: CustomPaint(
-              painter: _SummaryCurvePainter(),
-            ),
-          ),
-          const Positioned(
-            right: 6,
-            top: 8,
-            child: Icon(
-              Icons.north_east_rounded,
-              color: ReportHubPage._blue,
-              size: 24,
+          const SizedBox(height: 8),
+          Text(
+            summary,
+            style: const TextStyle(
+              color: ReportHubPage._muted,
+              fontSize: 15,
+              height: 1.68,
+              letterSpacing: -0.1,
             ),
           ),
         ],
       ),
     );
   }
-}
-
-class _MiniBar extends StatelessWidget {
-  const _MiniBar({
-    required this.height,
-    required this.tint,
-  });
-
-  final double height;
-  final Color tint;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 20,
-      height: height,
-      decoration: BoxDecoration(
-        color: tint,
-        borderRadius: BorderRadius.circular(9),
-      ),
-    );
-  }
-}
-
-class _SummaryCurvePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = ReportHubPage._blue.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path()
-      ..moveTo(4, size.height - 8)
-      ..quadraticBezierTo(
-        size.width * 0.28,
-        size.height - 6,
-        size.width * 0.48,
-        size.height - 24,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.72,
-        size.height - 40,
-        size.width - 16,
-        6,
-      );
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SummaryCurvePainter oldDelegate) => false;
 }
 
 class _StockAlertCard extends StatelessWidget {
@@ -3197,8 +3614,8 @@ class _StockAlertCard extends StatelessWidget {
           Container(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F4FA),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F4FA),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -3426,94 +3843,57 @@ class _TrendMetricChip extends StatelessWidget {
 
 class _RangeCard extends StatelessWidget {
   const _RangeCard({
-    required this.dateRange,
     required this.periodLabel,
     required this.onPeriodSelected,
   });
 
-  final String dateRange;
   final String periodLabel;
   final ValueChanged<_ReportPeriod> onPeriodSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _PillButton(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            borderColor: ReportHubPage._border,
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.calendar_month_rounded,
+    return Align(
+      alignment: Alignment.centerRight,
+      child: PopupMenuButton<_ReportPeriod>(
+        onSelected: onPeriodSelected,
+        position: PopupMenuPosition.under,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        offset: const Offset(0, 10),
+        itemBuilder: (context) => _ReportPeriod.values
+            .map(
+              (period) => PopupMenuItem<_ReportPeriod>(
+                value: period,
+                child: Text(period.label),
+              ),
+            )
+            .toList(),
+        child: _PillButton(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          borderColor: const Color(0xFFD9E2F2),
+          backgroundColor: const Color(0xFFF4F8FF),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.tune_rounded,
+                color: ReportHubPage._blue,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                periodLabel,
+                style: const TextStyle(
                   color: ReportHubPage._blue,
-                  size: 23,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    dateRange,
-                    style: const TextStyle(
-                      color: ReportHubPage._ink,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: ReportHubPage._muted,
-                  size: 22,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 12),
-        PopupMenuButton<_ReportPeriod>(
-          onSelected: onPeriodSelected,
-          position: PopupMenuPosition.under,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          offset: const Offset(0, 10),
-          itemBuilder: (context) => _ReportPeriod.values
-              .map(
-                (period) => PopupMenuItem<_ReportPeriod>(
-                  value: period,
-                  child: Text(period.label),
-                ),
-              )
-              .toList(),
-          child: _PillButton(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-            borderColor: const Color(0xFFD9E2F2),
-            backgroundColor: const Color(0xFFF4F8FF),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.calendar_month_outlined,
-                  color: ReportHubPage._blue,
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  periodLabel,
-                  style: const TextStyle(
-                    color: ReportHubPage._blue,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -3528,7 +3908,7 @@ class _MetricGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = constraints.maxWidth < 520 ? 2 : 4;
-        const gap = 12.0;
+        const gap = 10.0;
         final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
 
         return Wrap(
@@ -3556,17 +3936,17 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       borderColor: ReportHubPage._border,
-      radius: 20,
+      radius: 18,
       child: SizedBox(
-        height: 176,
+        height: 158,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: data.tint,
                 shape: BoxShape.circle,
@@ -3574,22 +3954,22 @@ class _MetricCard extends StatelessWidget {
               child: Icon(
                 data.icon,
                 color: data.iconColor,
-                size: 20,
+                size: 18,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               data.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: ReportHubPage._muted,
-                fontSize: 12,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w600,
                 height: 1.05,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             FittedBox(
               alignment: Alignment.centerLeft,
               fit: BoxFit.scaleDown,
@@ -3597,7 +3977,7 @@ class _MetricCard extends StatelessWidget {
                 data.value,
                 style: TextStyle(
                   color: data.valueColor,
-                  fontSize: 30,
+                  fontSize: 27,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.9,
                 ),
@@ -3609,14 +3989,14 @@ class _MetricCard extends StatelessWidget {
                 if (data.deltaText != null)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
+                      horizontal: 8,
+                      vertical: 5,
                     ),
                     decoration: BoxDecoration(
                       color: data.deltaIsPositive == false
                           ? const Color(0xFFFDECEC)
                           : data.tint.withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -3625,19 +4005,19 @@ class _MetricCard extends StatelessWidget {
                           data.deltaIsPositive == false
                               ? Icons.south_west_rounded
                               : Icons.north_east_rounded,
-                          size: 14,
+                          size: 13,
                           color: data.deltaIsPositive == false
                               ? const Color(0xFFDC2626)
                               : data.iconColor,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Text(
                           data.deltaText!,
                           style: TextStyle(
                             color: data.deltaIsPositive == false
                                 ? const Color(0xFFDC2626)
                                 : data.iconColor,
-                            fontSize: 12,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -3653,7 +4033,7 @@ class _MetricCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: ReportHubPage._muted,
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -4482,4 +4862,28 @@ class _ProductData {
   final String amount;
   final IconData icon;
   final List<Color> colors;
+}
+
+class _ForecastSnapshot {
+  const _ForecastSnapshot({
+    required this.nextWeekBase,
+    required this.nextWeekLow,
+    required this.nextWeekHigh,
+    required this.nextMonthBase,
+    required this.nextMonthLow,
+    required this.nextMonthHigh,
+    required this.directionTone,
+    required this.confidenceLabel,
+    required this.riskNote,
+  });
+
+  final double nextWeekBase;
+  final double nextWeekLow;
+  final double nextWeekHigh;
+  final double nextMonthBase;
+  final double nextMonthLow;
+  final double nextMonthHigh;
+  final String directionTone;
+  final String confidenceLabel;
+  final String riskNote;
 }

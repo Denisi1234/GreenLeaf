@@ -1,17 +1,14 @@
-Order and Checkout System
-This is an offline point-of-sale (POS) system that uses local files as its database.
-This allows users to operate the system without an internet connection, and it not only stores order data but also allows for the configuration of inventory management and other functions.
-This system is completely open source (free). If you are a programmer or anyone who wants to make this product better, you are welcome to visit the relevant website:
+TrackMauzo
 
-https://github.com/evan361425/flutter-pos-system
+TrackMauzo is an offline point-of-sale and business management app for small shops and growing stores.
+It helps you manage sales, inventory, customers, receipts, reports, and store operations in one place.
 
-♦ Features:
+Key features:
 
-• Menu: Users can directly edit the menu, including the catalog, price, cost, and ingredients of each product.
-• Inventory Tracking: Set inventory levels for each dish. Each order is automatically subtracted from the inventory.
-• Ordering: Includes useful features such as order queue and quick order amount calculation.
-• Cash Register: Helps reconcile daily orders and calculate the correct amount of cash due after an order is placed.
-• Customer Details: Customize customer options such as takeout, dine-in, gender, age, etc.
-• Data Backup: Back up order, menu, and other information to Google Sheets.
-• Chart Analysis: Create custom charts for intuitive analysis and statistics.
-• Printer: Print receipts via Bluetooth connection.
+* Fast checkout and sales tracking
+* Inventory monitoring and product management
+* Customer records and staff tools
+* Receipt printing and sharing
+* Reports, insights, and business summaries
+
+TrackMauzo is designed to keep your day-to-day shop operations simple, organized, and easy to review.

@@ -1,6 +1,6 @@
 class ReceiptBrandData {
-  static const String storeName = 'Greenfield Mart';
-  static const String address = '123 Greenfield Road';
-  static const String cityStateZip = 'Springfield, IL 62701';
-  static const String phone = '(217) 555-0198';
+  static const String storeName = 'TrackMauzo Store';
+  static const String address = 'Mbezi Beach, Dar es Salaam';
+  static const String cityStateZip = 'Dar es Salaam, Tanzania';
+  static const String phone = '+255 700 000 000';
 }

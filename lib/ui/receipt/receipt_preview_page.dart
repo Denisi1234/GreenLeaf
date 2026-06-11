@@ -12,7 +12,6 @@ import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../models/product_item.dart';
 import '../shell/app_shell.dart';
-import '../widgets/app_design.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'receipt_pdf_service.dart';
@@ -30,7 +29,7 @@ class ReceiptPreviewPage extends StatefulWidget {
 }
 
 class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
-  static const MethodChannel _shareChannel = MethodChannel('possystem/share');
+  static const MethodChannel _shareChannel = MethodChannel('trackmauzo/share');
 
   File? _preparedPdf;
   bool _isPreparing = false;
@@ -381,7 +380,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(
         builder: (context) => const AppShell(
-          initialTab: MarketTab.reports,
+          initialTab: MarketTab.sales,
         ),
       ),
       (route) => false,
@@ -663,12 +662,12 @@ class _ReceiptPaper extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),

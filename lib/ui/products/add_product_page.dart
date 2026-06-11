@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../business_category_config.dart';
 import '../widgets/app_design.dart';
 import '../models/product_item.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -37,16 +38,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
   String? _selectedCategory;
   String? _selectedImagePath;
-
-  static const _categories = [
-    'Beverages',
-    'Snacks',
-    'Stationery',
-    'Disposable',
-    'Personal Care',
-    'Groceries',
-    'Household',
-  ];
+  late BusinessCategory _businessCategory;
+  late List<String> _categoryOptions;
 
   @override
   void initState() {
@@ -63,6 +56,19 @@ class _AddProductPageState extends State<AddProductPage> {
     );
     _selectedCategory = widget.product?.category;
     _selectedImagePath = widget.product?.imagePath;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final config = context.read<PosLocalStore>().businessCategoryConfig;
+    _businessCategory = config.category;
+    _categoryOptions = _productCategoriesFor(_businessCategory);
+
+    if (_selectedCategory == null ||
+        !_categoryOptions.contains(_selectedCategory)) {
+      _selectedCategory = _categoryOptions.first;
+    }
   }
 
   @override
@@ -104,9 +110,39 @@ class _AddProductPageState extends State<AddProductPage> {
             _selectedCategory!,
           ),
       imagePath: _selectedImagePath,
+      categoryData: const <String, Object?>{},
     );
 
     Navigator.of(context).pop(product);
+  }
+
+  List<String> _productCategoriesFor(BusinessCategory category) {
+    return switch (category) {
+      BusinessCategory.pharmacy => const [
+          'Medicines',
+          'OTC',
+          'Prescriptions',
+          'Supplements',
+          'Medical Supplies',
+        ],
+      BusinessCategory.electronics => const [
+          'Phones',
+          'Accessories',
+          'Computers',
+          'Audio',
+          'Appliances',
+          'Networking',
+        ],
+      BusinessCategory.retail => const [
+          'Beverages',
+          'Snacks',
+          'Stationery',
+          'Disposable',
+          'Personal Care',
+          'Groceries',
+          'Household',
+        ],
+    };
   }
 
   Future<void> _deleteProduct() async {
@@ -245,6 +281,13 @@ class _AddProductPageState extends State<AddProductPage> {
 
   @override
   Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    final config = store.businessCategoryConfig;
+    final categoryTitle = switch (config.category) {
+      BusinessCategory.pharmacy => 'Medicine Item',
+      BusinessCategory.electronics => 'Device Item',
+      BusinessCategory.retail => 'Product',
+    };
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
@@ -264,8 +307,10 @@ class _AddProductPageState extends State<AddProductPage> {
             Column(
               children: [
                 MarketPageHeader(
-                  title:
-                      widget.product == null ? 'Add Product' : 'Edit Product',
+                  title: widget.product == null
+                      ? 'Add $categoryTitle'
+                      : 'Edit $categoryTitle',
+                  subtitle: config.productHint,
                 ),
                 Expanded(
                   child: SingleChildScrollView(
@@ -356,14 +401,13 @@ class _AddProductPageState extends State<AddProductPage> {
                             _DropdownInputField(
                               value: _selectedCategory,
                               hint: 'Select category',
-                              items: _categories,
+                              items: _categoryOptions,
                               onChanged: (value) {
                                 setState(() => _selectedCategory = value);
                               },
                               validator: (value) =>
                                   value == null ? 'Category is required' : null,
                             ),
-                            const SizedBox(height: 18),
                             const _FieldLabel(
                               'Stock Quantity',
                               requiredField: true,
@@ -515,6 +559,7 @@ class _TextInputField extends StatelessWidget {
     this.leadingText,
     this.trailingIcon,
     this.keyboardType,
+    this.maxLines = 1,
   });
 
   final TextEditingController controller;
@@ -523,12 +568,14 @@ class _TextInputField extends StatelessWidget {
   final IconData? trailingIcon;
   final String? Function(String?) validator;
   final TextInputType? keyboardType;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      maxLines: maxLines,
       validator: validator,
       style: const TextStyle(
         color: Color(0xFF33363F),

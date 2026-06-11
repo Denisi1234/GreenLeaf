@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../home/home_page.dart';
+import '../../service/pos_local_store.dart';
+import '../business_category_config.dart';
+import '../home/sales_page.dart';
 import '../more/more_page.dart';
+import '../products/add_product_page.dart';
 import '../products/product_management_page.dart';
-import '../reports/reports_page.dart';
+import '../reports/dashboard_page.dart';
+import '../reports/report_hub_page.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../more/duka_ai_page.dart';
+import '../notifications/notifications_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -30,9 +36,10 @@ class _AppShellState extends State<AppShell>
   late final AnimationController _transitionController;
 
   static const _pages = [
-    ReportsPage(useSharedShell: true),
+    DashboardPage(useSharedShell: true),
     ProductManagementPage(useSharedShell: true),
-    MarketHomePage(useSharedShell: true),
+    SalesPage(useSharedShell: true),
+    ReportHubPage(),
     MorePage(useSharedShell: true),
   ];
 
@@ -75,6 +82,8 @@ class _AppShellState extends State<AppShell>
         return '';
       case MarketTab.products:
         return '';
+      case MarketTab.sales:
+        return '';
       case MarketTab.reports:
         return '';
       case MarketTab.more:
@@ -88,6 +97,8 @@ class _AppShellState extends State<AppShell>
         return 'Dashboard';
       case MarketTab.products:
         return 'Products';
+      case MarketTab.sales:
+        return 'Sales';
       case MarketTab.reports:
         return 'Reports';
       case MarketTab.more:
@@ -101,15 +112,77 @@ class _AppShellState extends State<AppShell>
         return 'Track today\'s activity at a glance';
       case MarketTab.products:
         return 'Manage stock, pricing, and edits';
+      case MarketTab.sales:
+        return 'Manage sales and cart activity';
       case MarketTab.reports:
-        return 'Review sales and performance trends';
+        return 'View insights, trends, and downloads';
       case MarketTab.more:
         return 'Store profile, staff, and tools';
     }
   }
 
+  String _primaryActionLabel(
+    MarketTab tab,
+    BusinessCategory category,
+  ) {
+    final isAddFlow = tab == MarketTab.products || tab == MarketTab.sales;
+    return switch (category) {
+      BusinessCategory.pharmacy => isAddFlow ? 'Add Medicine' : 'New Dispense',
+      BusinessCategory.electronics => isAddFlow ? 'Add Device' : 'New Sale',
+      BusinessCategory.retail => isAddFlow ? 'Add Product' : 'New Sale',
+    };
+  }
+
+  IconData _primaryActionIcon(
+    MarketTab tab,
+    BusinessCategory category,
+  ) {
+    final isAddFlow = tab == MarketTab.products || tab == MarketTab.sales;
+    if (isAddFlow) {
+      return switch (category) {
+        BusinessCategory.pharmacy => Icons.medication_rounded,
+        BusinessCategory.electronics => Icons.devices_other_rounded,
+        BusinessCategory.retail => Icons.inventory_2_outlined,
+      };
+    }
+
+    return switch (category) {
+      BusinessCategory.pharmacy => Icons.receipt_long_outlined,
+      BusinessCategory.electronics => Icons.shopping_bag_outlined,
+      BusinessCategory.retail => Icons.point_of_sale_outlined,
+    };
+  }
+
+  Future<void> _openPrimaryAction(
+    BuildContext context,
+    MarketTab tab,
+    PosLocalStore store,
+  ) async {
+    final isAddFlow = tab == MarketTab.products || tab == MarketTab.sales;
+    final shouldOpenProductForm = isAddFlow;
+
+    if (shouldOpenProductForm) {
+      final nextCode =
+          'P${(store.inventory.length + 1).toString().padLeft(3, '0')}';
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (context) => AddProductPage(nextCode: nextCode),
+        ),
+      );
+      return;
+    }
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => const SalesPage(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    final config = store.businessCategoryConfig;
     return Scaffold(
       drawer: MarketAppDrawer(
         selectedItem: _drawerSelectedItemForTab(_currentTab),
@@ -127,10 +200,25 @@ class _AppShellState extends State<AppShell>
             showBorder: true,
             actions: [
               MarketHeaderActionButtons(
+                aiBackground: config.primaryLightColor,
+                aiForeground: config.primaryColor,
+                aiBorderColor: config.primaryColor.withValues(alpha: 0.12),
+                notificationBackground: config.primaryLightColor,
+                notificationForeground: config.primaryColor,
+                notificationBorderColor:
+                    config.primaryColor.withValues(alpha: 0.12),
+                showNotificationDot: true,
                 onDukaAiTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (context) => const DukaAiAdvisorPage(),
+                    ),
+                  );
+                },
+                onNotificationTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const NotificationsPage(),
                     ),
                   );
                 },
@@ -203,6 +291,19 @@ class _AppShellState extends State<AppShell>
           ),
         ],
       ),
+      floatingActionButton: (_currentTab == MarketTab.dashboard ||
+              _currentTab == MarketTab.sales ||
+              _currentTab == MarketTab.more)
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'app_shell_primary_action_fab',
+              onPressed: () => _openPrimaryAction(context, _currentTab, store),
+              backgroundColor: config.primaryColor,
+              foregroundColor: Colors.white,
+              icon: Icon(_primaryActionIcon(_currentTab, config.category)),
+              label: Text(_primaryActionLabel(_currentTab, config.category)),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: MarketBottomNav(
         currentTab: _currentTab,
         onChanged: _handleTabChange,

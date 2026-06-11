@@ -37,7 +37,7 @@ class AboutAppPage extends StatelessWidget {
                 child: Column(
                   children: [
                     const Text(
-                      'Green Leaf',
+                      'TrackMauzo',
                       style: TextStyle(
                         color: AppColors.ink,
                         fontSize: 24,
@@ -58,7 +58,7 @@ class AboutAppPage extends StatelessWidget {
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'Green Leaf helps businesses manage sales, records, and daily operations with confidence anytime, anywhere.',
+                        'TrackMauzo helps businesses manage sales, records, and daily operations with confidence anytime, anywhere.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.mutedText,
@@ -96,7 +96,7 @@ class AboutAppPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 32),
                     const Text(
-                      '© 2026 Green Leaf. All rights reserved.',
+                      '© 2026 TrackMauzo. All rights reserved.',
                       style: TextStyle(
                         color: AppColors.mutedText,
                         fontSize: 12,
@@ -147,9 +147,9 @@ class _AboutTile extends StatelessWidget {
           if (item.label == 'Licenses') {
             showLicensePage(
               context: context,
-              applicationName: 'Green Leaf',
+              applicationName: 'TrackMauzo',
               applicationVersion: '2.4.1',
-              applicationLegalese: '© 2026 Green Leaf. All rights reserved.',
+              applicationLegalese: '© 2026 TrackMauzo. All rights reserved.',
             );
             return;
           }

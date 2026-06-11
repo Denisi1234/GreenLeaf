@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:track_mauzo/service/pos_local_store.dart';
+import 'package:track_mauzo/ui/widgets/capability_provider.dart';
 
 import 'ui/shell/app_shell.dart';
 import 'ui/widgets/app_design.dart';
@@ -79,7 +82,7 @@ class App extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'GreenLeaf Market',
+      title: 'TrackMauzo',
       theme: ThemeData(
         useMaterial3: true,
         fontFamily: GoogleFonts.manrope().fontFamily,
@@ -177,7 +180,14 @@ class App extends StatelessWidget {
           selectionHandleColor: AppColors.primary,
         ),
       ),
-      home: const AppShell(),
+      home: Consumer<PosLocalStore>(
+        builder: (context, store, child) {
+          return CapabilityProvider(
+            capabilities: store.activeCapabilities,
+            child: const AppShell(),
+          );
+        },
+      ),
     );
   }
 }

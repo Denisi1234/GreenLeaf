@@ -1,18 +1,21 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../widgets/market_shared_widgets.dart';
 
 class StaffFormResult {
   const StaffFormResult({
+    this.staffId,
     required this.fullName,
     required this.phone,
     required this.role,
     this.avatarPath,
   });
 
+  final String? staffId;
   final String fullName;
   final String phone;
   final String role;
@@ -22,12 +25,18 @@ class StaffFormResult {
 class AddEditStaffPage extends StatefulWidget {
   const AddEditStaffPage({
     super.key,
+    this.staffId,
     this.availableRoles = const <String>[],
     this.initialRole,
+    this.initialFullName = '',
+    this.initialPhone = '',
   });
 
+  final String? staffId;
   final List<String> availableRoles;
   final String? initialRole;
+  final String initialFullName;
+  final String initialPhone;
 
   @override
   State<AddEditStaffPage> createState() => _AddEditStaffPageState();
@@ -56,6 +65,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
   @override
   void initState() {
     super.initState();
+    _nameController.text = widget.initialFullName;
+    _phoneController.text = widget.initialPhone;
     final roles = widget.availableRoles;
     if (widget.initialRole != null && roles.contains(widget.initialRole)) {
       _selectedRole = widget.initialRole;
@@ -130,6 +141,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
 
     Navigator.of(context).pop(
       StaffFormResult(
+        staffId: widget.staffId,
         fullName: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         role: role,
@@ -140,218 +152,228 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            const Positioned.fill(
-              child: ColoredBox(color: Color(0xFFF8FAFC)),
-            ),
-            Column(
-              children: [
-                const MarketPageHeader(title: 'Add / Edit Staff'),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                GestureDetector(
-                                  onTap: _pickAvatar,
-                                  child: Container(
-                                    width: 156,
-                                    height: 156,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEAF0FF),
-                                      shape: BoxShape.circle,
-                                      image: _avatarFile == null
-                                          ? null
-                                          : DecorationImage(
-                                              image: FileImage(
-                                                File(_avatarFile!.path),
-                                              ),
-                                              fit: BoxFit.cover,
-                                            ),
-                                    ),
-                                    child: _avatarFile == null
-                                        ? const Icon(
-                                            Icons.person,
-                                            color: Color(0xFF2B6FF3),
-                                            size: 78,
-                                          )
-                                        : null,
-                                  ),
-                                ),
-                                Positioned(
-                                  right: -4,
-                                  bottom: 12,
-                                  child: GestureDetector(
+    final baseTheme = Theme.of(context);
+    final manropeTheme = baseTheme.copyWith(
+      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+    );
+
+    return Theme(
+      data: manropeTheme,
+      child: Scaffold(
+        body: SafeArea(
+          child: Stack(
+            children: [
+              const Positioned.fill(
+                child: ColoredBox(color: Color(0xFFF8FAFC)),
+              ),
+              Column(
+                children: [
+                  const MarketPageHeader(title: 'Add / Edit Staff'),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  GestureDetector(
                                     onTap: _pickAvatar,
                                     child: Container(
-                                      width: 54,
-                                      height: 54,
+                                      width: 156,
+                                      height: 156,
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
+                                        color: const Color(0xFFEAF0FF),
                                         shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: const Color(0xFFE4E7EC),
-                                        ),
+                                        image: _avatarFile == null
+                                            ? null
+                                            : DecorationImage(
+                                                image: FileImage(
+                                                  File(_avatarFile!.path),
+                                                ),
+                                                fit: BoxFit.cover,
+                                              ),
                                       ),
-                                      child: const Icon(
-                                        Icons.photo_camera_outlined,
-                                        color: Color(0xFF6B7280),
-                                        size: 28,
-                                      ),
+                                      child: _avatarFile == null
+                                          ? const Icon(
+                                              Icons.person,
+                                              color: Color(0xFF2B6FF3),
+                                              size: 78,
+                                            )
+                                          : null,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 26),
-                          const _StaffFieldLabel('Full Name'),
-                          const SizedBox(height: 10),
-                          _StaffInputField(
-                            controller: _nameController,
-                            hintText: 'Enter full name',
-                            prefixIcon: Icons.person_outline_rounded,
-                            textInputAction: TextInputAction.next,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Full name is required';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          const _StaffFieldLabel('Phone'),
-                          const SizedBox(height: 10),
-                          _StaffInputField(
-                            controller: _phoneController,
-                            hintText: 'Enter phone number',
-                            prefixIcon: Icons.call_outlined,
-                            keyboardType: TextInputType.phone,
-                            textInputAction: TextInputAction.next,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Phone number is required';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          const _StaffFieldLabel('Assign Role'),
-                          const SizedBox(height: 10),
-                          _StaffDropdownField(
-                            value: _selectedRole,
-                            hintText: 'Select a role',
-                            prefixIcon: Icons.shield_outlined,
-                            items: widget.availableRoles,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedRole = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          const Row(
-                            children: [
-                              _StaffFieldLabel('Set Password'),
-                              SizedBox(width: 8),
-                              Icon(
-                                Icons.info_outline_rounded,
-                                color: Color(0xFF7B8494),
-                                size: 22,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _StaffInputField(
-                            controller: _passwordController,
-                            hintText: 'Enter password',
-                            prefixIcon: Icons.lock_outline_rounded,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            suffix: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                              child: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                color: const Color(0xFF7B8494),
-                                size: 26,
-                              ),
-                            ),
-                            validator: (value) {
-                              final password = value ?? '';
-                              if (password.isEmpty) {
-                                return 'Password is required';
-                              }
-                              if (password.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Password must be at least 6 characters long.',
-                            style: TextStyle(
-                              color: Color(0xFF7B8494),
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          GestureDetector(
-                            onTap: _isSaving ? null : _saveStaff,
-                            child: Container(
-                              height: 74,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1562E8),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    _isSaving
-                                        ? Icons.hourglass_top_rounded
-                                        : Icons.save_outlined,
-                                    color: Colors.white,
-                                    size: 26,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    _isSaving ? 'Saving...' : 'Save Staff',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16.5,
-                                      fontWeight: FontWeight.w700,
+                                  Positioned(
+                                    right: -4,
+                                    bottom: 12,
+                                    child: GestureDetector(
+                                      onTap: _pickAvatar,
+                                      child: Container(
+                                        width: 54,
+                                        height: 54,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: const Color(0xFFE4E7EC),
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.photo_camera_outlined,
+                                          color: Color(0xFF6B7280),
+                                          size: 28,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 26),
+                            const _StaffFieldLabel('Full Name'),
+                            const SizedBox(height: 10),
+                            _StaffInputField(
+                              controller: _nameController,
+                              hintText: 'Enter full name',
+                              prefixIcon: Icons.person_outline_rounded,
+                              textInputAction: TextInputAction.next,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Full name is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            const _StaffFieldLabel('Phone'),
+                            const SizedBox(height: 10),
+                            _StaffInputField(
+                              controller: _phoneController,
+                              hintText: 'Enter phone number',
+                              prefixIcon: Icons.call_outlined,
+                              keyboardType: TextInputType.phone,
+                              textInputAction: TextInputAction.next,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Phone number is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            const _StaffFieldLabel('Assign Role'),
+                            const SizedBox(height: 10),
+                            _StaffDropdownField(
+                              value: _selectedRole,
+                              hintText: 'Select a role',
+                              prefixIcon: Icons.shield_outlined,
+                              items: widget.availableRoles,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedRole = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 18),
+                            const Row(
+                              children: [
+                                _StaffFieldLabel('Set Password'),
+                                SizedBox(width: 8),
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  color: Color(0xFF7B8494),
+                                  size: 22,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            _StaffInputField(
+                              controller: _passwordController,
+                              hintText: 'Enter password',
+                              prefixIcon: Icons.lock_outline_rounded,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              suffix: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                                child: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: const Color(0xFF7B8494),
+                                  size: 26,
+                                ),
+                              ),
+                              validator: (value) {
+                                final password = value ?? '';
+                                if (password.isEmpty) {
+                                  return 'Password is required';
+                                }
+                                if (password.length < 6) {
+                                  return 'Password must be at least 6 characters';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Password must be at least 6 characters long.',
+                              style: TextStyle(
+                                color: Color(0xFF7B8494),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            GestureDetector(
+                              onTap: _isSaving ? null : _saveStaff,
+                              child: Container(
+                                height: 74,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1562E8),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _isSaving
+                                          ? Icons.hourglass_top_rounded
+                                          : Icons.save_outlined,
+                                      color: Colors.white,
+                                      size: 26,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      _isSaving ? 'Saving...' : 'Save Staff',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

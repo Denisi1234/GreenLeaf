@@ -20,7 +20,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-  namespace "com.evanlu.possystem"
+  namespace "com.trackmauzo.app"
 
   compileSdkVersion flutter.compileSdkVersion
   ndkVersion "28.2.13676358"
@@ -39,7 +39,7 @@ android {
   }
 
   defaultConfig {
-    applicationId "com.evanlu.possystem"
+    applicationId "com.trackmauzo.app"
 
     minSdkVersion flutter.minSdkVersion
     targetSdkVersion flutter.targetSdkVersion

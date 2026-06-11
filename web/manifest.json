@@ -1,6 +1,6 @@
 {
-    "name": "possystem",
-    "short_name": "possystem",
+    "name": "TrackMauzo",
+    "short_name": "TrackMauzo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

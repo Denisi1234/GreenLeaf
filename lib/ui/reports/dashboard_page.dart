@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 
 import '../more/duka_ai_page.dart';
 import '../more/expenses_tracking_page.dart';
-import '../shell/app_shell.dart';
+import '../more/multi_store_management_page.dart';
+import '../notifications/notifications_page.dart';
+import '../business_category_config.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
+import '../products/inventory_product_item.dart';
 import '../widgets/app_design.dart';
-import '../widgets/market_bottom_nav.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'components/activity_tile.dart';
 import 'components/overview_card.dart';
@@ -73,29 +75,15 @@ bool _orderInPeriod(String dateTime, _ReportPeriod period) {
   return !parsed.isBefore(_periodStart(period));
 }
 
-class ReportsPage extends StatelessWidget {
-  const ReportsPage({
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({
     super.key,
     this.useSharedShell = false,
   });
 
   final bool useSharedShell;
 
-  static const Color _ink = AppColors.reportsInk;
-  static const Color _muted = AppColors.reportsMuted;
-  static const Color _border = AppColors.reportsBorder;
-  static const Color _blue = AppColors.reportsBlue;
-  static const Color _green = AppColors.reportsGreen;
-
   static const List<QuickActionData> _quickActions = [
-    QuickActionData(
-      icon: Icons.shopping_bag_outlined,
-      label: 'Start Sale',
-      iconColor: AppColors.reportsBlue,
-      background: null,
-      foreground: null,
-      iconBackground: Color(0xFFEAF0FF),
-    ),
     QuickActionData(
       icon: Icons.point_of_sale_outlined,
       label: 'Open Drawer',
@@ -261,6 +249,7 @@ class ReportsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final config = store.businessCategoryConfig;
     final summary = _buildDashboardSummary(store);
     final todayLabel = _formatToday();
     final baseTheme = Theme.of(context);
@@ -274,9 +263,8 @@ class ReportsPage extends StatelessWidget {
       data: interTheme,
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
-        drawer: useSharedShell
-            ? null
-            : const MarketAppDrawer(selectedItem: 'Dashboard'),
+        drawer:
+            useSharedShell ? null : const MarketAppDrawer(selectedItem: 'Home'),
         body: SafeArea(
           top: !useSharedShell,
           child: Stack(
@@ -289,6 +277,7 @@ class ReportsPage extends StatelessWidget {
                   if (!useSharedShell)
                     _PremiumReportsHeader(
                       dateLabel: todayLabel,
+                      config: config,
                     ),
                   Expanded(
                     child: SingleChildScrollView(
@@ -297,30 +286,17 @@ class ReportsPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _SummaryPanel(summary: summary, orders: store.orders),
+                          _SummaryPanel(
+                            summary: summary,
+                            orders: store.orders,
+                            config: config,
+                            store: store,
+                          ),
                         ],
                       ),
                     ),
                   ),
                 ],
-              ),
-              Positioned(
-                right: 14,
-                bottom: 14,
-                child: Transform.translate(
-                  offset: const Offset(0, -8),
-                  child: _NewSaleFloatingButton(
-                    onTap: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const AppShell(
-                            initialTab: MarketTab.reports,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
               ),
             ],
           ),
@@ -468,30 +444,56 @@ _DashboardSummaryData _buildDashboardSummary(PosLocalStore store) {
 class _PremiumReportsHeader extends StatelessWidget {
   const _PremiumReportsHeader({
     required this.dateLabel,
+    required this.config,
   });
 
   final String dateLabel;
+  final BusinessCategoryConfig config;
 
   @override
   Widget build(BuildContext context) {
-    return MarketPageHeader(
-      title: 'Dashboard',
-      showBackButton: false,
-      centerTitle: false,
-      titleSize: 22,
-      titleWeight: FontWeight.w700,
-      leading: const _ReportsBrandIcon(),
-      actions: [
-        MarketHeaderActionButtons(
-          aiForeground: ReportsPage._ink,
-          notificationForeground: ReportsPage._ink,
-          onDukaAiTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (context) => const DukaAiAdvisorPage(),
-              ),
-            );
-          },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        MarketPageHeader(
+          title: config.dashboardHeadline,
+          showBackButton: false,
+          centerTitle: false,
+          titleSize: 22,
+          titleWeight: FontWeight.w700,
+          leading: const _ReportsBrandIcon(),
+          actions: [
+            MarketHeaderActionButtons(
+              aiForeground: AppColors.ink,
+              notificationForeground: AppColors.ink,
+              showNotificationDot: true,
+              onDukaAiTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const DukaAiAdvisorPage(),
+                  ),
+                );
+              },
+              onNotificationTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const NotificationsPage(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 8),
+          child: _DateRow(dateLabel: dateLabel),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+          child: BusinessCategoryBadge(
+            category: config.category,
+            label: config.label,
+          ),
         ),
       ],
     );
@@ -519,62 +521,6 @@ class _ReportsBrandIcon extends StatelessWidget {
   }
 }
 
-class _NewSaleFloatingButton extends StatelessWidget {
-  const _NewSaleFloatingButton({
-    required this.onTap,
-  });
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD94B4B),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 31,
-                height: 31,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'New Sale',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.25,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _DateRow extends StatelessWidget {
   const _DateRow({required this.dateLabel});
 
@@ -588,13 +534,13 @@ class _DateRow extends StatelessWidget {
         const Icon(
           Icons.calendar_month_outlined,
           size: 16,
-          color: Color(0xFF8A93A7),
+          color: AppColors.textMuted,
         ),
         const SizedBox(width: 6),
         Text(
           dateLabel,
           style: const TextStyle(
-            color: Color(0xFF7B859A),
+            color: AppColors.textMuted,
             fontSize: 11.5,
             fontWeight: FontWeight.w500,
           ),
@@ -614,7 +560,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       title,
       style: const TextStyle(
-        color: ReportsPage._ink,
+        color: AppColors.ink,
         fontSize: 15,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.4,
@@ -678,8 +624,6 @@ class _OverviewGrid extends StatelessWidget {
   }
 }
 
-
-
 class _QuickActionsRow extends StatelessWidget {
   const _QuickActionsRow({required this.actions});
 
@@ -717,15 +661,6 @@ class _QuickActionsRow extends StatelessWidget {
 
   void _handleActionTap(BuildContext context, String label) {
     switch (label) {
-      case 'Start Sale':
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(
-            builder: (context) => AppShell(
-              initialTab: MarketTab.reports,
-            ),
-          ),
-        );
-        break;
       case 'Open Drawer':
         showMarketNotice(
           context,
@@ -752,15 +687,6 @@ class _QuickActionCard extends StatelessWidget {
 
   void _handleTap(BuildContext context) {
     switch (action.label) {
-      case 'Start Sale':
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(
-            builder: (context) => const AppShell(
-              initialTab: MarketTab.reports,
-            ),
-          ),
-        );
-        break;
       case 'Open Drawer':
         showMarketNotice(
           context,
@@ -780,15 +706,6 @@ class _QuickActionCard extends StatelessWidget {
 
   void _handleActionTap(BuildContext context, String label) {
     switch (label) {
-      case 'Start Sale':
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(
-            builder: (context) => AppShell(
-              initialTab: MarketTab.reports,
-            ),
-          ),
-        );
-        break;
       case 'Open Drawer':
         showMarketNotice(
           context,
@@ -809,7 +726,7 @@ class _QuickActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconBackground = action.iconBackground ?? Colors.white;
-    final labelColor = action.foreground ?? ReportsPage._ink;
+    final labelColor = action.foreground ?? AppColors.ink;
 
     return Material(
       color: Colors.transparent,
@@ -827,7 +744,7 @@ class _QuickActionCard extends StatelessWidget {
             color: action.background == null ? Colors.white : null,
             borderRadius: BorderRadius.circular(hero ? 20 : 12),
             border: action.background == null
-                ? Border.all(color: ReportsPage._border)
+                ? Border.all(color: AppColors.border)
                 : null,
           ),
           child: Column(
@@ -860,7 +777,7 @@ class _QuickActionCard extends StatelessWidget {
                   Text(
                     action.label,
                     style: TextStyle(
-                      color: action.foreground ?? ReportsPage._ink,
+                      color: action.foreground ?? AppColors.ink,
                       fontSize: hero ? 15 : 11.5,
                       fontWeight: FontWeight.w800,
                       height: 1.1,
@@ -923,20 +840,33 @@ class _SummaryPanel extends StatelessWidget {
   const _SummaryPanel({
     required this.summary,
     required this.orders,
+    required this.config,
+    required this.store,
   });
 
   final _DashboardSummaryData summary;
   final List<CompletedOrder> orders;
+  final BusinessCategoryConfig config;
+  final PosLocalStore store;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _OverviewStatsGrid(summary: summary),
+        _OverviewStatsGrid(
+          summary: summary,
+          orders: orders,
+          store: store,
+          config: config,
+        ),
         const SizedBox(height: 12),
-        const _InsightsPromoCard(),
+        _InsightsPromoCard(config: config),
         const SizedBox(height: 12),
-        _LiveGrowthOverviewCard(summary: summary, orders: orders),
+        _LiveGrowthOverviewCard(
+          summary: summary,
+          orders: orders,
+          config: config,
+        ),
       ],
     );
   }
@@ -963,10 +893,12 @@ class _LiveGrowthOverviewCard extends StatefulWidget {
   const _LiveGrowthOverviewCard({
     required this.summary,
     required this.orders,
+    required this.config,
   });
 
   final _DashboardSummaryData summary;
   final List<CompletedOrder> orders;
+  final BusinessCategoryConfig config;
 
   @override
   State<_LiveGrowthOverviewCard> createState() =>
@@ -1100,7 +1032,7 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
                 child: Text(
                   'Sales Growth Overview',
                   style: TextStyle(
-                    color: ReportsPage._ink,
+                    color: AppColors.ink,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1152,7 +1084,7 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
               Text(
                 'TSH ${currentRevenue.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  color: ReportsPage._ink,
+                  color: AppColors.ink,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.4,
@@ -1186,7 +1118,7 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
           Text(
             'total revenue • ${_selectedPeriod.label}',
             style: const TextStyle(
-              color: ReportsPage._muted,
+              color: AppColors.textMuted,
               fontSize: 10.5,
               fontWeight: FontWeight.w500,
             ),
@@ -1208,12 +1140,26 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
 }
 
 class _OverviewStatsGrid extends StatelessWidget {
-  const _OverviewStatsGrid({required this.summary});
+  const _OverviewStatsGrid({
+    required this.summary,
+    required this.orders,
+    required this.store,
+    required this.config,
+  });
 
   final _DashboardSummaryData summary;
+  final List<CompletedOrder> orders;
+  final PosLocalStore store;
+  final BusinessCategoryConfig config;
 
   @override
   Widget build(BuildContext context) {
+    final cards = _dashboardMetricCards(
+      config: config,
+      store: store,
+      orders: orders,
+      summary: summary,
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         const gap = 8.0;
@@ -1222,66 +1168,24 @@ class _OverviewStatsGrid extends StatelessWidget {
         return Wrap(
           spacing: gap,
           runSpacing: gap,
-          children: [
-            SizedBox(
-              width: itemWidth,
-              child: _OverviewStatCard(
-                icon: Icons.payments_outlined,
-                iconColor: const Color(0xFF6BA5FF),
-                iconBackground: const Color(0xFFF4F8FF),
-                title: 'Today Revenue',
-                value: 'TSH ${summary.today.toStringAsFixed(0)}',
-                footer: summary.deltaText ?? 'Updated just now',
-                footerColor: summary.deltaIsPositive == false
-                    ? const Color(0xFFD65555)
-                    : const Color(0xFF2FA24A),
-                showTrend: true,
-                trendUp: summary.deltaIsPositive ?? true,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _OverviewStatCard(
-                icon: Icons.shopping_bag_outlined,
-                iconColor: const Color(0xFFF6B34A),
-                iconBackground: const Color(0xFFFFF7ED),
-                title: 'Yesterday Sales',
-                value: 'TSH ${summary.yesterdaySales.toStringAsFixed(0)}',
-                footer: 'Compared to today',
-                footerColor: const Color(0xFF7A859C),
-                showTrend: true,
-                trendUp: true,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _OverviewStatCard(
-                icon: Icons.groups_rounded,
-                iconColor: const Color(0xFFEF6A7A),
-                iconBackground: const Color(0xFFFFEEF1),
-                title: 'Today Orders',
-                value: summary.todayOrdersCount.toString(),
-                footer: 'Updated today',
-                footerColor: const Color(0xFF7A859C),
-                showTrend: true,
-                trendUp: true,
-              ),
-            ),
-            SizedBox(
-              width: itemWidth,
-              child: _OverviewStatCard(
-                icon: Icons.bolt_rounded,
-                iconColor: const Color(0xFF8B5CF6),
-                iconBackground: const Color(0xFFF5F1FF),
-                title: 'Today Expenses',
-                value: 'TSH ${summary.todayExpenses.toStringAsFixed(0)}',
-                footer: 'Updated today',
-                footerColor: const Color(0xFF7A859C),
-                showTrend: true,
-                trendUp: false,
-              ),
-            ),
-          ],
+          children: cards
+              .map(
+                (card) => SizedBox(
+                  width: itemWidth,
+                  child: _OverviewStatCard(
+                    icon: card.icon,
+                    iconColor: card.iconColor,
+                    iconBackground: card.iconBackground,
+                    title: card.title,
+                    value: card.value,
+                    footer: card.footer,
+                    footerColor: card.footerColor,
+                    showTrend: card.showTrend,
+                    trendUp: card.trendUp,
+                  ),
+                ),
+              )
+              .toList(),
         );
       },
     );
@@ -1350,7 +1254,7 @@ class _OverviewStatCard extends StatelessWidget {
             Text(
               value,
               style: const TextStyle(
-                color: ReportsPage._ink,
+                color: AppColors.ink,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.2,
@@ -1396,18 +1300,24 @@ class _OverviewStatCard extends StatelessWidget {
 }
 
 class _InsightsPromoCard extends StatelessWidget {
-  const _InsightsPromoCard();
+  const _InsightsPromoCard({
+    required this.config,
+  });
+
+  final BusinessCategoryConfig config;
 
   @override
   Widget build(BuildContext context) {
+    final data = _dashboardPromoData(config.category);
     return SizedBox(
       height: 152,
       child: Stack(
         children: [
-          const MarketSurfaceCard(
-            borderColor: Color(0xFFE7EAF0),
+          MarketSurfaceCard(
+            borderColor: config.primaryColor.withValues(alpha: 0.12),
             radius: 14,
-            child: SizedBox.expand(),
+            backgroundColor: config.primaryLightColor,
+            child: const SizedBox.expand(),
           ),
           Padding(
             padding: const EdgeInsets.all(14),
@@ -1418,13 +1328,15 @@ class _InsightsPromoCard extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F8FE),
+                    color: config.primaryColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE6E8F0)),
+                    border: Border.all(
+                      color: config.primaryColor.withValues(alpha: 0.12),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: Color(0xFF5B8CFF),
+                  child: Icon(
+                    data.icon,
+                    color: config.primaryColor,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1432,20 +1344,20 @@ class _InsightsPromoCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Unlock Smart Sales Insights',
-                        style: TextStyle(
-                          color: ReportsPage._ink,
+                      Text(
+                        data.title,
+                        style: const TextStyle(
+                          color: AppColors.ink,
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Advanced reports, forecasting tools, and team performance tracking in one place.',
-                        style: TextStyle(
-                          color: ReportsPage._muted,
+                      Text(
+                        data.subtitle,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
                           fontSize: 12.5,
                           height: 1.35,
                           fontWeight: FontWeight.w500,
@@ -1459,13 +1371,12 @@ class _InsightsPromoCard extends StatelessWidget {
                               onPressed: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(
-                                    builder: (context) =>
-                                        const ExpensesTrackingPage(),
+                                    builder: (context) => data.primaryAction,
                                   ),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF5B8CFF),
+                                backgroundColor: config.primaryColor,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 padding:
@@ -1489,14 +1400,16 @@ class _InsightsPromoCard extends StatelessWidget {
                               onPressed: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(
-                                    builder: (context) => ReportHubPage(),
+                                    builder: (context) => data.secondaryAction,
                                   ),
                                 );
                               },
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: ReportsPage._ink,
-                                side:
-                                    const BorderSide(color: Color(0xFFE1E6EE)),
+                                foregroundColor: config.primaryColor,
+                                side: BorderSide(
+                                  color: config.primaryColor
+                                      .withValues(alpha: 0.18),
+                                ),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 10),
                                 shape: RoundedRectangleBorder(
@@ -1504,7 +1417,7 @@ class _InsightsPromoCard extends StatelessWidget {
                                 ),
                               ),
                               child: const Text(
-                                'See My Store Reports',
+                                'Multi Store Manage',
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
@@ -1524,6 +1437,290 @@ class _InsightsPromoCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DashboardMetricData {
+  const _DashboardMetricData({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.title,
+    required this.value,
+    required this.footer,
+    required this.footerColor,
+    required this.showTrend,
+    required this.trendUp,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String title;
+  final String value;
+  final String footer;
+  final Color footerColor;
+  final bool showTrend;
+  final bool trendUp;
+}
+
+class _DashboardPromoData {
+  const _DashboardPromoData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.primaryAction,
+    required this.secondaryAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget primaryAction;
+  final Widget secondaryAction;
+}
+
+List<_DashboardMetricData> _dashboardMetricCards({
+  required BusinessCategoryConfig config,
+  required PosLocalStore store,
+  required List<CompletedOrder> orders,
+  required _DashboardSummaryData summary,
+}) {
+  final todayOrders = orders.where((order) {
+    final parsed = DateTime.tryParse(order.dateTime);
+    if (parsed == null) return false;
+    final now = _eastAfricaNow();
+    return parsed.year == now.year &&
+        parsed.month == now.month &&
+        parsed.day == now.day;
+  }).toList();
+  final lowStockCount = store.inventory
+      .where((item) => item.stockState != InventoryStockState.inStock)
+      .length;
+  final topCategory = _topCategoryName(todayOrders);
+  final highValueOrders =
+      todayOrders.where((order) => order.total >= 50000).length;
+  final inventoryMargin = _inventoryMarginPercent(store);
+  final salesLabel = 'TSH ${summary.today.toStringAsFixed(0)}';
+
+  return switch (config.category) {
+    BusinessCategory.pharmacy => [
+        _DashboardMetricData(
+          icon: Icons.payments_outlined,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Today Revenue',
+          value: salesLabel,
+          footer: summary.deltaText ?? 'Updated just now',
+          footerColor: summary.deltaIsPositive == false
+              ? AppColors.danger
+              : AppColors.success,
+          showTrend: true,
+          trendUp: summary.deltaIsPositive ?? true,
+        ),
+        _DashboardMetricData(
+          icon: Icons.science_rounded,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Margin Mix',
+          value: '${inventoryMargin.toStringAsFixed(0)}%',
+          footer: 'From current stock pricing',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: true,
+        ),
+        _DashboardMetricData(
+          icon: Icons.inventory_2_outlined,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Expiring Soon',
+          value: '0',
+          footer: 'Expiry tracking not set',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: false,
+        ),
+        _DashboardMetricData(
+          icon: Icons.receipt_long_rounded,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Refill Queue',
+          value: '0',
+          footer: 'Prescription refills not tracked',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: false,
+        ),
+      ],
+    BusinessCategory.electronics => [
+        _DashboardMetricData(
+          icon: Icons.payments_outlined,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Today Revenue',
+          value: salesLabel,
+          footer: summary.deltaText ?? 'Updated just now',
+          footerColor: summary.deltaIsPositive == false
+              ? AppColors.danger
+              : AppColors.success,
+          showTrend: true,
+          trendUp: summary.deltaIsPositive ?? true,
+        ),
+        _DashboardMetricData(
+          icon: Icons.workspace_premium_rounded,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'High Value Sales',
+          value: highValueOrders.toString(),
+          footer: 'Orders above TSh 50,000',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: true,
+        ),
+        _DashboardMetricData(
+          icon: Icons.sell_outlined,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Top Category',
+          value: topCategory,
+          footer: 'Brand data not tracked yet',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: true,
+        ),
+        _DashboardMetricData(
+          icon: Icons.shield_outlined,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Warranty Claims',
+          value: '0',
+          footer: 'Service claims not tracked',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: false,
+        ),
+      ],
+    BusinessCategory.retail => [
+        _DashboardMetricData(
+          icon: Icons.payments_outlined,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Today Revenue',
+          value: salesLabel,
+          footer: summary.deltaText ?? 'Updated just now',
+          footerColor: summary.deltaIsPositive == false
+              ? AppColors.danger
+              : AppColors.success,
+          showTrend: true,
+          trendUp: summary.deltaIsPositive ?? true,
+        ),
+        _DashboardMetricData(
+          icon: Icons.shopping_bag_outlined,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Orders Today',
+          value: summary.todayOrdersCount.toString(),
+          footer: 'Completed sales',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: true,
+        ),
+        _DashboardMetricData(
+          icon: Icons.star_rounded,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Best Seller',
+          value: summary.bestSeller,
+          footer: summary.bestSellerCount == null
+              ? 'No items sold yet'
+              : '${summary.bestSellerCount} sold today',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: true,
+        ),
+        _DashboardMetricData(
+          icon: Icons.warning_amber_rounded,
+          iconColor: config.primaryColor,
+          iconBackground: config.primaryLightColor,
+          title: 'Low Stock',
+          value: lowStockCount.toString(),
+          footer: 'Items need restocking',
+          footerColor: AppColors.textMuted,
+          showTrend: false,
+          trendUp: false,
+        ),
+      ],
+  };
+}
+
+_DashboardPromoData _dashboardPromoData(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => _DashboardPromoData(
+        icon: Icons.medication_rounded,
+        title: 'Track Expiry and Refills',
+        subtitle:
+            'Add expiry dates, prescription flags, and refill alerts to keep the pharmacy side compliant.',
+        primaryAction: const ReportsCatalogPage(),
+        secondaryAction: const DukaAiAdvisorPage(),
+      ),
+    BusinessCategory.electronics => _DashboardPromoData(
+        icon: Icons.devices_other_rounded,
+        title: 'Protect High-Value Stock',
+        subtitle:
+            'Serial numbers, warranty tracking, and service plans help you stay on top of premium devices.',
+        primaryAction: const ReportHubPage(),
+        secondaryAction: const MultiStoreManagementPage(),
+      ),
+    BusinessCategory.retail => _DashboardPromoData(
+        icon: Icons.auto_awesome_rounded,
+        title: 'Unlock Smart Sales Insights',
+        subtitle:
+            'Advanced reports, forecasting tools, and team performance tracking in one place.',
+        primaryAction: const ExpensesTrackingPage(),
+        secondaryAction: const MultiStoreManagementPage(),
+      ),
+  };
+}
+
+double _inventoryMarginPercent(PosLocalStore store) {
+  var cost = 0.0;
+  var revenue = 0.0;
+  for (final item in store.inventory) {
+    cost += item.purchasePrice * item.stockCount;
+    revenue += item.sellingPrice * item.stockCount;
+  }
+  if (revenue <= 0) return 0;
+  return ((revenue - cost) / revenue) * 100;
+}
+
+String _topCategoryName(List<CompletedOrder> orders) {
+  final counts = <String, int>{};
+  for (final order in orders) {
+    for (final line in order.lines) {
+      final category = (line.itemCategory ?? 'Uncategorized').trim();
+      counts[category] = (counts[category] ?? 0) + line.quantity;
+    }
+  }
+  if (counts.isEmpty) return 'No sales yet';
+  return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+}
+
+String _peakHourLabel(List<CompletedOrder> orders) {
+  final hourCounts = <int, int>{};
+  for (final order in orders) {
+    final parsed = DateTime.tryParse(order.dateTime);
+    if (parsed == null) continue;
+    hourCounts[parsed.hour] = (hourCounts[parsed.hour] ?? 0) + 1;
+  }
+  if (hourCounts.isEmpty) return 'No sales yet';
+  final peakHour =
+      hourCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+  final suffix = peakHour >= 12 ? 'PM' : 'AM';
+  final displayHour = peakHour == 0
+      ? 12
+      : peakHour > 12
+          ? peakHour - 12
+          : peakHour;
+  return '$displayHour$suffix';
 }
 
 class _DashedBorderPainter extends CustomPainter {
@@ -1593,7 +1790,7 @@ class _GrowthOverviewCard extends StatelessWidget {
                 child: Text(
                   'Sales Growth Overview',
                   style: TextStyle(
-                    color: ReportsPage._ink,
+                    color: AppColors.ink,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1636,7 +1833,7 @@ class _GrowthOverviewCard extends StatelessWidget {
               Text(
                 'TSH ${summary.revenue.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  color: ReportsPage._ink,
+                  color: AppColors.ink,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.4,
@@ -1670,7 +1867,7 @@ class _GrowthOverviewCard extends StatelessWidget {
           Text(
             'total revenue • ${summary.recentRevenueLabel}',
             style: const TextStyle(
-              color: ReportsPage._muted,
+              color: AppColors.textMuted,
               fontSize: 10.5,
               fontWeight: FontWeight.w500,
             ),
@@ -1959,7 +2156,7 @@ class _EmptySummary extends StatelessWidget {
           'TSH 0',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: ReportsPage._ink,
+            color: AppColors.ink,
             fontSize: 30,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.8,
@@ -2134,7 +2331,7 @@ class _MetricCard extends StatelessWidget {
             maxLines: highlightValue ? 2 : 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: ReportsPage._ink,
+              color: AppColors.ink,
               fontSize: highlightValue ? 14 : 18,
               fontWeight: FontWeight.w900,
               height: 1.08,
@@ -2240,7 +2437,7 @@ class _LatestActivityHeader extends StatelessWidget {
               Text(
                 'See all',
                 style: TextStyle(
-                  color: ReportsPage._blue,
+                  color: AppColors.primary,
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2248,7 +2445,7 @@ class _LatestActivityHeader extends StatelessWidget {
               SizedBox(width: 2),
               Icon(
                 Icons.chevron_right_rounded,
-                color: ReportsPage._blue,
+                color: AppColors.primary,
                 size: 16,
               ),
             ],
@@ -2321,7 +2518,7 @@ class _RecentHeader extends StatelessWidget {
                 Text(
                   'See all',
                   style: TextStyle(
-                    color: ReportsPage._blue,
+                    color: AppColors.primary,
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -2329,7 +2526,7 @@ class _RecentHeader extends StatelessWidget {
                 SizedBox(width: 2),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: ReportsPage._blue,
+                  color: AppColors.primary,
                   size: 16,
                 ),
               ],
@@ -2351,7 +2548,7 @@ class _RecentActivityCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(vertical: 2),
       backgroundColor: Colors.white.withValues(alpha: 0.94),
-      borderColor: ReportsPage._border,
+      borderColor: AppColors.border,
       radius: 4,
       child: Column(
         children: List.generate(items.length, (index) {
@@ -2413,7 +2610,7 @@ class _ActivityTile extends StatelessWidget {
                     Text(
                       item.title,
                       style: const TextStyle(
-                        color: ReportsPage._ink,
+                        color: AppColors.ink,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2422,7 +2619,7 @@ class _ActivityTile extends StatelessWidget {
                     Text(
                       item.subtitle,
                       style: const TextStyle(
-                        color: ReportsPage._muted,
+                        color: AppColors.textMuted,
                         fontSize: 10.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -2437,7 +2634,7 @@ class _ActivityTile extends StatelessWidget {
                     Text(
                       item.amount!,
                       style: const TextStyle(
-                        color: ReportsPage._ink,
+                        color: AppColors.ink,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2446,7 +2643,7 @@ class _ActivityTile extends StatelessWidget {
                   Text(
                     item.time,
                     style: const TextStyle(
-                      color: ReportsPage._muted,
+                      color: AppColors.textMuted,
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),
@@ -2494,7 +2691,7 @@ class _OverviewDetailPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFFEFC),
         elevation: 0,
-        foregroundColor: ReportsPage._ink,
+        foregroundColor: AppColors.ink,
         title: Text(card.title),
       ),
       body: Padding(
@@ -2507,7 +2704,7 @@ class _OverviewDetailPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: ReportsPage._border),
+                border: Border.all(color: AppColors.border),
               ),
               child: Row(
                 children: [
@@ -2528,7 +2725,7 @@ class _OverviewDetailPage extends StatelessWidget {
                         Text(
                           card.value,
                           style: const TextStyle(
-                            color: ReportsPage._ink,
+                            color: AppColors.ink,
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
                           ),
@@ -2537,7 +2734,7 @@ class _OverviewDetailPage extends StatelessWidget {
                         Text(
                           card.footer,
                           style: const TextStyle(
-                            color: ReportsPage._muted,
+                            color: AppColors.textMuted,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -2552,7 +2749,7 @@ class _OverviewDetailPage extends StatelessWidget {
             const Text(
               'What this means',
               style: TextStyle(
-                color: ReportsPage._ink,
+                color: AppColors.ink,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -2561,7 +2758,7 @@ class _OverviewDetailPage extends StatelessWidget {
             Text(
               _insight,
               style: const TextStyle(
-                color: ReportsPage._muted,
+                color: AppColors.textMuted,
                 fontSize: 14,
                 height: 1.6,
                 fontWeight: FontWeight.w500,
@@ -2582,7 +2779,7 @@ class _OverviewDetailPage extends StatelessWidget {
                       Icons.trending_up_rounded,
                       color: card.deltaIsPositive == false
                           ? const Color(0xFFC65B4A)
-                          : ReportsPage._green,
+                          : AppColors.success,
                     ),
                     const SizedBox(width: 10),
                     Text(
@@ -2592,7 +2789,7 @@ class _OverviewDetailPage extends StatelessWidget {
                       style: TextStyle(
                         color: card.deltaIsPositive == false
                             ? const Color(0xFFC65B4A)
-                            : ReportsPage._green,
+                            : AppColors.success,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2613,7 +2810,7 @@ class _RecentActivityPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = ReportsPage.buildActivityItems(
+    final items = DashboardPage.buildActivityItems(
       context.watch<PosLocalStore>().orders,
     );
     return Scaffold(
@@ -2621,7 +2818,7 @@ class _RecentActivityPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFFEFC),
         elevation: 0,
-        foregroundColor: ReportsPage._ink,
+        foregroundColor: AppColors.ink,
         title: const Text('Latest activity'),
       ),
       body: ListView(
@@ -2646,7 +2843,7 @@ class _ActivityDetailPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFFEFC),
         elevation: 0,
-        foregroundColor: ReportsPage._ink,
+        foregroundColor: AppColors.ink,
         title: Text(item.title),
       ),
       body: Padding(
@@ -2657,7 +2854,7 @@ class _ActivityDetailPage extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: ReportsPage._border),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2666,7 +2863,7 @@ class _ActivityDetailPage extends StatelessWidget {
               Text(
                 item.subtitle,
                 style: const TextStyle(
-                  color: ReportsPage._muted,
+                  color: AppColors.textMuted,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -2675,7 +2872,7 @@ class _ActivityDetailPage extends StatelessWidget {
               Text(
                 'Time: ${item.time}',
                 style: const TextStyle(
-                  color: ReportsPage._ink,
+                  color: AppColors.ink,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2685,7 +2882,7 @@ class _ActivityDetailPage extends StatelessWidget {
                 Text(
                   'Amount: ${item.amount}',
                   style: const TextStyle(
-                    color: ReportsPage._ink,
+                    color: AppColors.ink,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -2722,4 +2919,3 @@ class _OverviewCardData {
   final bool? deltaIsPositive;
   final bool highlightValue;
 }
-

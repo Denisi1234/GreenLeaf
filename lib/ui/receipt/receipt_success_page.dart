@@ -85,7 +85,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(
         builder: (context) => const AppShell(
-          initialTab: MarketTab.reports,
+          initialTab: MarketTab.sales,
         ),
       ),
       (route) => false,
@@ -245,7 +245,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                       paddingHorizontal: 0,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF059669).withOpacity(0.2),
+                          color: const Color(0xFF059669).withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),

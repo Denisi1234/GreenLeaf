@@ -1,19 +1,21 @@
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../models/product_item.dart';
+import '../business_category_config.dart';
 import '../payment/payment_page.dart';
-import '../products/product_management_page.dart';
 import '../widgets/market_shared_widgets.dart';
+import '../widgets/market_skeleton.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 
-class MarketHomePage extends StatelessWidget {
-  const MarketHomePage({
+class SalesPage extends StatelessWidget {
+  const SalesPage({
     super.key,
     this.useSharedShell = false,
   });
@@ -24,15 +26,15 @@ class MarketHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: useSharedShell ? null : const MarketAppDrawer(),
-      body: MarketDashboardView(
+      body: SalesDashboardView(
         useSharedShell: useSharedShell,
       ),
     );
   }
 }
 
-class MarketDashboardView extends StatefulWidget {
-  const MarketDashboardView({
+class SalesDashboardView extends StatefulWidget {
+  const SalesDashboardView({
     super.key,
     this.useSharedShell = false,
   });
@@ -40,10 +42,10 @@ class MarketDashboardView extends StatefulWidget {
   final bool useSharedShell;
 
   @override
-  State<MarketDashboardView> createState() => _MarketDashboardViewState();
+  State<SalesDashboardView> createState() => _SalesDashboardViewState();
 }
 
-class _MarketDashboardViewState extends State<MarketDashboardView>
+class _SalesDashboardViewState extends State<SalesDashboardView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _cartAnimationController;
   late final Animation<double> _cartAnimation;
@@ -55,6 +57,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   String? _lastAddedImagePath;
   String _searchQuery = '';
   String _selectedCategory = 'All';
+  bool _isLoading = true;
   int _cartAnimationTicket = 0;
 
   @override
@@ -68,6 +71,9 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
       parent: _cartAnimationController,
       curve: Curves.easeInOutCubic,
     );
+    Future<void>.delayed(const Duration(milliseconds: 800)).then((_) {
+      if (mounted) setState(() => _isLoading = false);
+    });
   }
 
   @override
@@ -101,6 +107,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
       );
       return;
     }
+    HapticFeedback.lightImpact();
 
     final animationTicket = ++_cartAnimationTicket;
     final overlayBox = overlay.context.findRenderObject() as RenderBox;
@@ -172,6 +179,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   }
 
   void _openPaymentScreen() {
+    HapticFeedback.mediumImpact();
     final store = context.read<PosLocalStore>();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -185,6 +193,7 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final config = store.businessCategoryConfig;
     final query = _searchQuery.trim().toLowerCase();
     final categories = <String>[
       'All',
@@ -215,20 +224,19 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
         Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.zero,
-                  AppSpacing.lg,
-                  AppSpacing.zero),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.zero,
+                  AppSpacing.lg, AppSpacing.zero),
               child: Column(
                 children: [
                   SearchBox(
                     controller: _searchController,
+                    hintText: config.salesHint,
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value;
                       });
                     },
+                    onScanTap: null,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _SalesCategoryStrip(
@@ -251,6 +259,25 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final compact = constraints.maxWidth < 620;
+                    if (_isLoading) {
+                      return GridView.builder(
+                        itemCount: 6,
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: compact ? 2 : 3,
+                          mainAxisSpacing: AppSpacing.md,
+                          crossAxisSpacing: AppSpacing.md,
+                          childAspectRatio: 0.72,
+                        ),
+                        itemBuilder: (context, index) {
+                          return MarketSkeleton(
+                            width: double.infinity,
+                            height: 100,
+                            radius: AppRadius.card,
+                          );
+                        },
+                      );
+                    }
                     if (displayProducts.isEmpty) {
                       return Center(
                         child: MarketSurfaceCard(
@@ -266,28 +293,26 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
                               ),
                               const SizedBox(height: AppSpacing.md),
                               Text(
-                                'No products found',
+                                _emptyStateTitle(config.category, _searchQuery),
                                 textAlign: TextAlign.center,
                                 style: AppTypography.h3,
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               Text(
-                                'Try another name or clear the search.',
+                                _emptyStateMessage(config.category),
                                 textAlign: TextAlign.center,
                                 style: AppTypography.bodySmall
                                     .copyWith(color: AppColors.textMuted),
                               ),
                               const SizedBox(height: AppSpacing.xl),
                               MarketButton(
-                                label: 'Add Product',
-                                icon: Icons.add_rounded,
+                                label: 'Clear Search',
+                                icon: Icons.clear_rounded,
                                 onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (context) =>
-                                          const ProductManagementPage(),
-                                    ),
-                                  );
+                                  setState(() {
+                                    _searchController.clear();
+                                    _searchQuery = '';
+                                  });
                                 },
                                 height: 48,
                                 radius: AppRadius.standard,
@@ -343,6 +368,8 @@ class _MarketDashboardViewState extends State<MarketDashboardView>
             itemCount: store.cartCount,
             total: store.cartTotal,
             onCheckout: _openPaymentScreen,
+            accentColor: config.primaryColor,
+            label: _checkoutLabel(config.category),
           ),
         ),
       ],
@@ -362,29 +389,27 @@ class SearchBox extends StatelessWidget {
   const SearchBox({
     super.key,
     required this.controller,
+    required this.hintText,
     required this.onChanged,
+    this.onScanTap,
   });
 
   final TextEditingController controller;
+  final String hintText;
   final ValueChanged<String> onChanged;
+  final VoidCallback? onScanTap;
 
   @override
   Widget build(BuildContext context) {
     return MarketSearchField(
       controller: controller,
-      hintText: 'Search products by name or SKU',
+      hintText: hintText,
       onChanged: onChanged,
       onClear: () {
         controller.clear();
         onChanged('');
       },
-      onScanTap: () {
-        showMarketNotice(
-          context,
-          title: 'Scanner Active',
-          message: 'Barcode scanner would open here',
-        );
-      },
+      onScanTap: onScanTap,
     );
   }
 }
@@ -649,12 +674,16 @@ class CheckoutBar extends StatelessWidget {
     required this.itemCount,
     required this.total,
     required this.onCheckout,
+    required this.label,
+    this.accentColor = AppColors.primary,
   });
 
   final GlobalKey cartKey;
   final int itemCount;
   final double total;
   final VoidCallback onCheckout;
+  final String label;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -676,7 +705,7 @@ class CheckoutBar extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
+                  color: accentColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadius.standard),
                 ),
                 child: const Icon(
@@ -749,19 +778,66 @@ class CheckoutBar extends StatelessWidget {
             ],
           ),
           const SizedBox(width: AppSpacing.lg),
-          MarketButton(
-            label: 'Checkout',
-            onTap: onCheckout,
-            height: 48,
-            isFullWidth: false,
-            radius: AppRadius.standard,
-            paddingHorizontal: AppSpacing.lg,
-            icon: Icons.arrow_forward_rounded,
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: FloatingActionButton.extended(
+                heroTag: 'sales_checkout_fab',
+                onPressed: onCheckout,
+                backgroundColor: accentColor,
+                foregroundColor: Colors.white,
+                elevation: 8,
+                highlightElevation: 12,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                ),
+                extendedPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 24),
+                label: Text(
+                  label,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+String _checkoutLabel(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Charge Sale',
+    BusinessCategory.electronics => 'Charge & Register',
+    BusinessCategory.retail => 'Checkout',
+  };
+}
+
+String _emptyStateTitle(BusinessCategory category, String query) {
+  if (query.trim().isNotEmpty) return 'No products found';
+  return switch (category) {
+    BusinessCategory.pharmacy => 'No medicines yet',
+    BusinessCategory.electronics => 'No electronics yet',
+    BusinessCategory.retail => 'No products yet',
+  };
+}
+
+String _emptyStateMessage(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy =>
+      'Add medicines with expiry and dosage details from product setup.',
+    BusinessCategory.electronics =>
+      'Add items with model and serial tracking from product setup.',
+    BusinessCategory.retail => 'Try another name or clear the search.',
+  };
 }
 
 class SuccessMessageBanner extends StatelessWidget {

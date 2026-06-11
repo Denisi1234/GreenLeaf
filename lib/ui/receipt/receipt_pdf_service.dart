@@ -112,7 +112,11 @@ class ReceiptPdfService {
             children: [
               pw.Text(
                 'Thank you for shopping at $cleanStoreName',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500, fontStyle: pw.FontStyle.italic),
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.grey500,
+                  fontStyle: pw.FontStyle.italic,
+                ),
               ),
               pw.Text(
                 'Page ${context.pageNumber} of ${context.pagesCount}',

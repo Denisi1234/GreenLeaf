@@ -22,11 +22,12 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 13,
+      version: 17,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE inventory_products (
-            code TEXT PRIMARY KEY,
+            code TEXT,
+            store_id TEXT NOT NULL,
             name TEXT NOT NULL,
             category TEXT NOT NULL,
             purchase_price REAL NOT NULL,
@@ -34,12 +35,15 @@ class PosLocalDatabase {
             stock_count INTEGER NOT NULL,
             stock_state TEXT NOT NULL,
             art_type TEXT NOT NULL,
-            image_path TEXT
+            image_path TEXT,
+            category_data_json TEXT NOT NULL DEFAULT '{}',
+            PRIMARY KEY (code, store_id)
           )
         ''');
         await db.execute('''
           CREATE TABLE cart_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
             code TEXT,
             category TEXT,
             name TEXT NOT NULL,
@@ -52,6 +56,7 @@ class PosLocalDatabase {
         await db.execute('''
           CREATE TABLE orders (
             id TEXT PRIMARY KEY,
+            store_id TEXT NOT NULL,
             date_time TEXT NOT NULL,
             date_label TEXT NOT NULL,
             time_label TEXT NOT NULL,
@@ -102,17 +107,27 @@ class PosLocalDatabase {
           )
         ''');
         await db.execute('''
+          CREATE TABLE stores (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            address TEXT NOT NULL,
+            contact TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
           CREATE TABLE staff_roles (
             id TEXT PRIMARY KEY,
+            store_id TEXT NOT NULL,
             title TEXT NOT NULL,
             subtitle TEXT NOT NULL,
             permissions_json TEXT NOT NULL,
             sort_order INTEGER NOT NULL
           )
         ''');
-        await db.execute('''  
+        await db.execute('''
           CREATE TABLE staff_members (
             id TEXT PRIMARY KEY,
+            store_id TEXT NOT NULL,
             name TEXT NOT NULL,
             email TEXT NOT NULL,
             phone TEXT NOT NULL,
@@ -123,6 +138,7 @@ class PosLocalDatabase {
         await db.execute('''
           CREATE TABLE daftari_recovery_sessions (
             id TEXT PRIMARY KEY,
+            store_id TEXT NOT NULL,
             created_at TEXT NOT NULL,
             stage TEXT NOT NULL,
             image_path TEXT,
@@ -140,7 +156,8 @@ class PosLocalDatabase {
         await db.execute('''
           CREATE TABLE daftari_learning_rules (
             id TEXT PRIMARY KEY,
-            source_text TEXT NOT NULL UNIQUE,
+            store_id TEXT NOT NULL,
+            source_text TEXT NOT NULL,
             target_product_code TEXT NOT NULL,
             target_product_name TEXT NOT NULL,
             created_at TEXT NOT NULL,
@@ -151,6 +168,7 @@ class PosLocalDatabase {
         await db.execute('''
           CREATE TABLE myduka_ai_messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
             thread_id TEXT NOT NULL,
             role TEXT NOT NULL,
             content TEXT NOT NULL,
@@ -161,6 +179,7 @@ class PosLocalDatabase {
         await db.execute('''
           CREATE TABLE myduka_ai_threads (
             id TEXT PRIMARY KEY,
+            store_id TEXT NOT NULL,
             title TEXT NOT NULL,
             preview TEXT NOT NULL,
             created_at TEXT NOT NULL,
@@ -170,12 +189,26 @@ class PosLocalDatabase {
         await db.execute('''
           CREATE TABLE expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
             title TEXT NOT NULL,
             amount REAL NOT NULL,
             category TEXT NOT NULL,
             payment_method TEXT NOT NULL,
             date TEXT NOT NULL,
             notes TEXT
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE customers (
+            id TEXT PRIMARY KEY,
+            store_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL DEFAULT '',
+            phone TEXT NOT NULL,
+            address TEXT NOT NULL DEFAULT '',
+            debit_balance REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT '',
+            tags TEXT NOT NULL DEFAULT ''
           )
         ''');
       },
@@ -216,6 +249,36 @@ class PosLocalDatabase {
               created_at TEXT NOT NULL
             )
           ''');
+        }
+        if (oldVersion < 15) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS store_locations (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              category TEXT NOT NULL,
+              address TEXT NOT NULL,
+              contact_number TEXT NOT NULL,
+              tax_id TEXT NOT NULL DEFAULT '',
+              status_key TEXT NOT NULL,
+              accent_color INTEGER NOT NULL,
+              tint_color INTEGER NOT NULL,
+              logo_path TEXT,
+              profile_json TEXT,
+              created_at TEXT NOT NULL,
+              is_active INTEGER NOT NULL DEFAULT 0
+            )
+          ''');
+        }
+        if (oldVersion < 16) {
+          final tableInfo =
+              await db.rawQuery('PRAGMA table_info(store_locations)');
+          final hasProfileJson =
+              tableInfo.any((column) => column['name'] == 'profile_json');
+          if (!hasProfileJson) {
+            await db.execute(
+              'ALTER TABLE store_locations ADD COLUMN profile_json TEXT',
+            );
+          }
         }
         if (oldVersion < 4) {
           await db.execute('''
@@ -269,14 +332,17 @@ class PosLocalDatabase {
               updated_at TEXT NOT NULL
             )
           ''');
-          final tableInfo = await db.rawQuery('PRAGMA table_info(myduka_ai_messages)');
-          final hasThreadId = tableInfo.any((column) => column['name'] == 'thread_id');
+          final tableInfo =
+              await db.rawQuery('PRAGMA table_info(myduka_ai_messages)');
+          final hasThreadId =
+              tableInfo.any((column) => column['name'] == 'thread_id');
           if (!hasThreadId) {
             await db.execute(
               'ALTER TABLE myduka_ai_messages ADD COLUMN thread_id TEXT',
             );
           }
-          final hasImagePath = tableInfo.any((column) => column['name'] == 'image_path');
+          final hasImagePath =
+              tableInfo.any((column) => column['name'] == 'image_path');
           if (!hasImagePath) {
             await db.execute(
               'ALTER TABLE myduka_ai_messages ADD COLUMN image_path TEXT',
@@ -292,7 +358,7 @@ class PosLocalDatabase {
           ''');
         }
         if (oldVersion < 9) {
-        await db.execute('''
+          await db.execute('''
           CREATE TABLE IF NOT EXISTS customers (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -306,8 +372,10 @@ class PosLocalDatabase {
         ''');
         }
         if (oldVersion < 7) {
-          final tableInfo = await db.rawQuery('PRAGMA table_info(myduka_ai_threads)');
-          final hasPreview = tableInfo.any((column) => column['name'] == 'preview');
+          final tableInfo =
+              await db.rawQuery('PRAGMA table_info(myduka_ai_threads)');
+          final hasPreview =
+              tableInfo.any((column) => column['name'] == 'preview');
           if (!hasPreview) {
             await db.execute(
               'ALTER TABLE myduka_ai_threads ADD COLUMN preview TEXT NOT NULL DEFAULT \'\'',
@@ -332,7 +400,8 @@ class PosLocalDatabase {
           Future<void> addColumn(String name, String definition) async {
             final exists = tableInfo.any((column) => column['name'] == name);
             if (!exists) {
-              await db.execute('ALTER TABLE app_profile ADD COLUMN $definition');
+              await db
+                  .execute('ALTER TABLE app_profile ADD COLUMN $definition');
             }
           }
 
@@ -360,6 +429,31 @@ class PosLocalDatabase {
             );
           }
         }
+        if (oldVersion < 17) {
+          // 1. Create Default Store
+          await db.execute('''
+            INSERT INTO stores (id, name, address, contact)
+            VALUES ('store-default', 'Default Store', 'N/A', 'N/A')
+          ''');
+
+          // 2. Add store_id to existing tables
+          final tables = [
+            'inventory_products',
+            'cart_items',
+            'orders',
+            'staff_roles',
+            'staff_members',
+            'daftari_recovery_sessions',
+            'daftari_learning_rules',
+            'myduka_ai_messages',
+            'myduka_ai_threads',
+            'expenses',
+            'customers'
+          ];
+          for (final table in tables) {
+            await db.execute('ALTER TABLE $table ADD COLUMN store_id TEXT NOT NULL DEFAULT "store-default"');
+          }
+        }
       },
     );
     return _database!;
@@ -381,10 +475,54 @@ class PosLocalDatabase {
     );
   }
 
-  Future<List<Map<String, Object?>>> loadStaffRoles() async {
+  Future<List<Map<String, Object?>>> loadStoreLocations() async {
+    final db = await database;
+    return db.query(
+      'store_locations',
+      orderBy: 'is_active DESC, created_at DESC, name ASC',
+    );
+  }
+
+  Future<void> replaceStoreLocations(
+    List<Map<String, Object?>> locations,
+  ) async {
+    final db = await database;
+    final batch = db.batch();
+    batch.delete('store_locations');
+    for (final location in locations) {
+      batch.insert(
+        'store_locations',
+        location,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> saveStoreLocation(Map<String, Object?> location) async {
+    final db = await database;
+    await db.insert(
+      'store_locations',
+      location,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> deleteStoreLocation(String id) async {
+    final db = await database;
+    await db.delete(
+      'store_locations',
+      where: 'id = ?',
+      whereArgs: <Object?>[id],
+    );
+  }
+
+  Future<List<Map<String, Object?>>> loadStaffRoles(String storeId) async {
     final db = await database;
     return db.query(
       'staff_roles',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
       orderBy: 'sort_order ASC, title ASC',
     );
   }
@@ -443,10 +581,12 @@ class PosLocalDatabase {
     );
   }
 
-  Future<List<InventoryProductItem>> loadInventory() async {
+  Future<List<InventoryProductItem>> loadInventory(String storeId) async {
     final db = await database;
     final rows = await db.query(
       'inventory_products',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
       orderBy: 'code ASC',
     );
     return rows.map(_inventoryFromMap).toList();
@@ -485,14 +625,18 @@ class PosLocalDatabase {
     await batch.commit(noResult: true);
   }
 
-  Future<List<CompletedOrder>> loadOrders() async {
+  Future<List<CompletedOrder>> loadOrders(String storeId) async {
     final db = await database;
     final orderRows = await db.query(
       'orders',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
       orderBy: 'date_time DESC',
     );
     final lineRows = await db.query(
       'order_lines',
+      where: 'order_id IN (SELECT id FROM orders WHERE store_id = ?)',
+      whereArgs: <Object?>[storeId],
       orderBy: 'id ASC',
     );
 
@@ -592,7 +736,27 @@ class PosLocalDatabase {
 
   Future<List<Map<String, dynamic>>> loadCustomers() async {
     final db = await database;
-    return await db.query('customers');
+    try {
+      return await db.query('customers');
+    } on DatabaseException catch (error) {
+      final message = error.toString().toLowerCase();
+      if (message.contains('no such table: customers')) {
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS customers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL DEFAULT '',
+            phone TEXT NOT NULL,
+            address TEXT NOT NULL DEFAULT '',
+            debit_balance REAL NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT '',
+            tags TEXT NOT NULL DEFAULT ''
+          )
+        ''');
+        return <Map<String, dynamic>>[];
+      }
+      rethrow;
+    }
   }
 
   Future<void> replaceCustomers(List<Map<String, Object?>> customers) async {
@@ -701,12 +865,12 @@ class PosLocalDatabase {
     );
     return rows
         .map(
-            (row) => DukaAiMessage(
-              role: row['role'] as String,
-              content: row['content'] as String,
-              imagePath: row['image_path'] as String?,
-              createdAt: row['created_at'] as String?,
-            ),
+          (row) => DukaAiMessage(
+            role: row['role'] as String,
+            content: row['content'] as String,
+            imagePath: row['image_path'] as String?,
+            createdAt: row['created_at'] as String?,
+          ),
         )
         .toList();
   }
@@ -737,9 +901,10 @@ class PosLocalDatabase {
     await batch.commit(noResult: true);
   }
 
-  Map<String, Object?> _inventoryToMap(InventoryProductItem item) {
+  Map<String, Object?> _inventoryToMap(InventoryProductItem item, String storeId) {
     return <String, Object?>{
       'code': item.code,
+      'store_id': storeId,
       'name': item.name,
       'category': item.category,
       'purchase_price': item.purchasePrice,
@@ -748,10 +913,14 @@ class PosLocalDatabase {
       'stock_state': item.stockState.name,
       'art_type': item.artType.name,
       'image_path': item.imagePath,
+      'category_data_json': jsonEncode(item.categoryData),
     };
   }
 
   InventoryProductItem _inventoryFromMap(Map<String, Object?> map) {
+    final rawMetadata = map['category_data_json'] as String? ?? '{}';
+    final metadata = Map<String, Object?>.from(
+        jsonDecode(rawMetadata) as Map<dynamic, dynamic>);
     return InventoryProductItem(
       code: map['code'] as String,
       name: map['name'] as String,
@@ -763,12 +932,14 @@ class PosLocalDatabase {
           InventoryStockState.values.byName(map['stock_state'] as String),
       artType: ProductArtType.values.byName(map['art_type'] as String),
       imagePath: map['image_path'] as String?,
+      categoryData: metadata,
     );
   }
 
-  Map<String, Object?> _productToMap(ProductItem item) {
+  Map<String, Object?> _productToMap(ProductItem item, String storeId) {
     return <String, Object?>{
       'code': item.code,
+      'store_id': storeId,
       'category': item.category,
       'name': item.name,
       'size': item.size,

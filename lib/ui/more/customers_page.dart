@@ -6,7 +6,7 @@ import '../models/customer_data.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'create_customer_page.dart';
-import 'package:possystem/ui/more/customer_details_page.dart';
+import 'customer_details_page.dart';
 
 class CustomersPage extends StatefulWidget {
   const CustomersPage({
@@ -81,6 +81,21 @@ class _CustomersPageState extends State<CustomersPage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
+      floatingActionButton: widget.isSelectionMode
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'customers_add_fab',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => const CreateCustomerPage(),
+                ),
+              ),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add Customer'),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: Column(
           children: [
@@ -88,20 +103,6 @@ class _CustomersPageState extends State<CustomersPage> {
               title: 'Customers',
               showBackButton: true,
               centerTitle: false,
-              actions: !widget.isSelectionMode
-                  ? [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) => const CreateCustomerPage(),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_rounded),
-                        color: AppColors.ink,
-                        iconSize: 28,
-                      ),
-                    ]
-                  : null,
             ),
             _buildSearchBar(),
             Expanded(

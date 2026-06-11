@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../ui/business_category_config.dart';
 import '../ui/models/product_item.dart';
 import '../ui/models/customer_data.dart';
 import '../ui/products/inventory_product_item.dart';
@@ -14,6 +14,8 @@ import 'duka_ai_service.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
 import 'expense_model.dart';
+import 'package:track_mauzo/ui/models/capability.dart';
+import 'package:track_mauzo/utils/extensions.dart';
 
 const _seedInventory = <InventoryProductItem>[
   InventoryProductItem(
@@ -171,6 +173,7 @@ class AppProfileData {
     required this.sundaySchedule,
     required this.open24Hours,
     this.logoPath,
+    this.capabilityOverrides,
   });
 
   factory AppProfileData.empty() {
@@ -191,6 +194,7 @@ class AppProfileData {
       sundaySchedule: '',
       open24Hours: false,
       logoPath: null,
+      capabilityOverrides: null,
     );
   }
 
@@ -210,6 +214,7 @@ class AppProfileData {
   final String sundaySchedule;
   final bool open24Hours;
   final String? logoPath;
+  final Set<Capability>? capabilityOverrides;
 
   AppProfileData copyWith({
     String? storeName,
@@ -228,6 +233,7 @@ class AppProfileData {
     String? sundaySchedule,
     bool? open24Hours,
     String? logoPath,
+    Set<Capability>? capabilityOverrides,
   }) {
     return AppProfileData(
       storeName: storeName ?? this.storeName,
@@ -246,6 +252,74 @@ class AppProfileData {
       sundaySchedule: sundaySchedule ?? this.sundaySchedule,
       open24Hours: open24Hours ?? this.open24Hours,
       logoPath: logoPath ?? this.logoPath,
+      capabilityOverrides: capabilityOverrides ?? this.capabilityOverrides,
+    );
+  }
+}
+
+class StoreLocationData {
+  const StoreLocationData({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.address,
+    required this.contactNumber,
+    required this.taxId,
+    required this.statusKey,
+    required this.accentColorValue,
+    required this.tintColorValue,
+    required this.createdAt,
+    this.logoPath,
+    this.profileJson,
+    this.isActive = false,
+  });
+
+  final String id;
+  final String name;
+  final String category;
+  final String address;
+  final String contactNumber;
+  final String taxId;
+  final String statusKey;
+  final int accentColorValue;
+  final int tintColorValue;
+  final String createdAt;
+  final String? logoPath;
+  final String? profileJson;
+  final bool isActive;
+
+  Color get accentColor => Color(accentColorValue);
+  Color get tintColor => Color(tintColorValue);
+
+  StoreLocationData copyWith({
+    String? id,
+    String? name,
+    String? category,
+    String? address,
+    String? contactNumber,
+    String? taxId,
+    String? statusKey,
+    int? accentColorValue,
+    int? tintColorValue,
+    String? createdAt,
+    String? logoPath,
+    String? profileJson,
+    bool? isActive,
+  }) {
+    return StoreLocationData(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      address: address ?? this.address,
+      contactNumber: contactNumber ?? this.contactNumber,
+      taxId: taxId ?? this.taxId,
+      statusKey: statusKey ?? this.statusKey,
+      accentColorValue: accentColorValue ?? this.accentColorValue,
+      tintColorValue: tintColorValue ?? this.tintColorValue,
+      createdAt: createdAt ?? this.createdAt,
+      logoPath: logoPath ?? this.logoPath,
+      profileJson: profileJson ?? this.profileJson,
+      isActive: isActive ?? this.isActive,
     );
   }
 }
@@ -336,6 +410,9 @@ class PosLocalStore extends ChangeNotifier {
   PosLocalStore({PosLocalDatabase? database})
       : _database = database ?? PosLocalDatabase.instance;
 
+  String _activeStoreId = 'store-default';
+  String get activeStoreId => _activeStoreId;
+
   final PosLocalDatabase _database;
   static const Duration _eastAfricaOffset = Duration(hours: 3);
 
@@ -345,6 +422,7 @@ class PosLocalStore extends ChangeNotifier {
   final List<InventoryProductItem> _allInventory = <InventoryProductItem>[];
   final List<StaffRoleData> _staffRoles = <StaffRoleData>[];
   final List<StaffMemberData> _staffMembers = <StaffMemberData>[];
+  final List<StoreLocationData> _storeLocations = <StoreLocationData>[];
   final List<DaftariRecoverySession> _daftariSessions =
       <DaftariRecoverySession>[];
   final List<DaftariLearningRule> _daftariLearningRules =
@@ -385,17 +463,18 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    final storedInventory = await _database.loadInventory();
+    final storedInventory = await _database.loadInventory(_activeStoreId);
     if (storedInventory.isEmpty) {
       _allInventory
         ..clear()
         ..addAll(_seedInventory);
-      await _database.replaceInventory(_allInventory);
+      await _database.replaceInventory(_allInventory, _activeStoreId);
     } else {
       _allInventory
         ..clear()
         ..addAll(storedInventory);
     }
+    // ... continue updating other loaders
 
     _syncProductsFromInventory();
 
@@ -438,14 +517,15 @@ class PosLocalStore extends ChangeNotifier {
     _profile = storedProfile == null
         ? AppProfileData.empty()
         : AppProfileData(
-            storeName: storedProfile['store_name'] as String,
-            ownerName: storedProfile['owner_name'] as String,
-            roleTitle: storedProfile['role_title'] as String,
-            businessCategory: storedProfile['business_category'] as String,
-            contactNumber: storedProfile['contact_number'] as String,
-            emailAddress: storedProfile['email_address'] as String,
-            physicalAddress: storedProfile['physical_address'] as String,
-            memberSince: storedProfile['member_since'] as String,
+            storeName: storedProfile['store_name'] as String? ?? '',
+            ownerName: storedProfile['owner_name'] as String? ?? '',
+            roleTitle: storedProfile['role_title'] as String? ?? '',
+            businessCategory:
+                storedProfile['business_category'] as String? ?? '',
+            contactNumber: storedProfile['contact_number'] as String? ?? '',
+            emailAddress: storedProfile['email_address'] as String? ?? '',
+            physicalAddress: storedProfile['physical_address'] as String? ?? '',
+            memberSince: storedProfile['member_since'] as String? ?? '',
             taxId: storedProfile['tax_id'] as String? ?? '',
             weekdayOpen: storedProfile['weekday_open'] as String? ?? '',
             weekdayClose: storedProfile['weekday_close'] as String? ?? '',
@@ -454,7 +534,45 @@ class PosLocalStore extends ChangeNotifier {
             sundaySchedule: storedProfile['sunday_schedule'] as String? ?? '',
             open24Hours: (storedProfile['open_24_hours'] as int? ?? 0) == 1,
             logoPath: storedProfile['logo_path'] as String?,
+            capabilityOverrides:
+                (storedProfile['capability_overrides_json'] as String?)?.let(
+                    (json) => (jsonDecode(json) as List<dynamic>)
+                        .map((c) => Capability.values.byName(c.toString()))
+                        .toSet()),
           );
+
+    final storedLocations = await _database.loadStoreLocations();
+    final normalizedLocations =
+        List<Map<String, Object?>>.from(storedLocations);
+    if (normalizedLocations.isEmpty && _profile.storeName.trim().isNotEmpty) {
+      normalizedLocations.add(_storeLocationToMap(_defaultStoreLocation()));
+    } else if (!normalizedLocations
+            .any((location) => location['id'] == 'store-current') &&
+        _profile.storeName.trim().isNotEmpty) {
+      normalizedLocations.insert(
+          0, _storeLocationToMap(_defaultStoreLocation()));
+    }
+
+    _storeLocations
+      ..clear()
+      ..addAll(normalizedLocations.map(_storeLocationFromMap));
+
+    if (_storeLocations.isNotEmpty &&
+        _storeLocations.every((location) => !location.isActive)) {
+      _storeLocations[0] = _storeLocations[0].copyWith(isActive: true);
+      await _database.replaceStoreLocations(
+        _storeLocations.map(_storeLocationToMap).toList(),
+      );
+    }
+
+    final activeLocation = _storeLocations.firstWhere(
+      (location) => location.isActive,
+      orElse: () => _storeLocations.isNotEmpty
+          ? _storeLocations.first
+          : _defaultStoreLocation(),
+    );
+    _profile = _profileFromLocation(activeLocation);
+    await _database.saveAppProfile(_profileToMap(_profile));
 
     _daftariSessions
       ..clear()
@@ -602,6 +720,8 @@ class PosLocalStore extends ChangeNotifier {
   List<InventoryProductItem> get inventory => List.unmodifiable(_allInventory);
   List<StaffRoleData> get staffRoles => List.unmodifiable(_staffRoles);
   List<StaffMemberData> get staffMembers => List.unmodifiable(_staffMembers);
+  List<StoreLocationData> get storeLocations =>
+      List.unmodifiable(_storeLocations);
   List<DaftariRecoverySession> get daftariSessions =>
       List.unmodifiable(_daftariSessions);
   List<DaftariLearningRule> get daftariLearningRules =>
@@ -622,6 +742,55 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   AppProfileData get profile => _profile;
+  StoreLocationData? get currentStoreLocation {
+    for (final location in _storeLocations) {
+      if (location.id == 'store-current') {
+        return location;
+      }
+    }
+    if (_profile.storeName.trim().isEmpty) return null;
+    return StoreLocationData(
+      id: 'store-current',
+      name: _profile.storeName,
+      category: _profile.businessCategory,
+      address: _profile.physicalAddress,
+      contactNumber: _profile.contactNumber,
+      taxId: _profile.taxId,
+      statusKey: 'operational',
+      accentColorValue: 0xFF2F74E8,
+      tintColorValue: 0xFFEAF2FF,
+      createdAt: _profile.memberSince.isNotEmpty
+          ? _profile.memberSince
+          : DateTime.now().toIso8601String(),
+      logoPath: _profile.logoPath,
+      profileJson: _profileToJson(_profile),
+      isActive: _storeLocations.every((location) => !location.isActive),
+    );
+  }
+
+  StoreLocationData? get activeStoreLocation {
+    for (final location in _storeLocations) {
+      if (location.isActive) {
+        return location;
+      }
+    }
+    return currentStoreLocation;
+  }
+
+  BusinessCategory get businessCategory =>
+      _profile.businessCategory.toBusinessCategory();
+  BusinessCategoryConfig get businessCategoryConfig =>
+      BusinessCategoryConfig.forCategory(businessCategory);
+
+  Set<Capability> get activeCapabilities {
+    final defaults = businessCategoryConfig.capabilities;
+    final overrides = _profile.capabilityOverrides;
+    if (overrides == null) return defaults;
+    return {...defaults, ...overrides};
+  }
+
+  bool get hasConfiguredBusinessCategory =>
+      _profile.businessCategory.trim().isNotEmpty;
 
   int _compareMessagesByTime(DukaAiMessage a, DukaAiMessage b) {
     final aTime = DateTime.tryParse(a.createdAt ?? '');
@@ -1045,6 +1214,7 @@ class PosLocalStore extends ChangeNotifier {
         stockState: _deriveStockState(nextStock),
         artType: item.artType,
         imagePath: item.imagePath,
+        categoryData: item.categoryData,
       );
     }
 
@@ -1134,6 +1304,7 @@ class PosLocalStore extends ChangeNotifier {
           stockState: _deriveStockState(nextStock),
           artType: item.artType,
           imagePath: item.imagePath,
+          categoryData: item.categoryData,
         );
       }
     }
@@ -1166,7 +1337,187 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> updateProfile(AppProfileData profile) async {
     _profile = profile;
     notifyListeners();
-    await _database.saveAppProfile(<String, Object?>{
+    await _database.saveAppProfile(_profileToMap(profile));
+
+    final activeIndex =
+        _storeLocations.indexWhere((location) => location.isActive);
+    if (activeIndex != -1) {
+      _storeLocations[activeIndex] = _storeLocations[activeIndex].copyWith(
+        name: profile.storeName,
+        category: profile.businessCategory,
+        address: profile.physicalAddress,
+        contactNumber: profile.contactNumber,
+        taxId: profile.taxId,
+        logoPath: profile.logoPath,
+        profileJson: _profileToJson(profile),
+      );
+      await _database.replaceStoreLocations(
+        _storeLocations.map(_storeLocationToMap).toList(),
+      );
+    }
+  }
+
+  Future<StoreLocationData> addStoreLocation(
+    StoreLocationData location, {
+    bool makeActive = false,
+  }) async {
+    final nextProfile = _profile.copyWith(
+      storeName: location.name,
+      businessCategory: location.category,
+      physicalAddress: location.address,
+      contactNumber: location.contactNumber,
+      taxId: location.taxId,
+      logoPath: location.logoPath,
+    );
+    final nextLocation = location.copyWith(
+      isActive: makeActive,
+      profileJson: _profileToJson(nextProfile),
+    );
+    if (makeActive) {
+      for (var index = 0; index < _storeLocations.length; index++) {
+        _storeLocations[index] = _storeLocations[index].copyWith(
+          isActive: false,
+        );
+      }
+    }
+    _storeLocations.insert(0, nextLocation);
+    if (makeActive) {
+      _storeLocations[0] = _storeLocations[0].copyWith(isActive: true);
+    }
+    notifyListeners();
+    await _database.replaceStoreLocations(
+      _storeLocations.map(_storeLocationToMap).toList(),
+    );
+    if (makeActive) {
+      _profile = nextProfile;
+      await _database.saveAppProfile(_profileToMap(_profile));
+    }
+    return nextLocation;
+  }
+
+  Future<void> setActiveStoreLocation(String locationId) async {
+    final index =
+        _storeLocations.indexWhere((location) => location.id == locationId);
+    if (index == -1) return;
+
+    final currentActiveIndex =
+        _storeLocations.indexWhere((location) => location.isActive);
+    if (currentActiveIndex != -1 && currentActiveIndex != index) {
+      final activeLocation = _storeLocations[currentActiveIndex];
+      _storeLocations[currentActiveIndex] = activeLocation.copyWith(
+        name: _profile.storeName,
+        category: _profile.businessCategory,
+        address: _profile.physicalAddress,
+        contactNumber: _profile.contactNumber,
+        taxId: _profile.taxId,
+        logoPath: _profile.logoPath,
+        profileJson: _profileToJson(_profile),
+        isActive: false,
+      );
+    }
+
+    final selected = _storeLocations[index];
+    final selectedProfile = _profileFromLocation(selected);
+    for (var i = 0; i < _storeLocations.length; i++) {
+      _storeLocations[i] = _storeLocations[i].copyWith(
+        isActive: i == index,
+      );
+    }
+    _storeLocations[index] = _storeLocations[index].copyWith(
+      name: selectedProfile.storeName,
+      category: selectedProfile.businessCategory,
+      address: selectedProfile.physicalAddress,
+      contactNumber: selectedProfile.contactNumber,
+      taxId: selectedProfile.taxId,
+      logoPath: selectedProfile.logoPath,
+      profileJson: _profileToJson(selectedProfile),
+      isActive: true,
+    );
+    _profile = selectedProfile;
+    notifyListeners();
+    await _database.replaceStoreLocations(
+      _storeLocations.map(_storeLocationToMap).toList(),
+    );
+    await _database.saveAppProfile(_profileToMap(_profile));
+  }
+
+  Future<void> setActiveDefaultStore() async {
+    final index = _storeLocations
+        .indexWhere((location) => location.id == 'store-current');
+    if (index == -1) return;
+
+    for (var i = 0; i < _storeLocations.length; i++) {
+      _storeLocations[i] = _storeLocations[i].copyWith(
+        isActive: i == index,
+      );
+    }
+    final selected = _storeLocations[index];
+    _profile = _profileFromLocation(selected);
+    notifyListeners();
+    await _database.replaceStoreLocations(
+      _storeLocations.map(_storeLocationToMap).toList(),
+    );
+    await _database.saveAppProfile(_profileToMap(_profile));
+  }
+
+  Future<void> deleteStoreLocation(String locationId) async {
+    if (locationId == 'store-current') return;
+
+    final index =
+        _storeLocations.indexWhere((location) => location.id == locationId);
+    if (index == -1) return;
+
+    final removedLocation = _storeLocations.removeAt(index);
+    if (removedLocation.isActive && _storeLocations.isNotEmpty) {
+      final defaultIndex = _storeLocations
+          .indexWhere((location) => location.id == 'store-current');
+      final targetIndex = defaultIndex == -1 ? 0 : defaultIndex;
+      _storeLocations[targetIndex] = _storeLocations[targetIndex].copyWith(
+        isActive: true,
+      );
+      _profile = _profileFromLocation(_storeLocations[targetIndex]);
+      await _database.saveAppProfile(_profileToMap(_profile));
+    }
+
+    notifyListeners();
+    await _database.replaceStoreLocations(
+      _storeLocations.map(_storeLocationToMap).toList(),
+    );
+  }
+
+  AppProfileData _profileFromLocation(StoreLocationData location) {
+    return _profileFromJson(location.profileJson).copyWith(
+      storeName: location.name,
+      businessCategory: location.category,
+      contactNumber: location.contactNumber,
+      physicalAddress: location.address,
+      taxId: location.taxId,
+      logoPath: location.logoPath ?? _profile.logoPath,
+    );
+  }
+
+  StoreLocationData _defaultStoreLocation({bool isActive = false}) {
+    return StoreLocationData(
+      id: 'store-current',
+      name: _profile.storeName,
+      category: _profile.businessCategory,
+      address: _profile.physicalAddress,
+      contactNumber: _profile.contactNumber,
+      taxId: _profile.taxId,
+      statusKey: 'operational',
+      accentColorValue: 0xFF2F74E8,
+      tintColorValue: 0xFFEAF2FF,
+      createdAt: _profile.memberSince.isNotEmpty
+          ? _profile.memberSince
+          : DateTime.now().toIso8601String(),
+      logoPath: _profile.logoPath,
+      profileJson: _profileToJson(_profile),
+      isActive: isActive,
+    );
+  }
+
+  Map<String, Object?> _profileToMap(AppProfileData profile) {
+    return <String, Object?>{
       'store_name': profile.storeName,
       'owner_name': profile.ownerName,
       'role_title': profile.roleTitle,
@@ -1183,7 +1534,49 @@ class PosLocalStore extends ChangeNotifier {
       'sunday_schedule': profile.sundaySchedule,
       'open_24_hours': profile.open24Hours ? 1 : 0,
       'logo_path': profile.logoPath,
-    });
+      'capability_overrides_json': profile.capabilityOverrides != null
+          ? jsonEncode(profile.capabilityOverrides!.map((c) => c.name).toList())
+          : null,
+    };
+  }
+
+  String _profileToJson(AppProfileData profile) {
+    return jsonEncode(_profileToMap(profile));
+  }
+
+  AppProfileData _profileFromJson(String? jsonValue) {
+    if (jsonValue == null || jsonValue.trim().isEmpty) {
+      return _profile;
+    }
+
+    try {
+      final map = jsonDecode(jsonValue) as Map<String, dynamic>;
+      return AppProfileData(
+        storeName: map['store_name'] as String? ?? '',
+        ownerName: map['owner_name'] as String? ?? '',
+        roleTitle: map['role_title'] as String? ?? '',
+        businessCategory: map['business_category'] as String? ?? '',
+        contactNumber: map['contact_number'] as String? ?? '',
+        emailAddress: map['email_address'] as String? ?? '',
+        physicalAddress: map['physical_address'] as String? ?? '',
+        memberSince: map['member_since'] as String? ?? '',
+        taxId: map['tax_id'] as String? ?? '',
+        weekdayOpen: map['weekday_open'] as String? ?? '',
+        weekdayClose: map['weekday_close'] as String? ?? '',
+        saturdayOpen: map['saturday_open'] as String? ?? '',
+        saturdayClose: map['saturday_close'] as String? ?? '',
+        sundaySchedule: map['sunday_schedule'] as String? ?? '',
+        open24Hours: (map['open_24_hours'] as int? ?? 0) == 1,
+        logoPath: map['logo_path'] as String?,
+        capabilityOverrides: (map['capability_overrides_json'] as String?)?.let(
+          (json) => (jsonDecode(json) as List<dynamic>)
+              .map((item) => Capability.values.byName(item.toString()))
+              .toSet(),
+        ),
+      );
+    } catch (_) {
+      return _profile;
+    }
   }
 
   StaffRoleData? staffRoleById(String roleId) {
@@ -1403,11 +1796,11 @@ class PosLocalStore extends ChangeNotifier {
 
   StaffRoleData _staffRoleFromMap(Map<String, Object?> map) {
     final permissions =
-        jsonDecode(map['permissions_json'] as String) as List<dynamic>;
+        jsonDecode(map['permissions_json'] as String? ?? '[]') as List<dynamic>;
     return StaffRoleData(
-      id: map['id'] as String,
-      title: map['title'] as String,
-      subtitle: map['subtitle'] as String,
+      id: map['id'] as String? ?? '',
+      title: map['title'] as String? ?? '',
+      subtitle: map['subtitle'] as String? ?? '',
       permissions: permissions.map((item) => item.toString()).toList(),
       sortOrder: (map['sort_order'] as num).toInt(),
     );
@@ -1426,12 +1819,48 @@ class PosLocalStore extends ChangeNotifier {
 
   StaffMemberData _staffMemberFromMap(Map<String, Object?> map) {
     return StaffMemberData(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      email: map['email'] as String,
-      phone: map['phone'] as String,
-      roleId: map['role_id'] as String,
-      createdAt: map['created_at'] as String,
+      id: map['id'] as String? ?? '',
+      name: map['name'] as String? ?? '',
+      email: map['email'] as String? ?? '',
+      phone: map['phone'] as String? ?? '',
+      roleId: map['role_id'] as String? ?? '',
+      createdAt: map['created_at'] as String? ?? '',
+    );
+  }
+
+  Map<String, Object?> _storeLocationToMap(StoreLocationData location) {
+    return <String, Object?>{
+      'id': location.id,
+      'name': location.name,
+      'category': location.category,
+      'address': location.address,
+      'contact_number': location.contactNumber,
+      'tax_id': location.taxId,
+      'status_key': location.statusKey,
+      'accent_color': location.accentColorValue,
+      'tint_color': location.tintColorValue,
+      'logo_path': location.logoPath,
+      'profile_json': location.profileJson,
+      'created_at': location.createdAt,
+      'is_active': location.isActive ? 1 : 0,
+    };
+  }
+
+  StoreLocationData _storeLocationFromMap(Map<String, Object?> map) {
+    return StoreLocationData(
+      id: map['id'] as String? ?? '',
+      name: map['name'] as String? ?? '',
+      category: map['category'] as String? ?? '',
+      address: map['address'] as String? ?? '',
+      contactNumber: map['contact_number'] as String? ?? '',
+      taxId: map['tax_id'] as String? ?? '',
+      statusKey: map['status_key'] as String? ?? 'operational',
+      accentColorValue: (map['accent_color'] as num?)?.toInt() ?? 0xFF2F74E8,
+      tintColorValue: (map['tint_color'] as num?)?.toInt() ?? 0xFFEAF2FF,
+      createdAt: map['created_at'] as String? ?? '',
+      logoPath: map['logo_path'] as String?,
+      profileJson: map['profile_json'] as String?,
+      isActive: (map['is_active'] as int? ?? 0) == 1,
     );
   }
 
@@ -1446,10 +1875,10 @@ class PosLocalStore extends ChangeNotifier {
 
   CustomerData _customerFromMap(Map<String, Object?> map) {
     return CustomerData(
-      id: map['id'] as String,
-      name: map['name'] as String,
+      id: map['id'] as String? ?? '',
+      name: map['name'] as String? ?? '',
       email: map['email'] as String? ?? '',
-      phone: map['phone'] as String,
+      phone: map['phone'] as String? ?? '',
       address: map['address'] as String? ?? '',
       debitBalance: (map['debit_balance'] as num?)?.toDouble() ?? 0,
       createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??

@@ -2,8 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:possystem/app.dart';
-import 'package:possystem/service/pos_local_store.dart';
+import 'package:track_mauzo/app.dart';
+import 'package:track_mauzo/service/pos_local_store.dart';
 
 void main() {
   testWidgets('shows the product dashboard', (WidgetTester tester) async {

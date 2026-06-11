@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../business_category_config.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
@@ -28,11 +29,8 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
 
   static const _categories = <String>[
     'Retail',
-    'Restaurant',
     'Pharmacy',
     'Electronics',
-    'Warehouse',
-    'Supermarket',
   ];
 
   String? _selectedCategory;
@@ -44,7 +42,10 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final profile = context.read<PosLocalStore>().profile;
+    final store = context.watch<PosLocalStore>();
+    if (!store.isInitialized) return;
+
+    final profile = store.profile;
     final profileSignature = _profileSignature(profile);
     if (_loadedProfileSignature == profileSignature) return;
 
@@ -53,7 +54,7 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
     _emailController.text = profile.emailAddress;
     _addressController.text = profile.physicalAddress;
     _selectedCategory =
-        profile.businessCategory.isEmpty ? null : profile.businessCategory;
+        parseBusinessCategory(profile.businessCategory).displayName;
     _initialLogoPath = profile.logoPath;
     _loadedProfileSignature = profileSignature;
   }
@@ -163,6 +164,11 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    if (!store.isInitialized) {
+      return _ProfileLoadingScaffold();
+    }
+
     final logoPath = _logoFile?.path ?? _initialLogoPath;
     final baseTheme = Theme.of(context);
     final interTheme = baseTheme.copyWith(
@@ -311,6 +317,38 @@ class _StoreProfilePageState extends State<StoreProfilePage> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileLoadingScaffold extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 34,
+                height: 34,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              SizedBox(height: 14),
+              Text(
+                'Loading store profile...',
+                style: TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ),

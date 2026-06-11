@@ -4,8 +4,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../business_category_config.dart';
 import 'app_design.dart';
 import '../models/product_item.dart';
+import '../home/sales_page.dart';
+import '../products/product_management_page.dart';
+import '../reports/dashboard_page.dart';
 import '../more/customers_page.dart';
 import '../more/expenses_tracking_page.dart';
 import '../more/help_support_page.dart';
@@ -232,6 +236,7 @@ class MarketPageHeader extends StatelessWidget {
     this.centerTitle = true,
     this.titleSize,
     this.titleWeight,
+    this.gradientColors,
   });
 
   final String title;
@@ -248,6 +253,7 @@ class MarketPageHeader extends StatelessWidget {
   final bool centerTitle;
   final double? titleSize;
   final FontWeight? titleWeight;
+  final List<Color>? gradientColors;
 
   void _handleBack(BuildContext context) {
     if (onBack != null) {
@@ -267,15 +273,16 @@ class MarketPageHeader extends StatelessWidget {
     final hasBorder = showBorder && !transparent && !hasGradient;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.pagePadding, AppSpacing.md, AppSpacing.pagePadding, AppSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadding, AppSpacing.md,
+          AppSpacing.pagePadding, AppSpacing.lg),
       decoration: BoxDecoration(
         color: hasBackground ? AppColors.surface : null,
         gradient: hasGradient
-            ? const LinearGradient(
+            ? LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.primary, AppColors.primaryDeep],
+                colors: gradientColors ??
+                    const [AppColors.primary, AppColors.primaryDeep],
               )
             : null,
         borderRadius: hasGradient
@@ -332,7 +339,7 @@ class MarketPageHeader extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.label.copyWith(
                         color: hasGradient
-                            ? Colors.white.withOpacity(0.85)
+                            ? Colors.white.withValues(alpha: 0.85)
                             : AppColors.textMuted,
                       ),
                     ),
@@ -367,12 +374,14 @@ class _BackButton extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color:
-              isGradient ? Colors.white.withOpacity(0.16) : AppColors.surface,
+          color: isGradient
+              ? Colors.white.withValues(alpha: 0.16)
+              : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.standard),
           border: Border.all(
-            color:
-                isGradient ? Colors.white.withOpacity(0.18) : AppColors.border,
+            color: isGradient
+                ? Colors.white.withValues(alpha: 0.18)
+                : AppColors.border,
           ),
         ),
         child: Icon(
@@ -843,18 +852,165 @@ class ProductArt extends StatelessWidget {
 class MarketAppDrawer extends StatelessWidget {
   const MarketAppDrawer({
     super.key,
-    this.selectedItem = 'Dashboard',
+    this.selectedItem = 'Home',
   });
 
   final String selectedItem;
 
-  static const _primaryItems = [
-    _DrawerItemData('Customers', Icons.people_outline_rounded),
-  ];
+  List<_DrawerItemData> _quickActionsFor(
+    BusinessCategoryConfig config,
+  ) {
+    return switch (config.category) {
+      BusinessCategory.pharmacy => [
+          _DrawerItemData(
+            'Scan Prescription',
+            Icons.medication_rounded,
+            onTap: (context) {
+              showMarketNotice(
+                context,
+                title: 'Prescription Scan',
+                message: 'Prescription search and scan flow goes here.',
+              );
+            },
+          ),
+          _DrawerItemData(
+            'Expiry Check',
+            Icons.event_busy_rounded,
+            onTap: (context) {
+              showMarketNotice(
+                context,
+                title: 'Expiry Check',
+                message: 'Expiry tracking needs product-level metadata.',
+              );
+            },
+          ),
+          _DrawerItemData(
+            'Refill Queue',
+            Icons.queue_rounded,
+            onTap: (context) {
+              showMarketNotice(
+                context,
+                title: 'Refill Queue',
+                message: 'Prescription refill workflow is ready to add.',
+              );
+            },
+          ),
+        ],
+      BusinessCategory.electronics => [
+          _DrawerItemData(
+            'Scan Serial',
+            Icons.qr_code_scanner_rounded,
+            onTap: (context) {
+              showMarketNotice(
+                context,
+                title: 'Serial Scan',
+                message: 'Serial capture is ready to connect.',
+              );
+            },
+          ),
+          _DrawerItemData(
+            'Register Warranty',
+            Icons.verified_user_outlined,
+            onTap: (context) {
+              showMarketNotice(
+                context,
+                title: 'Warranty Register',
+                message: 'Warranty registration can be attached here.',
+              );
+            },
+          ),
+          _DrawerItemData(
+            'Service Plans',
+            Icons.handyman_outlined,
+            onTap: (context) {
+              showMarketNotice(
+                context,
+                title: 'Service Plans',
+                message: 'Service plan upsells can be added next.',
+              );
+            },
+          ),
+        ],
+      BusinessCategory.retail => [],
+    };
+  }
 
-  static const _operationsItems = [
-    _DrawerItemData('Expenses Tracking', Icons.receipt_long_outlined),
-  ];
+  List<_DrawerItemData> _operationsItemsFor(BusinessCategoryConfig config) {
+    return switch (config.category) {
+      BusinessCategory.pharmacy => [
+          _DrawerItemData(
+            'Medicine Catalog',
+            Icons.medical_services_outlined,
+            onTap: (context) {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => const ProductManagementPage(),
+                ),
+              );
+            },
+          ),
+          _DrawerItemData(
+            'Prescription Sales',
+            Icons.receipt_long_outlined,
+            onTap: (context) {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => const SalesPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      BusinessCategory.electronics => [
+          _DrawerItemData(
+            'Device Catalog',
+            Icons.devices_other_outlined,
+            onTap: (context) {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => const ProductManagementPage(),
+                ),
+              );
+            },
+          ),
+          _DrawerItemData(
+            'Warranty Claims',
+            Icons.shield_outlined,
+            onTap: (context) {
+              showMarketNotice(
+                context,
+                title: 'Warranty Claims',
+                message: 'Claims tracking can be added next.',
+              );
+            },
+          ),
+        ],
+      BusinessCategory.retail => [
+          _DrawerItemData(
+            'Customers',
+            Icons.people_alt_outlined,
+            onTap: (context) {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => const CustomersPage(),
+                ),
+              );
+            },
+          ),
+          _DrawerItemData(
+            'Expenses Tracking',
+            Icons.receipt_long_outlined,
+            onTap: (context) {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => const ExpensesTrackingPage(),
+                ),
+              );
+            },
+          ),
+        ],
+    };
+  }
 
   static const _supportItems = [
     _DrawerItemData('Help & Support', Icons.support_agent_outlined),
@@ -864,6 +1020,8 @@ class MarketAppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final drawerWidth = MediaQuery.of(context).size.width * 0.85;
+    final store = context.watch<PosLocalStore>();
+    final config = store.businessCategoryConfig;
 
     return Drawer(
       width: drawerWidth,
@@ -884,15 +1042,23 @@ class MarketAppDrawer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _DrawerSectionHeader(
+                      title: _quickActionsTitle(config.category),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
                     _DrawerSection(
-                      items: _primaryItems,
+                      items: _quickActionsFor(config),
                       selectedItem: selectedItem,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     const Divider(color: AppColors.divider, height: 1),
                     const SizedBox(height: AppSpacing.lg),
+                    _DrawerSectionHeader(
+                      title: _operationsTitle(config.category),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
                     _DrawerSection(
-                      items: _operationsItems,
+                      items: _operationsItemsFor(config),
                       selectedItem: selectedItem,
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -923,6 +1089,7 @@ class _DrawerProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<PosLocalStore>().profile;
+    final config = context.read<PosLocalStore>().businessCategoryConfig;
     final ownerName = profile.ownerName.isEmpty
         ? (profile.storeName.isEmpty
             ? (profile.businessCategory.isEmpty
@@ -945,7 +1112,7 @@ class _DrawerProfileHeader extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.primaryLight,
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
           ),
           child: CircleAvatar(
             radius: 44,
@@ -976,9 +1143,9 @@ class _DrawerProfileHeader extends StatelessWidget {
                 style: AppTypography.h3.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 2),
-              Text(
-                category,
-                style: AppTypography.label.copyWith(color: AppColors.textLight),
+              BusinessCategoryBadge(
+                category: config.category,
+                label: category,
               ),
               if (storeDetail.isNotEmpty) ...[
                 const SizedBox(height: 6),
@@ -1027,6 +1194,25 @@ class _DrawerSection extends StatelessWidget {
   }
 }
 
+class _DrawerSectionHeader extends StatelessWidget {
+  const _DrawerSectionHeader({
+    required this.title,
+  });
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title.toUpperCase(),
+      style: AppTypography.label.copyWith(
+        color: AppColors.textLight,
+        letterSpacing: 1.1,
+      ),
+    );
+  }
+}
+
 class _DrawerTile extends StatelessWidget {
   const _DrawerTile({
     required this.item,
@@ -1043,6 +1229,10 @@ class _DrawerTile extends StatelessWidget {
       onTap: () {
         Navigator.of(context).pop();
         if (isSelected) {
+          return;
+        }
+        if (item.onTap != null) {
+          item.onTap!(context);
           return;
         }
         final route = _routeForLabel(item.label);
@@ -1158,10 +1348,27 @@ class _LogoutButton extends StatelessWidget {
 }
 
 class _DrawerItemData {
-  const _DrawerItemData(this.label, this.icon);
+  const _DrawerItemData(this.label, this.icon, {this.onTap});
 
   final String label;
   final IconData icon;
+  final void Function(BuildContext context)? onTap;
+}
+
+String _quickActionsTitle(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Pharmacy Actions',
+    BusinessCategory.electronics => 'Device Actions',
+    BusinessCategory.retail => 'Retail Actions',
+  };
+}
+
+String _operationsTitle(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Operations',
+    BusinessCategory.electronics => 'Operations',
+    BusinessCategory.retail => 'Operations',
+  };
 }
 
 class _BottleArt extends StatelessWidget {
@@ -1305,7 +1512,7 @@ class _CanArt extends StatelessWidget {
               child: Container(
                 width: 10,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
               ),
@@ -1762,7 +1969,8 @@ class MarketFormField extends StatelessWidget {
           style: AppTypography.bodyMain,
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: AppTypography.bodyMain.copyWith(color: AppColors.textLight),
+            hintStyle:
+                AppTypography.bodyMain.copyWith(color: AppColors.textLight),
             filled: true,
             fillColor: AppColors.surface,
             contentPadding: const EdgeInsets.symmetric(
@@ -1781,7 +1989,8 @@ class MarketFormField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.input),
@@ -1818,16 +2027,19 @@ class MarketTable extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: headerColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.standard)),
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.standard)),
             border: Border.all(color: AppColors.border),
           ),
           child: Row(
-            children: columns.map((col) => Expanded(
-              child: Text(
-                col.toUpperCase(),
-                style: AppTypography.tableHeader,
-              ),
-            )).toList(),
+            children: columns
+                .map((col) => Expanded(
+                      child: Text(
+                        col.toUpperCase(),
+                        style: AppTypography.tableHeader,
+                      ),
+                    ))
+                .toList(),
           ),
         ),
         // Rows
@@ -1851,16 +2063,130 @@ class MarketTable extends StatelessWidget {
                   width: isLast ? 1 : 0.5,
                 ),
               ),
-              borderRadius: isLast 
-                ? const BorderRadius.vertical(bottom: Radius.circular(AppRadius.standard))
-                : null,
+              borderRadius: isLast
+                  ? const BorderRadius.vertical(
+                      bottom: Radius.circular(AppRadius.standard))
+                  : null,
             ),
             child: Row(
               children: row.map((cell) => Expanded(child: cell)).toList(),
             ),
           );
-        }).toList(),
+        }),
       ],
+    );
+  }
+}
+
+class BusinessCategoryBadge extends StatelessWidget {
+  const BusinessCategoryBadge({
+    super.key,
+    required this.category,
+    this.label,
+  });
+
+  final BusinessCategory category;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = BusinessCategoryConfig.forCategory(category);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: config.primaryLightColor,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: config.primaryColor.withValues(alpha: 0.15)),
+      ),
+      child: Text(
+        label ?? category.displayName,
+        style: AppTypography.label.copyWith(
+          color: config.primaryColor,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class CategorySpecificTile extends StatelessWidget {
+  const CategorySpecificTile({
+    super.key,
+    required this.category,
+    required this.child,
+  });
+
+  final BusinessCategory category;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = BusinessCategoryConfig.forCategory(category);
+    return Container(
+      decoration: BoxDecoration(
+        color: config.surfaceTintColor,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: config.primaryColor.withValues(alpha: 0.12)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class CategoryAwareHeader extends StatelessWidget {
+  const CategoryAwareHeader({
+    super.key,
+    required this.category,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.showBackButton = true,
+  });
+
+  final BusinessCategory category;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final bool showBackButton;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = BusinessCategoryConfig.forCategory(category);
+    return MarketPageHeader(
+      title: title,
+      subtitle: subtitle,
+      showBackButton: showBackButton,
+      actions: trailing == null ? null : [trailing!],
+      isGradient: true,
+      centerTitle: false,
+      titleSize: 22,
+      titleWeight: FontWeight.w800,
+      gradientColors: [config.primaryColor, config.primaryDeepColor],
+    );
+  }
+}
+
+extension BusinessCategoryWidgetBuilders on BusinessCategory {
+  BusinessCategoryBadge badge({String? label}) {
+    return BusinessCategoryBadge(category: this, label: label);
+  }
+
+  CategorySpecificTile tile({required Widget child}) {
+    return CategorySpecificTile(category: this, child: child);
+  }
+
+  CategoryAwareHeader header({
+    required String title,
+    String? subtitle,
+    Widget? trailing,
+    bool showBackButton = true,
+  }) {
+    return CategoryAwareHeader(
+      category: this,
+      title: title,
+      subtitle: subtitle,
+      trailing: trailing,
+      showBackButton: showBackButton,
     );
   }
 }

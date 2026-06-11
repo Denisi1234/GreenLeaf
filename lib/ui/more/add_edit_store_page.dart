@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../business_category_config.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class StoreFormResult {
@@ -11,7 +12,6 @@ class StoreFormResult {
     required this.category,
     required this.address,
     required this.contactNumber,
-    required this.taxId,
     required this.weekdayOpen,
     required this.weekdayClose,
     required this.saturdayOpen,
@@ -25,7 +25,6 @@ class StoreFormResult {
   final String category;
   final String address;
   final String contactNumber;
-  final String taxId;
   final String weekdayOpen;
   final String weekdayClose;
   final String saturdayOpen;
@@ -52,16 +51,12 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _contactController = TextEditingController();
-  final _taxIdController = TextEditingController();
   final _picker = ImagePicker();
 
   static const _categories = [
     'Retail',
-    'Restaurant',
     'Pharmacy',
     'Electronics',
-    'Warehouse',
-    'Supermarket',
   ];
 
   String? _selectedCategory;
@@ -83,8 +78,7 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
       _nameController.text = initial.name;
       _addressController.text = initial.address;
       _contactController.text = initial.contactNumber;
-      _taxIdController.text = initial.taxId;
-      _selectedCategory = initial.category;
+      _selectedCategory = parseBusinessCategory(initial.category).displayName;
       _weekdayOpen = initial.weekdayOpen == 'Open 24 Hours'
           ? '09:00 AM'
           : initial.weekdayOpen;
@@ -108,7 +102,6 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
     _nameController.dispose();
     _addressController.dispose();
     _contactController.dispose();
-    _taxIdController.dispose();
     super.dispose();
   }
 
@@ -171,7 +164,6 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
         category: _selectedCategory!,
         address: _addressController.text.trim(),
         contactNumber: _contactController.text.trim(),
-        taxId: _taxIdController.text.trim(),
         weekdayOpen: _open24Hours ? 'Open 24 Hours' : _weekdayOpen,
         weekdayClose: _open24Hours ? 'Open 24 Hours' : _weekdayClose,
         saturdayOpen: _open24Hours ? 'Open 24 Hours' : _saturdayOpen,
@@ -378,19 +370,6 @@ class _AddEditStorePageState extends State<AddEditStorePage> {
                                 validator: (value) =>
                                     (value == null || value.trim().isEmpty)
                                         ? 'Contact number is required'
-                                        : null,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            _StoreFormRow(
-                              icon: Icons.description_outlined,
-                              label: 'Tax ID',
-                              child: _StoreTextField(
-                                controller: _taxIdController,
-                                hintText: 'Enter tax ID (e.g., 12-3456789)',
-                                validator: (value) =>
-                                    (value == null || value.trim().isEmpty)
-                                        ? 'Tax ID is required'
                                         : null,
                               ),
                             ),

@@ -10,6 +10,7 @@ import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_product_page.dart';
 import '../more/duka_ai_page.dart';
+import '../notifications/notifications_page.dart';
 import 'inventory_product_item.dart';
 
 String _formatPrice(double value) {
@@ -117,6 +118,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final config = store.businessCategoryConfig;
     final query = _searchQuery.trim().toLowerCase();
     final categories = <String>{
       'All',
@@ -155,6 +157,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
             : const MarketAppDrawer(selectedItem: 'Products'),
         floatingActionButton: _AddProductFab(
           onPressed: _openAddProductPage,
+          accentColor: config.primaryColor,
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: SafeArea(
@@ -169,6 +172,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                   if (!widget.useSharedShell) const _ProductsHeader(),
                   _PinnedSearchPanel(
                     controller: _searchController,
+                    hintText: config.productHint,
                     onSearchChanged: (value) {
                       setState(() {
                         _searchQuery = value;
@@ -273,10 +277,18 @@ class _ProductsHeader extends StatelessWidget {
           notificationBackground: const Color(0xFFF8FAFC),
           aiBorderColor: const Color(0xFFE5EAF0),
           notificationBorderColor: const Color(0xFFE5EAF0),
+          showNotificationDot: true,
           onDukaAiTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (context) => const DukaAiAdvisorPage(),
+              ),
+            );
+          },
+          onNotificationTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const NotificationsPage(),
               ),
             );
           },
@@ -289,11 +301,13 @@ class _ProductsHeader extends StatelessWidget {
 class _PinnedSearchPanel extends StatelessWidget {
   const _PinnedSearchPanel({
     required this.controller,
+    required this.hintText,
     required this.onSearchChanged,
     required this.onClearSearch,
   });
 
   final TextEditingController controller;
+  final String hintText;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onClearSearch;
 
@@ -303,7 +317,7 @@ class _PinnedSearchPanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: MarketSearchField(
         controller: controller,
-        hintText: 'Search products by name, SKU, or category',
+        hintText: hintText,
         onChanged: onSearchChanged,
         onClear: onClearSearch,
         onScanTap: () {
@@ -604,15 +618,18 @@ class _EditActionsButton extends StatelessWidget {
 class _AddProductFab extends StatelessWidget {
   const _AddProductFab({
     required this.onPressed,
+    this.accentColor = AppColors.primary,
   });
 
   final VoidCallback onPressed;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.extended(
+      heroTag: 'product_management_add_product_fab',
       onPressed: onPressed,
-      backgroundColor: AppColors.primary,
+      backgroundColor: accentColor,
       foregroundColor: Colors.white,
       elevation: 8,
       highlightElevation: 12,
@@ -621,10 +638,7 @@ class _AddProductFab extends StatelessWidget {
       ),
       extendedPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      icon: const Icon(
-        Icons.add_rounded,
-        size: 24,
-      ),
+      icon: const Icon(Icons.add_rounded, size: 24),
       label: Text(
         'Add Product',
         style: AppTypography.bodyMedium.copyWith(

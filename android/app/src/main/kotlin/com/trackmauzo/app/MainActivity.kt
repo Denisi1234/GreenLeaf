@@ -1,4 +1,4 @@
-package com.evanlu.possystem
+package com.trackmauzo.app
 
 import android.util.Log
 
@@ -21,7 +21,7 @@ class MainActivity: FlutterFragmentActivity() {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "possystem/share"
+            "trackmauzo/share"
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "shareReceiptToWhatsApp" -> {
@@ -42,7 +42,7 @@ class MainActivity: FlutterFragmentActivity() {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "possystem/report_downloads"
+            "trackmauzo/report_downloads"
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "savePdfToDownloads" -> {
@@ -68,7 +68,7 @@ class MainActivity: FlutterFragmentActivity() {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "possystem/report_share"
+            "trackmauzo/report_share"
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "sharePdfFromBytes" -> {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../business_category_config.dart';
 import '../models/product_item.dart';
 import '../widgets/app_design.dart';
 import '../more/create_customer_page.dart';
@@ -58,6 +59,21 @@ class _PaymentPageState extends State<PaymentPage> {
   int get _itemTypes => _orderLines.length;
   int get _unitCount => _orderLines.fold(0, (sum, line) => sum + line.quantity);
   bool get _hasItems => _orderLines.isNotEmpty;
+  BusinessCategoryConfig get _config =>
+      context.read<PosLocalStore>().businessCategoryConfig;
+  String get _paymentTitle => switch (_config.category) {
+        BusinessCategory.pharmacy => 'Dispense Sale',
+        BusinessCategory.electronics => 'Counter',
+        BusinessCategory.retail => 'Counter',
+      };
+  String get _paymentSubtitle => switch (_config.category) {
+        BusinessCategory.pharmacy =>
+          'Keep insurance and prescription context close to the sale.',
+        BusinessCategory.electronics =>
+          'Manage the cart, discounts, and payment with ease.',
+        BusinessCategory.retail =>
+          'Manage the cart, discounts, and payment with ease.',
+      };
 
   String _amount(double value) => formatCurrency(value);
 
@@ -126,6 +142,8 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future<void> _applyDiscount() async {
+    final category =
+        context.read<PosLocalStore>().businessCategoryConfig.category;
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -133,6 +151,7 @@ class _PaymentPageState extends State<PaymentPage> {
       builder: (context) => _DiscountBottomSheet(
         subtotal: _subtotal,
         currentAmount: _discountAmount,
+        category: category,
       ),
     );
 
@@ -146,6 +165,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
   Future<void> _enterCashReceived() async {
     if (!_validateStockBeforeCheckout()) return;
+    final category =
+        context.read<PosLocalStore>().businessCategoryConfig.category;
     final result = await showModalBottomSheet<double>(
       context: context,
       isScrollControlled: true,
@@ -153,6 +174,7 @@ class _PaymentPageState extends State<PaymentPage> {
       builder: (context) => _CashReceivedBottomSheet(
         grandTotal: _grandTotal,
         currentAmount: _cashReceived,
+        category: category,
       ),
     );
 
@@ -286,21 +308,30 @@ class _PaymentPageState extends State<PaymentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final config = context.watch<PosLocalStore>().businessCategoryConfig;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
           children: [
             MarketPageHeader(
-              title: 'Counter',
+              title: _paymentTitle,
+              subtitle: _paymentSubtitle,
               onBack: () => Navigator.of(context).pop(),
               showBackButton: true,
               centerTitle: false,
               actions: [
                 IconButton(
                   onPressed: _addCustomer,
-                  icon: const Icon(Icons.group_add_outlined,
-                      color: AppColors.ink, size: 26),
+                  icon: Icon(
+                    switch (config.category) {
+                      BusinessCategory.pharmacy => Icons.badge_outlined,
+                      BusinessCategory.electronics => Icons.person_outline,
+                      BusinessCategory.retail => Icons.group_add_outlined,
+                    },
+                    color: AppColors.ink,
+                    size: 26,
+                  ),
                 ),
               ],
             ),
@@ -353,6 +384,7 @@ class _PaymentPageState extends State<PaymentPage> {
                   ),
                   const SizedBox(height: 6),
                   _TotalsPanel(
+                    category: config.category,
                     subtotal: _amount(_subtotal),
                     tax: _amount(_tax),
                     discount:
@@ -370,7 +402,7 @@ class _PaymentPageState extends State<PaymentPage> {
                   ),
                   const SizedBox(height: 12),
                   _FooterActionButton(
-                    label: 'Clear',
+                    label: _clearLabel(config.category),
                     color: const Color(0xFFE66C73),
                     onTap: _clearCart,
                   ),
@@ -380,8 +412,9 @@ class _PaymentPageState extends State<PaymentPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
               child: _ChargeBar(
-                totalLabel: 'Charge: TSh${_amount(_grandTotal)}',
+                totalLabel: _chargeLabel(config.category, _amount(_grandTotal)),
                 onTap: _confirmPayment,
+                accentColor: config.primaryColor,
               ),
             ),
           ],
@@ -389,6 +422,83 @@ class _PaymentPageState extends State<PaymentPage> {
       ),
     );
   }
+}
+
+String _chargeLabel(BusinessCategory category, String amount) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Charge Sale: TSh$amount',
+    BusinessCategory.electronics => 'Charge: TSh$amount',
+    BusinessCategory.retail => 'Charge: TSh$amount',
+  };
+}
+
+String _clearLabel(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Clear Basket',
+    BusinessCategory.electronics => 'Clear',
+    BusinessCategory.retail => 'Clear',
+  };
+}
+
+String _discountLabelFor(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Discount',
+    BusinessCategory.electronics => 'Discount',
+    BusinessCategory.retail => 'Discount',
+  };
+}
+
+String _cashReceivedLabelFor(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Cash / Insurance',
+    BusinessCategory.electronics => 'Cash Received',
+    BusinessCategory.retail => 'Cash Received',
+  };
+}
+
+String _secondaryPaymentAction(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Apply Discount',
+    BusinessCategory.electronics => 'Add Discount',
+    BusinessCategory.retail => 'Add Discount',
+  };
+}
+
+String _tertiaryPaymentAction(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Record Debit',
+    BusinessCategory.electronics => 'Record Debit',
+    BusinessCategory.retail => 'Record Debit',
+  };
+}
+
+String _totalsSummaryLabel(
+  BusinessCategory category,
+  int itemTypes,
+  int unitCount,
+) {
+  final base = '$itemTypes Items | $unitCount Units';
+  return switch (category) {
+    BusinessCategory.pharmacy => '$base | Pharmacy Sale',
+    BusinessCategory.electronics => base,
+    BusinessCategory.retail => base,
+  };
+}
+
+String _confirmLabel(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Confirm',
+    BusinessCategory.electronics => 'Done',
+    BusinessCategory.retail => 'Done',
+  };
+}
+
+String _applyLabel(BusinessCategory category) {
+  return switch (category) {
+    BusinessCategory.pharmacy => 'Apply',
+    BusinessCategory.electronics => 'Apply',
+    BusinessCategory.retail => 'Apply',
+  };
 }
 
 class _CounterLineTile extends StatelessWidget {
@@ -538,6 +648,7 @@ class _CounterActionRow extends StatelessWidget {
 
 class _TotalsPanel extends StatelessWidget {
   const _TotalsPanel({
+    required this.category,
     required this.subtotal,
     required this.tax,
     this.discount,
@@ -551,6 +662,7 @@ class _TotalsPanel extends StatelessWidget {
     required this.onRecordDebit,
   });
 
+  final BusinessCategory category;
   final String subtotal;
   final String tax;
   final String? discount;
@@ -626,10 +738,10 @@ class _TotalsPanel extends StatelessWidget {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Discount',
-                    style: TextStyle(
+                    _discountLabelFor(category),
+                    style: const TextStyle(
                       color: Color(0xFFE66C73),
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
@@ -723,11 +835,11 @@ class _TotalsPanel extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: onEnterCash,
-                child: const Text('Cash Received', style: linkStyle),
+                child: Text(_cashReceivedLabelFor(category), style: linkStyle),
               ),
               const Spacer(),
               Text(
-                '$itemTypes Items | $unitCount Units',
+                _totalsSummaryLabel(category, itemTypes, unitCount),
                 style: const TextStyle(
                   color: AppColors.ink,
                   fontSize: 12.5,
@@ -741,12 +853,13 @@ class _TotalsPanel extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: onAddDiscount,
-                child: const Text('Add Discount', style: linkStyle),
+                child:
+                    Text(_secondaryPaymentAction(category), style: linkStyle),
               ),
               const Spacer(),
               GestureDetector(
                 onTap: onRecordDebit,
-                child: const Text('Record Debit', style: linkStyle),
+                child: Text(_tertiaryPaymentAction(category), style: linkStyle),
               ),
             ],
           ),
@@ -759,10 +872,12 @@ class _TotalsPanel extends StatelessWidget {
 class _CashReceivedBottomSheet extends StatefulWidget {
   const _CashReceivedBottomSheet({
     required this.grandTotal,
+    required this.category,
     this.currentAmount,
   });
 
   final double grandTotal;
+  final BusinessCategory category;
   final double? currentAmount;
 
   @override
@@ -827,9 +942,9 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Cash Received',
-            style: TextStyle(
+          Text(
+            _cashReceivedLabelFor(widget.category),
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: AppColors.ink,
@@ -892,9 +1007,9 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Done',
-              style: TextStyle(
+            child: Text(
+              _confirmLabel(widget.category),
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
@@ -943,10 +1058,12 @@ class _ChargeBar extends StatelessWidget {
   const _ChargeBar({
     required this.totalLabel,
     required this.onTap,
+    this.accentColor = const Color(0xFFE54040),
   });
 
   final String totalLabel;
   final VoidCallback onTap;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -956,7 +1073,7 @@ class _ChargeBar extends StatelessWidget {
         width: double.infinity,
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFFE54040),
+          color: accentColor,
           borderRadius: BorderRadius.circular(8),
         ),
         alignment: Alignment.center,
@@ -977,10 +1094,12 @@ class _DiscountBottomSheet extends StatefulWidget {
   const _DiscountBottomSheet({
     required this.subtotal,
     required this.currentAmount,
+    required this.category,
   });
 
   final double subtotal;
   final double currentAmount;
+  final BusinessCategory category;
 
   @override
   State<_DiscountBottomSheet> createState() => _DiscountBottomSheetState();
@@ -1048,9 +1167,9 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Discount',
-                style: TextStyle(
+              Text(
+                _discountLabelFor(widget.category),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppColors.ink,
@@ -1137,9 +1256,9 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Apply',
-              style: TextStyle(
+            child: Text(
+              _applyLabel(widget.category),
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),

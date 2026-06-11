@@ -11,7 +11,9 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>possystem</string>
+		<string>TrackMauzo</string>
+		<key>CFBundleDisplayName</key>
+		<string>TrackMauzo</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>

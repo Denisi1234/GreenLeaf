@@ -37,6 +37,24 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
       data: theme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
+        floatingActionButton: FloatingActionButton.extended(
+          heroTag: 'add_expense_fab',
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const AddExpensePage(),
+              ),
+            );
+          },
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add_rounded, size: 24),
+          label: const Text(
+            'Add Expense',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: SafeArea(
           child: Column(
             children: [
@@ -44,24 +62,6 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                 title: 'Expenses',
                 showBackButton: true,
                 centerTitle: false,
-                actions: [
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const AddExpensePage(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.add_rounded, size: 20),
-                    label: const Text('Add Expense'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      textStyle: AppTypography.bodyMedium
-                          .copyWith(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
               ),
               Expanded(
                 child: Consumer<PosLocalStore>(
@@ -78,9 +78,6 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                     final recentExpenses = _selectedDay == null
                         ? recentSourceExpenses.take(6).toList()
                         : filteredExpenses.take(6).toList();
-                    final comparisonLabel = _selectedDay == null
-                        ? 'vs last month'
-                        : 'vs previous day';
 
                     return CustomScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -96,7 +93,6 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                               dayLabel: _selectedDay == null
                                   ? null
                                   : _formatDayLabel(_selectedDay!),
-                              comparisonLabel: comparisonLabel,
                               onFilterSelected: _setFilter,
                               onPickDay: _pickExpenseDay,
                               onClearDay: _selectedDay == null
@@ -133,16 +129,7 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                               AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xxl),
                           sliver: SliverToBoxAdapter(
                             child: recentExpenses.isEmpty
-                                ? _EmptyExpensesState(
-                                    onAddExpenseTap: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute<void>(
-                                          builder: (context) =>
-                                              const AddExpensePage(),
-                                        ),
-                                      );
-                                    },
-                                  )
+                                ? const _EmptyExpensesState()
                                 : _RecentExpensesCard(
                                     expenses: recentExpenses,
                                     onExpenseTap: (expense) =>
@@ -645,7 +632,6 @@ class _ExpenseSummaryCard extends StatelessWidget {
     required this.filterLabel,
     required this.selectedFilter,
     required this.dayLabel,
-    required this.comparisonLabel,
     required this.onFilterSelected,
     required this.onPickDay,
     required this.onClearDay,
@@ -655,7 +641,6 @@ class _ExpenseSummaryCard extends StatelessWidget {
   final String filterLabel;
   final _ExpenseFilter selectedFilter;
   final String? dayLabel;
-  final String comparisonLabel;
   final ValueChanged<_ExpenseFilter> onFilterSelected;
   final VoidCallback onPickDay;
   final VoidCallback? onClearDay;
@@ -679,7 +664,6 @@ class _ExpenseSummaryCard extends StatelessWidget {
                   filterLabel: filterLabel,
                   selectedFilter: selectedFilter,
                   dayLabel: dayLabel,
-                  comparisonLabel: comparisonLabel,
                   onFilterSelected: onFilterSelected,
                   onPickDay: onPickDay,
                   onClearDay: onClearDay,
@@ -716,7 +700,6 @@ class _ExpenseSummaryCard extends StatelessWidget {
                         filterLabel: filterLabel,
                         selectedFilter: selectedFilter,
                         dayLabel: dayLabel,
-                        comparisonLabel: comparisonLabel,
                         onFilterSelected: onFilterSelected,
                         onPickDay: onPickDay,
                         onClearDay: onClearDay,
@@ -761,7 +744,6 @@ class _SummaryTextBlock extends StatelessWidget {
     required this.filterLabel,
     required this.selectedFilter,
     required this.dayLabel,
-    required this.comparisonLabel,
     required this.onFilterSelected,
     required this.onPickDay,
     required this.onClearDay,
@@ -771,7 +753,6 @@ class _SummaryTextBlock extends StatelessWidget {
   final String filterLabel;
   final _ExpenseFilter selectedFilter;
   final String? dayLabel;
-  final String comparisonLabel;
   final ValueChanged<_ExpenseFilter> onFilterSelected;
   final VoidCallback onPickDay;
   final VoidCallback? onClearDay;
@@ -834,52 +815,6 @@ class _SummaryTextBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEAF2FF),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    summary.changePercent >= 0
-                        ? Icons.trending_up_rounded
-                        : Icons.trending_down_rounded,
-                    size: 18,
-                    color: const Color(0xFF2563EB),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${summary.changePercent.abs().toStringAsFixed(1)}%',
-                    style: const TextStyle(
-                      color: Color(0xFF2563EB),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                comparisonLabel,
-                style: const TextStyle(
-                  color: Color(0xFF667085),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 12),
         Container(
           decoration: const BoxDecoration(
@@ -1135,26 +1070,27 @@ class _ExpenseRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      expense.category,
+                      expense.title,
                       style: const TextStyle(
                         color: Color(0xFF0F172A),
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      expense.notes?.trim().isNotEmpty == true
-                          ? expense.notes!.trim()
-                          : expense.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF667085),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                    if (expense.notes?.trim().isNotEmpty == true &&
+                        expense.notes!.trim() != expense.title) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        expense.notes!.trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF667085),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -1188,9 +1124,7 @@ class _ExpenseRow extends StatelessWidget {
 }
 
 class _EmptyExpensesState extends StatelessWidget {
-  const _EmptyExpensesState({required this.onAddExpenseTap});
-
-  final VoidCallback onAddExpenseTap;
+  const _EmptyExpensesState();
 
   @override
   Widget build(BuildContext context) {
@@ -1221,20 +1155,6 @@ class _EmptyExpensesState extends StatelessWidget {
             style: TextStyle(
               color: Color(0xFF94A3B8),
               fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: onAddExpenseTap,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Add Expense'),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
             ),
           ),
         ],
