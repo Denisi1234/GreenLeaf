@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../../l10n/app_strings.dart';
 import '../business_category_config.dart';
 import '../widgets/app_design.dart';
 import '../models/product_item.dart';

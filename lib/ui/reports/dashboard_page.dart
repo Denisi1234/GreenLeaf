@@ -86,12 +86,14 @@ class DashboardPage extends StatelessWidget {
 
   static List<QuickActionData> _quickActions(AppStrings strings) => [
         QuickActionData(
+          id: 'open_drawer',
           icon: Icons.point_of_sale_outlined,
           label: strings.openDrawer,
           iconColor: Color(0xFF2AA24F),
           iconBackground: Color(0xFFE9F8ED),
         ),
         QuickActionData(
+          id: 'view_reports',
           icon: Icons.insert_chart_outlined_rounded,
           label: strings.viewReports,
           iconColor: AppColors.reportsBlue,
@@ -153,6 +155,7 @@ class DashboardPage extends StatelessWidget {
 
     return [
       _OverviewCardData(
+        id: 'sales_today',
         icon: Icons.shopping_bag_outlined,
         iconColor: const Color(0xFF26A042),
         iconBackground: const Color(0xFFEAF8EE),
@@ -165,6 +168,7 @@ class DashboardPage extends StatelessWidget {
         footer: strings.updatedToday,
       ),
       _OverviewCardData(
+        id: 'orders_today',
         icon: Icons.shopping_cart_outlined,
         iconColor: const Color(0xFF2E6EE8),
         iconBackground: const Color(0xFFECF3FF),
@@ -173,6 +177,7 @@ class DashboardPage extends StatelessWidget {
         footer: strings.updatedToday,
       ),
       _OverviewCardData(
+        id: 'average_order',
         icon: Icons.sell_outlined,
         iconColor: const Color(0xFF9747FF),
         iconBackground: const Color(0xFFF3EAFE),
@@ -181,6 +186,7 @@ class DashboardPage extends StatelessWidget {
         footer: strings.updatedToday,
       ),
       _OverviewCardData(
+        id: 'best_seller',
         icon: Icons.inventory_2_outlined,
         iconColor: const Color(0xFFC38A13),
         iconBackground: const Color(0xFFFEF5E3),
@@ -188,7 +194,7 @@ class DashboardPage extends StatelessWidget {
         value: topProductEntry?.key ?? strings.noSalesYet,
         footer: topProductEntry == null
             ? strings.noItemsSoldYet
-            : '${topProductEntry.value} sold today',
+            : '${topProductEntry.value} ${strings.soldToday}',
         highlightValue: true,
       ),
     ];
@@ -596,33 +602,38 @@ class _OverviewGrid extends StatelessWidget {
               .map((card) => SizedBox(
                     width: itemWidth,
                     child: OverviewCard(
-                        card: OverviewCardData(
-                            icon: card.icon,
-                            iconColor: card.iconColor,
-                            iconBackground: card.iconBackground,
-                            title: card.title,
-                            value: card.value,
-                            footer: card.footer,
-                            delta: card.delta,
-                            deltaIsPositive: card.deltaIsPositive,
-                            highlightValue: card.highlightValue),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) => _OverviewDetailPage(
-                                  card: _OverviewCardData(
-                                      icon: card.icon,
-                                      iconColor: card.iconColor,
-                                      iconBackground: card.iconBackground,
-                                      title: card.title,
-                                      value: card.value,
-                                      footer: card.footer,
-                                      delta: card.delta,
-                                      deltaIsPositive: card.deltaIsPositive,
-                                      highlightValue: card.highlightValue)),
+                      card: OverviewCardData(
+                        icon: card.icon,
+                        iconColor: card.iconColor,
+                        iconBackground: card.iconBackground,
+                        title: card.title,
+                        value: card.value,
+                        footer: card.footer,
+                        delta: card.delta,
+                        deltaIsPositive: card.deltaIsPositive,
+                        highlightValue: card.highlightValue,
+                      ),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (context) => _OverviewDetailPage(
+                              card: _OverviewCardData(
+                                id: card.id,
+                                icon: card.icon,
+                                iconColor: card.iconColor,
+                                iconBackground: card.iconBackground,
+                                title: card.title,
+                                value: card.value,
+                                footer: card.footer,
+                                delta: card.delta,
+                                deltaIsPositive: card.deltaIsPositive,
+                                highlightValue: card.highlightValue,
+                              ),
                             ),
-                          );
-                        }),
+                          ),
+                        );
+                      },
+                    ),
                   ))
               .toList(),
         );
@@ -654,11 +665,11 @@ class _QuickActionsRow extends StatelessWidget {
               .map(
                 (action) => SizedBox(
                   width: itemWidth,
-                  child: QuickActionCard(
-                    action: action,
-                    onTap: () => _handleActionTap(context, action.label),
-                  ),
+                child: QuickActionCard(
+                  action: action,
+                    onTap: () => _handleActionTap(context, action.id),
                 ),
+              ),
               )
               .toList(),
         );
@@ -666,16 +677,20 @@ class _QuickActionsRow extends StatelessWidget {
     );
   }
 
-  void _handleActionTap(BuildContext context, String label) {
-    switch (label) {
-      case 'Open Drawer':
+  void _handleActionTap(BuildContext context, String actionId) {
+    switch (actionId) {
+      case 'open_drawer':
         showMarketNotice(
           context,
-          title: 'Cash Drawer',
-          message: 'Cash drawer opened successfully.',
+          title: context.read<PosLocalStore>().languageCode == 'sw'
+              ? AppStrings.of('sw').cashDrawer
+              : AppStrings.of('en').cashDrawer,
+          message: context.read<PosLocalStore>().languageCode == 'sw'
+              ? AppStrings.of('sw').cashDrawerOpenedSuccessfully
+              : AppStrings.of('en').cashDrawerOpenedSuccessfully,
         );
         break;
-      case 'View Reports':
+      case 'view_reports':
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => ReportsCatalogPage(),
@@ -693,15 +708,19 @@ class _QuickActionCard extends StatelessWidget {
   final bool hero;
 
   void _handleTap(BuildContext context) {
-    switch (action.label) {
-      case 'Open Drawer':
+    switch (action.id) {
+      case 'open_drawer':
         showMarketNotice(
           context,
-          title: 'Cash Drawer',
-          message: 'Cash drawer opened successfully.',
+          title: context.read<PosLocalStore>().languageCode == 'sw'
+              ? AppStrings.of('sw').cashDrawer
+              : AppStrings.of('en').cashDrawer,
+          message: context.read<PosLocalStore>().languageCode == 'sw'
+              ? AppStrings.of('sw').cashDrawerOpenedSuccessfully
+              : AppStrings.of('en').cashDrawerOpenedSuccessfully,
         );
         break;
-      case 'View Reports':
+      case 'view_reports':
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => ReportsCatalogPage(),
@@ -713,14 +732,18 @@ class _QuickActionCard extends StatelessWidget {
 
   void _handleActionTap(BuildContext context, String label) {
     switch (label) {
-      case 'Open Drawer':
+      case 'open_drawer':
         showMarketNotice(
           context,
-          title: 'Cash Drawer',
-          message: 'Cash drawer opened successfully.',
+          title: context.read<PosLocalStore>().languageCode == 'sw'
+              ? AppStrings.of('sw').cashDrawer
+              : AppStrings.of('en').cashDrawer,
+          message: context.read<PosLocalStore>().languageCode == 'sw'
+              ? AppStrings.of('sw').cashDrawerOpenedSuccessfully
+              : AppStrings.of('en').cashDrawerOpenedSuccessfully,
         );
         break;
-      case 'View Reports':
+      case 'view_reports':
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => ReportsCatalogPage(),
@@ -849,12 +872,14 @@ class _SummaryPanel extends StatelessWidget {
     required this.orders,
     required this.config,
     required this.store,
+    required this.strings,
   });
 
   final _DashboardSummaryData summary;
   final List<CompletedOrder> orders;
   final BusinessCategoryConfig config;
   final PosLocalStore store;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -873,6 +898,7 @@ class _SummaryPanel extends StatelessWidget {
           summary: summary,
           orders: orders,
           config: config,
+          strings: strings,
         ),
       ],
     );
@@ -901,11 +927,13 @@ class _LiveGrowthOverviewCard extends StatefulWidget {
     required this.summary,
     required this.orders,
     required this.config,
+    required this.strings,
   });
 
   final _DashboardSummaryData summary;
   final List<CompletedOrder> orders;
   final BusinessCategoryConfig config;
+  final AppStrings strings;
 
   @override
   State<_LiveGrowthOverviewCard> createState() =>
@@ -914,6 +942,19 @@ class _LiveGrowthOverviewCard extends StatefulWidget {
 
 class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
   _LiveGrowthPeriod _selectedPeriod = _LiveGrowthPeriod.week;
+
+  String _periodLabel(_LiveGrowthPeriod period) {
+    switch (period) {
+      case _LiveGrowthPeriod.today:
+        return widget.strings.today;
+      case _LiveGrowthPeriod.week:
+        return widget.strings.thisWeek;
+      case _LiveGrowthPeriod.month:
+        return widget.strings.thisMonth;
+      case _LiveGrowthPeriod.all:
+        return widget.strings.allTime;
+    }
+  }
 
   DateTime _startOfDay(DateTime value) =>
       DateTime(value.year, value.month, value.day);
@@ -1035,9 +1076,9 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Sales Growth Overview',
+                  widget.strings.salesGrowthOverview,
                   style: TextStyle(
                     color: AppColors.ink,
                     fontSize: 13,
@@ -1071,7 +1112,7 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
                         .map(
                           (period) => DropdownMenuItem<_LiveGrowthPeriod>(
                             value: period,
-                            child: Text(period.label),
+                            child: Text(_periodLabel(period)),
                           ),
                         )
                         .toList(),
@@ -1102,7 +1143,7 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   delta == null
-                      ? _selectedPeriod.label
+                      ? _periodLabel(_selectedPeriod)
                       : '${delta >= 0 ? '+' : '-'}${delta.abs().toStringAsFixed(1)}%',
                   style: const TextStyle(
                     color: Color(0xFF2FA24A),
@@ -1123,7 +1164,7 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
           ),
           const SizedBox(height: 2),
           Text(
-            'total revenue • ${_selectedPeriod.label}',
+            '${widget.strings.totalRevenue} • ${_periodLabel(_selectedPeriod)}',
             style: const TextStyle(
               color: AppColors.textMuted,
               fontSize: 10.5,
@@ -1161,11 +1202,13 @@ class _OverviewStatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(store.languageCode);
     final cards = _dashboardMetricCards(
       config: config,
       store: store,
       orders: orders,
       summary: summary,
+      strings: strings,
     );
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1315,7 +1358,8 @@ class _InsightsPromoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = _dashboardPromoData(config.category);
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
+    final data = _dashboardPromoData(config.category, strings);
     return SizedBox(
       height: 152,
       child: Stack(
@@ -1491,6 +1535,7 @@ List<_DashboardMetricData> _dashboardMetricCards({
   required PosLocalStore store,
   required List<CompletedOrder> orders,
   required _DashboardSummaryData summary,
+  required AppStrings strings,
 }) {
   final todayOrders = orders.where((order) {
     final parsed = DateTime.tryParse(order.dateTime);
@@ -1515,9 +1560,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.payments_outlined,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Today Revenue',
+          title: strings.todayRevenue,
           value: salesLabel,
-          footer: summary.deltaText ?? 'Updated just now',
+          footer: summary.deltaText ?? strings.updatedJustNow,
           footerColor: summary.deltaIsPositive == false
               ? AppColors.danger
               : AppColors.success,
@@ -1528,9 +1573,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.science_rounded,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Margin Mix',
+          title: strings.marginMix,
           value: '${inventoryMargin.toStringAsFixed(0)}%',
-          footer: 'From current stock pricing',
+          footer: strings.fromCurrentStockPricing,
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: true,
@@ -1539,9 +1584,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.inventory_2_outlined,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Expiring Soon',
+          title: strings.expiringSoon,
           value: '0',
-          footer: 'Expiry tracking not set',
+          footer: strings.expiryTrackingNotSet,
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: false,
@@ -1550,9 +1595,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.receipt_long_rounded,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Refill Queue',
+          title: strings.refillQueue,
           value: '0',
-          footer: 'Prescription refills not tracked',
+          footer: strings.prescriptionRefillsNotTracked,
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: false,
@@ -1563,9 +1608,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.payments_outlined,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Today Revenue',
+          title: strings.todayRevenue,
           value: salesLabel,
-          footer: summary.deltaText ?? 'Updated just now',
+          footer: summary.deltaText ?? strings.updatedJustNow,
           footerColor: summary.deltaIsPositive == false
               ? AppColors.danger
               : AppColors.success,
@@ -1576,9 +1621,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.workspace_premium_rounded,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'High Value Sales',
+          title: strings.highValueSales,
           value: highValueOrders.toString(),
-          footer: 'Orders above TSh 50,000',
+          footer: strings.ordersAboveFiftyThousand,
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: true,
@@ -1587,9 +1632,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.sell_outlined,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Top Category',
+          title: strings.topCategory,
           value: topCategory,
-          footer: 'Brand data not tracked yet',
+          footer: strings.brandDataNotTrackedYet,
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: true,
@@ -1598,9 +1643,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.shield_outlined,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Warranty Claims',
+          title: strings.warrantyClaims,
           value: '0',
-          footer: 'Service claims not tracked',
+          footer: strings.serviceClaimsNotTracked,
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: false,
@@ -1611,9 +1656,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.payments_outlined,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Today Revenue',
+          title: strings.todayRevenue,
           value: salesLabel,
-          footer: summary.deltaText ?? 'Updated just now',
+          footer: summary.deltaText ?? strings.updatedJustNow,
           footerColor: summary.deltaIsPositive == false
               ? AppColors.danger
               : AppColors.success,
@@ -1624,9 +1669,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.shopping_bag_outlined,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Orders Today',
+          title: strings.ordersToday,
           value: summary.todayOrdersCount.toString(),
-          footer: 'Completed sales',
+          footer: strings.completedSales,
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: true,
@@ -1635,11 +1680,11 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.star_rounded,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Best Seller',
+          title: strings.bestSeller,
           value: summary.bestSeller,
           footer: summary.bestSellerCount == null
-              ? 'No items sold yet'
-              : '${summary.bestSellerCount} sold today',
+              ? strings.noItemsSoldYet
+              : '${summary.bestSellerCount} ${strings.soldToday}',
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: true,
@@ -1648,9 +1693,9 @@ List<_DashboardMetricData> _dashboardMetricCards({
           icon: Icons.warning_amber_rounded,
           iconColor: config.primaryColor,
           iconBackground: config.primaryLightColor,
-          title: 'Low Stock',
+          title: strings.lowStock,
           value: lowStockCount.toString(),
-          footer: 'Items need restocking',
+          footer: strings.itemsNeedRestocking,
           footerColor: AppColors.textMuted,
           showTrend: false,
           trendUp: false,
@@ -1659,29 +1704,29 @@ List<_DashboardMetricData> _dashboardMetricCards({
   };
 }
 
-_DashboardPromoData _dashboardPromoData(BusinessCategory category) {
+_DashboardPromoData _dashboardPromoData(
+  BusinessCategory category,
+  AppStrings strings,
+) {
   return switch (category) {
     BusinessCategory.pharmacy => _DashboardPromoData(
         icon: Icons.medication_rounded,
-        title: 'Track Expiry and Refills',
-        subtitle:
-            'Add expiry dates, prescription flags, and refill alerts to keep the pharmacy side compliant.',
+        title: strings.trackExpiryAndRefills,
+        subtitle: strings.pharmacyDashboardSubtitle,
         primaryAction: const ReportsCatalogPage(),
         secondaryAction: const DukaAiAdvisorPage(),
       ),
     BusinessCategory.electronics => _DashboardPromoData(
         icon: Icons.devices_other_rounded,
-        title: 'Protect High-Value Stock',
-        subtitle:
-            'Serial numbers, warranty tracking, and service plans help you stay on top of premium devices.',
+        title: strings.protectHighValueStock,
+        subtitle: strings.electronicsDashboardSubtitle,
         primaryAction: const ReportHubPage(),
         secondaryAction: const MultiStoreManagementPage(),
       ),
     BusinessCategory.retail => _DashboardPromoData(
         icon: Icons.auto_awesome_rounded,
-        title: 'Unlock Smart Sales Insights',
-        subtitle:
-            'Advanced reports, forecasting tools, and team performance tracking in one place.',
+        title: strings.unlockSmartSalesInsights,
+        subtitle: strings.retailDashboardSubtitle,
         primaryAction: const ExpensesTrackingPage(),
         secondaryAction: const MultiStoreManagementPage(),
       ),
@@ -1775,6 +1820,7 @@ class _GrowthOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     final chartMaxValue = summary.recentRevenueValues.isEmpty
         ? 1.0
         : summary.recentRevenueValues
@@ -1793,9 +1839,9 @@ class _GrowthOverviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Sales Growth Overview',
+                  strings.salesGrowthOverview,
                   style: TextStyle(
                     color: AppColors.ink,
                     fontSize: 13,
@@ -1851,7 +1897,7 @@ class _GrowthOverviewCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   summary.deltaText == null
-                      ? 'Today'
+                      ? strings.today
                       : '${summary.deltaIsPositive == false ? '-' : '+'}${summary.deltaText}',
                   style: const TextStyle(
                     color: Color(0xFF2FA24A),
@@ -1872,7 +1918,7 @@ class _GrowthOverviewCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            'total revenue • ${summary.recentRevenueLabel}',
+            '${strings.totalRevenue} • ${summary.recentRevenueLabel}',
             style: const TextStyle(
               color: AppColors.textMuted,
               fontSize: 10.5,
@@ -2126,13 +2172,14 @@ class _EmptySummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              "Today's Operations",
+            Text(
+              strings.todayOperations,
               style: TextStyle(
                 color: Color(0xFF7A859C),
                 fontSize: 11,
@@ -2147,8 +2194,8 @@ class _EmptySummary extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: const Color(0xFFFCE1B4)),
               ),
-              child: const Text(
-                'No active sales',
+              child: Text(
+                strings.noActiveSales,
                 style: TextStyle(
                   color: Color(0xFFC77817),
                   fontSize: 10,
@@ -2159,7 +2206,7 @@ class _EmptySummary extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           'TSH 0',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -2170,8 +2217,8 @@ class _EmptySummary extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Ready for your first checkout of the day',
+        Text(
+          strings.readyForYourFirstCheckoutOfTheDay,
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Color(0xFF8A93A7),
@@ -2180,16 +2227,16 @@ class _EmptySummary extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Row(
+        Row(
           children: [
-            Expanded(child: _MiniSummaryStat(title: 'Orders', value: '0')),
-            SizedBox(width: 10),
+            Expanded(child: _MiniSummaryStat(title: strings.orders, value: '0')),
+            const SizedBox(width: 10),
             Expanded(
-              child: _MiniSummaryStat(title: 'Avg. Basket', value: 'TSH 0'),
+              child: _MiniSummaryStat(title: strings.avgBasket, value: 'TSH 0'),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Expanded(
-              child: _MiniSummaryStat(title: 'Vs Yesterday', value: '100%'),
+              child: _MiniSummaryStat(title: strings.vsYesterday, value: '100%'),
             ),
           ],
         ),
@@ -2205,14 +2252,15 @@ class _ActiveSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              "Today's Performance",
+            Text(
+              strings.todayPerformance,
               style: TextStyle(
                 color: Color(0xFF7A859C),
                 fontSize: 11,
@@ -2227,8 +2275,8 @@ class _ActiveSummary extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: const Color(0xFFD5F1DE)),
               ),
-              child: const Text(
-                'Live updates',
+              child: Text(
+                strings.liveUpdates,
                 style: TextStyle(
                   color: Color(0xFF1D8B48),
                   fontSize: 10,
@@ -2243,9 +2291,9 @@ class _ActiveSummary extends StatelessWidget {
           children: [
             Expanded(
               child: _MetricCard(
-                title: 'Gross Revenue',
+                title: strings.grossRevenue,
                 value: 'TSH ${summary.revenue.toStringAsFixed(0)}',
-                footer: summary.deltaText ?? 'Updated just now',
+                footer: summary.deltaText ?? strings.updatedJustNow,
                 accent: summary.deltaIsPositive == false
                     ? const Color(0xFFC65B4A)
                     : const Color(0xFF1D8B48),
@@ -2256,9 +2304,9 @@ class _ActiveSummary extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _MetricCard(
-                title: 'Total Orders',
+                title: strings.totalOrders,
                 value: summary.orders.toString(),
-                footer: 'Updated just now',
+                footer: strings.updatedJustNow,
                 accent: const Color(0xFF2E6EE8),
               ),
             ),
@@ -2269,20 +2317,20 @@ class _ActiveSummary extends StatelessWidget {
           children: [
             Expanded(
               child: _MetricCard(
-                title: 'Average Ticket',
+                title: strings.averageTicket,
                 value: 'TSH ${summary.averageOrder.toStringAsFixed(0)}',
-                footer: 'Per order',
+                footer: strings.perOrder,
                 accent: const Color(0xFF9747FF),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _MetricCard(
-                title: "Today's Top Seller",
+                title: strings.bestSeller,
                 value: summary.bestSeller,
                 footer: summary.bestSellerCount == null
-                    ? 'Nothing sold yet'
-                    : '${summary.bestSellerCount} sold today',
+                    ? strings.nothingSoldYet
+                    : '${summary.bestSellerCount} ${strings.soldToday}',
                 accent: const Color(0xFFC38A13),
                 highlightValue: true,
               ),
@@ -2430,19 +2478,20 @@ class _LatestActivityHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return MarketSectionHeader(
-      title: 'Latest activity',
+      title: strings.latestActivity,
       titleSize: 15,
       titleWeight: FontWeight.w700,
       trailing: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: onSeeAll,
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           child: Row(
             children: [
               Text(
-                'See all',
+                strings.seeAll,
                 style: TextStyle(
                   color: AppColors.primary,
                   fontSize: 11.5,
@@ -2509,21 +2558,22 @@ class _RecentHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: MarketSectionHeader(
-        title: 'Latest activity',
+        title: strings.latestActivity,
         titleSize: 15,
         titleWeight: FontWeight.w700,
         trailing: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () => _openAll(context),
-          child: const Padding(
+          child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             child: Row(
               children: [
                 Text(
-                  'See all',
+                  strings.seeAll,
                   style: TextStyle(
                     color: AppColors.primary,
                     fontSize: 11.5,
@@ -2676,23 +2726,24 @@ class _OverviewDetailPage extends StatelessWidget {
 
   final _OverviewCardData card;
 
-  String get _insight {
-    switch (card.title) {
-      case 'Sales today':
-        return 'This shows how much came in today compared with yesterday. It is a quick read on how the day is going.';
-      case 'Orders today':
-        return 'This is the number of orders completed today. It helps you see if foot traffic is picking up.';
-      case 'Average order':
-        return 'A higher average order usually means people are adding more items or choosing higher-value products.';
-      case 'Best seller':
-        return 'This is the item moving fastest today. It is a good one to keep stocked and visible.';
+  String _insight(AppStrings strings) {
+    switch (card.id) {
+      case 'sales_today':
+        return strings.salesTodayInsight;
+      case 'orders_today':
+        return strings.ordersTodayInsight;
+      case 'average_order':
+        return strings.averageOrderInsight;
+      case 'best_seller':
+        return strings.bestSellerInsight;
       default:
-        return 'This metric is ready if you want a closer look.';
+        return strings.metricReadyForCloserLook;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Scaffold(
       backgroundColor: const Color(0xFFFFFEFC),
       appBar: AppBar(
@@ -2763,7 +2814,7 @@ class _OverviewDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              _insight,
+              _insight(strings),
               style: const TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 14,
@@ -2828,7 +2879,7 @@ class _RecentActivityPage extends StatelessWidget {
         backgroundColor: const Color(0xFFFFFEFC),
         elevation: 0,
         foregroundColor: AppColors.ink,
-        title: Text(_pick('Latest activity', 'Shughuli za hivi karibuni')),
+        title: Text(strings.latestActivity),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
@@ -2907,6 +2958,7 @@ class _ActivityDetailPage extends StatelessWidget {
 
 class _OverviewCardData {
   const _OverviewCardData({
+    required this.id,
     required this.icon,
     required this.iconColor,
     required this.iconBackground,
@@ -2918,6 +2970,7 @@ class _OverviewCardData {
     this.highlightValue = false,
   });
 
+  final String id;
   final IconData icon;
   final Color iconColor;
   final Color iconBackground;

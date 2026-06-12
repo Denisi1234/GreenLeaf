@@ -600,14 +600,14 @@ class PosLocalDatabase {
     );
   }
 
-  Future<void> replaceStaffMembers(List<Map<String, Object?>> members) async {
+  Future<void> replaceStaffMembers(List<Map<String, Object?>> members, String storeId) async {
     final db = await database;
     final batch = db.batch();
-    batch.delete('staff_members');
+    batch.delete('staff_members', where: 'store_id = ?', whereArgs: <Object?>[storeId]);
     for (final member in members) {
       batch.insert(
         'staff_members',
-        member,
+        {...member, 'store_id': storeId},
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }

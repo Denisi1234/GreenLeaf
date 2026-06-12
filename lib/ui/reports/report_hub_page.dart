@@ -78,9 +78,10 @@ class _ReportHubPageState extends State<ReportHubPage> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
     final config = store.businessCategoryConfig;
     final report =
-        _buildReportSnapshot(store, _selectedPeriod, config.category);
+        _buildReportSnapshot(store, _selectedPeriod, config.category, strings);
     final baseTheme = Theme.of(context);
     final theme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
@@ -100,12 +101,13 @@ class _ReportHubPageState extends State<ReportHubPage> {
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
                 child: _ReportControlsBar(
                   dateRange: report.dateRangeLabel,
-                  periodLabel: _selectedPeriod.shortLabel,
+                  periodLabel: _periodLabel(strings, _selectedPeriod),
                   isDownloading: _isDownloading,
                   onPeriodSelected: (period) {
                     setState(() => _selectedPeriod = period);
                   },
                   onDownloadTap: () => _downloadReport(context),
+                  strings: strings,
                 ),
               ),
               Expanded(
@@ -123,10 +125,11 @@ class _ReportHubPageState extends State<ReportHubPage> {
                           children: [
                             const SizedBox(height: 18),
                             _ExecutiveSummaryCard(
-                              title: _reportOverviewTitle(config.category),
+                              title: _reportOverviewTitle(config.category, strings),
                               summary: _buildExecutiveSummary(
                                 report,
                                 store.profile,
+                                strings,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -135,16 +138,15 @@ class _ReportHubPageState extends State<ReportHubPage> {
                             _SectionCard(
                               title: 'Top Selling Products',
                               trailing: _LinkAction(
-                                label: 'View All',
+                                label: strings.viewAll,
                                 onTap: () =>
-                                    _showTopSellingProducts(context, report),
+                                    _showTopSellingProducts(context, report, strings),
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.only(top: 4),
                                 child: _TopSellingProductsList(
                                   products: report.allProducts.take(5).toList(),
-                                  emptyMessage:
-                                      'No completed sales in this period.',
+                                  emptyMessage: strings.noSalesYet,
                                 ),
                               ),
                             ),
@@ -3366,6 +3368,7 @@ class _ReportControlsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -3404,9 +3407,9 @@ class _ReportControlsBar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'Date',
-                        style: TextStyle(
+                      Text(
+                        strings.period,
+                        style: const TextStyle(
                           color: ReportHubPage._muted,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -3440,10 +3443,20 @@ class _ReportControlsBar extends StatelessWidget {
             ),
             itemBuilder: (context) => _ReportPeriod.values
                 .map(
-                  (period) => PopupMenuItem<_ReportPeriod>(
-                    value: period,
-                    child: Text(period.label),
-                  ),
+                  (period) {
+                    String getLabel( _ReportPeriod p) {
+                      switch(p) {
+                        case _ReportPeriod.today: return strings.periodToday;
+                        case _ReportPeriod.week: return strings.periodWeek;
+                        case _ReportPeriod.month: return strings.periodMonth;
+                        case _ReportPeriod.allTime: return strings.periodAllTime;
+                      }
+                    }
+                    return PopupMenuItem<_ReportPeriod>(
+                      value: period,
+                      child: Text(getLabel(period)),
+                    );
+                  },
                 )
                 .toList(),
             child: _ActionChip(
@@ -3474,6 +3487,7 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Container(
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -4144,6 +4158,7 @@ class _PeriodChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -4716,9 +4731,9 @@ class _ProductRow extends StatelessWidget {
                           color: const Color(0xFFEAF8EE),
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: const Text(
-                          'Top',
-                          style: TextStyle(
+                        child: Text(
+                          strings.top,
+                          style: const TextStyle(
                             color: Color(0xFF169B4A),
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
@@ -4754,9 +4769,9 @@ class _ProductRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
-                'Revenue',
-                style: TextStyle(
+              Text(
+                strings.revenue,
+                style: const TextStyle(
                   color: ReportHubPage._muted,
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
@@ -4783,6 +4798,7 @@ class _ProductThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Container(
       width: 40,
       height: 40,

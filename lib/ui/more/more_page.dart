@@ -15,7 +15,6 @@ import '../notifications/notifications_page.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
-import '../widgets/store_switcher.dart';
 
 class MorePage extends StatelessWidget {
   const MorePage({
@@ -92,7 +91,7 @@ class MorePage extends StatelessWidget {
             ),
             SafeArea(
               top: !useSharedShell,
-        child: Column(
+              child: Column(
                 children: [
                   if (!useSharedShell)
                     MarketPageHeader(
@@ -133,8 +132,6 @@ class MorePage extends StatelessWidget {
                           totalSales: totalSalesLabel,
                           memberSince: memberSince,
                         ),
-                        const SizedBox(height: 12),
-                        const StoreSwitcher(),
                         const SizedBox(height: 12),
                         _MoreMenuCard(items: items),
                         const SizedBox(height: 12),

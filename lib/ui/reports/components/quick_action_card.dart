@@ -3,6 +3,7 @@ import '../../widgets/app_design.dart';
 
 class QuickActionData {
   const QuickActionData({
+    required this.id,
     required this.icon,
     required this.label,
     required this.iconColor,
@@ -11,6 +12,7 @@ class QuickActionData {
     this.iconBackground,
   });
 
+  final String id;
   final IconData icon;
   final String label;
   final Color iconColor;

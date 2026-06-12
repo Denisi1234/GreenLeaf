@@ -518,6 +518,7 @@ class PosLocalStore extends ChangeNotifier {
         ..addAll(_seedStaffRoles);
       await _database.replaceStaffRoles(
         _staffRoles.map(_staffRoleToMap).toList(),
+        _activeStoreId,
       );
     } else {
       _staffRoles
@@ -525,7 +526,7 @@ class PosLocalStore extends ChangeNotifier {
         ..addAll(storedRoles.map(_staffRoleFromMap));
     }
 
-    final storedMembers = await _database.loadStaffMembers();
+    final storedMembers = await _database.loadStaffMembers(_activeStoreId);
     _staffMembers
       ..clear()
       ..addAll(storedMembers.map(_staffMemberFromMap));
@@ -1687,6 +1688,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffRoles(
       _staffRoles.map(_staffRoleToMap).toList(),
+      _activeStoreId,
     );
   }
 
@@ -1704,6 +1706,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffMembers(
       _staffMembers.map(_staffMemberToMap).toList(),
+      _activeStoreId,
     );
     return nextStaff;
   }
@@ -1733,6 +1736,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffMembers(
       _staffMembers.map(_staffMemberToMap).toList(),
+      _activeStoreId,
     );
   }
 
@@ -1741,6 +1745,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffMembers(
       _staffMembers.map(_staffMemberToMap).toList(),
+      _activeStoreId,
     );
   }
 

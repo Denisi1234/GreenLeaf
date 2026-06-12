@@ -1,7 +1,6 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -39,14 +38,19 @@ class _SettingsPageState extends State<SettingsPage> {
       data: interTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
+        appBar: AppBar(
+          backgroundColor: AppColors.pageBackground,
+          elevation: 0,
+          centerTitle: false,
+          foregroundColor: AppColors.ink,
+          title: Text(strings.settings),
+        ),
         body: SafeArea(
           bottom: false,
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-          children: [
-            _Header(store: store),
-            const SizedBox(height: 12),
+          child: ListView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            children: [
               _SectionCard(
                 icon: Icons.language_rounded,
                 title: strings.language,
@@ -88,7 +92,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     subtitle: strings.languageCode == 'en'
                         ? 'PIN, passcode and security options'
                         : 'PIN, nambari ya siri na chaguo za usalama',
-                    onTap: () => _showSoon(context, strings.security, strings.comingSoon),
+                    onTap: () => _showSoon(
+                        context, strings.security, strings.comingSoon),
                   ),
                   _SettingsItem(
                     icon: Icons.cloud_upload_outlined,
@@ -98,7 +103,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     subtitle: strings.languageCode == 'en'
                         ? 'Backup your data and restore'
                         : 'Hifadhi nakala ya data yako na urejeshe',
-                    onTap: () => _showSoon(context, strings.backupRestore, strings.comingSoon),
+                    onTap: () => _showSoon(
+                        context, strings.backupRestore, strings.comingSoon),
                   ),
                 ],
               ),
@@ -119,190 +125,6 @@ class _SettingsPageState extends State<SettingsPage> {
       context,
       title: title,
       message: message,
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.store,
-  });
-
-  final PosLocalStore store;
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = store.profile;
-    final strings = AppStrings.of(store.languageCode);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF8FAFF), Color(0xFFF1F5FF)],
-        ),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: -30,
-            top: -22,
-            child: Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                color: const Color(0xFFDDE8FF).withValues(alpha: 0.65),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            right: -22,
-            top: 8,
-            child: Container(
-              width: 92,
-              height: 92,
-              decoration: BoxDecoration(
-                color: const Color(0xFFDCE7FF).withValues(alpha: 0.55),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        Icons.chevron_left_rounded,
-                        color: AppColors.ink,
-                        size: 30,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  const SizedBox(width: 40, height: 40),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                strings.settings,
-                style: TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 28,
-                  height: 1.02,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.8,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                strings.customizePosExperience,
-                style: const TextStyle(
-                  color: AppColors.mutedText,
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 14),
-              _StoreStrip(
-                storeName: profile.storeName.isEmpty
-                    ? strings.currentStore
-                    : profile.storeName,
-                businessCategory: profile.businessCategory,
-                logoPath: profile.logoPath,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StoreStrip extends StatelessWidget {
-  const _StoreStrip({
-    required this.storeName,
-    required this.businessCategory,
-    required this.logoPath,
-  });
-
-  final String storeName;
-  final String businessCategory;
-  final String? logoPath;
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      backgroundColor: Colors.white,
-      borderColor: const Color(0xFFE7EAF0),
-      radius: 16,
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF2FF),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: logoPath == null
-                ? const Icon(
-                    Icons.storefront_outlined,
-                    color: Color(0xFF2A6CE3),
-                    size: 30,
-                  )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.file(
-                      File(logoPath!),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.storefront_outlined,
-                        color: Color(0xFF2A6CE3),
-                        size: 30,
-                      ),
-                    ),
-                  ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  storeName,
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  businessCategory.isEmpty
-                      ? 'Business store'
-                      : businessCategory,
-                  style: const TextStyle(
-                    color: AppColors.mutedText,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -706,7 +528,7 @@ class _VersionCard extends StatelessWidget {
       child: Row(
         children: [
           const Icon(
-            Icons.storefront_outlined,
+            Icons.info_outline_rounded,
             color: Color(0xFF2A6CE3),
             size: 20,
           ),

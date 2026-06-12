@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../l10n/app_strings.dart';
+import '../../../service/pos_local_store.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -71,6 +74,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAF8),
       appBar: AppBar(
@@ -79,9 +84,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
         surfaceTintColor: Colors.white,
         centerTitle: false,
         titleSpacing: 20,
-        title: const Text(
-          'Notifications',
-          style: TextStyle(
+        title: Text(
+          strings.notifications,
+          style: const TextStyle(
             color: Color(0xFF0F172A),
             fontSize: 26,
             fontWeight: FontWeight.w800,
@@ -91,7 +96,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         actions: [
           IconButton(
             onPressed: _markAllAsRead,
-            tooltip: 'Mark all as read',
+            tooltip: strings.markAllAsRead,
             icon: const Icon(
               Icons.done_all_rounded,
               color: Color(0xFF2563EB),
@@ -105,7 +110,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         children: [
           Expanded(
             child: _items.isEmpty
-                ? const _EmptyNotificationsState()
+                ? _EmptyNotificationsState(strings: strings)
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(0, 6, 0, 16),
                     itemCount: _items.length,
@@ -196,7 +201,9 @@ class _NotificationTile extends StatelessWidget {
 }
 
 class _EmptyNotificationsState extends StatelessWidget {
-  const _EmptyNotificationsState();
+  const _EmptyNotificationsState({required this.strings});
+  
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -228,19 +235,19 @@ class _EmptyNotificationsState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            const Text(
-              'No notifications',
-              style: TextStyle(
+            Text(
+              strings.noNotifications,
+              style: const TextStyle(
                 color: Color(0xFF0F172A),
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Nothing to show right now.',
+            Text(
+              strings.nothingToShow,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Color(0xFF64748B),
                 fontSize: 13.5,
                 height: 1.4,
