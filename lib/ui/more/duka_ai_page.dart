@@ -1242,7 +1242,6 @@ class _DukaAiPageState extends State<DukaAiPage> {
         'Name: ${store.profile.storeName.isEmpty ? 'Not set' : store.profile.storeName}');
     lines.add(
         'Owner: ${store.profile.ownerName.isEmpty ? 'Not set' : store.profile.ownerName}');
-    lines.add('Business: ${store.profile.businessCategory}');
 
     // Precomputed aggregates so the model can answer totals without mental math.
     final totalInventoryValue = store.inventory.fold<double>(

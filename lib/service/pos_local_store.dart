@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -14,9 +16,9 @@ import 'daftari_recovery_models.dart';
 import 'duka_ai_service.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
+import 'receipt_settings.dart';
 import 'expense_model.dart';
 import 'package:track_mauzo/ui/models/capability.dart';
-import 'package:track_mauzo/utils/extensions.dart';
 
 const _seedInventory = <InventoryProductItem>[
   InventoryProductItem(
@@ -161,7 +163,6 @@ class AppProfileData {
     required this.storeName,
     required this.ownerName,
     required this.roleTitle,
-    required this.businessCategory,
     required this.contactNumber,
     required this.emailAddress,
     required this.physicalAddress,
@@ -174,7 +175,6 @@ class AppProfileData {
     required this.sundaySchedule,
     required this.open24Hours,
     this.logoPath,
-    this.capabilityOverrides,
   });
 
   factory AppProfileData.empty() {
@@ -182,7 +182,6 @@ class AppProfileData {
       storeName: '',
       ownerName: '',
       roleTitle: '',
-      businessCategory: '',
       contactNumber: '',
       emailAddress: '',
       physicalAddress: '',
@@ -195,14 +194,12 @@ class AppProfileData {
       sundaySchedule: '',
       open24Hours: false,
       logoPath: null,
-      capabilityOverrides: null,
     );
   }
 
   final String storeName;
   final String ownerName;
   final String roleTitle;
-  final String businessCategory;
   final String contactNumber;
   final String emailAddress;
   final String physicalAddress;
@@ -215,13 +212,11 @@ class AppProfileData {
   final String sundaySchedule;
   final bool open24Hours;
   final String? logoPath;
-  final Set<Capability>? capabilityOverrides;
 
   AppProfileData copyWith({
     String? storeName,
     String? ownerName,
     String? roleTitle,
-    String? businessCategory,
     String? contactNumber,
     String? emailAddress,
     String? physicalAddress,
@@ -234,13 +229,11 @@ class AppProfileData {
     String? sundaySchedule,
     bool? open24Hours,
     String? logoPath,
-    Set<Capability>? capabilityOverrides,
   }) {
     return AppProfileData(
       storeName: storeName ?? this.storeName,
       ownerName: ownerName ?? this.ownerName,
       roleTitle: roleTitle ?? this.roleTitle,
-      businessCategory: businessCategory ?? this.businessCategory,
       contactNumber: contactNumber ?? this.contactNumber,
       emailAddress: emailAddress ?? this.emailAddress,
       physicalAddress: physicalAddress ?? this.physicalAddress,
@@ -253,74 +246,6 @@ class AppProfileData {
       sundaySchedule: sundaySchedule ?? this.sundaySchedule,
       open24Hours: open24Hours ?? this.open24Hours,
       logoPath: logoPath ?? this.logoPath,
-      capabilityOverrides: capabilityOverrides ?? this.capabilityOverrides,
-    );
-  }
-}
-
-class StoreLocationData {
-  const StoreLocationData({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.address,
-    required this.contactNumber,
-    required this.taxId,
-    required this.statusKey,
-    required this.accentColorValue,
-    required this.tintColorValue,
-    required this.createdAt,
-    this.logoPath,
-    this.profileJson,
-    this.isActive = false,
-  });
-
-  final String id;
-  final String name;
-  final String category;
-  final String address;
-  final String contactNumber;
-  final String taxId;
-  final String statusKey;
-  final int accentColorValue;
-  final int tintColorValue;
-  final String createdAt;
-  final String? logoPath;
-  final String? profileJson;
-  final bool isActive;
-
-  Color get accentColor => Color(accentColorValue);
-  Color get tintColor => Color(tintColorValue);
-
-  StoreLocationData copyWith({
-    String? id,
-    String? name,
-    String? category,
-    String? address,
-    String? contactNumber,
-    String? taxId,
-    String? statusKey,
-    int? accentColorValue,
-    int? tintColorValue,
-    String? createdAt,
-    String? logoPath,
-    String? profileJson,
-    bool? isActive,
-  }) {
-    return StoreLocationData(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      category: category ?? this.category,
-      address: address ?? this.address,
-      contactNumber: contactNumber ?? this.contactNumber,
-      taxId: taxId ?? this.taxId,
-      statusKey: statusKey ?? this.statusKey,
-      accentColorValue: accentColorValue ?? this.accentColorValue,
-      tintColorValue: tintColorValue ?? this.tintColorValue,
-      createdAt: createdAt ?? this.createdAt,
-      logoPath: logoPath ?? this.logoPath,
-      profileJson: profileJson ?? this.profileJson,
-      isActive: isActive ?? this.isActive,
     );
   }
 }
@@ -357,6 +282,44 @@ class StaffRoleData {
   }
 }
 
+enum StaffStatus {
+  active('active', 'Active'),
+  onLeave('on_leave', 'On Leave'),
+  inactive('inactive', 'Inactive');
+
+  const StaffStatus(this.value, this.label);
+
+  final String value;
+  final String label;
+
+  static StaffStatus fromValue(String? value) {
+    for (final status in StaffStatus.values) {
+      if (status.value == value) return status;
+    }
+    return StaffStatus.active;
+  }
+}
+
+enum EmploymentType {
+  fullTime('full_time', 'Full-time'),
+  partTime('part_time', 'Part-time'),
+  contract('contract', 'Contract'),
+  intern('intern', 'Intern'),
+  temporary('temporary', 'Temporary');
+
+  const EmploymentType(this.value, this.label);
+
+  final String value;
+  final String label;
+
+  static EmploymentType? fromValue(String? value) {
+    for (final type in EmploymentType.values) {
+      if (type.value == value) return type;
+    }
+    return null;
+  }
+}
+
 class StaffMemberData {
   const StaffMemberData({
     required this.id,
@@ -365,6 +328,23 @@ class StaffMemberData {
     required this.phone,
     required this.roleId,
     required this.createdAt,
+    this.username = '',
+    this.passwordHash = '',
+    this.passwordSalt = '',
+    this.employeeNumber = '',
+    this.jobTitle = '',
+    this.department = '',
+    this.hireDate = '',
+    this.employmentType = '',
+    this.hourlyRate = 0,
+    this.emergencyContactName = '',
+    this.emergencyContactPhone = '',
+    this.emergencyContactRelation = '',
+    this.address = '',
+    this.notes = '',
+    this.avatarPath,
+    this.status = StaffStatus.active,
+    this.updatedAt = '',
   });
 
   final String id;
@@ -373,6 +353,27 @@ class StaffMemberData {
   final String phone;
   final String roleId;
   final String createdAt;
+  final String username;
+  final String passwordHash;
+  final String passwordSalt;
+  final String employeeNumber;
+  final String jobTitle;
+  final String department;
+  final String hireDate;
+  final String employmentType;
+  final double hourlyRate;
+  final String emergencyContactName;
+  final String emergencyContactPhone;
+  final String emergencyContactRelation;
+  final String address;
+  final String notes;
+  final String? avatarPath;
+  final StaffStatus status;
+  final String updatedAt;
+
+  bool get hasLogin => username.trim().isNotEmpty;
+  bool get hasPassword => passwordHash.isNotEmpty;
+  bool get isActive => status == StaffStatus.active;
 
   String get initials {
     final parts = name
@@ -395,6 +396,23 @@ class StaffMemberData {
     String? phone,
     String? roleId,
     String? createdAt,
+    String? username,
+    String? passwordHash,
+    String? passwordSalt,
+    String? employeeNumber,
+    String? jobTitle,
+    String? department,
+    String? hireDate,
+    String? employmentType,
+    double? hourlyRate,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+    String? emergencyContactRelation,
+    String? address,
+    String? notes,
+    String? avatarPath,
+    StaffStatus? status,
+    String? updatedAt,
   }) {
     return StaffMemberData(
       id: id ?? this.id,
@@ -403,6 +421,25 @@ class StaffMemberData {
       phone: phone ?? this.phone,
       roleId: roleId ?? this.roleId,
       createdAt: createdAt ?? this.createdAt,
+      username: username ?? this.username,
+      passwordHash: passwordHash ?? this.passwordHash,
+      passwordSalt: passwordSalt ?? this.passwordSalt,
+      employeeNumber: employeeNumber ?? this.employeeNumber,
+      jobTitle: jobTitle ?? this.jobTitle,
+      department: department ?? this.department,
+      hireDate: hireDate ?? this.hireDate,
+      employmentType: employmentType ?? this.employmentType,
+      hourlyRate: hourlyRate ?? this.hourlyRate,
+      emergencyContactName: emergencyContactName ?? this.emergencyContactName,
+      emergencyContactPhone:
+          emergencyContactPhone ?? this.emergencyContactPhone,
+      emergencyContactRelation:
+          emergencyContactRelation ?? this.emergencyContactRelation,
+      address: address ?? this.address,
+      notes: notes ?? this.notes,
+      avatarPath: avatarPath ?? this.avatarPath,
+      status: status ?? this.status,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
@@ -411,8 +448,9 @@ class PosLocalStore extends ChangeNotifier {
   PosLocalStore({PosLocalDatabase? database})
       : _database = database ?? PosLocalDatabase.instance;
 
-  String _activeStoreId = 'store-default';
-  String get activeStoreId => _activeStoreId;
+  static const _storeId = 'store-default';
+  static const _defaultThreadId = 'thread-$_storeId';
+  bool _savingCheckout = false;
 
   final PosLocalDatabase _database;
   static const Duration _eastAfricaOffset = Duration(hours: 3);
@@ -423,7 +461,6 @@ class PosLocalStore extends ChangeNotifier {
   final List<InventoryProductItem> _allInventory = <InventoryProductItem>[];
   final List<StaffRoleData> _staffRoles = <StaffRoleData>[];
   final List<StaffMemberData> _staffMembers = <StaffMemberData>[];
-  final List<StoreLocationData> _storeLocations = <StoreLocationData>[];
   final List<DaftariRecoverySession> _daftariSessions =
       <DaftariRecoverySession>[];
   final List<DaftariLearningRule> _daftariLearningRules =
@@ -432,6 +469,7 @@ class PosLocalStore extends ChangeNotifier {
   final List<DukaAiMessage> _dukaAiMessages = <DukaAiMessage>[];
   final List<Expense> _expenses = <Expense>[];
   AppProfileData _profile = AppProfileData.empty();
+  ReceiptSettings _receiptSettings = const ReceiptSettings();
   String? _activeDukaAiThreadId;
   Timer? _midnightRefreshTimer;
 
@@ -449,20 +487,8 @@ class PosLocalStore extends ChangeNotifier {
   String get groqApiKey => _groqApiKey;
   String get groqModel => _groqModel;
   String get languageCode => _languageCode;
+  ReceiptSettings get receiptSettings => _receiptSettings;
   bool get useLiveGeminiOcr => _useLiveGeminiOcr;
-
-  Future<List<Map<String, Object?>>> loadAllStores() async {
-    return await _database.loadAllStores();
-  }
-
-  void setActiveStore(String storeId) {
-    if (_activeStoreId != storeId) {
-      _activeStoreId = storeId;
-      notifyListeners();
-      _isInitialized = false;
-      initialize();
-    }
-  }
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
@@ -480,12 +506,12 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    final storedInventory = await _database.loadInventory(_activeStoreId);
+    final storedInventory = await _database.loadInventory(_storeId);
     if (storedInventory.isEmpty) {
       _allInventory
         ..clear()
         ..addAll(_seedInventory);
-      await _database.replaceInventory(_allInventory, _activeStoreId);
+      await _database.replaceInventory(_allInventory, _storeId);
     } else {
       _allInventory
         ..clear()
@@ -495,12 +521,12 @@ class PosLocalStore extends ChangeNotifier {
 
     _syncProductsFromInventory();
 
-    final storedCart = await _database.loadCart(_activeStoreId);
+    final storedCart = await _database.loadCart(_storeId);
     if (storedCart.isEmpty) {
       _cartItems
         ..clear()
         ..addAll(_products.take(3));
-      await _database.replaceCart(_cartItems, _activeStoreId);
+      await _database.replaceCart(_cartItems, _storeId);
     } else {
       _cartItems
         ..clear()
@@ -509,16 +535,16 @@ class PosLocalStore extends ChangeNotifier {
 
     _orders
       ..clear()
-      ..addAll(await _database.loadOrders(_activeStoreId));
+      ..addAll(await _database.loadOrders(_storeId));
 
-    final storedRoles = await _database.loadStaffRoles(_activeStoreId);
+    final storedRoles = await _database.loadStaffRoles(_storeId);
     if (storedRoles.isEmpty) {
       _staffRoles
         ..clear()
-        ..addAll(_seedStaffRoles);
+        ..addAll(_seedStaffRoles.map((role) => role.copyWith(id: '$_storeId:${role.id}')));
       await _database.replaceStaffRoles(
         _staffRoles.map(_staffRoleToMap).toList(),
-        _activeStoreId,
+        _storeId,
       );
     } else {
       _staffRoles
@@ -526,7 +552,7 @@ class PosLocalStore extends ChangeNotifier {
         ..addAll(storedRoles.map(_staffRoleFromMap));
     }
 
-    final storedMembers = await _database.loadStaffMembers(_activeStoreId);
+    final storedMembers = await _database.loadStaffMembers(_storeId);
     _staffMembers
       ..clear()
       ..addAll(storedMembers.map(_staffMemberFromMap));
@@ -538,8 +564,6 @@ class PosLocalStore extends ChangeNotifier {
             storeName: storedProfile['store_name'] as String? ?? '',
             ownerName: storedProfile['owner_name'] as String? ?? '',
             roleTitle: storedProfile['role_title'] as String? ?? '',
-            businessCategory:
-                storedProfile['business_category'] as String? ?? '',
             contactNumber: storedProfile['contact_number'] as String? ?? '',
             emailAddress: storedProfile['email_address'] as String? ?? '',
             physicalAddress: storedProfile['physical_address'] as String? ?? '',
@@ -552,62 +576,24 @@ class PosLocalStore extends ChangeNotifier {
             sundaySchedule: storedProfile['sunday_schedule'] as String? ?? '',
             open24Hours: (storedProfile['open_24_hours'] as int? ?? 0) == 1,
             logoPath: storedProfile['logo_path'] as String?,
-            capabilityOverrides:
-                (storedProfile['capability_overrides_json'] as String?)?.let(
-                    (json) => (jsonDecode(json) as List<dynamic>)
-                        .map((c) => Capability.values.byName(c.toString()))
-                        .toSet()),
           );
-
-    final storedLocations = await _database.loadStoreLocations();
-    final normalizedLocations =
-        List<Map<String, Object?>>.from(storedLocations);
-    if (normalizedLocations.isEmpty && _profile.storeName.trim().isNotEmpty) {
-      normalizedLocations.add(_storeLocationToMap(_defaultStoreLocation()));
-    } else if (!normalizedLocations
-            .any((location) => location['id'] == 'store-current') &&
-        _profile.storeName.trim().isNotEmpty) {
-      normalizedLocations.insert(
-          0, _storeLocationToMap(_defaultStoreLocation()));
-    }
-
-    _storeLocations
-      ..clear()
-      ..addAll(normalizedLocations.map(_storeLocationFromMap));
-
-    if (_storeLocations.isNotEmpty &&
-        _storeLocations.every((location) => !location.isActive)) {
-      _storeLocations[0] = _storeLocations[0].copyWith(isActive: true);
-      await _database.replaceStoreLocations(
-        _storeLocations.map(_storeLocationToMap).toList(),
-      );
-    }
-
-    final activeLocation = _storeLocations.firstWhere(
-      (location) => location.isActive,
-      orElse: () => _storeLocations.isNotEmpty
-          ? _storeLocations.first
-          : _defaultStoreLocation(),
-    );
-    _profile = _profileFromLocation(activeLocation);
-    await _database.saveAppProfile(_profileToMap(_profile));
 
     _daftariSessions
       ..clear()
-      ..addAll(await _database.loadDaftariSessions(_activeStoreId));
+      ..addAll(await _database.loadDaftariSessions(_storeId));
     _daftariLearningRules
       ..clear()
-      ..addAll(await _database.loadDaftariLearningRules(_activeStoreId));
+      ..addAll(await _database.loadDaftariLearningRules(_storeId));
     _dukaAiThreads
       ..clear()
-      ..addAll(await _database.loadDukaAiThreads(_activeStoreId));
+      ..addAll(await _database.loadDukaAiThreads(_storeId));
 
-    final storedExpenses = await _database.loadExpenses(_activeStoreId);
+    final storedExpenses = await _database.loadExpenses(_storeId);
     _expenses
       ..clear()
       ..addAll(storedExpenses.map(Expense.fromMap));
 
-    final storedCustomers = await _database.loadCustomers(_activeStoreId);
+    final storedCustomers = await _database.loadCustomers(_storeId);
     _customers
       ..clear()
       ..addAll(storedCustomers.map(_customerFromMap));
@@ -615,14 +601,14 @@ class PosLocalStore extends ChangeNotifier {
     if (_dukaAiThreads.isEmpty) {
       final now = DateTime.now().toIso8601String();
       final defaultThread = DukaAiThread(
-        id: 'thread-default',
+        id: _defaultThreadId,
         title: 'MyDuka AI',
         preview: '',
         createdAt: now,
         updatedAt: now,
       );
       _dukaAiThreads.add(defaultThread);
-      await _database.upsertDukaAiThread(defaultThread, _activeStoreId);
+      await _database.upsertDukaAiThread(defaultThread, _storeId);
     }
 
     _activeDukaAiThreadId = _dukaAiThreads.first.id;
@@ -641,6 +627,7 @@ class PosLocalStore extends ChangeNotifier {
       await _database.replaceDukaAiMessages(
         _activeDukaAiThreadId!,
         _dukaAiMessages,
+        _storeId,
       );
     }
 
@@ -669,6 +656,7 @@ class PosLocalStore extends ChangeNotifier {
       // Ignore
     }
 
+    _receiptSettings = await _database.loadReceiptSettings();
     await _loadUiConfig();
 
     _updateCartTotals();
@@ -699,7 +687,7 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> addExpense(Expense expense) async {
     _expenses.insert(0, expense);
     notifyListeners();
-    await _database.insertExpense(expense.toMap(), _activeStoreId);
+    await _database.insertExpense(expense.toMap(), _storeId);
   }
 
   Future<void> deleteExpense(int id) async {
@@ -734,12 +722,20 @@ class PosLocalStore extends ChangeNotifier {
     }
   }
 
+  Future<void> updateReceiptSettings(ReceiptSettings settings) async {
+    await _database.saveReceiptSettings(settings);
+    _receiptSettings = settings;
+    notifyListeners();
+  }
+
   Future<void> setLanguageCode(String code) async {
     final nextCode = AppStrings.normalize(code);
     if (_languageCode == nextCode) return;
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/track_mauzo_ui_config.json');
+    await file.writeAsString(jsonEncode({'languageCode': nextCode}), flush: true);
     _languageCode = nextCode;
     notifyListeners();
-    await _saveUiConfig();
   }
 
   Future<void> _loadUiConfig() async {
@@ -763,26 +759,14 @@ class PosLocalStore extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveUiConfig() async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/track_mauzo_ui_config.json');
-      await file.writeAsString(
-        jsonEncode({'languageCode': _languageCode}),
-      );
-    } catch (e) {
-      // Ignore
-    }
-  }
-
   List<ProductItem> get products => List.unmodifiable(_products);
   List<ProductItem> get cartItems => List.unmodifiable(_cartItems);
   List<CompletedOrder> get orders => List.unmodifiable(_orders);
   List<InventoryProductItem> get inventory => List.unmodifiable(_allInventory);
   List<StaffRoleData> get staffRoles => List.unmodifiable(_staffRoles);
   List<StaffMemberData> get staffMembers => List.unmodifiable(_staffMembers);
-  List<StoreLocationData> get storeLocations =>
-      List.unmodifiable(_storeLocations);
+  List<String> get staffPermissionCatalog =>
+      List.unmodifiable(_staffPermissionCatalog);
   List<DaftariRecoverySession> get daftariSessions =>
       List.unmodifiable(_daftariSessions);
   List<DaftariLearningRule> get daftariLearningRules =>
@@ -803,55 +787,12 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   AppProfileData get profile => _profile;
-  StoreLocationData? get currentStoreLocation {
-    for (final location in _storeLocations) {
-      if (location.id == 'store-current') {
-        return location;
-      }
-    }
-    if (_profile.storeName.trim().isEmpty) return null;
-    return StoreLocationData(
-      id: 'store-current',
-      name: _profile.storeName,
-      category: _profile.businessCategory,
-      address: _profile.physicalAddress,
-      contactNumber: _profile.contactNumber,
-      taxId: _profile.taxId,
-      statusKey: 'operational',
-      accentColorValue: 0xFF2F74E8,
-      tintColorValue: 0xFFEAF2FF,
-      createdAt: _profile.memberSince.isNotEmpty
-          ? _profile.memberSince
-          : DateTime.now().toIso8601String(),
-      logoPath: _profile.logoPath,
-      profileJson: _profileToJson(_profile),
-      isActive: _storeLocations.every((location) => !location.isActive),
-    );
-  }
+  BusinessCategory get businessCategory => BusinessCategory.retail;
 
-  StoreLocationData? get activeStoreLocation {
-    for (final location in _storeLocations) {
-      if (location.isActive) {
-        return location;
-      }
-    }
-    return currentStoreLocation;
-  }
-
-  BusinessCategory get businessCategory =>
-      _profile.businessCategory.toBusinessCategory();
   BusinessCategoryConfig get businessCategoryConfig =>
       BusinessCategoryConfig.forCategory(businessCategory);
 
-  Set<Capability> get activeCapabilities {
-    final defaults = businessCategoryConfig.capabilities;
-    final overrides = _profile.capabilityOverrides;
-    if (overrides == null) return defaults;
-    return {...defaults, ...overrides};
-  }
-
-  bool get hasConfiguredBusinessCategory =>
-      _profile.businessCategory.trim().isNotEmpty;
+  Set<Capability> get activeCapabilities => businessCategoryConfig.capabilities;
 
   int _compareMessagesByTime(DukaAiMessage a, DukaAiMessage b) {
     final aTime = DateTime.tryParse(a.createdAt ?? '');
@@ -897,7 +838,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.add(product);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
+    unawaited(_database.replaceCart(_cartItems, _storeId));
     return true;
   }
 
@@ -915,7 +856,7 @@ class PosLocalStore extends ChangeNotifier {
     }
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
+    unawaited(_database.replaceCart(_cartItems, _storeId));
     return true;
   }
 
@@ -925,7 +866,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
+    unawaited(_database.replaceCart(_cartItems, _storeId));
     return true;
   }
 
@@ -939,7 +880,7 @@ class PosLocalStore extends ChangeNotifier {
           .sort((left, right) => right.createdAt.compareTo(left.createdAt));
     }
     notifyListeners();
-    await _database.upsertDaftariSession(session, _activeStoreId);
+    await _database.upsertDaftariSession(session, _storeId);
   }
 
   Future<void> rememberDaftariCorrection({
@@ -988,7 +929,7 @@ class PosLocalStore extends ChangeNotifier {
       return right.hitCount.compareTo(left.hitCount);
     });
     notifyListeners();
-    await _database.upsertDaftariLearningRule(updated, _activeStoreId);
+    await _database.upsertDaftariLearningRule(updated, _storeId);
   }
 
   Future<void> replaceDukaAiMessages(List<DukaAiMessage> messages) async {
@@ -1003,7 +944,7 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(messages);
     notifyListeners();
-    await _database.replaceDukaAiMessages(threadId, _dukaAiMessages);
+    await _database.replaceDukaAiMessages(threadId, _dukaAiMessages, _storeId);
   }
 
   Future<DukaAiThread> createDukaAiThread({
@@ -1026,8 +967,8 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(seedMessages ?? const <DukaAiMessage>[]);
     notifyListeners();
-    await _database.upsertDukaAiThread(thread, _activeStoreId);
-    await _database.replaceDukaAiMessages(thread.id, _dukaAiMessages);
+    await _database.upsertDukaAiThread(thread, _storeId);
+    await _database.replaceDukaAiMessages(thread.id, _dukaAiMessages, _storeId);
     return thread;
   }
 
@@ -1058,7 +999,7 @@ class PosLocalStore extends ChangeNotifier {
     _dukaAiThreads
         .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
-    await _database.upsertDukaAiThread(updated, _activeStoreId);
+    await _database.upsertDukaAiThread(updated, _storeId);
   }
 
   Future<void> updateDukaAiThreadPreview(
@@ -1076,7 +1017,7 @@ class PosLocalStore extends ChangeNotifier {
     _dukaAiThreads
         .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
-    await _database.upsertDukaAiThread(updated, _activeStoreId);
+    await _database.upsertDukaAiThread(updated, _storeId);
   }
 
   Future<void> deleteDukaAiThread(String threadId) async {
@@ -1090,7 +1031,7 @@ class PosLocalStore extends ChangeNotifier {
     if (_dukaAiThreads.isEmpty) {
       final now = DateTime.now().toIso8601String();
       final defaultThread = DukaAiThread(
-        id: 'thread-default',
+        id: _defaultThreadId,
         title: 'MyDuka AI',
         preview: '',
         createdAt: now,
@@ -1108,8 +1049,8 @@ class PosLocalStore extends ChangeNotifier {
             createdAt: DateTime.now().toIso8601String(),
           ),
         );
-      await _database.upsertDukaAiThread(defaultThread, _activeStoreId);
-      await _database.replaceDukaAiMessages(defaultThread.id, _dukaAiMessages);
+      await _database.upsertDukaAiThread(defaultThread, _storeId);
+      await _database.replaceDukaAiMessages(defaultThread.id, _dukaAiMessages, _storeId);
     } else if (wasActive) {
       _activeDukaAiThreadId = _dukaAiThreads.first.id;
       _dukaAiMessages
@@ -1125,7 +1066,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
+    unawaited(_database.replaceCart(_cartItems, _storeId));
   }
 
   void updateQuantity(int index, int delta) {
@@ -1139,21 +1080,21 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _activeStoreId));
+    unawaited(_database.replaceCart(_cartItems, _storeId));
   }
 
   Future<void> clearCart() async {
     _cartItems.clear();
     _updateCartTotals();
     notifyListeners();
-    await _database.replaceCart(_cartItems, _activeStoreId);
+    await _database.replaceCart(_cartItems, _storeId);
   }
 
   InventoryProductItem addProduct(InventoryProductItem product) {
     _allInventory.insert(0, product);
     _syncProductsFromInventory();
     notifyListeners();
-    unawaited(_database.replaceInventory(_allInventory, _activeStoreId));
+    unawaited(_database.replaceInventory(_allInventory, _storeId));
     return product;
   }
 
@@ -1163,7 +1104,7 @@ class PosLocalStore extends ChangeNotifier {
       _allInventory[index] = product;
       _syncProductsFromInventory();
       notifyListeners();
-      unawaited(_database.replaceInventory(_allInventory, _activeStoreId));
+      unawaited(_database.replaceInventory(_allInventory, _storeId));
     }
   }
 
@@ -1176,8 +1117,8 @@ class PosLocalStore extends ChangeNotifier {
     _syncProductsFromInventory();
     _updateCartTotals();
     notifyListeners();
-    await _database.replaceInventory(_allInventory, _activeStoreId);
-    await _database.replaceCart(_cartItems, _activeStoreId);
+    await _database.replaceInventory(_allInventory, _storeId);
+    await _database.replaceCart(_cartItems, _storeId);
 
     final imagePath = removedItem?.imagePath;
     if (imagePath != null && imagePath.isNotEmpty) {
@@ -1207,7 +1148,7 @@ class PosLocalStore extends ChangeNotifier {
 
     _syncProductsFromInventory();
     notifyListeners();
-    await _database.replaceInventory(_allInventory, _activeStoreId);
+    await _database.replaceInventory(_allInventory, _storeId);
   }
 
   Future<CompletedOrder> completeCashSale({
@@ -1220,9 +1161,7 @@ class PosLocalStore extends ChangeNotifier {
     String? discountLabel,
     String paymentMethod = 'Cash',
   }) async {
-    if (items.isEmpty) {
-      throw StateError('Cannot complete a sale with no items.');
-    }
+    if (_savingCheckout) throw StateError('A sale is already being saved.');
 
     final normalized = items
         .where((line) => line.quantity > 0)
@@ -1247,39 +1186,38 @@ class PosLocalStore extends ChangeNotifier {
       throw StateError('Cash tendered is less than total due.');
     }
 
+    final stockUpdates = <int, InventoryProductItem>{};
+    final saleLines = <OrderLine>[];
     for (final line in normalized) {
       final inventoryIndex = _findInventoryIndex(line.product);
       if (inventoryIndex == -1) {
         throw StateError(
             'Product ${line.product.name} is no longer in inventory.');
       }
-      final inventoryItem = _allInventory[inventoryIndex];
+      final inventoryItem = stockUpdates[inventoryIndex] ?? _allInventory[inventoryIndex];
       if (inventoryItem.stockCount < line.quantity) {
         throw StateError(
           'Only ${inventoryItem.stockCount} unit(s) of ${inventoryItem.name} left in stock.',
         );
       }
-    }
-
-    for (final line in normalized) {
-      final index = _findInventoryIndex(line.product);
-      final item = _allInventory[index];
-      final nextStock = item.stockCount - line.quantity;
-      _allInventory[index] = InventoryProductItem(
-        code: item.code,
-        name: item.name,
-        category: item.category,
-        purchasePrice: item.purchasePrice,
-        sellingPrice: item.sellingPrice,
+      final nextStock = inventoryItem.stockCount - line.quantity;
+      stockUpdates[inventoryIndex] = inventoryItem.copyWith(
         stockCount: nextStock,
         stockState: _deriveStockState(nextStock),
-        artType: item.artType,
-        imagePath: item.imagePath,
-        categoryData: item.categoryData,
       );
+      saleLines.add(OrderLine(
+        itemCode: inventoryItem.code,
+        itemCategory: inventoryItem.category,
+        itemName: line.product.name,
+        itemSize: line.product.size,
+        quantity: line.quantity,
+        unitPrice: line.product.price,
+        unitPriceValue: line.product.priceValue,
+        unitCost: inventoryItem.purchasePrice,
+        artType: line.product.type,
+        imagePath: line.product.imagePath,
+      ));
     }
-
-    _syncProductsFromInventory();
 
     final now = DateTime.now();
     final order = CompletedOrder(
@@ -1297,47 +1235,46 @@ class PosLocalStore extends ChangeNotifier {
       customerName: customerName,
       discountAmount: discountAmount,
       discountLabel: discountLabel,
-      lines: normalized
-          .map(
-            (line) => OrderLine(
-              itemCode: line.product.code,
-              itemCategory: line.product.category,
-              itemName: line.product.name,
-              itemSize: line.product.size,
-              quantity: line.quantity,
-              unitPrice: line.product.price,
-              unitPriceValue: line.product.priceValue,
-              artType: line.product.type,
-              imagePath: line.product.imagePath,
-            ),
-          )
-          .toList(),
+      lines: saleLines,
     );
 
-    var customerUpdated = false;
+    CustomerData? creditCustomer;
     if (paymentMethod.toLowerCase() == 'credit' &&
         customerName != null &&
         customerName.trim().isNotEmpty) {
       final customerIndex =
           _customers.indexWhere((customer) => customer.name == customerName);
       if (customerIndex != -1) {
-        _customers[customerIndex] = _customers[customerIndex].copyWith(
+        creditCustomer = _customers[customerIndex].copyWith(
           debitBalance: _customers[customerIndex].debitBalance + total,
         );
-        customerUpdated = true;
       }
     }
 
-    _orders.insert(0, order);
-    _cartItems.clear();
-    _updateCartTotals();
-    notifyListeners();
-
-    await _database.replaceInventory(_allInventory, _activeStoreId);
-    await _database.replaceCart(_cartItems, _activeStoreId);
-    await _database.insertOrder(order);
-    if (customerUpdated) {
-      await _database.replaceCustomers(_customers.map(_customerToMap).toList());
+    _savingCheckout = true;
+    try {
+      await _database.saveCheckout(
+        order: order,
+        storeId: _storeId,
+        stockUpdates: stockUpdates.values.toList(),
+        creditCustomer: creditCustomer == null ? null : _customerToMap(creditCustomer),
+      );
+      for (final item in stockUpdates.values) {
+        final index = _allInventory.indexWhere((product) => product.code == item.code);
+        if (index >= 0) _allInventory[index] = item;
+      }
+      if (creditCustomer != null) {
+        final id = creditCustomer.id;
+        final index = _customers.indexWhere((customer) => customer.id == id);
+        if (index >= 0) _customers[index] = creditCustomer;
+      }
+      _syncProductsFromInventory();
+      _orders.insert(0, order);
+      _cartItems.clear();
+      _updateCartTotals();
+      notifyListeners();
+    } finally {
+      _savingCheckout = false;
     }
     return order;
   }
@@ -1374,7 +1311,7 @@ class PosLocalStore extends ChangeNotifier {
     _syncProductsFromInventory();
     notifyListeners();
 
-    await _database.replaceInventory(_allInventory, _activeStoreId);
+    await _database.replaceInventory(_allInventory, _storeId);
     await _database.deleteOrder(orderId);
   }
 
@@ -1396,185 +1333,9 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<void> updateProfile(AppProfileData profile) async {
+    await _database.saveAppProfile(_profileToMap(profile));
     _profile = profile;
     notifyListeners();
-    await _database.saveAppProfile(_profileToMap(profile));
-
-    final activeIndex =
-        _storeLocations.indexWhere((location) => location.isActive);
-    if (activeIndex != -1) {
-      _storeLocations[activeIndex] = _storeLocations[activeIndex].copyWith(
-        name: profile.storeName,
-        category: profile.businessCategory,
-        address: profile.physicalAddress,
-        contactNumber: profile.contactNumber,
-        taxId: profile.taxId,
-        logoPath: profile.logoPath,
-        profileJson: _profileToJson(profile),
-      );
-      await _database.replaceStoreLocations(
-        _storeLocations.map(_storeLocationToMap).toList(),
-      );
-    }
-  }
-
-  Future<StoreLocationData> addStoreLocation(
-    StoreLocationData location, {
-    bool makeActive = false,
-  }) async {
-    final nextProfile = _profile.copyWith(
-      storeName: location.name,
-      businessCategory: location.category,
-      physicalAddress: location.address,
-      contactNumber: location.contactNumber,
-      taxId: location.taxId,
-      logoPath: location.logoPath,
-    );
-    final nextLocation = location.copyWith(
-      isActive: makeActive,
-      profileJson: _profileToJson(nextProfile),
-    );
-    if (makeActive) {
-      for (var index = 0; index < _storeLocations.length; index++) {
-        _storeLocations[index] = _storeLocations[index].copyWith(
-          isActive: false,
-        );
-      }
-    }
-    _storeLocations.insert(0, nextLocation);
-    if (makeActive) {
-      _storeLocations[0] = _storeLocations[0].copyWith(isActive: true);
-    }
-    notifyListeners();
-    await _database.replaceStoreLocations(
-      _storeLocations.map(_storeLocationToMap).toList(),
-    );
-    if (makeActive) {
-      _profile = nextProfile;
-      await _database.saveAppProfile(_profileToMap(_profile));
-    }
-    return nextLocation;
-  }
-
-  Future<void> setActiveStoreLocation(String locationId) async {
-    final index =
-        _storeLocations.indexWhere((location) => location.id == locationId);
-    if (index == -1) return;
-
-    final currentActiveIndex =
-        _storeLocations.indexWhere((location) => location.isActive);
-    if (currentActiveIndex != -1 && currentActiveIndex != index) {
-      final activeLocation = _storeLocations[currentActiveIndex];
-      _storeLocations[currentActiveIndex] = activeLocation.copyWith(
-        name: _profile.storeName,
-        category: _profile.businessCategory,
-        address: _profile.physicalAddress,
-        contactNumber: _profile.contactNumber,
-        taxId: _profile.taxId,
-        logoPath: _profile.logoPath,
-        profileJson: _profileToJson(_profile),
-        isActive: false,
-      );
-    }
-
-    final selected = _storeLocations[index];
-    final selectedProfile = _profileFromLocation(selected);
-    for (var i = 0; i < _storeLocations.length; i++) {
-      _storeLocations[i] = _storeLocations[i].copyWith(
-        isActive: i == index,
-      );
-    }
-    _storeLocations[index] = _storeLocations[index].copyWith(
-      name: selectedProfile.storeName,
-      category: selectedProfile.businessCategory,
-      address: selectedProfile.physicalAddress,
-      contactNumber: selectedProfile.contactNumber,
-      taxId: selectedProfile.taxId,
-      logoPath: selectedProfile.logoPath,
-      profileJson: _profileToJson(selectedProfile),
-      isActive: true,
-    );
-    _profile = selectedProfile;
-    notifyListeners();
-    await _database.replaceStoreLocations(
-      _storeLocations.map(_storeLocationToMap).toList(),
-    );
-    await _database.saveAppProfile(_profileToMap(_profile));
-  }
-
-  Future<void> setActiveDefaultStore() async {
-    final index = _storeLocations
-        .indexWhere((location) => location.id == 'store-current');
-    if (index == -1) return;
-
-    for (var i = 0; i < _storeLocations.length; i++) {
-      _storeLocations[i] = _storeLocations[i].copyWith(
-        isActive: i == index,
-      );
-    }
-    final selected = _storeLocations[index];
-    _profile = _profileFromLocation(selected);
-    notifyListeners();
-    await _database.replaceStoreLocations(
-      _storeLocations.map(_storeLocationToMap).toList(),
-    );
-    await _database.saveAppProfile(_profileToMap(_profile));
-  }
-
-  Future<void> deleteStoreLocation(String locationId) async {
-    if (locationId == 'store-current') return;
-
-    final index =
-        _storeLocations.indexWhere((location) => location.id == locationId);
-    if (index == -1) return;
-
-    final removedLocation = _storeLocations.removeAt(index);
-    if (removedLocation.isActive && _storeLocations.isNotEmpty) {
-      final defaultIndex = _storeLocations
-          .indexWhere((location) => location.id == 'store-current');
-      final targetIndex = defaultIndex == -1 ? 0 : defaultIndex;
-      _storeLocations[targetIndex] = _storeLocations[targetIndex].copyWith(
-        isActive: true,
-      );
-      _profile = _profileFromLocation(_storeLocations[targetIndex]);
-      await _database.saveAppProfile(_profileToMap(_profile));
-    }
-
-    notifyListeners();
-    await _database.replaceStoreLocations(
-      _storeLocations.map(_storeLocationToMap).toList(),
-    );
-  }
-
-  AppProfileData _profileFromLocation(StoreLocationData location) {
-    return _profileFromJson(location.profileJson).copyWith(
-      storeName: location.name,
-      businessCategory: location.category,
-      contactNumber: location.contactNumber,
-      physicalAddress: location.address,
-      taxId: location.taxId,
-      logoPath: location.logoPath ?? _profile.logoPath,
-    );
-  }
-
-  StoreLocationData _defaultStoreLocation({bool isActive = false}) {
-    return StoreLocationData(
-      id: 'store-current',
-      name: _profile.storeName,
-      category: _profile.businessCategory,
-      address: _profile.physicalAddress,
-      contactNumber: _profile.contactNumber,
-      taxId: _profile.taxId,
-      statusKey: 'operational',
-      accentColorValue: 0xFF2F74E8,
-      tintColorValue: 0xFFEAF2FF,
-      createdAt: _profile.memberSince.isNotEmpty
-          ? _profile.memberSince
-          : DateTime.now().toIso8601String(),
-      logoPath: _profile.logoPath,
-      profileJson: _profileToJson(_profile),
-      isActive: isActive,
-    );
   }
 
   Map<String, Object?> _profileToMap(AppProfileData profile) {
@@ -1582,7 +1343,7 @@ class PosLocalStore extends ChangeNotifier {
       'store_name': profile.storeName,
       'owner_name': profile.ownerName,
       'role_title': profile.roleTitle,
-      'business_category': profile.businessCategory,
+      'business_category': BusinessCategory.retail.storageKey,
       'contact_number': profile.contactNumber,
       'email_address': profile.emailAddress,
       'physical_address': profile.physicalAddress,
@@ -1595,49 +1356,7 @@ class PosLocalStore extends ChangeNotifier {
       'sunday_schedule': profile.sundaySchedule,
       'open_24_hours': profile.open24Hours ? 1 : 0,
       'logo_path': profile.logoPath,
-      'capability_overrides_json': profile.capabilityOverrides != null
-          ? jsonEncode(profile.capabilityOverrides!.map((c) => c.name).toList())
-          : null,
     };
-  }
-
-  String _profileToJson(AppProfileData profile) {
-    return jsonEncode(_profileToMap(profile));
-  }
-
-  AppProfileData _profileFromJson(String? jsonValue) {
-    if (jsonValue == null || jsonValue.trim().isEmpty) {
-      return _profile;
-    }
-
-    try {
-      final map = jsonDecode(jsonValue) as Map<String, dynamic>;
-      return AppProfileData(
-        storeName: map['store_name'] as String? ?? '',
-        ownerName: map['owner_name'] as String? ?? '',
-        roleTitle: map['role_title'] as String? ?? '',
-        businessCategory: map['business_category'] as String? ?? '',
-        contactNumber: map['contact_number'] as String? ?? '',
-        emailAddress: map['email_address'] as String? ?? '',
-        physicalAddress: map['physical_address'] as String? ?? '',
-        memberSince: map['member_since'] as String? ?? '',
-        taxId: map['tax_id'] as String? ?? '',
-        weekdayOpen: map['weekday_open'] as String? ?? '',
-        weekdayClose: map['weekday_close'] as String? ?? '',
-        saturdayOpen: map['saturday_open'] as String? ?? '',
-        saturdayClose: map['saturday_close'] as String? ?? '',
-        sundaySchedule: map['sunday_schedule'] as String? ?? '',
-        open24Hours: (map['open_24_hours'] as int? ?? 0) == 1,
-        logoPath: map['logo_path'] as String?,
-        capabilityOverrides: (map['capability_overrides_json'] as String?)?.let(
-          (json) => (jsonDecode(json) as List<dynamic>)
-              .map((item) => Capability.values.byName(item.toString()))
-              .toSet(),
-        ),
-      );
-    } catch (_) {
-      return _profile;
-    }
   }
 
   StaffRoleData? staffRoleById(String roleId) {
@@ -1658,8 +1377,7 @@ class PosLocalStore extends ChangeNotifier {
     return _staffMembers.where((staff) => staff.roleId == roleId).toList();
   }
 
-  Future<StaffRoleData> saveStaffRole(StaffRoleData role) async {
-    final existingIndex = _staffRoles.indexWhere((item) => item.id == role.id);
+  Future<StaffRoleData> saveStaffRole(StaffRoleData role) async {    final existingIndex = _staffRoles.indexWhere((item) => item.id == role.id);
     final nextRole = existingIndex == -1
         ? role.copyWith(sortOrder: _staffRoles.length)
         : role.copyWith(sortOrder: _staffRoles[existingIndex].sortOrder);
@@ -1672,6 +1390,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffRoles(
       _staffRoles.map(_staffRoleToMap).toList(),
+      _storeId,
     );
     return nextRole;
   }
@@ -1688,7 +1407,17 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffRoles(
       _staffRoles.map(_staffRoleToMap).toList(),
-      _activeStoreId,
+      _storeId,
+    );
+  }
+
+  Future<void> deleteStaffRole(String roleId) async {
+    if (_staffMembers.any((staff) => staff.roleId == roleId)) return;
+    _staffRoles.removeWhere((role) => role.id == roleId);
+    notifyListeners();
+    await _database.replaceStaffRoles(
+      _staffRoles.map(_staffRoleToMap).toList(),
+      _storeId,
     );
   }
 
@@ -1706,7 +1435,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffMembers(
       _staffMembers.map(_staffMemberToMap).toList(),
-      _activeStoreId,
+      _storeId,
     );
     return nextStaff;
   }
@@ -1716,7 +1445,27 @@ class PosLocalStore extends ChangeNotifier {
     required String email,
     required String phone,
     required String roleId,
+    String username = '',
+    String? password,
+    String employeeNumber = '',
+    String jobTitle = '',
+    String department = '',
+    String hireDate = '',
+    String employmentType = '',
+    double hourlyRate = 0,
+    String emergencyContactName = '',
+    String emergencyContactPhone = '',
+    String emergencyContactRelation = '',
+    String address = '',
+    String notes = '',
+    String? avatarPath,
+    StaffStatus status = StaffStatus.active,
   }) async {
+    final now = DateTime.now().toIso8601String();
+    final credentials = password == null || password.isEmpty
+        ? (hash: '', salt: '')
+        : _hashPassword(password);
+
     return saveStaffMember(
       StaffMemberData(
         id: 'staff-${DateTime.now().millisecondsSinceEpoch}',
@@ -1724,9 +1473,84 @@ class PosLocalStore extends ChangeNotifier {
         email: email,
         phone: phone,
         roleId: roleId,
-        createdAt: DateTime.now().toIso8601String(),
+        createdAt: now,
+        username: username,
+        passwordHash: credentials.hash,
+        passwordSalt: credentials.salt,
+        employeeNumber: employeeNumber,
+        jobTitle: jobTitle,
+        department: department,
+        hireDate: hireDate,
+        employmentType: employmentType,
+        hourlyRate: hourlyRate,
+        emergencyContactName: emergencyContactName,
+        emergencyContactPhone: emergencyContactPhone,
+        emergencyContactRelation: emergencyContactRelation,
+        address: address,
+        notes: notes,
+        avatarPath: avatarPath,
+        status: status,
+        updatedAt: now,
       ),
     );
+  }
+
+  Future<StaffMemberData> updateStaffMember(
+    StaffMemberData member, {
+    String? newPassword,
+  }) async {
+    var next = member;
+    if (newPassword != null && newPassword.isNotEmpty) {
+      final credentials = _hashPassword(newPassword);
+      next = next.copyWith(
+        passwordHash: credentials.hash,
+        passwordSalt: credentials.salt,
+      );
+    }
+    next = next.copyWith(updatedAt: DateTime.now().toIso8601String());
+    return saveStaffMember(next);
+  }
+
+  Future<void> setStaffStatus(String staffId, StaffStatus status) async {
+    final index = _staffMembers.indexWhere((staff) => staff.id == staffId);
+    if (index == -1) return;
+    _staffMembers[index] = _staffMembers[index].copyWith(
+      status: status,
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+    notifyListeners();
+    await _database.replaceStaffMembers(
+      _staffMembers.map(_staffMemberToMap).toList(),
+      _storeId,
+    );
+  }
+
+  bool staffUsernameExists(String username, {String? excludingId}) {
+    final needle = username.trim().toLowerCase();
+    if (needle.isEmpty) return false;
+    for (final staff in _staffMembers) {
+      if (staff.id == excludingId) continue;
+      if (staff.username.trim().toLowerCase() == needle) return true;
+    }
+    return false;
+  }
+
+  bool staffEmployeeNumberExists(String employeeNumber, {String? excludingId}) {
+    final needle = employeeNumber.trim().toLowerCase();
+    if (needle.isEmpty) return false;
+    for (final staff in _staffMembers) {
+      if (staff.id == excludingId) continue;
+      if (staff.employeeNumber.trim().toLowerCase() == needle) return true;
+    }
+    return false;
+  }
+
+  ({String hash, String salt}) _hashPassword(String password) {
+    final random = Random.secure();
+    final saltBytes = List<int>.generate(16, (_) => random.nextInt(256));
+    final salt = base64UrlEncode(saltBytes);
+    final digest = sha256.convert(utf8.encode('$salt:$password')).toString();
+    return (hash: digest, salt: salt);
   }
 
   Future<void> updateStaffMemberRole(String staffId, String roleId) async {
@@ -1736,7 +1560,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffMembers(
       _staffMembers.map(_staffMemberToMap).toList(),
-      _activeStoreId,
+      _storeId,
     );
   }
 
@@ -1745,7 +1569,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffMembers(
       _staffMembers.map(_staffMemberToMap).toList(),
-      _activeStoreId,
+      _storeId,
     );
   }
 
@@ -1879,6 +1703,23 @@ class PosLocalStore extends ChangeNotifier {
       'phone': staff.phone,
       'role_id': staff.roleId,
       'created_at': staff.createdAt,
+      'username': staff.username,
+      'password_hash': staff.passwordHash,
+      'password_salt': staff.passwordSalt,
+      'employee_number': staff.employeeNumber,
+      'job_title': staff.jobTitle,
+      'department': staff.department,
+      'hire_date': staff.hireDate,
+      'employment_type': staff.employmentType,
+      'hourly_rate': staff.hourlyRate,
+      'emergency_contact_name': staff.emergencyContactName,
+      'emergency_contact_phone': staff.emergencyContactPhone,
+      'emergency_contact_relation': staff.emergencyContactRelation,
+      'address': staff.address,
+      'notes': staff.notes,
+      'avatar_path': staff.avatarPath,
+      'status': staff.status.value,
+      'updated_at': staff.updatedAt,
     };
   }
 
@@ -1890,42 +1731,24 @@ class PosLocalStore extends ChangeNotifier {
       phone: map['phone'] as String? ?? '',
       roleId: map['role_id'] as String? ?? '',
       createdAt: map['created_at'] as String? ?? '',
-    );
-  }
-
-  Map<String, Object?> _storeLocationToMap(StoreLocationData location) {
-    return <String, Object?>{
-      'id': location.id,
-      'name': location.name,
-      'category': location.category,
-      'address': location.address,
-      'contact_number': location.contactNumber,
-      'tax_id': location.taxId,
-      'status_key': location.statusKey,
-      'accent_color': location.accentColorValue,
-      'tint_color': location.tintColorValue,
-      'logo_path': location.logoPath,
-      'profile_json': location.profileJson,
-      'created_at': location.createdAt,
-      'is_active': location.isActive ? 1 : 0,
-    };
-  }
-
-  StoreLocationData _storeLocationFromMap(Map<String, Object?> map) {
-    return StoreLocationData(
-      id: map['id'] as String? ?? '',
-      name: map['name'] as String? ?? '',
-      category: map['category'] as String? ?? '',
+      username: map['username'] as String? ?? '',
+      passwordHash: map['password_hash'] as String? ?? '',
+      passwordSalt: map['password_salt'] as String? ?? '',
+      employeeNumber: map['employee_number'] as String? ?? '',
+      jobTitle: map['job_title'] as String? ?? '',
+      department: map['department'] as String? ?? '',
+      hireDate: map['hire_date'] as String? ?? '',
+      employmentType: map['employment_type'] as String? ?? '',
+      hourlyRate: (map['hourly_rate'] as num?)?.toDouble() ?? 0,
+      emergencyContactName: map['emergency_contact_name'] as String? ?? '',
+      emergencyContactPhone: map['emergency_contact_phone'] as String? ?? '',
+      emergencyContactRelation:
+          map['emergency_contact_relation'] as String? ?? '',
       address: map['address'] as String? ?? '',
-      contactNumber: map['contact_number'] as String? ?? '',
-      taxId: map['tax_id'] as String? ?? '',
-      statusKey: map['status_key'] as String? ?? 'operational',
-      accentColorValue: (map['accent_color'] as num?)?.toInt() ?? 0xFF2F74E8,
-      tintColorValue: (map['tint_color'] as num?)?.toInt() ?? 0xFFEAF2FF,
-      createdAt: map['created_at'] as String? ?? '',
-      logoPath: map['logo_path'] as String?,
-      profileJson: map['profile_json'] as String?,
-      isActive: (map['is_active'] as int? ?? 0) == 1,
+      notes: map['notes'] as String? ?? '',
+      avatarPath: map['avatar_path'] as String?,
+      status: StaffStatus.fromValue(map['status'] as String?),
+      updatedAt: map['updated_at'] as String? ?? '',
     );
   }
 
@@ -1935,7 +1758,7 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> addCustomer(CustomerData customer) async {
     _customers.add(customer);
     notifyListeners();
-    await _database.replaceCustomers(_customers.map(_customerToMap).toList());
+    await _database.replaceCustomers(_customers.map(_customerToMap).toList(), _storeId);
   }
 
   CustomerData _customerFromMap(Map<String, Object?> map) {
@@ -1973,13 +1796,13 @@ class PosLocalStore extends ChangeNotifier {
     if (index == -1) return;
     _customers[index] = customer;
     notifyListeners();
-    await _database.replaceCustomers(_customers.map(_customerToMap).toList());
+    await _database.replaceCustomers(_customers.map(_customerToMap).toList(), _storeId);
   }
 
   Future<void> deleteCustomer(String customerId) async {
     _customers.removeWhere((c) => c.id == customerId);
     notifyListeners();
-    await _database.replaceCustomers(_customers.map(_customerToMap).toList());
+    await _database.replaceCustomers(_customers.map(_customerToMap).toList(), _storeId);
   }
 
   CustomerData? customerById(String id) {

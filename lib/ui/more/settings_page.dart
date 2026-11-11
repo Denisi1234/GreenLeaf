@@ -1,17 +1,13 @@
-// ignore_for_file: prefer_const_constructors
-
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
+import '../../service/receipt_settings.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
-
-enum _ThemeChoice { light, dark }
+import 'settings_layout.dart';
+import 'store_profile_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -21,584 +17,322 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  _ThemeChoice _themeChoice = _ThemeChoice.dark;
+  int _selectedTab = 0;
 
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final strings = AppStrings.of(store.languageCode);
-    final baseTheme = Theme.of(context);
-    final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme:
-          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
-    );
-
     return Theme(
-      data: interTheme,
+      data: settingsTheme(Theme.of(context)),
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
-        appBar: AppBar(
-          backgroundColor: AppColors.pageBackground,
-          elevation: 0,
-          centerTitle: false,
-          foregroundColor: AppColors.ink,
-          title: Text(strings.settings),
-        ),
         body: SafeArea(
-          bottom: false,
-          child: ListView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
             children: [
-              _SectionCard(
-                icon: Icons.language_rounded,
-                title: strings.language,
-                subtitle: strings.preferredLanguage,
-                child: _DropdownButton(
-                  value: store.languageCode == 'en'
-                      ? strings.english
-                      : strings.swahili,
-                  items: [strings.english, strings.swahili],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    unawaited(store.setLanguageCode(
-                        value == strings.english ? 'en' : 'sw'));
-                  },
-                ),
+              MarketPageHeader(
+                title: strings.settings,
+                onBack: () => Navigator.of(context).pop(),
               ),
-              const SizedBox(height: 12),
-              _SectionCard(
-                icon: Icons.brightness_6_rounded,
-                title: strings.appearance,
-                subtitle: strings.preferredTheme,
-                child: _ThemeChooser(
-                  selected: _themeChoice,
-                  onChanged: (choice) {
-                    setState(() {
-                      _themeChoice = choice;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              _ListCard(
-                items: [
-                  _SettingsItem(
-                    icon: Icons.shield_outlined,
-                    iconColor: const Color(0xFF6E4AE2),
-                    backgroundColor: const Color(0xFFF0EBFF),
-                    title: strings.security,
-                    subtitle: strings.languageCode == 'en'
-                        ? 'PIN, passcode and security options'
-                        : 'PIN, nambari ya siri na chaguo za usalama',
-                    onTap: () => _showSoon(
-                        context, strings.security, strings.comingSoon),
-                  ),
-                  _SettingsItem(
-                    icon: Icons.cloud_upload_outlined,
-                    iconColor: const Color(0xFF2A6CE3),
-                    backgroundColor: const Color(0xFFEAF2FF),
-                    title: strings.backupRestore,
-                    subtitle: strings.languageCode == 'en'
-                        ? 'Backup your data and restore'
-                        : 'Hifadhi nakala ya data yako na urejeshe',
-                    onTap: () => _showSoon(
-                        context, strings.backupRestore, strings.comingSoon),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _VersionCard(
-                version: 'v1.0.0',
-                storeName: store.profile.storeName,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showSoon(BuildContext context, String title, String message) {
-    showMarketNotice(
-      context,
-      title: title,
-      message: message,
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      backgroundColor: Colors.white.withValues(alpha: 0.95),
-      borderColor: const Color(0xFFE7EAF0),
-      radius: 16,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: _tintForIcon(icon),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  icon,
-                  color: _colorForIcon(icon),
-                  size: 25,
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: AppColors.ink,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 880),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                          child: _SettingsTabs(
+                            labels: [
+                              strings.businessInfo,
+                              strings.localeSettings,
+                              strings.receiptSettings,
+                              strings.systemSettings,
+                            ],
+                            selected: _selectedTab,
+                            onSelected: (index) {
+                              FocusScope.of(context).unfocus();
+                              setState(() => _selectedTab = index);
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: IndexedStack(
+                            index: _selectedTab,
+                            sizing: StackFit.expand,
+                            children: [
+                              const _SettingsPane(child: StoreProfileForm()),
+                              _SettingsPane(child: _LocaleForm(store: store)),
+                              _SettingsPane(child: _ReceiptForm(store: store)),
+                              _SettingsPane(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    SettingsField(
+                                      label: strings.appVersion,
+                                      child: const Text('1.0.0'),
+                                    ),
+                                    SettingsField(
+                                      label: strings.dataStorage,
+                                      child: Text(strings.localStorage),
+                                    ),
+                                    SettingsField(
+                                      label: strings.cloudSync,
+                                      child: Text(strings.disconnected),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: AppColors.mutedText,
-                        fontSize: 12.8,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _DropdownButton extends StatelessWidget {
-  const _DropdownButton({
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  final String value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE4E8EF)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: Color(0xFF7B8598),
-          ),
-          style: const TextStyle(
-            color: AppColors.ink,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-          items: items
-              .map(
-                (item) => DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(item),
-                ),
-              )
-              .toList(),
-          onChanged: onChanged,
         ),
       ),
     );
   }
 }
 
-class _ThemeChooser extends StatelessWidget {
-  const _ThemeChooser({
+class _SettingsTabs extends StatelessWidget {
+  const _SettingsTabs({
+    required this.labels,
     required this.selected,
-    required this.onChanged,
+    required this.onSelected,
   });
 
-  final _ThemeChoice selected;
-  final ValueChanged<_ThemeChoice> onChanged;
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onSelected;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < 380;
-        final lightSelected = selected == _ThemeChoice.light;
-        final darkSelected = selected == _ThemeChoice.dark;
-
-        final cards = [
-          _ThemeOptionCard(
-            title: 'Light Mode',
-            icon: Icons.wb_sunny_outlined,
-            selected: lightSelected,
-            onTap: () => onChanged(_ThemeChoice.light),
-          ),
-          _ThemeOptionCard(
-            title: 'Dark Mode',
-            icon: Icons.nightlight_round,
-            selected: darkSelected,
-            onTap: () => onChanged(_ThemeChoice.dark),
-            dark: true,
-          ),
-        ];
+        final compact = constraints.maxWidth < 736;
+        final tabs = List.generate(labels.length, (index) {
+          final active = selected == index;
+          return Semantics(
+            selected: active,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 44),
+                foregroundColor:
+                    compact && active ? const Color(0xFF0F766E) : settingsInk,
+                backgroundColor: compact
+                    ? (active
+                        ? const Color(0xFFECFDF5)
+                        : const Color(0xFFF8FAFC))
+                    : Colors.white,
+                side: BorderSide(
+                  color: compact && active
+                      ? const Color(0xFF14B8A6)
+                      : (active || compact
+                          ? settingsBorder
+                          : Colors.transparent),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: compact
+                      ? BorderRadius.circular(10)
+                      : const BorderRadius.vertical(top: Radius.circular(4)),
+                ),
+              ),
+              onPressed: () => onSelected(index),
+              child: Text(labels[index], textAlign: TextAlign.center),
+            ),
+          );
+        });
 
         if (compact) {
-          return Column(
+          final width = (constraints.maxWidth - 6) / 2;
+          return Wrap(
+            spacing: 6,
+            runSpacing: 6,
             children: [
-              cards.first,
-              const SizedBox(height: 12),
-              cards.last,
+              for (final tab in tabs) SizedBox(width: width, child: tab)
             ],
           );
         }
-
-        return Row(
-          children: [
-            Expanded(child: cards.first),
-            const SizedBox(width: 12),
-            Expanded(child: cards.last),
-          ],
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: settingsBorder)),
+          ),
+          child: Wrap(children: tabs),
         );
       },
     );
   }
 }
 
-class _ThemeOptionCard extends StatelessWidget {
-  const _ThemeOptionCard({
-    required this.title,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-    this.dark = false,
-  });
+class _SettingsPane extends StatelessWidget {
+  const _SettingsPane({required this.child});
 
-  final String title;
-  final IconData icon;
-  final bool selected;
-  final bool dark;
-  final VoidCallback onTap;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final background = dark
-        ? const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF202C4B), Color(0xFF111828)],
-          )
-        : null;
-    final foreground = dark ? Colors.white : AppColors.ink;
-    final muted = dark ? Colors.white70 : AppColors.mutedText;
+    return ListView(
+      primary: false,
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+      children: [child],
+    );
+  }
+}
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 112,
-        decoration: BoxDecoration(
-          gradient: background,
-          color: background == null ? Colors.white : null,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected
-                ? (dark ? Colors.white : const Color(0xFF2A6CE3))
-                : const Color(0xFFE4E8EF),
-            width: selected ? 1.4 : 1,
+class _LocaleForm extends StatefulWidget {
+  const _LocaleForm({required this.store});
+
+  final PosLocalStore store;
+
+  @override
+  State<_LocaleForm> createState() => _LocaleFormState();
+}
+
+class _LocaleFormState extends State<_LocaleForm> {
+  late String _language = widget.store.languageCode;
+  bool _saving = false;
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await widget.store.setLanguageCode(_language);
+      if (!mounted) return;
+      _showResult(
+          context, AppStrings.of(widget.store.languageCode).settingsSaved);
+    } catch (_) {
+      if (!mounted) return;
+      _showResult(
+          context, AppStrings.of(widget.store.languageCode).settingsSaveFailed);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(widget.store.languageCode);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsField(
+          label: strings.language,
+          child: DropdownButtonFormField<String>(
+            initialValue: _language,
+            decoration: InputDecoration(helperText: strings.preferredLanguage),
+            isExpanded: true,
+            items: [
+              DropdownMenuItem(value: 'en', child: Text(strings.english)),
+              DropdownMenuItem(value: 'sw', child: Text(strings.swahili)),
+            ],
+            onChanged:
+                _saving ? null : (value) => setState(() => _language = value!),
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: (dark ? Colors.black : const Color(0xFF2A6CE3))
-                        .withValues(alpha: 0.10),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
         ),
-        child: Stack(
-          children: [
-            if (selected)
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Color(0xFF202938),
-                    size: 18,
-                  ),
-                ),
-              ),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, color: foreground, size: 34),
-                  const SizedBox(height: 10),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: foreground,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    dark ? 'Dark UI' : 'Bright UI',
-                    style: TextStyle(
-                      color: muted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        SettingsSaveButton(
+          label: _saving ? strings.saving : strings.save,
+          onPressed:
+              _saving || _language == widget.store.languageCode ? null : _save,
         ),
-      ),
+      ],
     );
   }
 }
 
-class _ListCard extends StatelessWidget {
-  const _ListCard({
-    required this.items,
-  });
+class _ReceiptForm extends StatefulWidget {
+  const _ReceiptForm({required this.store});
 
-  final List<_SettingsItem> items;
+  final PosLocalStore store;
 
   @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      backgroundColor: Colors.white.withValues(alpha: 0.95),
-      borderColor: const Color(0xFFE7EAF0),
-      radius: 18,
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          for (var index = 0; index < items.length; index++) ...[
-            _SettingsListTile(item: items[index]),
-            if (index != items.length - 1)
-              const Padding(
-                padding: EdgeInsets.only(left: 72),
-                child: Divider(height: 1, color: Color(0xFFE7EAF0)),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
+  State<_ReceiptForm> createState() => _ReceiptFormState();
 }
 
-class _SettingsListTile extends StatelessWidget {
-  const _SettingsListTile({
-    required this.item,
-  });
-
-  final _SettingsItem item;
+class _ReceiptFormState extends State<_ReceiptForm> {
+  late final _footer =
+      TextEditingController(text: widget.store.receiptSettings.footer);
+  late bool _showStoreContact = widget.store.receiptSettings.showStoreContact;
+  bool _saving = false;
 
   @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: item.onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: item.backgroundColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                item.icon,
-                color: item.iconColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.subtitle,
-                    style: const TextStyle(
-                      color: AppColors.mutedText,
-                      fontSize: 12.2,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFF7B8598),
-              size: 22,
-            ),
-          ],
-        ),
-      ),
-    );
+  void dispose() {
+    _footer.dispose();
+    super.dispose();
   }
-}
 
-class _VersionCard extends StatelessWidget {
-  const _VersionCard({
-    required this.version,
-    required this.storeName,
-  });
-
-  final String version;
-  final String storeName;
+  Future<void> _save(AppStrings strings) async {
+    FocusScope.of(context).unfocus();
+    setState(() => _saving = true);
+    try {
+      await widget.store.updateReceiptSettings(
+        ReceiptSettings(
+            showStoreContact: _showStoreContact, footer: _footer.text.trim()),
+      );
+      if (!mounted) return;
+      _footer.text = widget.store.receiptSettings.footer;
+      _showResult(context, strings.settingsSaved);
+    } catch (_) {
+      if (!mounted) return;
+      _showResult(context, strings.settingsSaveFailed);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final store = context.read<PosLocalStore>();
-    final strings = AppStrings.of(store.languageCode);
-    return MarketSurfaceCard(
-      backgroundColor: Colors.white.withValues(alpha: 0.95),
-      borderColor: const Color(0xFFE7EAF0),
-      radius: 16,
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.info_outline_rounded,
-            color: Color(0xFF2A6CE3),
-            size: 20,
+    final strings = AppStrings.of(widget.store.languageCode);
+    final saved = widget.store.receiptSettings;
+    final dirty = _showStoreContact != saved.showStoreContact ||
+        _footer.text.trim() != saved.footer;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Text(
+            strings.receiptSettingsHint,
+            style: const TextStyle(color: settingsMuted),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  storeName.isEmpty ? strings.currentStore : storeName,
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${strings.appVersion} $version',
-                  style: const TextStyle(
-                    color: AppColors.mutedText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+        ),
+        SettingsField(
+          label: strings.showStoreContact,
+          child: CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(strings.receiptContactHint),
+            value: _showStoreContact,
+            onChanged: _saving
+                ? null
+                : (value) => setState(() => _showStoreContact = value!),
           ),
-        ],
-      ),
+        ),
+        SettingsField(
+          label: strings.receiptFooter,
+          child: TextField(
+            controller: _footer,
+            enabled: !_saving,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: ReceiptSettings.footerLimit,
+            decoration: InputDecoration(hintText: strings.receiptFooterHint),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+        SettingsSaveButton(
+          label: _saving ? strings.saving : strings.save,
+          onPressed: _saving || !dirty ? null : () => _save(strings),
+        ),
+      ],
     );
   }
 }
 
-class _SettingsItem {
-  const _SettingsItem({
-    required this.icon,
-    required this.iconColor,
-    required this.backgroundColor,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final Color backgroundColor;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-}
-
-Color _colorForIcon(IconData icon) {
-  if (icon == Icons.language_rounded) return const Color(0xFF6D4AE4);
-  if (icon == Icons.brightness_6_rounded) return const Color(0xFF2A6CE3);
-  if (icon == Icons.receipt_long_outlined) return const Color(0xFF1FA97A);
-  if (icon == Icons.calculate_outlined) return const Color(0xFFF5A623);
-  if (icon == Icons.shield_outlined) return const Color(0xFF6E4AE2);
-  if (icon == Icons.cloud_upload_outlined) return const Color(0xFF2A6CE3);
-  if (icon == Icons.info_outline_rounded) return const Color(0xFFE36A46);
-  return const Color(0xFF2A6CE3);
-}
-
-Color _tintForIcon(IconData icon) {
-  if (icon == Icons.language_rounded) return const Color(0xFFF1ECFF);
-  if (icon == Icons.brightness_6_rounded) return const Color(0xFFEAF2FF);
-  if (icon == Icons.receipt_long_outlined) return const Color(0xFFE5FBF4);
-  if (icon == Icons.calculate_outlined) return const Color(0xFFFFF3DB);
-  if (icon == Icons.shield_outlined) return const Color(0xFFF0EBFF);
-  if (icon == Icons.cloud_upload_outlined) return const Color(0xFFEAF2FF);
-  if (icon == Icons.info_outline_rounded) return const Color(0xFFFEECE7);
-  return const Color(0xFFEAF2FF);
+void _showResult(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }

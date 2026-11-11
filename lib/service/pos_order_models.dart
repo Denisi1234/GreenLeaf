@@ -51,6 +51,7 @@ class OrderLine {
     required this.unitPriceValue,
     required this.artType,
     required this.imagePath,
+    this.unitCost,
   });
 
   final String? itemCode;
@@ -62,6 +63,7 @@ class OrderLine {
   final double unitPriceValue;
   final ProductArtType artType;
   final String? imagePath;
+  final double? unitCost;
 
   double get lineTotal => unitPriceValue * quantity;
 

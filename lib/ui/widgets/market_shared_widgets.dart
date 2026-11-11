@@ -1021,30 +1021,7 @@ class MarketAppDrawer extends StatelessWidget {
             },
           ),
         ],
-      BusinessCategory.retail => [
-          _DrawerItemData(
-            strings.customers,
-            Icons.people_alt_outlined,
-            onTap: (context) {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (context) => const CustomersPage(),
-                ),
-              );
-            },
-          ),
-          _DrawerItemData(
-            strings.expensesTracking,
-            Icons.receipt_long_outlined,
-            onTap: (context) {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (context) => const ExpensesTrackingPage(),
-                ),
-              );
-            },
-          ),
-        ],
+      BusinessCategory.retail => [],
     };
   }
 
@@ -1061,6 +1038,8 @@ class MarketAppDrawer extends StatelessWidget {
     final store = context.watch<PosLocalStore>();
     final config = store.businessCategoryConfig;
     final strings = AppStrings.of(store.languageCode);
+    final quickActions = _quickActionsFor(config, strings);
+    final operations = _operationsItemsFor(config, strings);
 
     return Drawer(
       width: drawerWidth,
@@ -1081,28 +1060,32 @@ class MarketAppDrawer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _DrawerSectionHeader(
-                      title: _quickActionsTitle(config.category, strings),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _DrawerSection(
-                      items: _quickActionsFor(config, strings),
-                      selectedItem: selectedItem,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    const Divider(color: AppColors.divider, height: 1),
-                    const SizedBox(height: AppSpacing.lg),
-                    _DrawerSectionHeader(
-                      title: _operationsTitle(config.category, strings),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _DrawerSection(
-                      items: _operationsItemsFor(config, strings),
-                      selectedItem: selectedItem,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    const Divider(color: AppColors.divider, height: 1),
-                    const SizedBox(height: AppSpacing.lg),
+                    if (quickActions.isNotEmpty) ...[
+                      _DrawerSectionHeader(
+                        title: _quickActionsTitle(config.category, strings),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _DrawerSection(
+                        items: quickActions,
+                        selectedItem: selectedItem,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      const Divider(color: AppColors.divider, height: 1),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                    if (operations.isNotEmpty) ...[
+                      _DrawerSectionHeader(
+                        title: _operationsTitle(config.category, strings),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _DrawerSection(
+                        items: operations,
+                        selectedItem: selectedItem,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      const Divider(color: AppColors.divider, height: 1),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
                     _DrawerSection(
                       items: _supportItems(strings),
                       selectedItem: selectedItem,
@@ -1131,15 +1114,9 @@ class _DrawerProfileHeader extends StatelessWidget {
     final config = context.read<PosLocalStore>().businessCategoryConfig;
     final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
     final ownerName = profile.ownerName.isEmpty
-        ? (profile.storeName.isEmpty
-            ? (profile.businessCategory.isEmpty
-                ? strings.setupStoreProfile
-                : profile.businessCategory)
-            : profile.storeName)
+        ? (profile.storeName.isEmpty ? strings.setupStoreProfile : profile.storeName)
         : profile.ownerName;
-    final category = profile.businessCategory.isEmpty
-        ? (profile.roleTitle.isEmpty ? strings.businessOwner : profile.roleTitle)
-        : profile.businessCategory;
+    final role = profile.roleTitle.isEmpty ? strings.businessOwner : profile.roleTitle;
     final storeDetail =
         profile.storeName.isEmpty || profile.storeName == ownerName
             ? ''
@@ -1185,7 +1162,7 @@ class _DrawerProfileHeader extends StatelessWidget {
               const SizedBox(height: 2),
               BusinessCategoryBadge(
                 category: config.category,
-                label: category,
+                label: role,
               ),
               if (storeDetail.isNotEmpty) ...[
                 const SizedBox(height: 6),

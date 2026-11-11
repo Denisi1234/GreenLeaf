@@ -14,22 +14,13 @@ extension BusinessCategoryX on BusinessCategory {
         BusinessCategory.electronics => 'Electronics',
       };
 
-  String get displayName => storageKey;
+  String get displayName => this == BusinessCategory.retail ? 'POS' : storageKey;
 
   String get drawerLabel => switch (this) {
         BusinessCategory.retail => 'Retail',
         BusinessCategory.pharmacy => 'Pharmacy',
         BusinessCategory.electronics => 'Electronics',
       };
-}
-
-BusinessCategory parseBusinessCategory(String? value) {
-  final normalized = (value ?? '').trim().toLowerCase();
-  return switch (normalized) {
-    'pharmacy' => BusinessCategory.pharmacy,
-    'electronics' => BusinessCategory.electronics,
-    _ => BusinessCategory.retail,
-  };
 }
 
 class BusinessCategoryConfig {
@@ -157,11 +148,5 @@ class BusinessCategoryConfig {
           capabilities: {Capability.requireSerialTracking},
         ),
     };
-  }
-}
-
-extension BusinessCategoryNameX on String? {
-  BusinessCategory toBusinessCategory() {
-    return parseBusinessCategory(this);
   }
 }

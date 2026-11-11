@@ -4,51 +4,54 @@ import 'package:google_fonts/google_fonts.dart';
 import '../business_category_config.dart';
 
 class AppColors {
-  // Brand Colors
-  static const primary = Color(0xFF2563EB);
-  static const primaryDeep = Color(0xFF1D4ED8);
-  static const primaryLight = Color(0xFFEFF6FF);
+  // Brand Colors (OSPOS Flatly-inspired theme)
+  static const primary = Color(0xFF2C3E50);
+  static const primaryDeep = Color(0xFF1A252F);
+  static const primaryLight = Color(0xFFD6DBDF);
 
-  // Neutral Colors (Greyscale)
-  static const ink = Color(0xFF0F172A); // Slate 900
-  static const textMain = Color(0xFF1E293B); // Slate 800
-  static const textMuted = Color(0xFF64748B); // Slate 500
-  static const textLight = Color(0xFF94A3B8); // Slate 400
+  // Neutral Colors
+  static const ink = Color(0xFF2C3E50);
+  static const textMain = Color(0xFF2C3E50);
+  static const textMuted = Color(0xFF7B8A8B);
+  static const textLight = Color(0xFF95A5A6);
 
   // Background & Surface
-  static const pageBackground = Color(0xFFF8FAFC); // Slate 50
+  static const pageBackground = Color(0xFFECF0F1);
   static const surface = Colors.white;
-  static const surfaceSecondary = Color(0xFFF1F5F9); // Slate 100
+  static const surfaceSecondary = Color(0xFFF4F6F7);
+  static const cardWhite = surface;
+  static const surfaceSubtle = surfaceSecondary;
 
   // Borders & Dividers
-  static const border = Color(0xFFE2E8F0); // Slate 200
-  static const borderLight = Color(0xFFF1F5F9); // Slate 100
-  static const divider = Color(0xFFE2E8F0); // Slate 200
+  static const border = Color(0xFFDCE4EC);
+  static const borderLight = Color(0xFFECF0F1);
+  static const divider = Color(0xFFDCE4EC);
 
   // Feedback Colors
-  static const success = Color(0xFF10B981);
-  static const successLight = Color(0xFFECFDF5);
-  static const warning = Color(0xFFF59E0B);
-  static const warningLight = Color(0xFFFFFBEB);
-  static const danger = Color(0xFFEF4444);
-  static const dangerLight = Color(0xFFFEF2F2);
+  static const success = Color(0xFF18BC9C);
+  static const successLight = Color(0xFFE8F8F5);
+  static const warning = Color(0xFFF39C12);
+  static const warningLight = Color(0xFFFEF5E7);
+  static const danger = Color(0xFFE74C3C);
+  static const dangerLight = Color(0xFFFDEDEC);
 
-  // Reports Page Specific Colors (to be consolidated later)
-  static const reportsInk = Color(0xFF33363F);
-  static const reportsMuted = Color(0xFF7A859C);
-  static const reportsBorder = Color(0xFFE8EBF1);
-  static const reportsBlue = Color(0xFF2B6FE8);
-  static const reportsGreen = Color(0xFF30B05C);
+  // Reports Page Specific Colors
+  static const reportsInk = Color(0xFF2C3E50);
+  static const reportsMuted = Color(0xFF7B8A8B);
+  static const reportsBorder = Color(0xFFDCE4EC);
+  static const reportsBlue = Color(0xFF3498DB);
+  static const reportsGreen = Color(0xFF18BC9C);
 
-  // Chart Colors (Standardized)
-  static const chart1 = Color(0xFF2563EB);
-  static const chart2 = Color(0xFF10B981);
-  static const chart3 = Color(0xFFF59E0B);
-  static const chart4 = Color(0xFF7C3AED);
-  static const chart5 = Color(0xFFEC4899);
+  // Chart Colors
+  static const chart1 = Color(0xFF2C3E50);
+  static const chart2 = Color(0xFF18BC9C);
+  static const chart3 = Color(0xFFF39C12);
+  static const chart4 = Color(0xFF3498DB);
+  static const chart5 = Color(0xFFE74C3C);
 
   // Legacy Aliases (for compatibility)
   static const mutedText = textMuted;
+  static const textMedium = textMuted;
   static const green = success;
 
   static Color categoryPrimary(BusinessCategory category) =>
@@ -135,6 +138,15 @@ class AppTypography {
     fontSize: 11,
     fontWeight: FontWeight.w500,
     color: AppColors.textLight,
+  );
+
+  // Legacy Aliases (for compatibility)
+  static TextStyle cardTitle = cardHeader;
+  static TextStyle kpiValue = h2;
+  static TextStyle caption = GoogleFonts.manrope(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textMuted,
   );
 }
 

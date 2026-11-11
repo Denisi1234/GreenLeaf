@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart';
 import 'daftari_recovery_models.dart';
 import 'duka_ai_service.dart';
 import 'pos_order_models.dart';
+import 'receipt_settings.dart';
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
 
@@ -13,6 +14,32 @@ class PosLocalDatabase {
   PosLocalDatabase._();
 
   static final PosLocalDatabase instance = PosLocalDatabase._();
+
+  static const _receiptSettingsSchema = '''
+    CREATE TABLE receipt_settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      show_store_contact INTEGER NOT NULL DEFAULT 1,
+      footer TEXT NOT NULL DEFAULT ''
+    )
+  ''';
+
+  static const _storeLocationsSchema = '''
+          CREATE TABLE IF NOT EXISTS store_locations (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            address TEXT NOT NULL,
+            contact_number TEXT NOT NULL,
+            tax_id TEXT NOT NULL DEFAULT '',
+            status_key TEXT NOT NULL,
+            accent_color INTEGER NOT NULL,
+            tint_color INTEGER NOT NULL,
+            logo_path TEXT,
+            profile_json TEXT,
+            created_at TEXT NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 0
+          )
+  ''';
 
   Database? _database;
 
@@ -22,8 +49,9 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 17,
+      version: 21,
       onCreate: (db, version) async {
+        await db.execute(_receiptSettingsSchema);
         await db.execute('''
           CREATE TABLE inventory_products (
             code TEXT,
@@ -66,7 +94,10 @@ class PosLocalDatabase {
             register_name TEXT NOT NULL,
             payment_method TEXT NOT NULL,
             cash_tendered REAL NOT NULL,
-            change_due REAL NOT NULL
+            change_due REAL NOT NULL,
+            customer_name TEXT,
+            discount_amount REAL,
+            discount_label TEXT
           )
         ''');
         await db.execute('''
@@ -80,6 +111,7 @@ class PosLocalDatabase {
             quantity INTEGER NOT NULL,
             unit_price TEXT NOT NULL,
             unit_price_value REAL NOT NULL,
+            unit_cost REAL,
             art_type TEXT NOT NULL,
             image_path TEXT,
             FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
@@ -133,7 +165,24 @@ class PosLocalDatabase {
             email TEXT NOT NULL,
             phone TEXT NOT NULL,
             role_id TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            username TEXT NOT NULL DEFAULT '',
+            password_hash TEXT NOT NULL DEFAULT '',
+            password_salt TEXT NOT NULL DEFAULT '',
+            employee_number TEXT NOT NULL DEFAULT '',
+            job_title TEXT NOT NULL DEFAULT '',
+            department TEXT NOT NULL DEFAULT '',
+            hire_date TEXT NOT NULL DEFAULT '',
+            employment_type TEXT NOT NULL DEFAULT '',
+            hourly_rate REAL NOT NULL DEFAULT 0,
+            emergency_contact_name TEXT NOT NULL DEFAULT '',
+            emergency_contact_phone TEXT NOT NULL DEFAULT '',
+            emergency_contact_relation TEXT NOT NULL DEFAULT '',
+            address TEXT NOT NULL DEFAULT '',
+            notes TEXT NOT NULL DEFAULT '',
+            avatar_path TEXT,
+            status TEXT NOT NULL DEFAULT 'active',
+            updated_at TEXT NOT NULL DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -252,23 +301,7 @@ class PosLocalDatabase {
           ''');
         }
         if (oldVersion < 15) {
-          await db.execute('''
-            CREATE TABLE IF NOT EXISTS store_locations (
-              id TEXT PRIMARY KEY,
-              name TEXT NOT NULL,
-              category TEXT NOT NULL,
-              address TEXT NOT NULL,
-              contact_number TEXT NOT NULL,
-              tax_id TEXT NOT NULL DEFAULT '',
-              status_key TEXT NOT NULL,
-              accent_color INTEGER NOT NULL,
-              tint_color INTEGER NOT NULL,
-              logo_path TEXT,
-              profile_json TEXT,
-              created_at TEXT NOT NULL,
-              is_active INTEGER NOT NULL DEFAULT 0
-            )
-          ''');
+          await db.execute(_storeLocationsSchema);
         }
         if (oldVersion < 16) {
           final tableInfo =
@@ -466,6 +499,12 @@ class PosLocalDatabase {
             await db.execute('ALTER TABLE $table ADD COLUMN store_id TEXT NOT NULL DEFAULT "store-default"');
           }
         }
+        if (oldVersion < 18) {
+          await db.execute('ALTER TABLE orders ADD COLUMN customer_name TEXT');
+          await db.execute('ALTER TABLE orders ADD COLUMN discount_amount REAL');
+          await db.execute('ALTER TABLE orders ADD COLUMN discount_label TEXT');
+          await db.execute('ALTER TABLE order_lines ADD COLUMN unit_cost REAL');
+        }
         final appProfileInfo =
             await db.rawQuery('PRAGMA table_info(app_profile)');
         final hasCapabilityOverridesJson = appProfileInfo
@@ -474,6 +513,51 @@ class PosLocalDatabase {
           await db.execute(
             'ALTER TABLE app_profile ADD COLUMN capability_overrides_json TEXT',
           );
+        }
+        if (oldVersion < 19) {
+          await _restoreDefaultStoreProfile(db);
+          await db.update('app_profile', {'business_category': 'Retail'});
+        }
+        if (oldVersion < 20) {
+          await db.execute(_receiptSettingsSchema);
+        }
+        if (oldVersion < 21) {
+          final staffInfo = await db.rawQuery('PRAGMA table_info(staff_members)');
+          final existingColumns =
+              staffInfo.map((column) => column['name'] as String).toSet();
+          Future<void> addColumn(String name, String definition) async {
+            if (!existingColumns.contains(name)) {
+              await db.execute(
+                'ALTER TABLE staff_members ADD COLUMN $definition',
+              );
+            }
+          }
+
+          await addColumn('username', "username TEXT NOT NULL DEFAULT ''");
+          await addColumn(
+              'password_hash', "password_hash TEXT NOT NULL DEFAULT ''");
+          await addColumn(
+              'password_salt', "password_salt TEXT NOT NULL DEFAULT ''");
+          await addColumn(
+              'employee_number', "employee_number TEXT NOT NULL DEFAULT ''");
+          await addColumn('job_title', "job_title TEXT NOT NULL DEFAULT ''");
+          await addColumn('department', "department TEXT NOT NULL DEFAULT ''");
+          await addColumn('hire_date', "hire_date TEXT NOT NULL DEFAULT ''");
+          await addColumn(
+              'employment_type', "employment_type TEXT NOT NULL DEFAULT ''");
+          await addColumn(
+              'hourly_rate', 'hourly_rate REAL NOT NULL DEFAULT 0');
+          await addColumn('emergency_contact_name',
+              "emergency_contact_name TEXT NOT NULL DEFAULT ''");
+          await addColumn('emergency_contact_phone',
+              "emergency_contact_phone TEXT NOT NULL DEFAULT ''");
+          await addColumn('emergency_contact_relation',
+              "emergency_contact_relation TEXT NOT NULL DEFAULT ''");
+          await addColumn('address', "address TEXT NOT NULL DEFAULT ''");
+          await addColumn('notes', "notes TEXT NOT NULL DEFAULT ''");
+          await addColumn('avatar_path', 'avatar_path TEXT');
+          await addColumn('status', "status TEXT NOT NULL DEFAULT 'active'");
+          await addColumn('updated_at', "updated_at TEXT NOT NULL DEFAULT ''");
         }
       },
       onOpen: (db) async {
@@ -494,9 +578,94 @@ class PosLocalDatabase {
     return _database!;
   }
 
-  Future<List<Map<String, Object?>>> loadAllStores() async {
+  Future<void> _restoreDefaultStoreProfile(Database db) async {
+    final schema = await db.rawQuery('PRAGMA table_info(store_locations)');
+    if (schema.isEmpty) return;
+
+    final activeLocations = await db.query(
+      'store_locations',
+      columns: ['id'],
+      where: 'is_active = 1 AND id != ?',
+      whereArgs: ['store-current'],
+      limit: 1,
+    );
+    if (activeLocations.isEmpty) return;
+
+    final locations = await db.query(
+      'store_locations',
+      where: 'id = ?',
+      whereArgs: ['store-current'],
+      limit: 1,
+    );
+    if (locations.isEmpty) return;
+
+    final location = locations.single;
+    final profile = <String, Object?>{};
+    final snapshot = location['profile_json'];
+    if (snapshot is String && snapshot.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(snapshot);
+        if (decoded is Map<String, dynamic>) {
+          const textFields = [
+            'owner_name',
+            'role_title',
+            'email_address',
+            'member_since',
+            'weekday_open',
+            'weekday_close',
+            'saturday_open',
+            'saturday_close',
+            'sunday_schedule',
+          ];
+          for (final field in textFields) {
+            if (decoded[field] is String) profile[field] = decoded[field];
+          }
+          final open24Hours = decoded['open_24_hours'];
+          if (open24Hours is int) profile['open_24_hours'] = open24Hours;
+        }
+      } on FormatException {
+        // Legacy location columns still contain the default store's details.
+      }
+    }
+
+    await db.update(
+      'app_profile',
+      {
+        ...profile,
+        'store_name': location['name'],
+        'contact_number': location['contact_number'],
+        'physical_address': location['address'],
+        'tax_id': location['tax_id'],
+        'logo_path': location['logo_path'],
+      },
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+  }
+
+  Future<ReceiptSettings> loadReceiptSettings() async {
     final db = await database;
-    return db.query('stores', orderBy: 'name ASC');
+    final rows = await db.query('receipt_settings', limit: 1);
+    if (rows.isEmpty) return const ReceiptSettings();
+
+    final row = rows.single;
+    return ReceiptSettings(
+      showStoreContact: row['show_store_contact'] == 1,
+      footer: row['footer'] as String,
+    );
+  }
+
+  Future<void> saveReceiptSettings(ReceiptSettings settings) async {
+    final db = await database;
+    await db.insert(
+      'receipt_settings',
+      {
+        'id': 1,
+        'show_store_contact': settings.showStoreContact ? 1 : 0,
+        'footer': settings.footer,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<Map<String, Object?>?> loadAppProfile() async {
@@ -526,48 +695,6 @@ class PosLocalDatabase {
     );
   }
 
-  Future<List<Map<String, Object?>>> loadStoreLocations() async {
-    final db = await database;
-    return db.query(
-      'store_locations',
-      orderBy: 'is_active DESC, created_at DESC, name ASC',
-    );
-  }
-
-  Future<void> replaceStoreLocations(
-    List<Map<String, Object?>> locations,
-  ) async {
-    final db = await database;
-    final batch = db.batch();
-    batch.delete('store_locations');
-    for (final location in locations) {
-      batch.insert(
-        'store_locations',
-        location,
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    await batch.commit(noResult: true);
-  }
-
-  Future<void> saveStoreLocation(Map<String, Object?> location) async {
-    final db = await database;
-    await db.insert(
-      'store_locations',
-      location,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  Future<void> deleteStoreLocation(String id) async {
-    final db = await database;
-    await db.delete(
-      'store_locations',
-      where: 'id = ?',
-      whereArgs: <Object?>[id],
-    );
-  }
-
   Future<List<Map<String, Object?>>> loadStaffRoles(String storeId) async {
     final db = await database;
     return db.query(
@@ -578,24 +705,28 @@ class PosLocalDatabase {
     );
   }
 
-  Future<void> replaceStaffRoles(List<Map<String, Object?>> roles) async {
+  Future<void> replaceStaffRoles(
+    List<Map<String, Object?>> roles,
+    String storeId,
+  ) async {
     final db = await database;
     final batch = db.batch();
-    batch.delete('staff_roles');
+    batch.delete('staff_roles', where: 'store_id = ?', whereArgs: [storeId]);
     for (final role in roles) {
       batch.insert(
         'staff_roles',
-        role,
-        conflictAlgorithm: ConflictAlgorithm.replace,
+        {...role, 'store_id': storeId},
       );
     }
     await batch.commit(noResult: true);
   }
 
-  Future<List<Map<String, Object?>>> loadStaffMembers() async {
+  Future<List<Map<String, Object?>>> loadStaffMembers(String storeId) async {
     final db = await database;
     return db.query(
       'staff_members',
+      where: 'store_id = ?',
+      whereArgs: [storeId],
       orderBy: 'created_at DESC',
     );
   }
@@ -719,19 +850,28 @@ class PosLocalDatabase {
             paymentMethod: row['payment_method'] as String,
             cashTendered: (row['cash_tendered'] as num).toDouble(),
             changeDue: (row['change_due'] as num).toDouble(),
+            customerName: row['customer_name'] as String?,
+            discountAmount: (row['discount_amount'] as num?)?.toDouble(),
+            discountLabel: row['discount_label'] as String?,
             lines: linesByOrder[row['id'] as String] ?? const <OrderLine>[],
           ),
         )
         .toList();
   }
 
-  Future<void> insertOrder(CompletedOrder order) async {
+  Future<void> saveCheckout({
+    required CompletedOrder order,
+    required String storeId,
+    required List<InventoryProductItem> stockUpdates,
+    Map<String, Object?>? creditCustomer,
+  }) async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.insert(
         'orders',
         <String, Object?>{
           'id': order.id,
+          'store_id': storeId,
           'date_time': order.dateTime,
           'date_label': order.date,
           'time_label': order.time,
@@ -742,13 +882,10 @@ class PosLocalDatabase {
           'payment_method': order.paymentMethod,
           'cash_tendered': order.cashTendered,
           'change_due': order.changeDue,
+          'customer_name': order.customerName,
+          'discount_amount': order.discountAmount,
+          'discount_label': order.discountLabel,
         },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      await txn.delete(
-        'order_lines',
-        where: 'order_id = ?',
-        whereArgs: <Object?>[order.id],
       );
       for (final line in order.lines) {
         await txn.insert(
@@ -762,11 +899,31 @@ class PosLocalDatabase {
             'quantity': line.quantity,
             'unit_price': line.unitPrice,
             'unit_price_value': line.unitPriceValue,
+            'unit_cost': line.unitCost,
             'art_type': line.artType.name,
             'image_path': line.imagePath,
           },
         );
       }
+      for (final item in stockUpdates) {
+        final updated = await txn.update(
+          'inventory_products',
+          {'stock_count': item.stockCount, 'stock_state': item.stockState.name},
+          where: 'store_id = ? AND code = ?',
+          whereArgs: [storeId, item.code],
+        );
+        if (updated != 1) throw StateError('Stock record missing for ${item.code}.');
+      }
+      if (creditCustomer != null) {
+        final updated = await txn.update(
+          'customers',
+          {'debit_balance': creditCustomer['debit_balance']},
+          where: 'store_id = ? AND id = ?',
+          whereArgs: [storeId, creditCustomer['id']],
+        );
+        if (updated != 1) throw StateError('Customer credit account is unavailable.');
+      }
+      await txn.delete('cart_items', where: 'store_id = ?', whereArgs: [storeId]);
     });
   }
 
@@ -800,12 +957,15 @@ class PosLocalDatabase {
     );
   }
 
-  Future<void> replaceCustomers(List<Map<String, Object?>> customers) async {
+  Future<void> replaceCustomers(
+    List<Map<String, Object?>> customers,
+    String storeId,
+  ) async {
     final db = await database;
     await db.transaction((txn) async {
-      await txn.delete('customers');
+      await txn.delete('customers', where: 'store_id = ?', whereArgs: [storeId]);
       for (final customer in customers) {
-        await txn.insert('customers', customer);
+        await txn.insert('customers', {...customer, 'store_id': storeId});
       }
     });
   }
@@ -926,6 +1086,7 @@ class PosLocalDatabase {
   Future<void> replaceDukaAiMessages(
     String threadId,
     List<DukaAiMessage> messages,
+    String storeId,
   ) async {
     final db = await database;
     final batch = db.batch();
@@ -939,6 +1100,7 @@ class PosLocalDatabase {
         'myduka_ai_messages',
         <String, Object?>{
           'thread_id': threadId,
+          'store_id': storeId,
           'role': message.role,
           'content': message.content,
           'image_path': message.imagePath,
@@ -1018,6 +1180,7 @@ class PosLocalDatabase {
       quantity: (map['quantity'] as num).toInt(),
       unitPrice: map['unit_price'] as String,
       unitPriceValue: (map['unit_price_value'] as num).toDouble(),
+      unitCost: (map['unit_cost'] as num?)?.toDouble(),
       artType: ProductArtType.values.byName(map['art_type'] as String),
       imagePath: map['image_path'] as String?,
     );

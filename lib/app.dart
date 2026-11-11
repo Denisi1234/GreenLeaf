@@ -116,7 +116,7 @@ class App extends StatelessWidget {
           onSurfaceVariant: AppColors.mutedText,
         ),
         iconTheme: const IconThemeData(
-          color: Color(0xFF475569),
+          color: Color(0xFF7B8A8B),
           size: 22,
         ),
         primaryIconTheme: const IconThemeData(
@@ -128,7 +128,7 @@ class App extends StatelessWidget {
           foregroundColor: AppColors.ink,
           elevation: 0,
           centerTitle: false,
-          iconTheme: IconThemeData(color: Color(0xFF475569)),
+          iconTheme: IconThemeData(color: Color(0xFF7B8A8B)),
           titleTextStyle: TextStyle(
             color: AppColors.ink,
             fontSize: 20,
@@ -188,7 +188,7 @@ class App extends StatelessWidget {
         ),
         textSelectionTheme: const TextSelectionThemeData(
           cursorColor: AppColors.primary,
-          selectionColor: Color(0x332563EB),
+          selectionColor: Color(0x332C3E50),
           selectionHandleColor: AppColors.primary,
         ),
       ),

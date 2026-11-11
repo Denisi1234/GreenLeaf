@@ -1,9 +1,4 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -21,1408 +16,728 @@ class ExpensesTrackingPage extends StatefulWidget {
 }
 
 class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
-  _ExpenseFilter _selectedFilter = _ExpenseFilter.thisMonth;
-  DateTime? _selectedDay;
+  String _search = '';
+  String _paymentFilter = 'All';
+  _ExpenseRange _range = _ExpenseRange.thisMonth;
+  DateTimeRange? _customRange;
 
   @override
   Widget build(BuildContext context) {
-    final baseTheme = Theme.of(context);
-    final theme = baseTheme.copyWith(
-      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme:
-          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
-    );
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Consumer<PosLocalStore>(
+          builder: (context, store, _) {
+            final all = List<Expense>.from(store.expenses)
+              ..sort((a, b) => b.date.compareTo(a.date));
+            final inRange = _applyRange(all);
+            final payments = <String>{
+              'All',
+              ...all.map((e) => e.paymentMethod).where((e) => e.trim().isNotEmpty),
+            }.toList()
+              ..sort();
+            final filtered = inRange.where((e) {
+              final q = _search.trim().toLowerCase();
+              final matchesSearch = q.isEmpty ||
+                  e.title.toLowerCase().contains(q) ||
+                  e.category.toLowerCase().contains(q) ||
+                  e.paymentMethod.toLowerCase().contains(q) ||
+                  (e.notes ?? '').toLowerCase().contains(q);
+              final matchesPayment =
+                  _paymentFilter == 'All' || e.paymentMethod == _paymentFilter;
+              return matchesSearch && matchesPayment;
+            }).toList();
+            final total = filtered.fold<double>(0, (s, e) => s + e.amount);
+            final byPayment = <String, double>{};
+            for (final e in filtered) {
+              final k = e.paymentMethod.trim().isEmpty ? 'Unspecified' : e.paymentMethod;
+              byPayment[k] = (byPayment[k] ?? 0) + e.amount;
+            }
+            final paymentSummary = byPayment.entries.toList()
+              ..sort((a, b) => b.value.compareTo(a.value));
 
-    return Theme(
-      data: theme,
-      child: Scaffold(
-        backgroundColor: AppColors.pageBackground,
-        floatingActionButton: FloatingActionButton.extended(
-          heroTag: 'add_expense_fab',
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (context) => const AddExpensePage(),
-              ),
+            return Column(
+              children: [
+                MarketPageHeader(
+                  title: 'Expenses',
+                  subtitle: 'Track and review recorded expenses',
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'Add expense',
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(builder: (_) => const AddExpensePage()),
+                        ),
+                        icon: const Icon(Icons.add_circle_outline_rounded,
+                            color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    children: [
+                      _SummaryCard(
+                        total: total,
+                        count: filtered.length,
+                        rangeLabel: _rangeLabel(),
+                        onPickRange: _pickRange,
+                        onPickCustom: _pickCustomRange,
+                      ),
+                      const SizedBox(height: 12),
+                      _FilterCard(
+                        search: _search,
+                        paymentFilter: _paymentFilter,
+                        payments: payments,
+                        onSearchChanged: (v) => setState(() => _search = v),
+                        onPaymentChanged: (v) => setState(() => _paymentFilter = v),
+                      ),
+                      if (paymentSummary.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _PaymentSummaryCard(items: paymentSummary),
+                      ],
+                      const SizedBox(height: 16),
+                      MarketSectionHeader(
+                        title: 'Expense Records',
+trailing: Text(
+                          '${filtered.length} entr${filtered.length == 1 ? 'y' : 'ies'}',
+                          style: AppTypography.helperText
+                              .copyWith(color: AppColors.textMuted),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (filtered.isEmpty)
+                        const _EmptyState()
+                      else
+                        MarketSurfaceCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              const _TableHeader(),
+                              const Divider(height: 1, color: AppColors.border),
+                              for (var i = 0; i < filtered.length; i++) ...[
+                                _ExpenseRow(
+                                  expense: filtered[i],
+                                  onTap: () => _showExpense(context, filtered[i]),
+                                  onDelete: filtered[i].id == null
+                                      ? null
+                                      : () => _confirmDelete(context, store, filtered[i]),
+                                ),
+                                if (i != filtered.length - 1)
+const Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: AppColors.borderLight),
+                              ],
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             );
           },
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.add_rounded, size: 24),
-          label: const Text(
-            'Add Expense',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        body: SafeArea(
-          child: Column(
-            children: [
-              MarketPageHeader(
-                title: 'Expenses',
-                showBackButton: true,
-                centerTitle: false,
-              ),
-              Expanded(
-                child: Consumer<PosLocalStore>(
-                  builder: (context, store, child) {
-                    final sourceExpenses = store.expenses.isEmpty
-                        ? _demoExpenses()
-                        : store.expenses;
-                    final recentSourceExpenses =
-                        List<Expense>.from(sourceExpenses)
-                          ..sort((a, b) => b.date.compareTo(a.date));
-                    final filteredExpenses = _filteredExpenses(sourceExpenses);
-                    final summary =
-                        _buildSummary(sourceExpenses, filteredExpenses);
-                    final recentExpenses = _selectedDay == null
-                        ? recentSourceExpenses.take(6).toList()
-                        : filteredExpenses.take(6).toList();
-
-                    return CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      slivers: [
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
-                          sliver: SliverToBoxAdapter(
-                            child: _ExpenseSummaryCard(
-                              summary: summary,
-                              filterLabel: _selectedFilter.label,
-                              selectedFilter: _selectedFilter,
-                              dayLabel: _selectedDay == null
-                                  ? null
-                                  : _formatDayLabel(_selectedDay!),
-                              onFilterSelected: _setFilter,
-                              onPickDay: _pickExpenseDay,
-                              onClearDay: _selectedDay == null
-                                  ? null
-                                  : _clearSelectedDay,
-                            ),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
-                              AppSpacing.xxl, AppSpacing.lg, AppSpacing.md),
-                          sliver: SliverToBoxAdapter(
-                            child: MarketSectionHeader(
-                              title: 'Recent Transactions',
-                              trailing: TextButton(
-                                onPressed: recentSourceExpenses.isEmpty
-                                    ? null
-                                    : () => _showAllExpenses(
-                                          context,
-                                          recentSourceExpenses,
-                                        ),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.primary,
-                                  textStyle: AppTypography.bodySmall
-                                      .copyWith(fontWeight: FontWeight.w700),
-                                ),
-                                child: const Text('View All'),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xxl),
-                          sliver: SliverToBoxAdapter(
-                            child: recentExpenses.isEmpty
-                                ? const _EmptyExpensesState()
-                                : _RecentExpensesCard(
-                                    expenses: recentExpenses,
-                                    onExpenseTap: (expense) =>
-                                        _showExpenseDetails(context, expense),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const AddExpensePage()),
         ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add Expense', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }
 
-  void _setFilter(_ExpenseFilter filter) {
-    if (_selectedFilter == filter) return;
-    setState(() {
-      _selectedFilter = filter;
-    });
-  }
-
-  void _clearSelectedDay() {
-    setState(() {
-      _selectedDay = null;
-    });
-  }
-
-  Future<void> _pickExpenseDay() async {
+  List<Expense> _applyRange(List<Expense> items) {
     final now = DateTime.now();
-    final initialDate = _selectedDay ?? now;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2000),
-      lastDate: now.add(const Duration(days: 365 * 5)),
-      helpText: 'Select expense day',
-      cancelText: 'Cancel',
-      confirmText: 'Apply',
-      builder: (context, child) {
-        final theme = Theme.of(context);
-        return Theme(
-          data: theme.copyWith(
-            dialogTheme: DialogThemeData(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-            colorScheme: theme.colorScheme.copyWith(
-              primary: const Color(0xFF2563EB),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: const Color(0xFF0F172A),
-            ),
-            datePickerTheme: const DatePickerThemeData(
-              backgroundColor: Colors.white,
-              headerBackgroundColor: Colors.white,
-              headerForegroundColor: Color(0xFF0F172A),
-              dividerColor: Color(0xFFE7EBF1),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
+    DateTime start;
+    DateTime end;
+    switch (_range) {
+      case _ExpenseRange.today:
+        start = DateTime(now.year, now.month, now.day);
+        end = start.add(const Duration(days: 1));
+        break;
+      case _ExpenseRange.thisWeek:
+        start = DateTime(now.year, now.month, now.day)
+            .subtract(Duration(days: now.weekday - 1));
+        end = start.add(const Duration(days: 7));
+        break;
+      case _ExpenseRange.thisMonth:
+        start = DateTime(now.year, now.month, 1);
+        end = DateTime(now.year, now.month + 1, 1);
+        break;
+      case _ExpenseRange.lastMonth:
+        start = DateTime(now.year, now.month - 1, 1);
+        end = DateTime(now.year, now.month, 1);
+        break;
+      case _ExpenseRange.all:
+        return items;
+      case _ExpenseRange.custom:
+        if (_customRange == null) return items;
+        start = DateTime(_customRange!.start.year, _customRange!.start.month,
+            _customRange!.start.day);
+        end = DateTime(_customRange!.end.year, _customRange!.end.month,
+                _customRange!.end.day)
+            .add(const Duration(days: 1));
+        break;
+    }
+    return items
+        .where((e) => !e.date.isBefore(start) && e.date.isBefore(end))
+        .toList();
+  }
 
+  String _rangeLabel() {
+    if (_range == _ExpenseRange.custom && _customRange != null) {
+      final f = DateFormat('MMM d, yyyy');
+      return '${f.format(_customRange!.start)} - ${f.format(_customRange!.end)}';
+    }
+    return _range.label;
+  }
+
+  Future<void> _pickRange() async {
+    final selected = await showModalBottomSheet<_ExpenseRange>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 12),
+            Text('Select period', style: AppTypography.cardHeader),
+            const SizedBox(height: 8),
+            for (final r in _ExpenseRange.values)
+              ListTile(
+                title: Text(r.label, style: AppTypography.bodyMedium),
+                trailing: r == _range
+                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    : null,
+                onTap: () => Navigator.of(ctx).pop(r),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (selected == null) return;
+    setState(() => _range = selected);
+  }
+
+  Future<void> _pickCustomRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 1),
+      initialDateRange: _customRange,
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+                surface: AppColors.surface,
+                onSurface: AppColors.ink,
+              ),
+        ),
+        child: child!,
+      ),
+    );
     if (picked == null) return;
     setState(() {
-      _selectedDay = DateTime(picked.year, picked.month, picked.day);
+      _customRange = picked;
+      _range = _ExpenseRange.custom;
     });
   }
 
-  List<Expense> _filteredExpenses(List<Expense> sourceExpenses) {
-    final now = DateTime.now();
-    if (_selectedDay != null) {
-      final selectedDay = DateTime(
-        _selectedDay!.year,
-        _selectedDay!.month,
-        _selectedDay!.day,
-      );
-      final nextDay = selectedDay.add(const Duration(days: 1));
-      return sourceExpenses
-          .where((expense) =>
-              !expense.date.isBefore(selectedDay) &&
-              expense.date.isBefore(nextDay))
-          .toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
-    }
-    switch (_selectedFilter) {
-      case _ExpenseFilter.today:
-        final start = DateTime(now.year, now.month, now.day);
-        final next = start.add(const Duration(days: 1));
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) && expense.date.isBefore(next))
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
-      case _ExpenseFilter.thisWeek:
-        final start = _startOfWeek(now);
-        final next = start.add(const Duration(days: 7));
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) && expense.date.isBefore(next))
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
-      case _ExpenseFilter.thisMonth:
-        final start = DateTime(now.year, now.month, 1);
-        final next = DateTime(now.year, now.month + 1, 1);
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) && expense.date.isBefore(next))
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
-      case _ExpenseFilter.lastMonth:
-        final start = DateTime(now.year, now.month - 1, 1);
-        final next = DateTime(now.year, now.month, 1);
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) && expense.date.isBefore(next))
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
-      case _ExpenseFilter.allTime:
-        return List<Expense>.from(sourceExpenses)
-          ..sort((a, b) => b.date.compareTo(a.date));
-    }
-  }
-
-  _ExpenseSummary _buildSummary(
-    List<Expense> sourceExpenses,
-    List<Expense> filteredExpenses,
-  ) {
-    final currentTotal = filteredExpenses.fold<double>(
-      0,
-      (sum, expense) => sum + expense.amount,
-    );
-    final previousTotal = _previousPeriodTotal(sourceExpenses);
-    final changePercent = previousTotal > 0
-        ? ((currentTotal - previousTotal) / previousTotal) * 100
-        : (currentTotal > 0 ? 12.5 : 0.0);
-    final categories = _topCategories(filteredExpenses);
-    final segments = _chartSegments(categories, currentTotal);
-
-    return _ExpenseSummary(
-      total: currentTotal,
-      changePercent: changePercent,
-      segments: segments,
-    );
-  }
-
-  double _previousPeriodTotal(List<Expense> sourceExpenses) {
-    final now = DateTime.now();
-
-    switch (_selectedFilter) {
-      case _ExpenseFilter.today:
-        final currentStart = DateTime(now.year, now.month, now.day);
-        final start = currentStart.subtract(const Duration(days: 1));
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) &&
-                expense.date.isBefore(currentStart))
-            .fold<double>(0, (sum, expense) => sum + expense.amount);
-      case _ExpenseFilter.thisWeek:
-        final currentStart = _startOfWeek(now);
-        final start = currentStart.subtract(const Duration(days: 7));
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) &&
-                expense.date.isBefore(currentStart))
-            .fold<double>(0, (sum, expense) => sum + expense.amount);
-      case _ExpenseFilter.thisMonth:
-        final start = DateTime(now.year, now.month - 1, 1);
-        final next = DateTime(now.year, now.month, 1);
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) && expense.date.isBefore(next))
-            .fold<double>(0, (sum, expense) => sum + expense.amount);
-      case _ExpenseFilter.lastMonth:
-        final start = DateTime(now.year, now.month - 2, 1);
-        final next = DateTime(now.year, now.month - 1, 1);
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) && expense.date.isBefore(next))
-            .fold<double>(0, (sum, expense) => sum + expense.amount);
-      case _ExpenseFilter.allTime:
-        final end = DateTime(now.year, now.month, now.day);
-        final start = end.subtract(const Duration(days: 30));
-        return sourceExpenses
-            .where((expense) =>
-                !expense.date.isBefore(start) && expense.date.isBefore(end))
-            .fold<double>(0, (sum, expense) => sum + expense.amount);
-    }
-  }
-
-  List<_CategoryTotal> _topCategories(List<Expense> expenses) {
-    final grouped = <String, double>{};
-    for (final expense in expenses) {
-      grouped[expense.category] =
-          (grouped[expense.category] ?? 0) + expense.amount;
-    }
-
-    final sorted = grouped.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    final top = sorted.take(3).toList();
-    final remainder =
-        sorted.skip(3).fold<double>(0, (sum, entry) => sum + entry.value);
-    if (remainder > 0) {
-      top.add(MapEntry('Other', remainder));
-    }
-
-    return top
-        .map(
-          (entry) => _CategoryTotal(
-            label: entry.key,
-            amount: entry.value,
-            meta: _metaForCategory(entry.key),
-          ),
-        )
-        .toList();
-  }
-
-  List<_ExpenseSegment> _chartSegments(
-    List<_CategoryTotal> categories,
-    double total,
-  ) {
-    if (categories.isEmpty || total <= 0) {
-      return const [
-        _ExpenseSegment(
-          label: 'Inventory',
-          amount: 40,
-          color: Color(0xFF2563EB),
-          percent: 40,
-        ),
-        _ExpenseSegment(
-          label: 'Rent',
-          amount: 30,
-          color: Color(0xFF34C759),
-          percent: 30,
-        ),
-        _ExpenseSegment(
-          label: 'Utilities',
-          amount: 30,
-          color: Color(0xFF7C5CFF),
-          percent: 30,
-        ),
-      ];
-    }
-
-    return categories
-        .map(
-          (category) => _ExpenseSegment(
-            label: category.label,
-            amount: category.amount,
-            color: category.meta.accent,
-            percent: (category.amount / total) * 100,
-          ),
-        )
-        .toList();
-  }
-
-  void _showAllExpenses(BuildContext context, List<Expense> expenses) {
-    showModalBottomSheet<void>(
+  Future<void> _showExpense(BuildContext context, Expense expense) async {
+    final fmt = DateFormat('MMM d, yyyy');
+    await showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'All Expenses',
-                        style: TextStyle(
-                          color: Color(0xFF0F172A),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.7,
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: expenses.length,
-                    separatorBuilder: (_, __) =>
-                        const Divider(height: 1, color: Color(0xFFE8EBF1)),
-                    itemBuilder: (context, index) {
-                      final expense = expenses[index];
-                      return _ExpenseRow(
-                        expense: expense,
-                        onTap: () => Navigator.of(sheetContext).pop(),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showExpenseDetails(BuildContext context, Expense expense) {
-    final meta = _metaForCategory(expense.category);
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: meta.softBackground,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(meta.icon, color: meta.accent, size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            expense.title,
-                            style: const TextStyle(
-                              color: Color(0xFF0F172A),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            expense.category,
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _DetailRow(
-                  label: 'Amount',
-                  value: _formatMoney(expense.amount),
-                ),
-                _DetailRow(
-                  label: 'Date',
-                  value: _formatDate(expense.date),
-                ),
-                _DetailRow(
-                  label: 'Payment',
-                  value: expense.paymentMethod,
-                ),
-                if ((expense.notes ?? '').trim().isNotEmpty)
-                  _DetailRow(
-                    label: 'Notes',
-                    value: expense.notes!.trim(),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return DateFormat('MMM d, yyyy').format(date);
-  }
-
-  String _formatMoney(double amount) {
-    return 'TSh ${NumberFormat('#,##0.00').format(amount)}';
-  }
-
-  List<Expense> _demoExpenses() {
-    final now = DateTime.now();
-    return [
-      Expense(
-        title: 'Paper Rolls',
-        amount: 45,
-        category: 'Inventory',
-        paymentMethod: 'Cash',
-        date: now.subtract(const Duration(days: 0)),
-        notes: 'Paper Rolls',
-      ),
-      Expense(
-        title: 'Monthly Store Rent',
-        amount: 735,
-        category: 'Rent',
-        paymentMethod: 'Bank Transfer',
-        date: now.subtract(const Duration(days: 2)),
-        notes: 'Store rent',
-      ),
-      Expense(
-        title: 'Electricity Bill',
-        amount: 150,
-        category: 'Utilities',
-        paymentMethod: 'Mobile Money',
-        date: now.subtract(const Duration(days: 3)),
-        notes: 'Electricity bill',
-      ),
-      Expense(
-        title: 'Coffee Beans',
-        amount: 85,
-        category: 'Inventory',
-        paymentMethod: 'Cash',
-        date: now.subtract(const Duration(days: 4)),
-        notes: 'Coffee beans',
-      ),
-      Expense(
-        title: 'Cleaning Supplies',
-        amount: 35,
-        category: 'Supplies',
-        paymentMethod: 'Cash',
-        date: now.subtract(const Duration(days: 5)),
-        notes: 'Cleaning supplies',
-      ),
-      Expense(
-        title: 'Water Bill',
-        amount: 65,
-        category: 'Utilities',
-        paymentMethod: 'Mobile Money',
-        date: now.subtract(const Duration(days: 6)),
-        notes: 'Water bill',
-      ),
-      Expense(
-        title: 'Milk Delivery',
-        amount: 70,
-        category: 'Inventory',
-        paymentMethod: 'Cash',
-        date: now.subtract(const Duration(days: 7)),
-        notes: 'Milk',
-      ),
-      Expense(
-        title: 'Packaging Supplies',
-        amount: 780,
-        category: 'Inventory',
-        paymentMethod: 'Bank Transfer',
-        date: now.subtract(const Duration(days: 8)),
-        notes: 'Packaging',
-      ),
-      Expense(
-        title: 'Internet Bill',
-        amount: 520,
-        category: 'Utilities',
-        paymentMethod: 'Bank Transfer',
-        date: now.subtract(const Duration(days: 9)),
-        notes: 'Internet bill',
-      ),
-    ];
-  }
-}
-
-class _ExpenseSummaryCard extends StatelessWidget {
-  const _ExpenseSummaryCard({
-    required this.summary,
-    required this.filterLabel,
-    required this.selectedFilter,
-    required this.dayLabel,
-    required this.onFilterSelected,
-    required this.onPickDay,
-    required this.onClearDay,
-  });
-
-  final _ExpenseSummary summary;
-  final String filterLabel;
-  final _ExpenseFilter selectedFilter;
-  final String? dayLabel;
-  final ValueChanged<_ExpenseFilter> onFilterSelected;
-  final VoidCallback onPickDay;
-  final VoidCallback? onClearDay;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 420;
-
-        return MarketSurfaceCard(
-          padding: const EdgeInsets.all(18),
-          borderColor: const Color(0xFFE7EBF1),
-          radius: 16,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (compact) ...[
-                _SummaryTextBlock(
-                  summary: summary,
-                  filterLabel: filterLabel,
-                  selectedFilter: selectedFilter,
-                  dayLabel: dayLabel,
-                  onFilterSelected: onFilterSelected,
-                  onPickDay: onPickDay,
-                  onClearDay: onClearDay,
-                ),
-                const SizedBox(height: 18),
-                Center(
-                  child: SizedBox(
-                    width: 128,
-                    height: 128,
-                    child: CustomPaint(
-                      painter: _ExpenseDonutPainter(summary.segments),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Column(
-                  children: summary.segments
-                      .map(
-                        (segment) => Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: _LegendRow(segment: segment),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ] else ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 5,
-                      child: _SummaryTextBlock(
-                        summary: summary,
-                        filterLabel: filterLabel,
-                        selectedFilter: selectedFilter,
-                        dayLabel: dayLabel,
-                        onFilterSelected: onFilterSelected,
-                        onPickDay: onPickDay,
-                        onClearDay: onClearDay,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 128,
-                      height: 128,
-                      child: CustomPaint(
-                        painter: _ExpenseDonutPainter(summary.segments),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        children: summary.segments
-                            .map(
-                              (segment) => Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: _LegendRow(segment: segment),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SummaryTextBlock extends StatelessWidget {
-  const _SummaryTextBlock({
-    required this.summary,
-    required this.filterLabel,
-    required this.selectedFilter,
-    required this.dayLabel,
-    required this.onFilterSelected,
-    required this.onPickDay,
-    required this.onClearDay,
-  });
-
-  final _ExpenseSummary summary;
-  final String filterLabel;
-  final _ExpenseFilter selectedFilter;
-  final String? dayLabel;
-  final ValueChanged<_ExpenseFilter> onFilterSelected;
-  final VoidCallback onPickDay;
-  final VoidCallback? onClearDay;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Total Expenses',
-          style: TextStyle(
-            color: Color(0xFF667085),
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () => _showFilterSheet(
-            context,
-            selectedFilter,
-            onFilterSelected,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  filterLabel,
-                  style: const TextStyle(
-                    color: Color(0xFF667085),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: 24,
-                  color: Color(0xFF667085),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          _formatMoney(summary.total),
-          style: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 36,
-            height: 1,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -1.4,
-          ),
-        ),
-        const SizedBox(height: 18),
-        const SizedBox(height: 12),
-        Container(
-          decoration: const BoxDecoration(
-            border: Border(
-              top: BorderSide(color: Color(0xFFE7EBF1)),
-              bottom: BorderSide(color: Color(0xFFE7EBF1)),
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onPickDay,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_month_outlined,
-                      size: 19,
-                      color: Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        dayLabel ?? 'Choose a day',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: dayLabel == null
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF0F172A),
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    if (onClearDay != null)
-                      TextButton(
-                        onPressed: onClearDay,
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF2563EB),
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          'Clear',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      )
-                    else
-                      const Icon(
-                        CupertinoIcons.chevron_right,
-                        size: 18,
-                        color: Color(0xFF98A2B3),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LegendRow extends StatelessWidget {
-  const _LegendRow({required this.segment});
-
-  final _ExpenseSegment segment;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: segment.color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            segment.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF334155),
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '${segment.percent.toStringAsFixed(0)}%',
-          style: const TextStyle(
-            color: Color(0xFF667085),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-Future<void> _showFilterSheet(
-  BuildContext context,
-  _ExpenseFilter selectedFilter,
-  ValueChanged<_ExpenseFilter> onSelected,
-) {
-  return showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (sheetContext) {
-      return SafeArea(
+      builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Choose period',
-                style: TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
+              Center(
+                child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2))),
               ),
-              const SizedBox(height: 12),
-              ..._ExpenseFilter.values.map(
-                (filter) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(filter.label),
-                  trailing: filter == selectedFilter
-                      ? const Icon(
-                          Icons.check_rounded,
-                          color: Color(0xFF2563EB),
-                        )
-                      : null,
-                  onTap: () {
-                    onSelected(filter);
-                    Navigator.of(sheetContext).pop();
-                  },
+              const SizedBox(height: 16),
+              Text(expense.title, style: AppTypography.h3.copyWith(fontSize: 18)),
+              const SizedBox(height: 4),
+Text('TSH ${NumberFormat('#,##0.00').format(expense.amount)}',
+                  style: AppTypography.h2
+                      .copyWith(color: AppColors.danger, fontSize: 22)),
+              const SizedBox(height: 16),
+              _DetailRow(label: 'Date', value: fmt.format(expense.date)),
+              _DetailRow(label: 'Category', value: expense.category),
+              _DetailRow(label: 'Payment', value: expense.paymentMethod),
+              if ((expense.notes ?? '').trim().isNotEmpty)
+                _DetailRow(label: 'Notes', value: expense.notes!.trim()),
+              const SizedBox(height: 8),
+              if (expense.id != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                      side: const BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      _confirmDelete(context, context.read<PosLocalStore>(), expense);
+                    },
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                    label: const Text('Delete expense'),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  }
+
+Future<void> _confirmDelete(
+      BuildContext ctx, PosLocalStore store, Expense expense) async {
+    if (expense.id == null) return;
+    final ok = await showDialog<bool>(
+      context: ctx,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Delete expense?', style: AppTypography.cardHeader),
+        content: Text('This will remove "${expense.title}" from recorded expenses.',
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await store.deleteExpense(expense.id!);
+    if (!mounted) return;
+    showMarketNotice(context,
+        title: 'Expense deleted', message: 'The expense record was removed.');
+  }
 }
 
-class _RecentExpensesCard extends StatelessWidget {
-  const _RecentExpensesCard({
-    required this.expenses,
-    required this.onExpenseTap,
-  });
+enum _ExpenseRange { today, thisWeek, thisMonth, lastMonth, all, custom }
 
-  final List<Expense> expenses;
-  final ValueChanged<Expense> onExpenseTap;
+extension on _ExpenseRange {
+  String get label => switch (this) {
+        _ExpenseRange.today => 'Today',
+        _ExpenseRange.thisWeek => 'This week',
+        _ExpenseRange.thisMonth => 'This month',
+        _ExpenseRange.lastMonth => 'Last month',
+        _ExpenseRange.all => 'All time',
+        _ExpenseRange.custom => 'Custom range',
+      };
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.total,
+    required this.count,
+    required this.rangeLabel,
+    required this.onPickRange,
+    required this.onPickCustom,
+  });
+  final double total;
+  final int count;
+  final String rangeLabel;
+  final VoidCallback onPickRange;
+  final VoidCallback onPickCustom;
 
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      borderColor: const Color(0xFFE7EBF1),
-      radius: 16,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: expenses.asMap().entries.map((entry) {
-            final expense = entry.value;
-            final isLast = entry.key == expenses.length - 1;
-            return Column(
-              children: [
-                _ExpenseRow(
-                  expense: expense,
-                  onTap: () => onExpenseTap(expense),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('TOTAL EXPENSES',
+                        style: AppTypography.label
+                            .copyWith(color: AppColors.textMuted, fontSize: 11)),
+                    const SizedBox(height: 6),
+Text('TSH ${NumberFormat('#,##0.00').format(total)}',
+                        style: AppTypography.h2.copyWith(fontSize: 24)),
+                    const SizedBox(height: 4),
+                    Text('$count record${count == 1 ? '' : 's'} · $rangeLabel',
+                        style: AppTypography.helperText
+                            .copyWith(color: AppColors.textMuted)),
+                  ],
                 ),
-                if (!isLast)
-                  const Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: Color(0xFFECEFF4),
-                    indent: 16,
+              ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.receipt_long_outlined,
+                    color: AppColors.danger),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPickRange,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.ink,
+                    side: const BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-              ],
-            );
-          }).toList(),
-        ),
+                  icon: const Icon(Icons.tune_rounded, size: 18),
+                  label: const Text('Period'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPickCustom,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.ink,
+                    side: const BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  icon: const Icon(Icons.date_range_rounded, size: 18),
+                  label: const Text('Date range'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterCard extends StatelessWidget {
+  const _FilterCard({
+    required this.search,
+    required this.paymentFilter,
+    required this.payments,
+    required this.onSearchChanged,
+    required this.onPaymentChanged,
+  });
+  final String search;
+  final String paymentFilter;
+  final List<String> payments;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<String> onPaymentChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          TextField(
+            onChanged: onSearchChanged,
+            decoration: InputDecoration(
+              hintText: 'Search title, category, notes...',
+              hintStyle:
+                  AppTypography.bodySmall.copyWith(color: AppColors.textLight),
+              prefixIcon: const Icon(Icons.search_rounded,
+                  color: AppColors.textMuted, size: 20),
+              isDense: true,
+              filled: true,
+              fillColor: AppColors.surfaceSecondary,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.primary),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.payments_outlined,
+                  size: 18, color: AppColors.textMuted),
+              const SizedBox(width: 8),
+Text('Payment',
+                  style: AppTypography.helperText
+                      .copyWith(color: AppColors.textMuted, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSecondary,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: payments.contains(paymentFilter) ? paymentFilter : 'All',
+                      isExpanded: true,
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                      items: payments
+                          .map((p) => DropdownMenuItem(
+                              value: p,
+                              child: Text(p, style: AppTypography.bodySmall)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) onPaymentChanged(v);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentSummaryCard extends StatelessWidget {
+  const _PaymentSummaryCard({required this.items});
+  final List<MapEntry<String, double>> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return MarketSurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Payment summary',
+              style: AppTypography.label
+                  .copyWith(color: AppColors.textMuted, fontSize: 11)),
+          const SizedBox(height: 10),
+          ...items.map((e) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(e.key,
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textMedium))),
+                    Text('TSH ${NumberFormat('#,##0.00').format(e.value)}',
+                        style: AppTypography.bodySmall.copyWith(
+                            fontWeight: FontWeight.w700, color: AppColors.ink)),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+class _TableHeader extends StatelessWidget {
+  const _TableHeader();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surfaceSecondary,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 4,
+              child: Text('EXPENSE',
+                  style: AppTypography.label
+                      .copyWith(color: AppColors.textMuted, fontSize: 10))),
+          Expanded(
+              flex: 3,
+              child: Text('CATEGORY',
+                  style: AppTypography.label
+                      .copyWith(color: AppColors.textMuted, fontSize: 10))),
+          Expanded(
+              flex: 3,
+              child: Text('AMOUNT',
+                  textAlign: TextAlign.right,
+                  style: AppTypography.label
+                      .copyWith(color: AppColors.textMuted, fontSize: 10))),
+        ],
       ),
     );
   }
 }
 
 class _ExpenseRow extends StatelessWidget {
-  const _ExpenseRow({
-    required this.expense,
-    required this.onTap,
-  });
-
+  const _ExpenseRow({required this.expense, required this.onTap, this.onDelete});
   final Expense expense;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
-    final meta = _metaForCategory(expense.category);
-
-    return Material(
-      color: Colors.white,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-          child: Row(
-            children: [
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: meta.softBackground,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(meta.icon, color: meta.accent, size: 30),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _formatShortDate(expense.date),
-                      style: const TextStyle(
-                        color: Color(0xFF667085),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      expense.title,
-                      style: const TextStyle(
-                        color: Color(0xFF0F172A),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    if (expense.notes?.trim().isNotEmpty == true &&
-                        expense.notes!.trim() != expense.title) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        expense.notes!.trim(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF667085),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+    final fmt = DateFormat('MMM d');
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(expense.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyMedium
+                          .copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
                   Text(
-                    _formatMoney(expense.amount),
-                    style: const TextStyle(
-                      color: Color(0xFF0F172A),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Icon(
-                    CupertinoIcons.chevron_forward,
-                    color: Color(0xFF98A2B3),
-                    size: 22,
+                    '${fmt.format(expense.date)} · ${expense.paymentMethod}',
+style: AppTypography.helperText
+                      .copyWith(color: AppColors.textMuted),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: Text(expense.category,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textMedium)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('TSH ${NumberFormat('#,##0').format(expense.amount)}',
+                      style: AppTypography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w800, color: AppColors.ink)),
+                  if (onDelete != null)
+                    GestureDetector(
+                      onTap: onDelete,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+child: Text('Delete',
+                            style: AppTypography.helperText
+                                .copyWith(color: AppColors.danger)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-class _EmptyExpensesState extends StatelessWidget {
-  const _EmptyExpensesState();
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.all(20),
-      borderColor: const Color(0xFFE7EBF1),
-      radius: 20,
-      child: Column(
-        children: [
-          const Icon(
-            Icons.receipt_long_outlined,
-            size: 44,
-            color: Color(0xFFCBD5E1),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'No expenses recorded yet',
-            style: TextStyle(
-              color: Color(0xFF334155),
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Add your first expense to see the summary and chart update here.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 14,
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.label,
-    required this.value,
-  });
-
+  const _DetailRow({required this.label, required this.value});
   final String label;
   final String value;
-
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            width: 90,
+child: Text(label,
+                style: AppTypography.helperText.copyWith(
+                    color: AppColors.textMuted, fontWeight: FontWeight.w600)),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+              child: Text(value,
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.ink, fontWeight: FontWeight.w600))),
         ],
       ),
     );
   }
 }
 
-class _ExpenseSummary {
-  const _ExpenseSummary({
-    required this.total,
-    required this.changePercent,
-    required this.segments,
-  });
-
-  final double total;
-  final double changePercent;
-  final List<_ExpenseSegment> segments;
-}
-
-class _ExpenseSegment {
-  const _ExpenseSegment({
-    required this.label,
-    required this.amount,
-    required this.color,
-    required this.percent,
-  });
-
-  final String label;
-  final double amount;
-  final Color color;
-  final double percent;
-}
-
-class _CategoryTotal {
-  const _CategoryTotal({
-    required this.label,
-    required this.amount,
-    required this.meta,
-  });
-
-  final String label;
-  final double amount;
-  final _CategoryMeta meta;
-}
-
-class _CategoryMeta {
-  const _CategoryMeta({
-    required this.icon,
-    required this.accent,
-    required this.softBackground,
-  });
-
-  final IconData icon;
-  final Color accent;
-  final Color softBackground;
-}
-
-class _ExpenseDonutPainter extends CustomPainter {
-  const _ExpenseDonutPainter(this.segments);
-
-  final List<_ExpenseSegment> segments;
-
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final outerRadius = math.min(size.width, size.height) / 2;
-    final ringRect = Rect.fromCircle(center: center, radius: outerRadius);
-    final total =
-        segments.fold<double>(0, (sum, segment) => sum + segment.amount);
-
-    const gap = 0.05;
-    var startAngle = -math.pi / 2;
-
-    for (final segment in segments) {
-      final sweep = total <= 0 ? 0 : (segment.amount / total) * math.pi * 2;
-      final adjustedSweep = math.max(0.0, sweep - gap).toDouble();
-      final adjustedStart = startAngle + (gap / 2);
-      final paint = Paint()..color = segment.color;
-
-      canvas.drawArc(ringRect, adjustedStart, adjustedSweep, true, paint);
-      _paintPercentLabel(
-        canvas,
-        center,
-        outerRadius,
-        adjustedStart + (adjustedSweep / 2),
-        '${segment.percent.toStringAsFixed(0)}%',
-      );
-
-      startAngle += sweep;
-    }
-
-    canvas.drawCircle(
-      center,
-      outerRadius * 0.34,
-      Paint()..color = Colors.white,
-    );
-  }
-
-  void _paintPercentLabel(
-    Canvas canvas,
-    Offset center,
-    double outerRadius,
-    double angle,
-    String text,
-  ) {
-    final radius = outerRadius * 0.62;
-    final position = Offset(
-      center.dx + math.cos(angle) * radius,
-      center.dy + math.sin(angle) * radius,
-    );
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
+  Widget build(BuildContext context) {
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.receipt_long_outlined,
+                color: AppColors.textLight, size: 32),
+          ),
+          const SizedBox(height: 14),
+Text('No expenses found',
+              style: AppTypography.cardHeader.copyWith(fontSize: 16)),
+          const SizedBox(height: 6),
+          Text(
+            'Add an expense or adjust filters to see records here.',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+          ),
+        ],
       ),
-      textDirection: ui.TextDirection.ltr,
-    )..layout();
-    painter.paint(
-      canvas,
-      position - Offset(painter.width / 2, painter.height / 2),
     );
   }
-
-  @override
-  bool shouldRepaint(covariant _ExpenseDonutPainter oldDelegate) {
-    return oldDelegate.segments != segments;
-  }
-}
-
-_CategoryMeta _metaForCategory(String category) {
-  switch (category) {
-    case 'Inventory':
-      return const _CategoryMeta(
-        icon: Icons.shopping_cart_outlined,
-        accent: Color(0xFF2563EB),
-        softBackground: Color(0xFFEAF1FF),
-      );
-    case 'Rent':
-      return const _CategoryMeta(
-        icon: Icons.storefront_outlined,
-        accent: Color(0xFF34C759),
-        softBackground: Color(0xFFEAF9EE),
-      );
-    case 'Utilities':
-      return const _CategoryMeta(
-        icon: Icons.bolt_outlined,
-        accent: Color(0xFF7C5CFF),
-        softBackground: Color(0xFFF0EBFF),
-      );
-    case 'Supplies':
-      return const _CategoryMeta(
-        icon: Icons.inventory_2_outlined,
-        accent: Color(0xFFF59E0B),
-        softBackground: Color(0xFFFFF4DF),
-      );
-    case 'Transport':
-      return const _CategoryMeta(
-        icon: Icons.local_shipping_outlined,
-        accent: Color(0xFF0EA5E9),
-        softBackground: Color(0xFFE5F8FF),
-      );
-    case 'Office':
-      return const _CategoryMeta(
-        icon: Icons.description_outlined,
-        accent: Color(0xFF8B5CF6),
-        softBackground: Color(0xFFF1ECFF),
-      );
-    case 'Marketing':
-      return const _CategoryMeta(
-        icon: Icons.campaign_outlined,
-        accent: Color(0xFFEC4899),
-        softBackground: Color(0xFFFDE7F3),
-      );
-    default:
-      return const _CategoryMeta(
-        icon: Icons.receipt_long_outlined,
-        accent: Color(0xFF64748B),
-        softBackground: Color(0xFFF1F5F9),
-      );
-  }
-}
-
-String _formatShortDate(DateTime date) {
-  return DateFormat('MMM d, yyyy').format(date);
-}
-
-String _formatDayLabel(DateTime date) {
-  return DateFormat('EEE, MMM d, yyyy').format(date);
-}
-
-String _formatMoney(double amount) {
-  return 'TSh ${NumberFormat('#,##0.00').format(amount)}';
-}
-
-enum _ExpenseFilter {
-  today,
-  thisWeek,
-  thisMonth,
-  lastMonth,
-  allTime,
-}
-
-extension _ExpenseFilterLabel on _ExpenseFilter {
-  String get label {
-    switch (this) {
-      case _ExpenseFilter.today:
-        return 'Today';
-      case _ExpenseFilter.thisWeek:
-        return 'This Week';
-      case _ExpenseFilter.thisMonth:
-        return 'This Month';
-      case _ExpenseFilter.lastMonth:
-        return 'Last Month';
-      case _ExpenseFilter.allTime:
-        return 'All Time';
-    }
-  }
-}
-
-DateTime _startOfWeek(DateTime date) {
-  final day = DateTime(date.year, date.month, date.day);
-  return day.subtract(Duration(days: day.weekday - 1));
 }

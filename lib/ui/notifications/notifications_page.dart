@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../../l10n/app_strings.dart';
 import '../../../service/pos_local_store.dart';
+import '../widgets/app_design.dart';
+import '../widgets/market_shared_widgets.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -14,8 +17,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
   late final List<_NotificationItem> _items = <_NotificationItem>[
     const _NotificationItem(
       icon: Icons.attach_money_rounded,
-      iconColor: Color(0xFF15803D),
-      iconBackground: Color(0xFFEAF7F1),
+      iconColor: AppColors.success,
+      iconBackground: AppColors.successLight,
       title: 'New sale recorded',
       message: 'TSh 150,000.00 from Table 4',
       timeLabel: '9:35 AM',
@@ -23,8 +26,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
     ),
     const _NotificationItem(
       icon: Icons.warning_amber_rounded,
-      iconColor: Color(0xFFF97316),
-      iconBackground: Color(0xFFFFF2E8),
+      iconColor: AppColors.warning,
+      iconBackground: AppColors.warningLight,
       title: 'Low stock alert',
       message: 'Coffee Beans is under the reorder level',
       timeLabel: '8:15 AM',
@@ -32,32 +35,32 @@ class _NotificationsPageState extends State<NotificationsPage> {
     ),
     const _NotificationItem(
       icon: Icons.description_outlined,
-      iconColor: Color(0xFF1D4ED8),
-      iconBackground: Color(0xFFEAF1FF),
+      iconColor: AppColors.primary,
+      iconBackground: AppColors.primaryLight,
       title: 'Monthly statement ready',
       message: 'Your April 2025 statement is ready to view',
       timeLabel: '7:30 AM',
     ),
     const _NotificationItem(
       icon: Icons.attach_money_rounded,
-      iconColor: Color(0xFF15803D),
-      iconBackground: Color(0xFFEAF7F1),
+      iconColor: AppColors.success,
+      iconBackground: AppColors.successLight,
       title: 'New sale recorded',
       message: 'TSh 85,500.00 from Table 2',
       timeLabel: 'Yesterday, 9:45 PM',
     ),
     const _NotificationItem(
       icon: Icons.warning_amber_rounded,
-      iconColor: Color(0xFFF97316),
-      iconBackground: Color(0xFFFFF2E8),
+      iconColor: AppColors.warning,
+      iconBackground: AppColors.warningLight,
       title: 'Low stock alert',
       message: 'Oat Milk is under the reorder level',
       timeLabel: 'Yesterday, 6:20 PM',
     ),
     const _NotificationItem(
       icon: Icons.settings_outlined,
-      iconColor: Color(0xFF6B7280),
-      iconBackground: Color(0xFFF1F5F9),
+      iconColor: AppColors.textMuted,
+      iconBackground: AppColors.surfaceSecondary,
       title: 'System update completed',
       message: 'Your POS system was updated successfully',
       timeLabel: 'Yesterday, 3:10 PM',
@@ -77,66 +80,53 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final store = context.watch<PosLocalStore>();
     final strings = AppStrings.of(store.languageCode);
     return Scaffold(
-      backgroundColor: const Color(0xFFF7FAF8),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        centerTitle: false,
-        titleSpacing: 20,
-        title: Text(
-          strings.notifications,
-          style: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: _markAllAsRead,
-            tooltip: strings.markAllAsRead,
-            icon: const Icon(
-              Icons.done_all_rounded,
-              color: Color(0xFF2563EB),
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MarketPageHeader(
+              title: strings.notifications,
+              onBack: () => Navigator.of(context).pop(),
+              actions: [
+                IconButton(
+                  onPressed: _markAllAsRead,
+                  tooltip: strings.markAllAsRead,
+                  icon: const Icon(Icons.done_all_rounded,
+                      color: AppColors.primary),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: _items.isEmpty
-                ? _EmptyNotificationsState(strings: strings)
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(0, 6, 0, 16),
-                    itemCount: _items.length,
-                    separatorBuilder: (context, index) => const Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: Color(0xFFEDEFF2),
-                      indent: 72,
-                      endIndent: 20,
+            Expanded(
+              child: _items.isEmpty
+                  ? _EmptyNotificationsState(strings: strings)
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(0, 6, 0, 16),
+                      itemCount: _items.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.divider,
+                        indent: 72,
+                        endIndent: 20,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = _items[index];
+                        return _NotificationTile(
+                          item: item,
+                          onTap: () {
+                            setState(() {
+                              _items[index] = _items[index].copyWith(
+                                unread: false,
+                              );
+                            });
+                          },
+                        );
+                      },
                     ),
-                    itemBuilder: (context, index) {
-                      final item = _items[index];
-                      return _NotificationTile(
-                        item: item,
-                        onTap: () {
-                          setState(() {
-                            _items[index] = _items[index].copyWith(
-                              unread: false,
-                            );
-                          });
-                        },
-                      );
-                    },
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -155,44 +145,45 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        minLeadingWidth: 0,
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: item.iconBackground,
-            shape: BoxShape.circle,
+      child: Container(
+        color: item.unread ? AppColors.primaryLight.withValues(alpha: 0.35) : null,
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          minLeadingWidth: 0,
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: item.iconBackground,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(item.icon, color: item.iconColor, size: 21),
           ),
-          child: Icon(item.icon, color: item.iconColor, size: 21),
-        ),
-        title: Text(
-          item.title,
-          style: TextStyle(
-            color: const Color(0xFF0F172A),
-            fontSize: 15.5,
-            fontWeight: item.unread ? FontWeight.w700 : FontWeight.w600,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Text(
-            item.message,
-            style: const TextStyle(
-              color: Color(0xFF6B7280),
-              fontSize: 13.5,
-              height: 1.25,
+          title: Text(
+            item.title,
+            style: AppTypography.bodyMain.copyWith(
+              fontSize: 15.5,
+              fontWeight: item.unread ? FontWeight.w800 : FontWeight.w600,
+              color: AppColors.ink,
             ),
           ),
-        ),
-        trailing: Text(
-          item.timeLabel,
-          style: const TextStyle(
-            color: Color(0xFF94A3B8),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              item.message,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textMuted,
+                height: 1.25,
+              ),
+            ),
+          ),
+          trailing: Text(
+            item.timeLabel,
+            style: AppTypography.helperText.copyWith(
+              color: AppColors.textLight,
+              fontSize: 12,
+            ),
           ),
         ),
       ),
@@ -202,7 +193,7 @@ class _NotificationTile extends StatelessWidget {
 
 class _EmptyNotificationsState extends StatelessWidget {
   const _EmptyNotificationsState({required this.strings});
-  
+
   final AppStrings strings;
 
   @override
@@ -215,7 +206,7 @@ class _EmptyNotificationsState extends StatelessWidget {
           children: [
             TweenAnimationBuilder<double>(
               tween: Tween<double>(begin: 0.96, end: 1),
-              duration: const Duration(milliseconds: 260),
+              duration: AppDurations.normal,
               curve: Curves.easeOut,
               builder: (context, value, child) {
                 return Transform.scale(scale: value, child: child);
@@ -224,12 +215,12 @@ class _EmptyNotificationsState extends StatelessWidget {
                 width: 68,
                 height: 68,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFEAF7F1),
+                  color: AppColors.successLight,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.notifications_none_rounded,
-                  color: Color(0xFF15803D),
+                  color: AppColors.success,
                   size: 32,
                 ),
               ),
@@ -237,19 +228,14 @@ class _EmptyNotificationsState extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               strings.noNotifications,
-              style: const TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AppTypography.cardHeader.copyWith(color: AppColors.ink),
             ),
             const SizedBox(height: 6),
             Text(
               strings.nothingToShow,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 13.5,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textMuted,
                 height: 1.4,
               ),
             ),

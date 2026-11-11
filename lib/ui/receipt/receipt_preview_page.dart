@@ -10,8 +10,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
+import '../../service/receipt_settings.dart';
 import '../models/product_item.dart';
 import '../shell/app_shell.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'receipt_pdf_service.dart';
@@ -33,6 +35,13 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
 
   File? _preparedPdf;
   bool _isPreparing = false;
+  late final AppProfileData _profile;
+  late final ReceiptSettings _receiptSettings;
+
+  String get _storeAddress =>
+      _receiptSettings.showStoreContact ? _profile.physicalAddress.trim() : '';
+  String get _storePhone =>
+      _receiptSettings.showStoreContact ? _profile.contactNumber.trim() : '';
 
   List<OrderLineItem> get _pdfItems => widget.order.lines
       .map(
@@ -49,6 +58,9 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
   @override
   void initState() {
     super.initState();
+    final store = context.read<PosLocalStore>();
+    _profile = store.profile;
+    _receiptSettings = store.receiptSettings;
     _preparePdf();
   }
 
@@ -73,8 +85,25 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     return trimmed.isEmpty ? fallback : trimmed;
   }
 
-  AppProfileData _storeProfile() {
-    return context.read<PosLocalStore>().profile;
+  Future<File> _createPdf() {
+    return ReceiptPdfService.createReceiptPdf(
+      items: _pdfItems,
+      total: widget.order.total,
+      cashTendered: widget.order.cashTendered,
+      changeDue: widget.order.changeDue,
+      receiptNumber: widget.order.id,
+      cashier: widget.order.cashierName,
+      register: widget.order.register,
+      date: widget.order.date,
+      time: widget.order.time,
+      customerName: widget.order.customerName,
+      discountAmount: widget.order.discountAmount,
+      discountLabel: widget.order.discountLabel,
+      storeName: _profile.storeName,
+      storeAddress: _storeAddress,
+      storePhone: _storePhone,
+      footer: _receiptSettings.footer,
+    );
   }
 
   Future<void> _preparePdf() async {
@@ -82,24 +111,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     setState(() => _isPreparing = true);
 
     try {
-      final profile = _storeProfile();
-      final pdfFile = await ReceiptPdfService.createReceiptPdf(
-        items: _pdfItems,
-        total: widget.order.total,
-        cashTendered: widget.order.cashTendered,
-        changeDue: widget.order.changeDue,
-        receiptNumber: widget.order.id,
-        cashier: widget.order.cashierName,
-        register: widget.order.register,
-        date: widget.order.date,
-        time: widget.order.time,
-        customerName: widget.order.customerName,
-        discountAmount: widget.order.discountAmount,
-        discountLabel: widget.order.discountLabel,
-        storeName: profile.storeName,
-        storeAddress: profile.physicalAddress,
-        storePhone: profile.contactNumber,
-      );
+      final pdfFile = await _createPdf();
       if (!mounted) return;
       setState(() {
         _preparedPdf = pdfFile;
@@ -132,24 +144,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     if (pdfFile != null) return pdfFile;
 
     try {
-      final profile = _storeProfile();
-      pdfFile = await ReceiptPdfService.createReceiptPdf(
-        items: _pdfItems,
-        total: widget.order.total,
-        cashTendered: widget.order.cashTendered,
-        changeDue: widget.order.changeDue,
-        receiptNumber: widget.order.id,
-        cashier: widget.order.cashierName,
-        register: widget.order.register,
-        date: widget.order.date,
-        time: widget.order.time,
-        customerName: widget.order.customerName,
-        discountAmount: widget.order.discountAmount,
-        discountLabel: widget.order.discountLabel,
-        storeName: profile.storeName,
-        storeAddress: profile.physicalAddress,
-        storePhone: profile.contactNumber,
-      );
+      pdfFile = await _createPdf();
       if (!mounted) return null;
       setState(() => _preparedPdf = pdfFile);
       return pdfFile;
@@ -179,10 +174,9 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
   }
 
   String _buildWhatsAppMessage() {
-    final profile = _storeProfile();
-    final storeName = _cleanValue(profile.storeName, 'Store');
-    final storeAddress = profile.physicalAddress.trim();
-    final storePhone = profile.contactNumber.trim();
+    final storeName = _cleanValue(_profile.storeName, 'Store');
+    final storeAddress = _storeAddress;
+    final storePhone = _storePhone;
     final buffer = StringBuffer()
       ..writeln('━━━━━ *${storeName.toUpperCase()}* ━━━━━')
       ..writeln('📄 *Receipt:* #${widget.order.id}')
@@ -224,7 +218,9 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     buffer.writeln('Cash Tendered: ${_money(widget.order.cashTendered)}');
     buffer.writeln('Change Due: ${_money(widget.order.changeDue)}');
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('✨ *Thank you for your business!*');
+    buffer.writeln(
+      '✨ *${_cleanValue(_receiptSettings.footer, 'Thank you for your business!')}*',
+    );
 
     return buffer.toString();
   }
@@ -419,56 +415,47 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    final profile = context.watch<PosLocalStore>().profile;
-    final storeName = _cleanValue(profile.storeName, 'Store receipt');
-    final storeAddress = profile.physicalAddress.trim();
-    final storePhone = profile.contactNumber.trim();
+    final storeName = _cleanValue(_profile.storeName, 'Store receipt');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F8),
+      backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              height: 56,
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Row(
+            MarketPageHeader(
+              title: 'Receipt',
+              subtitle: '#${widget.order.id}',
+              trailing: Wrap(
+                spacing: 2,
+                runSpacing: 2,
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon:
-                        const Icon(Icons.arrow_back, color: Color(0xFF334155)),
-                  ),
-                  const Spacer(),
-                  IconButton(
                     onPressed: _sharePdf,
-                    icon: const Icon(Icons.share, color: Color(0xFF334155)),
+                    icon: const Icon(Icons.share_outlined, color: AppColors.textMedium),
                   ),
                   IconButton(
                     onPressed: () => _showPlaceholderAction(context, 'SMS'),
-                    icon: const Icon(Icons.sms, color: Color(0xFF334155)),
+                    icon: const Icon(Icons.sms_outlined, color: AppColors.textMedium),
                   ),
                   IconButton(
                     onPressed: _shareToWhatsApp,
-                    icon: const Icon(Icons.chat, color: Color(0xFF334155)),
+                    icon: const Icon(Icons.chat_outlined, color: AppColors.textMedium),
                   ),
                   IconButton(
                     onPressed: _downloadReceipt,
-                    icon: const Icon(Icons.download, color: Color(0xFF334155)),
+                    icon: const Icon(Icons.download_outlined, color: AppColors.textMedium),
                   ),
                   IconButton(
                     onPressed: _printReceipt,
-                    icon: const Icon(Icons.print, color: Color(0xFF334155)),
+                    icon: const Icon(Icons.print_outlined, color: AppColors.textMedium),
                   ),
                   IconButton(
                     onPressed: () => _showPlaceholderAction(context, 'More'),
-                    icon: const Icon(Icons.more_vert, color: Color(0xFF334155)),
+                    icon: const Icon(Icons.more_vert, color: AppColors.textMedium),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFE5E7EB)),
             Padding(
               padding: const EdgeInsets.fromLTRB(6, 10, 6, 8),
               child: Row(
@@ -528,8 +515,12 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 94),
                 child: _ReceiptPaper(
                   storeName: storeName,
-                  storeAddress: storeAddress,
-                  storePhone: storePhone,
+                  storeAddress: _storeAddress,
+                  storePhone: _storePhone,
+                  footer: _cleanValue(
+                    _receiptSettings.footer,
+                    'THANK YOU FOR YOUR BUSINESS',
+                  ),
                   receiptNumber: widget.order.id,
                   date: widget.order.date,
                   time: widget.order.time,
@@ -620,6 +611,7 @@ class _ReceiptPaper extends StatelessWidget {
     required this.storeName,
     required this.storeAddress,
     required this.storePhone,
+    required this.footer,
     required this.receiptNumber,
     required this.date,
     required this.time,
@@ -638,6 +630,7 @@ class _ReceiptPaper extends StatelessWidget {
   final String storeName;
   final String storeAddress;
   final String storePhone;
+  final String footer;
   final String receiptNumber;
   final String date;
   final String time;
@@ -824,10 +817,10 @@ class _ReceiptPaper extends StatelessWidget {
             fontSize: 14,
           ),
           const SizedBox(height: 32),
-          const Text(
-            'THANK YOU FOR YOUR BUSINESS',
+          Text(
+            footer,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF94A3B8),
               fontSize: 10,
               fontWeight: FontWeight.w800,

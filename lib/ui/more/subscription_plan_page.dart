@@ -37,101 +37,94 @@ class _SubscriptionPlanPageState extends State<SubscriptionPlanPage> {
       data: interTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
-        appBar: AppBar(
-          backgroundColor: AppColors.pageBackground,
-          elevation: 0,
-          centerTitle: true,
-          foregroundColor: AppColors.ink,
-          title: Text(strings.subscriptionPlansTitle),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ),
         body: SafeArea(
-          top: false,
-          child: ListView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
+          child: Column(
             children: [
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Column(
-                    children: [
-                      Text(
-                        strings.subscriptionPlansSubtitle,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.mutedText,
-                          fontSize: 14.5,
-                          height: 1.45,
-                          fontWeight: FontWeight.w500,
+              MarketPageHeader(
+                title: strings.subscriptionPlansTitle,
+                onBack: () => Navigator.of(context).maybePop(),
+              ),
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                  children: [
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: Column(
+                          children: [
+                            Text(
+                              strings.subscriptionPlansSubtitle,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textMuted,
+                                height: 1.45,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              strings.subscriptionPlansSubtitleTwo,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textMuted,
+                                fontSize: 13.5,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        strings.subscriptionPlansSubtitleTwo,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.mutedText,
-                          fontSize: 13.5,
-                          height: 1.45,
-                          fontWeight: FontWeight.w500,
+                    ),
+                    const SizedBox(height: 14),
+                    _BillingToggle(
+                      billingCycle: _billingCycle,
+                      onChanged: (value) {
+                        setState(() => _billingCycle = value);
+                      },
+                      strings: strings,
+                    ),
+                    const SizedBox(height: 10),
+                    ...plans.map(
+                      (plan) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _PlanCard(
+                          plan: plan,
+                          billingCycle: _billingCycle,
+                          strings: strings,
+                          isSelected: _selectedPlanId == plan.id,
+                          onChoose: () {
+                            setState(() => _selectedPlanId = plan.id);
+                            showMarketNotice(
+                              context,
+                              title: plan.title,
+                              message: strings.comingSoon,
+                            );
+                          },
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              _BillingToggle(
-                billingCycle: _billingCycle,
-                onChanged: (value) {
-                  setState(() => _billingCycle = value);
-                },
-                strings: strings,
-              ),
-              const SizedBox(height: 10),
-              ...plans.map(
-                (plan) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _PlanCard(
-                    plan: plan,
-                    billingCycle: _billingCycle,
-                    strings: strings,
-                    isSelected: _selectedPlanId == plan.id,
-                    onChoose: () {
-                      setState(() => _selectedPlanId = plan.id);
-                      showMarketNotice(
-                        context,
-                        title: plan.title,
-                        message: strings.comingSoon,
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                strings.allPlansIncludeMultiPlatformAccess,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 10),
-              _PlatformRow(strings: strings),
-              const SizedBox(height: 10),
-              Text(
-                strings.securePaymentsCancelAnytime,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.mutedText,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      strings.allPlansIncludeMultiPlatformAccess,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _PlatformRow(strings: strings),
+                    const SizedBox(height: 10),
+                    Text(
+                      strings.securePaymentsCancelAnytime,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

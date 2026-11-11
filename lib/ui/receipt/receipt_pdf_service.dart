@@ -22,6 +22,7 @@ class ReceiptPdfService {
     required String storeName,
     required String storeAddress,
     required String storePhone,
+    String footer = '',
     String? customerName,
     double? discountAmount,
     String? discountLabel,
@@ -110,14 +111,20 @@ class ReceiptPdfService {
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text(
-                'Thank you for shopping at $cleanStoreName',
-                style: pw.TextStyle(
-                  fontSize: 8,
-                  color: PdfColors.grey500,
-                  fontStyle: pw.FontStyle.italic,
+              pw.Expanded(
+                child: pw.Text(
+                  _cleanValue(
+                    footer,
+                    'Thank you for shopping at $cleanStoreName',
+                  ),
+                  style: pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey500,
+                    fontStyle: pw.FontStyle.italic,
+                  ),
                 ),
               ),
+              pw.SizedBox(width: 12),
               pw.Text(
                 'Page ${context.pageNumber} of ${context.pagesCount}',
                 style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),

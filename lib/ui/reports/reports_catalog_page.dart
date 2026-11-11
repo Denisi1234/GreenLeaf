@@ -1,221 +1,98 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../service/pos_local_store.dart';
-import '../business_category_config.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'pos_report_catalog.dart';
+import 'pos_report_page.dart';
 
-class ReportsCatalogPage extends StatelessWidget {
+const Color _ink = AppColors.ink;
+const Color _muted = Color(0xFF6C7483);
+const Color _border = Color(0xFFE7EAF0);
+const Color _blue = Color(0xFF2D6CEA);
+
+class ReportsCatalogPage extends StatefulWidget {
   const ReportsCatalogPage({super.key});
 
-  static const Color _ink = AppColors.ink;
-  static const Color _muted = Color(0xFF6C7483);
-  static const Color _border = Color(0xFFE7EAF0);
-  static const Color _blue = Color(0xFF2D6CEA);
+  @override
+  State<ReportsCatalogPage> createState() => _ReportsCatalogPageState();
+}
 
-  static const List<_ReportSection> _sections = [
-    _ReportSection(
-      categoryTitle: 'Sales Reports',
-      accent: Color(0xFF2D6CEA),
-      soft: Color(0xFFEEF4FF),
-      icon: Icons.bar_chart_rounded,
-      count: 12,
-      reports: [
-        _ReportItem(
-          title: 'Sales Summary',
-          subtitle: 'Summary of sales by date, time or period',
-        ),
-        _ReportItem(
-          title: 'Sales by Product',
-          subtitle: 'Detailed sales breakdown by product',
-        ),
-        _ReportItem(
-          title: 'Sales by Category',
-          subtitle: 'Sales performance by category',
-        ),
-      ],
-      initiallyExpanded: true,
-    ),
-    _ReportSection(
-      categoryTitle: 'Inventory Reports',
-      accent: Color(0xFF46A35F),
-      soft: Color(0xFFF0F8F1),
-      icon: Icons.inventory_2_outlined,
-      count: 9,
-      reports: [
-        _ReportItem(
-          title: 'Stock Status',
-          subtitle: 'In stock, low stock, and out of stock items',
-        ),
-        _ReportItem(
-          title: 'Reorder Watchlist',
-          subtitle: 'Products that need replenishment attention',
-        ),
-        _ReportItem(
-          title: 'Category Coverage',
-          subtitle: 'Inventory balance across product groups',
-        ),
-      ],
-    ),
-    _ReportSection(
-      categoryTitle: 'Financial Reports',
-      accent: Color(0xFF7A57E5),
-      soft: Color(0xFFF4F0FF),
-      icon: Icons.receipt_long_outlined,
-      count: 10,
-      reports: [
-        _ReportItem(
-          title: 'Revenue Trend',
-          subtitle: 'How sales move across the selected period',
-        ),
-        _ReportItem(
-          title: 'Profit Snapshot',
-          subtitle: 'Revenue, expenses, and margin at a glance',
-        ),
-        _ReportItem(
-          title: 'Expense Breakdown',
-          subtitle: 'Spending grouped by category and date',
-        ),
-      ],
-    ),
-    _ReportSection(
-      categoryTitle: 'Staff Reports',
-      accent: Color(0xFFE28A0F),
-      soft: Color(0xFFFFF6E8),
-      icon: Icons.person_outline_rounded,
-      count: 6,
-      reports: [
-        _ReportItem(
-          title: 'Attendance Summary',
-          subtitle: 'Shift coverage and roster activity',
-        ),
-        _ReportItem(
-          title: 'Sales by Staff',
-          subtitle: 'Performance by cashier or attendant',
-        ),
-        _ReportItem(
-          title: 'Role Access Audit',
-          subtitle: 'Staff permissions and access changes',
-        ),
-      ],
-    ),
-    _ReportSection(
-      categoryTitle: 'Compliance Reports',
-      accent: Color(0xFF1296A8),
-      soft: Color(0xFFEDF9FB),
-      icon: Icons.shield_outlined,
-      count: 7,
-      reports: [
-        _ReportItem(
-          title: 'Tax Register',
-          subtitle: 'Tax-relevant transactions and totals',
-        ),
-        _ReportItem(
-          title: 'Audit Trail',
-          subtitle: 'System changes and sensitive actions',
-        ),
-        _ReportItem(
-          title: 'License Renewals',
-          subtitle: 'Upcoming compliance deadlines and notes',
-        ),
-      ],
-    ),
-  ];
+class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
+  final TextEditingController _searchController = TextEditingController();
+  final List<_ReportSection> _sections = _buildSections();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<_ReportSection> get _visibleSections {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return _sections;
+
+    final visible = <_ReportSection>[];
+    for (final section in _sections) {
+      final matches = section.reports
+          .where(
+            (report) =>
+                report.title.toLowerCase().contains(query) ||
+                report.subtitle.toLowerCase().contains(query),
+          )
+          .toList();
+      if (matches.isNotEmpty) {
+        visible.add(section.copyWith(reports: matches));
+      }
+    }
+    return visible;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<PosLocalStore>();
-    final config = store.businessCategoryConfig;
-    final categorySection = _categoryReportSection(config.category);
+    final visible = _visibleSections;
+    final isSearching = _query.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFEFC),
+      backgroundColor: AppColors.pageBackground,
       drawer: const MarketAppDrawer(selectedItem: 'Home'),
       body: SafeArea(
         child: Column(
           children: [
             const _ReportsCatalogHeader(),
-            const Divider(height: 1, thickness: 1, color: _border),
             Expanded(
-              child: CustomScrollView(
+              child: ListView(
                 physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate.fixed([
-                        MarketSurfaceCard(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      '${config.category.displayName} report pack',
-                                      style: const TextStyle(
-                                        color: _ink,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: -0.4,
-                                      ),
-                                    ),
-                                  ),
-                                  BusinessCategoryBadge(
-                                    category: config.category,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                config.dashboardHeadline,
-                                style: const TextStyle(
-                                  color: _muted,
-                                  fontSize: 13.5,
-                                  height: 1.45,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _ReportSectionTile(section: categorySection),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        MarketSurfaceCard(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              MarketSectionHeader(
-                                title: 'All Reports',
-                                trailing: IconButton(
-                                  onPressed: () {
-                                    showMarketNotice(
-                                      context,
-                                      title: 'Search Reports',
-                                      message:
-                                          'Report search can be added here next.',
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.search_rounded,
-                                    color: _muted,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              ..._sections.map(
-                                (section) =>
-                                    _ReportSectionTile(section: section),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ]),
-                    ),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  _LibrarySummaryCard(
+                    totalReports: posReports.length,
+                    totalCategories: _sections.length,
                   ),
+                  const SizedBox(height: 16),
+                  _ReportSearchField(
+                    controller: _searchController,
+                    query: _query,
+                    onChanged: (value) => setState(() => _query = value),
+                    onClear: () {
+                      _searchController.clear();
+                      setState(() => _query = '');
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  if (visible.isEmpty)
+                    _EmptySearchState(query: _query)
+                  else
+                    for (final section in visible) ...[
+                      _ReportSectionTile(
+                        key: ValueKey(
+                          '${section.categoryTitle}-${isSearching ? _query : ''}',
+                        ),
+                        section: section,
+                        forceExpanded: isSearching,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                 ],
               ),
             ),
@@ -226,78 +103,267 @@ class ReportsCatalogPage extends StatelessWidget {
   }
 }
 
-_ReportSection _categoryReportSection(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => const _ReportSection(
-        categoryTitle: 'Pharmacy Reports',
-        accent: Color(0xFF10B981),
-        soft: Color(0xFFF0FDF4),
-        icon: Icons.medication_rounded,
-        count: 3,
-        reports: [
-          _ReportItem(
-            title: 'Expiry Watchlist',
-            subtitle: 'Medicines due for review soon',
+class _LibrarySummaryCard extends StatelessWidget {
+  const _LibrarySummaryCard({
+    required this.totalReports,
+    required this.totalCategories,
+  });
+
+  final int totalReports;
+  final int totalCategories;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFEEF4FF), Color(0xFFF8FBFF)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCE7FB)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFDCE7FB)),
+            ),
+            child: const Icon(
+              Icons.insights_rounded,
+              color: _blue,
+              size: 26,
+            ),
           ),
-          _ReportItem(
-            title: 'Prescription Refill',
-            subtitle: 'Refill activity and medicine flow',
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Report Library',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$totalReports reports across '
+                  '$totalCategories categories',
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
-          _ReportItem(
-            title: 'Margin Tracker',
-            subtitle: 'Profitability across the dispensary',
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: _blue,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '$totalReports',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ],
-        initiallyExpanded: true,
       ),
-    BusinessCategory.electronics => const _ReportSection(
-        categoryTitle: 'Electronics Reports',
-        accent: Color(0xFF7C3AED),
-        soft: Color(0xFFF5F3FF),
-        icon: Icons.devices_other_rounded,
-        count: 3,
-        reports: [
-          _ReportItem(
-            title: 'Warranty Claims',
-            subtitle: 'Service registration and claims flow',
+    );
+  }
+}
+
+class _ReportSearchField extends StatelessWidget {
+  const _ReportSearchField({
+    required this.controller,
+    required this.query,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final String query;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+      ),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        textInputAction: TextInputAction.search,
+        style: const TextStyle(
+          color: _ink,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: 'Search ${posReports.length} reports',
+          hintStyle: const TextStyle(
+            color: Color(0xFF9AA3B2),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
-          _ReportItem(
-            title: 'High-Value Sales',
-            subtitle: 'Premium items and device turnover',
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: _muted,
+            size: 21,
           ),
-          _ReportItem(
-            title: 'Brand Performance',
-            subtitle: 'Best performing manufacturers',
+          suffixIcon: query.isNotEmpty
+              ? IconButton(
+                  onPressed: onClear,
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: _muted,
+                    size: 19,
+                  ),
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptySearchState extends StatelessWidget {
+  const _EmptySearchState({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 56),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.search_off_rounded,
+              color: AppColors.textLight,
+              size: 30,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'No reports found',
+            style: AppTypography.bodyMain.copyWith(
+              fontWeight: FontWeight.w700,
+              color: _ink,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Nothing matches "$query". Try another keyword.',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodySmall.copyWith(color: _muted),
           ),
         ],
-        initiallyExpanded: true,
       ),
-    BusinessCategory.retail => const _ReportSection(
-        categoryTitle: 'Retail Operations',
-        accent: Color(0xFF2563EB),
-        soft: Color(0xFFEFF6FF),
-        icon: Icons.storefront_outlined,
-        count: 4,
-        reports: [
-          _ReportItem(
-            title: 'Fast-Moving Items',
-            subtitle: 'Products that are turning fastest on the floor',
-          ),
-          _ReportItem(
-            title: 'Basket Size Trends',
-            subtitle: 'Average basket value and add-on patterns',
-          ),
-          _ReportItem(
-            title: 'Markdown Watch',
-            subtitle: 'Discounted stock and clearance pressure',
-          ),
-          _ReportItem(
-            title: 'Reorder Pressure',
-            subtitle: 'Low stock items and replenishment urgency',
-          ),
-        ],
-        initiallyExpanded: true,
-      ),
+    );
+  }
+}
+
+List<_ReportSection> _buildSections() {
+  final grouped = <ReportGroup, List<PosReport>>{};
+  for (final report in posReports) {
+    grouped.putIfAbsent(report.group, () => []).add(report);
+  }
+
+  return [
+    for (final group in ReportGroup.values)
+      if ((grouped[group] ?? const <PosReport>[]).isNotEmpty)
+        _ReportSection(
+          categoryTitle: group.label,
+          accent: _accentFor(group),
+          soft: _softFor(group),
+          icon: _iconFor(group),
+          reports: [
+            for (final report in grouped[group]!)
+              _ReportItem(
+                report: report,
+                title: report.title,
+                subtitle: _subtitleFor(group),
+              ),
+          ],
+          initiallyExpanded: group == ReportGroup.graphical,
+        ),
+  ];
+}
+
+Color _accentFor(ReportGroup group) {
+  return switch (group) {
+    ReportGroup.graphical => const Color(0xFF2D6CEA),
+    ReportGroup.summary => const Color(0xFF7A57E5),
+    ReportGroup.detailed => const Color(0xFFE28A0F),
+    ReportGroup.inventory => const Color(0xFF46A35F),
+    ReportGroup.accounting => const Color(0xFF1296A8),
+    ReportGroup.operations => const Color(0xFFD6456B),
+  };
+}
+
+Color _softFor(ReportGroup group) {
+  return switch (group) {
+    ReportGroup.graphical => const Color(0xFFEEF4FF),
+    ReportGroup.summary => const Color(0xFFF4F0FF),
+    ReportGroup.detailed => const Color(0xFFFFF6E8),
+    ReportGroup.inventory => const Color(0xFFF0F8F1),
+    ReportGroup.accounting => const Color(0xFFEDF9FB),
+    ReportGroup.operations => const Color(0xFFFDEEF2),
+  };
+}
+
+IconData _iconFor(ReportGroup group) {
+  return switch (group) {
+    ReportGroup.graphical => Icons.bar_chart_rounded,
+    ReportGroup.summary => Icons.list_alt_rounded,
+    ReportGroup.detailed => Icons.description_outlined,
+    ReportGroup.inventory => Icons.inventory_2_outlined,
+    ReportGroup.accounting => Icons.account_balance_outlined,
+    ReportGroup.operations => Icons.insights_rounded,
+  };
+}
+
+String _subtitleFor(ReportGroup group) {
+  return switch (group) {
+    ReportGroup.graphical => 'Visual chart overview',
+    ReportGroup.summary => 'Totals and summary metrics',
+    ReportGroup.detailed => 'Row-level transaction detail',
+    ReportGroup.inventory => 'Stock levels and valuation',
+    ReportGroup.accounting => 'Financial statements and reconciliation',
+    ReportGroup.operations => 'TrackMauzo operational insight',
   };
 }
 
@@ -306,84 +372,94 @@ class _ReportsCatalogHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarketPageHeader(
+    return const MarketPageHeader(
       title: 'Reports',
       titleSize: 21,
-      actions: [
-        IconButton(
-          onPressed: () {
-            showMarketNotice(
-              context,
-              title: 'Filter Reports',
-              message: 'Date and category filters can be connected here next.',
-            );
-          },
-          icon: const Icon(
-            Icons.filter_alt_outlined,
-            color: ReportsCatalogPage._muted,
-            size: 26,
-          ),
-        ),
-      ],
     );
   }
 }
 
 class _ReportSectionTile extends StatelessWidget {
-  const _ReportSectionTile({required this.section});
+  const _ReportSectionTile({
+    super.key,
+    required this.section,
+    required this.forceExpanded,
+  });
 
   final _ReportSection section;
+  final bool forceExpanded;
 
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      borderColor: ReportsCatalogPage._border,
+      borderColor: _border,
       radius: 14,
+      padding: EdgeInsets.zero,
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          initiallyExpanded: section.initiallyExpanded,
-          tilePadding: EdgeInsets.zero,
+          initiallyExpanded: forceExpanded || section.initiallyExpanded,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           childrenPadding: EdgeInsets.zero,
-          iconColor: ReportsCatalogPage._muted,
-          collapsedIconColor: ReportsCatalogPage._muted,
+          iconColor: _muted,
+          collapsedIconColor: _muted,
           title: Row(
             children: [
-              Icon(section.icon, color: section.accent, size: 24),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  section.categoryTitle,
-                  style: TextStyle(
-                    color: section.accent,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: section.soft,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: Text(
-                  '${section.count}',
-                  style: TextStyle(
-                    color: section.accent,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Icon(section.icon, color: section.accent, size: 21),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      section.categoryTitle,
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${section.reports.length} reports',
+                      style: const TextStyle(
+                        color: _muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           children: [
             if (section.reports.isNotEmpty) ...[
-              const Divider(height: 1, color: ReportsCatalogPage._border),
-              ...section.reports
-                  .map((report) => _ReportListItem(report: report)),
+              const Divider(height: 1, color: _border),
+              for (var index = 0;
+                  index < section.reports.length;
+                  index++) ...[
+                _ReportListItem(
+                  report: section.reports[index],
+                  accent: section.accent,
+                ),
+                if (index != section.reports.length - 1)
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Color(0xFFF1F3F7),
+                    indent: 60,
+                    endIndent: 14,
+                  ),
+              ],
             ],
           ],
         ),
@@ -393,9 +469,10 @@ class _ReportSectionTile extends StatelessWidget {
 }
 
 class _ReportListItem extends StatelessWidget {
-  const _ReportListItem({required this.report});
+  const _ReportListItem({required this.report, required this.accent});
 
   final _ReportItem report;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -403,24 +480,22 @@ class _ReportListItem extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          showMarketNotice(
-            context,
-            title: report.title,
-            message: 'This report detail page can be connected next.',
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => PosReportPage(report: report.report),
+            ),
           );
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
           child: Row(
             children: [
-              const Padding(
-                padding: EdgeInsets.only(left: 12, right: 16),
-                child: Icon(
-                  Icons.description_outlined,
-                  color: ReportsCatalogPage._blue,
-                  size: 28,
-                ),
+              Icon(
+                Icons.insert_chart_outlined_rounded,
+                color: accent,
+                size: 20,
               ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,26 +503,28 @@ class _ReportListItem extends StatelessWidget {
                     Text(
                       report.title,
                       style: const TextStyle(
-                        color: ReportsCatalogPage._ink,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
+                        color: _ink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 3),
                     Text(
                       report.subtitle,
                       style: const TextStyle(
-                        color: ReportsCatalogPage._muted,
-                        fontSize: 12.5,
+                        color: _muted,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               const Icon(
                 Icons.chevron_right_rounded,
-                color: ReportsCatalogPage._muted,
+                color: AppColors.textLight,
+                size: 20,
               ),
             ],
           ),
@@ -463,7 +540,6 @@ class _ReportSection {
     required this.accent,
     required this.soft,
     required this.icon,
-    required this.count,
     required this.reports,
     this.initiallyExpanded = false,
   });
@@ -472,17 +548,29 @@ class _ReportSection {
   final Color accent;
   final Color soft;
   final IconData icon;
-  final int count;
   final List<_ReportItem> reports;
   final bool initiallyExpanded;
+
+  _ReportSection copyWith({List<_ReportItem>? reports}) {
+    return _ReportSection(
+      categoryTitle: categoryTitle,
+      accent: accent,
+      soft: soft,
+      icon: icon,
+      reports: reports ?? this.reports,
+      initiallyExpanded: initiallyExpanded,
+    );
+  }
 }
 
 class _ReportItem {
   const _ReportItem({
+    required this.report,
     required this.title,
     required this.subtitle,
   });
 
+  final PosReport report;
   final String title;
   final String subtitle;
 }

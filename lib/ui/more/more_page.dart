@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
-import 'multi_store_management_page.dart';
+import 'customers_page.dart';
 import 'duka_ai_page.dart';
+import 'expenses_tracking_page.dart';
 import 'settings_page.dart';
 import 'store_profile_page.dart';
 import 'staff_management_page.dart';
@@ -35,14 +36,19 @@ class MorePage extends StatelessWidget {
         action: _MoreMenuAction.storeProfile,
       ),
       _MoreMenuItem(
+        label: strings.customers,
+        icon: Icons.people_alt_outlined,
+        action: _MoreMenuAction.customers,
+      ),
+      _MoreMenuItem(
+        label: strings.expensesTracking,
+        icon: Icons.receipt_long_outlined,
+        action: _MoreMenuAction.expenses,
+      ),
+      _MoreMenuItem(
         label: strings.staffManagement,
         icon: Icons.groups_2_outlined,
         action: _MoreMenuAction.staffManagement,
-      ),
-      _MoreMenuItem(
-        label: strings.multiStoreManagement,
-        icon: Icons.store_mall_directory_outlined,
-        action: _MoreMenuAction.multiStoreManagement,
       ),
       _MoreMenuItem(
         label: strings.settings,
@@ -126,7 +132,6 @@ class MorePage extends StatelessWidget {
                         _ProfileSummaryCard(
                           ownerName: profile.ownerName,
                           roleTitle: profile.roleTitle,
-                          businessCategory: profile.businessCategory,
                           storeName: profile.storeName,
                           logoPath: profile.logoPath,
                           totalSales: totalSalesLabel,
@@ -162,7 +167,6 @@ class _ProfileSummaryCard extends StatelessWidget {
   const _ProfileSummaryCard({
     required this.ownerName,
     required this.roleTitle,
-    required this.businessCategory,
     required this.storeName,
     required this.logoPath,
     required this.totalSales,
@@ -171,7 +175,6 @@ class _ProfileSummaryCard extends StatelessWidget {
 
   final String ownerName;
   final String roleTitle;
-  final String businessCategory;
   final String storeName;
   final String? logoPath;
   final String totalSales;
@@ -199,7 +202,6 @@ class _ProfileSummaryCard extends StatelessWidget {
                       centered: true,
                       ownerName: ownerName,
                       roleTitle: roleTitle,
-                      businessCategory: businessCategory,
                       storeName: storeName,
                     ),
                   ],
@@ -213,7 +215,6 @@ class _ProfileSummaryCard extends StatelessWidget {
                       child: _ProfileDetails(
                         ownerName: ownerName,
                         roleTitle: roleTitle,
-                        businessCategory: businessCategory,
                         storeName: storeName,
                       ),
                     ),
@@ -347,14 +348,12 @@ class _ProfileDetails extends StatelessWidget {
     this.centered = false,
     required this.ownerName,
     required this.roleTitle,
-    required this.businessCategory,
     required this.storeName,
   });
 
   final bool centered;
   final String ownerName;
   final String roleTitle;
-  final String businessCategory;
   final String storeName;
 
   @override
@@ -362,9 +361,7 @@ class _ProfileDetails extends StatelessWidget {
     final displayName = ownerName.isNotEmpty
         ? ownerName
         : (storeName.isEmpty ? 'Store profile not set' : storeName);
-    final detailLine = businessCategory.isEmpty
-        ? (roleTitle.isEmpty ? 'Business Owner' : roleTitle)
-        : businessCategory;
+    final detailLine = roleTitle.isEmpty ? 'Business Owner' : roleTitle;
 
     return Column(
       crossAxisAlignment:
@@ -484,17 +481,24 @@ class _MoreListTile extends StatelessWidget {
             ),
           );
             return;
+          case _MoreMenuAction.customers:
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const CustomersPage(),
+            ),
+          );
+            return;
+          case _MoreMenuAction.expenses:
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const ExpensesTrackingPage(),
+            ),
+          );
+            return;
           case _MoreMenuAction.staffManagement:
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (context) => const StaffManagementPage(),
-            ),
-          );
-            return;
-          case _MoreMenuAction.multiStoreManagement:
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const MultiStoreManagementPage(),
             ),
           );
             return;
@@ -616,8 +620,9 @@ class _MoreMenuItem {
 
 enum _MoreMenuAction {
   storeProfile,
+  customers,
+  expenses,
   staffManagement,
-  multiStoreManagement,
   settings,
   dukaAi,
   subscriptionPlan,

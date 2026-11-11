@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../service/pos_local_store.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_edit_staff_page.dart';
 
@@ -15,24 +16,101 @@ class RoleDetailsPage extends StatefulWidget {
 }
 
 class _RoleDetailsPageState extends State<RoleDetailsPage> {
-  static const List<String> _permissionCatalog = <String>[
-    'View Sales',
-    'View Reports',
-    'Process Returns',
-    'Discounts',
-    'Manage Inventory',
-    'Manage Staff',
-    'Manage Payments',
-    'System Settings',
-  ];
-
-  Future<void> _showManageStaff(StaffRoleData role) async {
-    showModalBottomSheet<void>(
+  Future<void> _showManageStaff(StaffRoleData role) async {    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _ManageStaffSheet(role: role),
     );
+  }
+
+  Future<void> _renameRole(StaffRoleData role) async {
+    final store = context.read<PosLocalStore>();
+    final titleController = TextEditingController(text: role.title);
+    final subtitleController = TextEditingController(text: role.subtitle);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit role'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: 'Role name'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: subtitleController,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (titleController.text.trim().isEmpty) return;
+              Navigator.of(dialogContext).pop(true);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true) {
+      await store.saveStaffRole(
+            role.copyWith(
+              title: titleController.text.trim(),
+              subtitle: subtitleController.text.trim(),
+            ),
+          );
+    }
+    titleController.dispose();
+    subtitleController.dispose();
+  }
+
+  Future<void> _deleteRole(StaffRoleData role) async {
+    final store = context.read<PosLocalStore>();
+    if (store.staffMembersForRole(role.id).isNotEmpty) {
+      if (!mounted) return;
+      showMarketNotice(
+        context,
+        title: 'Role In Use',
+        message: 'Move staff to another role before deleting this one.',
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete role'),
+        content: Text('Delete the "${role.title}" role? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    await store.deleteStaffRole(role.id);
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -42,16 +120,31 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
 
     if (role == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Role Not Found')),
-        body: const Center(child: Text('The selected role does not exist.')),
+        backgroundColor: AppColors.pageBackground,
+        body: SafeArea(
+          child: Column(
+            children: [
+              MarketPageHeader(
+                title: 'Role Not Found',
+                onBack: () => Navigator.of(context).pop(),
+              ),
+              const Expanded(
+                child: Center(
+                  child: Text('The selected role does not exist.'),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
     final assignedStaff = store.staffMembersForRole(role.id);
     final checkedPermissions = role.permissions.toSet();
+    final permissionCatalog = store.staffPermissionCatalog;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -60,6 +153,28 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
               title: role.title,
               subtitle: role.subtitle,
               showBorder: false,
+              actions: [
+                PopupMenuButton<String>(
+                  tooltip: 'Role actions',
+                  onSelected: (value) {
+                    if (value == 'rename') _renameRole(role);
+                    if (value == 'delete') _deleteRole(role);
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem<String>(
+                      value: 'rename',
+                      child: Text('Edit role details'),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text(
+                        'Delete role',
+                        style: TextStyle(color: AppColors.danger),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -83,7 +198,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _permissionCatalog.length,
+                      itemCount: permissionCatalog.length,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
@@ -92,7 +207,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                         mainAxisSpacing: 12,
                       ),
                       itemBuilder: (context, index) {
-                        final permission = _permissionCatalog[index];
+                        final permission = permissionCatalog[index];
                         return _PermissionTile(
                           data: _permissionData(permission),
                           checked: checkedPermissions.contains(permission),
@@ -204,9 +319,10 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
           Icons.credit_card_outlined,
         );
       case 'System Settings':
-      default:
         return const _PermissionData(
             'System Settings', Icons.settings_outlined);
+      default:
+        return _PermissionData(label, Icons.verified_user_outlined);
     }
   }
 }
@@ -464,39 +580,20 @@ class _ManageStaffSheet extends StatelessWidget {
 
   Future<void> _addStaff(BuildContext context) async {
     final store = context.read<PosLocalStore>();
-    final result = await Navigator.of(context).push<StaffFormResult>(
-      MaterialPageRoute<StaffFormResult>(
+    final result = await Navigator.of(context).push<StaffMemberData>(
+      MaterialPageRoute<StaffMemberData>(
         builder: (context) => AddEditStaffPage(
-          availableRoles: store.staffRoles.map((role) => role.title).toList(),
-          initialRole: role.title,
+          roles: store.staffRoles,
+          initialRoleId: role.id,
         ),
       ),
     );
     if (result == null || !context.mounted) return;
 
-    final selectedRole = store.staffRoleByTitle(result.role);
-    if (selectedRole == null) {
-      showMarketNotice(
-        context,
-        title: 'Role Missing',
-        message: 'The selected role no longer exists.',
-        type: MarketNoticeType.warning,
-      );
-      return;
-    }
-
-    await store.addStaffMember(
-      name: result.fullName,
-      email:
-          '${result.fullName.toLowerCase().replaceAll(' ', '.')}@example.com',
-      phone: result.phone,
-      roleId: selectedRole.id,
-    );
-    if (!context.mounted) return;
     showMarketNotice(
       context,
       title: 'Staff Added',
-      message: '${result.fullName} was added to ${selectedRole.title}.',
+      message: '${result.name} was added to $role.title.',
     );
   }
 

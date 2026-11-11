@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class AppStrings {
   const AppStrings._(this.languageCode);
 
@@ -32,18 +30,11 @@ class AppStrings {
   String get swahili => _pick('Swahili', 'Kiswahili');
   String get storeProfile => _pick('Store Profile', 'Wasifu wa Duka');
   String get staffManagement => _pick('Staff Management', 'Usimamizi wa Wafanyakazi');
-  String get multiStoreManagement =>
-      _pick('Multi-Store Management', 'Usimamizi wa Maduka Mengi');
   String get dukaAi => _pick('DUKA AI', 'DUKA AI');
   String get subscriptionPlan => _pick('Subscription Plan', 'Mpango wa Usajili');
   String get logout => _pick('Logout', 'Ondoka');
 
-  String get activeStore => _pick('Active Store', 'Duka Linalofanya Kazi');
-  String get selectActiveStore =>
-      _pick('Select Active Store', 'Chagua Duka Linalofanya Kazi');
-  String get createNewStore => _pick('Create New Store', 'Tengeneza Duka Jipya');
   String get storeName => _pick('Store Name', 'Jina la Duka');
-  String get unknownStore => _pick('Unknown Store', 'Duka Lisilojulikana');
   String get cancel => _pick('Cancel', 'Ghairi');
   String get create => _pick('Create', 'Tengeneza');
   String get save => _pick('Save', 'Hifadhi');
@@ -113,4 +104,197 @@ class AppStrings {
   String get noSalesYet => _pick('No completed sales in this period.', 'Bado hakuna mauzo katika kipindi hiki.');
   String get top => _pick('Top', 'Juu');
   String get revenue => _pick('Revenue', 'Mapato');
+
+  String get setupStoreProfile =>
+      _pick('Set up store profile', 'Weka wasifu wa duka');
+  String get businessOwner => _pick('Business Owner', 'Mmiliki wa Biashara');
+  String get dashboardSubtitle =>
+      _pick('Track today\'s activity at a glance', 'Fuata shughuli za leo kwa haraka');
+  String get productsSubtitle =>
+      _pick('Manage stock, pricing, and edits', 'Simamia bidhaa, bei, na mabadiliko');
+  String get salesSubtitle =>
+      _pick('Manage sales and cart activity', 'Simamia mauzo na kikapu');
+  String get today => _pick('Today', 'Leo');
+  String get thisWeek => _pick('This Week', 'Wiki Hii');
+  String get thisMonth => _pick('This Month', 'Mwezi Huu');
+  String get allTime => _pick('All Time', 'Wakati Wote');
+  String get openDrawer => _pick('Open Drawer', 'Fungua Droo');
+  String get viewReports => _pick('View Reports', 'Angalia Ripoti');
+  String get salesToday => _pick('Sales today', 'Mauzo ya leo');
+  String get ordersToday => _pick('Orders today', 'Oda za leo');
+  String get averageOrder => _pick('Average order', 'Wastani wa oda');
+  String get bestSeller => _pick('Best seller', 'Bidhaa inayoongoza');
+  String get updatedToday => _pick('Updated today', 'Imesasishwa leo');
+  String get noItemsSoldYet => _pick('No items sold yet', 'Bado hakuna bidhaa zilizouzwa');
+  String get order => _pick('Order', 'Oda');
+  String get item => _pick('item', 'bidhaa');
+  String get payment => _pick('payment', 'malipo');
+  String get moreSubtitle =>
+      _pick('Store profile, staff, and tools', 'Wasifu wa duka, wafanyakazi, na zana');
+  String get operations => _pick('Operations', 'Uendeshaji');
+  String get pharmacyActions => _pick('Pharmacy Actions', 'Vitendo vya Duka la Dawa');
+  String get deviceActions => _pick('Device Actions', 'Vitendo vya Vifaa');
+  String get retailActions => _pick('Retail Actions', 'Vitendo vya Rejareja');
+  String get scanPrescription => _pick('Scan Prescription', 'Changanua Dawa');
+  String get expiryCheck => _pick('Expiry Check', 'Ukaguzi wa Kuisha');
+  String get refillQueue => _pick('Refill Queue', 'Foleni ya Kujaza');
+  String get medicineCatalog => _pick('Medicine Catalog', 'Katalogi ya Dawa');
+  String get prescriptionSales => _pick('Prescription Sales', 'Mauzo ya Dawa');
+  String get deviceCatalog => _pick('Device Catalog', 'Katalogi ya Vifaa');
+  String get warrantyClaims => _pick('Warranty Claims', 'Madai ya Dhamana');
+  String get customers => _pick('Customers', 'Wateja');
+  String get expensesTracking => _pick('Expenses Tracking', 'Ufuatiliaji wa Matumizi');
+  String get helpSupport => _pick('Help & Support', 'Msaada na Usaidizi');
+  String get aboutApp => _pick('About App', 'Kuhusu Programu');
+  String get language => _pick('Language', 'Lugha');
+  String get preferredLanguage =>
+      _pick('Select your preferred language', 'Chagua lugha unayopendelea');
+  String get appearance => _pick('Appearance', 'Mwonekano');
+  String get preferredTheme =>
+      _pick('Choose your preferred theme', 'Chagua mandhari unayopendelea');
+  String get security => _pick('Security', 'Usalama');
+  String get backupRestore => _pick('Backup & Restore', 'Hifadhi Nakala na Rejesha');
+  String get appVersion => _pick('App version', 'Toleo la programu');
+  String get businessInfo => _pick('Information', 'Taarifa');
+  String get localeSettings => _pick('Locale', 'Lugha na eneo');
+  String get receiptSettings => _pick('Receipt', 'Risiti');
+  String get systemSettings => _pick('System', 'Mfumo');
+  String get storeLogo => _pick('Store logo', 'Nembo ya duka');
+  String get chooseLogo => _pick('Choose image', 'Chagua picha');
+  String get logoUnavailable =>
+      _pick('Could not open the image picker.', 'Haikuweza kufungua kichagua picha.');
+  String get businessAddress => _pick('Address', 'Anwani');
+  String get addressRequired => _pick('Enter the store address.', 'Weka anwani ya duka.');
+  String get storeNameRequired => _pick('Enter the store name.', 'Weka jina la duka.');
+  String get invalidEmail => _pick('Enter a valid email address.', 'Weka baruapepe sahihi.');
+  String get showStoreContact => _pick('Show store contact details', 'Onyesha mawasiliano ya duka');
+  String get receiptContactHint => _pick(
+        'Include the address and phone number from the Information tab.',
+        'Jumuisha anwani na namba ya simu kutoka kwenye kichupo cha Taarifa.',
+      );
+  String get receiptFooter => _pick('Receipt footer', 'Ujumbe wa mwisho wa risiti');
+  String get receiptFooterHint => _pick(
+        'Enter a message or leave blank to use the default.',
+        'Weka ujumbe au acha wazi ili kutumia ujumbe wa kawaida.',
+      );
+  String get receiptSettingsHint => _pick(
+        'These settings apply to receipt previews, PDFs, and WhatsApp messages.',
+        'Mipangilio hii inatumika kwenye hakikisho la risiti, PDF na ujumbe wa WhatsApp.',
+      );
+  String get dataStorage => _pick('Data storage', 'Hifadhi ya data');
+  String get localStorage => _pick('This device (SQLite)', 'Kifaa hiki (SQLite)');
+  String get cloudSync => _pick('Cloud sync', 'Usawazishaji wa wingu');
+  String get disconnected => _pick('Disconnected', 'Haijaunganishwa');
+  String get settingsSaved => _pick('Settings saved.', 'Mipangilio imehifadhiwa.');
+  String get settingsSaveFailed =>
+      _pick('Could not save. Try again.', 'Haikuweza kuhifadhi. Jaribu tena.');
+  String get currentStore => _pick('Current Store', 'Duka la Sasa');
+  String get notSet => _pick('Not set', 'Haijawekwa');
+  String get loggedOut => _pick('Logged Out', 'Umetoka');
+  String get authNext =>
+      _pick('You can connect the real auth flow next', 'Unaweza kuunganisha mfumo halisi wa kuingia baadaye');
+  String get comingSoon => _pick('Coming soon', 'Inakuja hivi karibuni');
+  String get checkTheForm => _pick('Check The Form', 'Angalia Fomu');
+  String get completeRequiredFields => _pick('Complete the required fields before saving', 'Jaza sehemu zinazohitajika kabla ya kuhifadhi');
+  String get deleteProduct => _pick('Delete Product?', 'Futa Bidhaa?');
+  String removeProductFromInventory(String name) => _pick('Remove "$name" from inventory? This cannot be undone.', 'Ondoa "$name" kutoka kwenye hifadhi? Hili haliwezi kutenduliwa.');
+  String get delete => _pick('Delete', 'Futa');
+  String productRemovedFromInventory(String name) => _pick('$name has been removed from inventory', '$name imeondolewa kwenye hifadhi');
+  String get imageSelected => _pick('Image Selected', 'Picha Imechaguliwa');
+  String get productImageReady => _pick('Product image is ready to save', 'Picha ya bidhaa iko tayari kuhifadhiwa');
+  String get uploadFailed => _pick('Upload Failed', 'Imeshindwa Kupakia');
+  String get couldNotOpenGallery => _pick('Could not open the gallery on this device', 'Imeshindwa kufungua ghala kwenye kifaa hiki');
+  String get medicineItem => _pick('Medicine Item', 'Dawa');
+  String get deviceItem => _pick('Device Item', 'Kifaa');
+  String get product => _pick('Product', 'Bidhaa');
+  String addProduct(String title) => _pick('Add $title', 'Ongeza $title');
+  String editProduct(String title) => _pick('Edit $title', 'Hariri $title');
+  String get productName => _pick('Product Name', 'Jina la Bidhaa');
+  String get enterProductName => _pick('Enter product name', 'Ingiza jina la bidhaa');
+  String get productNameRequired => _pick('Product name is required', 'Jina la bidhaa linahitajika');
+  String get purchasePrice => _pick('Purchase Price', 'Bei ya Kununua');
+  String get sellingPrice => _pick('Selling Price', 'Bei ya Kuuza');
+  String get category => _pick('Category', 'Kategoria');
+  String get selectCategory => _pick('Select category', 'Chagua kategoria');
+  String get categoryRequired => _pick('Category is required', 'Kategoria inahitajika');
+  String get stockQuantity => _pick('Stock Quantity', 'Idadi ya Akiba');
+  String get enterStockQuantity => _pick('Enter stock quantity', 'Ingiza idadi ya akiba');
+  String get stockQuantityRequired => _pick('Stock quantity is required', 'Idadi ya akiba inahitajika');
+  String get validStockQuantityRequired => _pick('Enter a valid stock quantity', 'Ingiza idadi halali ya akiba');
+  String get productImage => _pick('Product Image', 'Picha ya Bidhaa');
+  String get change => _pick('Change', 'Badilisha');
+  String get uploadProductImage => _pick('Upload product image', 'Pakia picha ya bidhaa');
+  String get tapToChooseImage => _pick('Tap to choose image from gallery', 'Gusa ili kuchagua picha kutoka kwenye ghala');
+  String get imageFormatInfo => _pick('JPG, PNG up to 5MB', 'JPG, PNG hadi 5MB');
+  String get advancedReports => _pick('Advanced reports', 'Ripoti za kina');
+  String get allPlansIncludeMultiPlatformAccess => _pick('All plans include access on multiple platforms.', 'Mipango yote inapatikana kwenye mifumo mbalimbali.');
+  String get android => _pick('Android', 'Android');
+  String get annually => _pick('Annually', 'Kwa mwaka');
+  String get averageOrderInsight => _pick('Average value of a completed sale today.', 'Thamani ya wastani ya mauzo yaliyokamilika leo.');
+  String get averageTicket => _pick('Average sale', 'Wastani wa mauzo');
+  String get avgBasket => _pick('Average basket', 'Wastani wa kikapu');
+  String get basicReports => _pick('Basic reports', 'Ripoti za msingi');
+  String get bestSellerInsight => _pick('The product with the most units sold today.', 'Bidhaa iliyouza vipande vingi zaidi leo.');
+  String get brandDataNotTrackedYet => _pick('Brand data is not tracked yet', 'Taarifa za chapa bado hazifuatiliwi');
+  String get business => _pick('Business', 'Biashara');
+  String get businessDescription => _pick('For growing businesses that need more users and reports.', 'Kwa biashara zinazokua na zinazohitaji watumiaji na ripoti zaidi.');
+  String get choosePlan => _pick('Choose plan', 'Chagua mpango');
+  String get completedSales => _pick('Completed sales', 'Mauzo yaliyokamilika');
+  String get currentPlan => _pick('Current plan', 'Mpango wa sasa');
+  String get customerManagement => _pick('Customer management', 'Usimamizi wa wateja');
+  String get emailSupport => _pick('Email support', 'Usaidizi kwa baruapepe');
+  String get expiringSoon => _pick('Expiring soon', 'Zinakaribia kuisha muda');
+  String get expiryTrackingNotSet => _pick('Expiry tracking is not set up', 'Ufuatiliaji wa tarehe za mwisho haujawekwa');
+  String get fromCurrentStockPricing => _pick('Based on current stock prices', 'Kulingana na bei za sasa za bidhaa');
+  String get grossRevenue => _pick('Gross revenue', 'Mapato ghafi');
+  String get highValueSales => _pick('High-value sales', 'Mauzo ya thamani kubwa');
+  String get inventoryManagement => _pick('Inventory management', 'Usimamizi wa bidhaa');
+  String get ios => _pick('iOS', 'iOS');
+  String get itemsNeedRestocking => _pick('Items need restocking', 'Bidhaa zinahitaji kuongezwa');
+  String get latestActivity => _pick('Latest activity', 'Shughuli za hivi karibuni');
+  String get liveUpdates => _pick('Live updates', 'Taarifa za moja kwa moja');
+  String get lowStock => _pick('Low stock', 'Bidhaa chache');
+  String get mac => _pick('Mac', 'Mac');
+  String get manageUpToOneThousandProducts => _pick('Manage up to 1,000 products', 'Simamia hadi bidhaa 1,000');
+  String get manageUpToTenThousandProducts => _pick('Manage up to 10,000 products', 'Simamia hadi bidhaa 10,000');
+  String get marginMix => _pick('Margin mix', 'Uwiano wa faida');
+  String get metricReadyForCloserLook => _pick('View the details behind this metric.', 'Angalia maelezo ya kipimo hiki.');
+  String get monthly => _pick('Monthly', 'Kwa mwezi');
+  String get noActiveSales => _pick('No active sales', 'Hakuna mauzo yanayoendelea');
+  String get nothingSoldYet => _pick('Nothing sold yet', 'Hakuna bidhaa iliyouzwa bado');
+  String get orders => _pick('Orders', 'Oda');
+  String get ordersAboveFiftyThousand => _pick('Orders above TSh 50,000', 'Oda za zaidi ya TSh 50,000');
+  String get ordersTodayInsight => _pick('Number of completed sales today.', 'Idadi ya mauzo yaliyokamilika leo.');
+  String get perOrder => _pick('Per order', 'Kwa kila oda');
+  String get prescriptionRefillsNotTracked => _pick('Prescription refills are not tracked', 'Ujazaji wa dawa haujafuatiliwa');
+  String get priorityEmailChatSupport => _pick('Priority email and chat support', 'Usaidizi wa kipaumbele kwa baruapepe na gumzo');
+  String get readyForYourFirstCheckoutOfTheDay => _pick('Ready for your first sale of the day', 'Tayari kwa mauzo yako ya kwanza leo');
+  String get retailDashboardSubtitle => _pick('Track sales and expenses to see how your store is performing.', 'Fuatilia mauzo na gharama ili kuona utendaji wa duka lako.');
+  String get salesGrowthOverview => _pick('Sales growth overview', 'Muhtasari wa ukuaji wa mauzo');
+  String get salesTodayInsight => _pick('Revenue from completed sales today.', 'Mapato ya mauzo yaliyokamilika leo.');
+  String get saveSeventeenPercent => _pick('Save 17%', 'Okoa 17%');
+  String get securePaymentsCancelAnytime => _pick('Secure payments. Cancel anytime.', 'Malipo salama. Ghairi wakati wowote.');
+  String get seeAll => _pick('See all', 'Tazama yote');
+  String get serviceClaimsNotTracked => _pick('Service claims are not tracked', 'Madai ya huduma hayafuatiliwi');
+  String get soldToday => _pick('sold today', 'zimeuzwa leo');
+  String get starter => _pick('Starter', 'Mwanzo');
+  String get starterDescription => _pick('For getting started with your store.', 'Kwa kuanza kusimamia duka lako.');
+  String get subscriptionPlansSubtitle => _pick('Choose a plan for your business.', 'Chagua mpango unaofaa biashara yako.');
+  String get subscriptionPlansSubtitleTwo => _pick('Find the features you need to run your store.', 'Pata vipengele unavyohitaji kuendesha duka lako.');
+  String get subscriptionPlansTitle => _pick('Subscription plans', 'Mipango ya usajili');
+  String get todayOperations => _pick('Operations today', 'Shughuli za leo');
+  String get todayPerformance => _pick('Performance today', 'Utendaji wa leo');
+  String get todayRevenue => _pick('Revenue today', 'Mapato ya leo');
+  String get topCategory => _pick('Top category', 'Kategoria inayoongoza');
+  String get totalOrders => _pick('Total orders', 'Jumla ya oda');
+  String get totalRevenue => _pick('Total revenue', 'Jumla ya mapato');
+  String get unlockSmartSalesInsights => _pick('Explore your sales and expenses', 'Chunguza mauzo na gharama zako');
+  String get upToFiveUsers => _pick('Up to 5 users', 'Hadi watumiaji 5');
+  String get upToOneUser => _pick('1 user', 'Mtumiaji 1');
+  String get updatedJustNow => _pick('Updated just now', 'Imesasishwa sasa hivi');
+  String get vsYesterday => _pick('Compared with yesterday', 'Ikilinganishwa na jana');
+  String get web => _pick('Web', 'Wavuti');
+  String get windows => _pick('Windows', 'Windows');
+  String get cashDrawer => _pick('Cash drawer', 'Droo ya pesa');
+  String get cashDrawerOpenedSuccessfully => _pick('Cash drawer opened successfully.', 'Droo ya pesa imefunguliwa.');
 }

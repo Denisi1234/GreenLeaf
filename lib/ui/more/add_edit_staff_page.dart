@@ -3,76 +3,141 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
+import '../../service/pos_local_store.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
-
-class StaffFormResult {
-  const StaffFormResult({
-    this.staffId,
-    required this.fullName,
-    required this.phone,
-    required this.role,
-    this.avatarPath,
-  });
-
-  final String? staffId;
-  final String fullName;
-  final String phone;
-  final String role;
-  final String? avatarPath;
-}
 
 class AddEditStaffPage extends StatefulWidget {
   const AddEditStaffPage({
     super.key,
-    this.staffId,
-    this.availableRoles = const <String>[],
-    this.initialRole,
+    this.member,
+    this.roles = const <StaffRoleData>[],
+    this.initialRoleId,
     this.initialFullName = '',
     this.initialPhone = '',
+    this.initialEmail = '',
   });
 
-  final String? staffId;
-  final List<String> availableRoles;
-  final String? initialRole;
+  final StaffMemberData? member;
+  final List<StaffRoleData> roles;
+  final String? initialRoleId;
   final String initialFullName;
   final String initialPhone;
+  final String initialEmail;
+
+  bool get isEditing => member != null;
 
   @override
   State<AddEditStaffPage> createState() => _AddEditStaffPageState();
 }
 
 class _AddEditStaffPageState extends State<AddEditStaffPage> {
+  static const _tabs = <String>['Basic', 'Employment', 'Login', 'Access'];
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _notesController = TextEditingController();
+  final _employeeNumberController = TextEditingController();
+  final _jobTitleController = TextEditingController();
+  final _departmentController = TextEditingController();
+  final _hourlyRateController = TextEditingController();
+  final _emergencyNameController = TextEditingController();
+  final _emergencyPhoneController = TextEditingController();
+  final _emergencyRelationController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _picker = ImagePicker();
 
-  String? _selectedRole;
+  final Map<String, String> _errors = <String, String>{};
+
+  int _selectedTab = 0;
+  String? _selectedRoleId;
+  EmploymentType? _employmentType;
+  StaffStatus _status = StaffStatus.active;
+  String _hireDate = '';
+  String? _avatarPath;
   bool _obscurePassword = true;
-  XFile? _avatarFile;
+  bool _obscureConfirm = true;
   bool _isSaving = false;
+
+  StaffMemberData? get _member => widget.member;
+
+  @override
+  void initState() {
+    super.initState();
+    final member = widget.member;
+    _nameController.text = member?.name ?? widget.initialFullName;
+    _phoneController.text = member?.phone ?? widget.initialPhone;
+    _emailController.text = member?.email ?? widget.initialEmail;
+    _addressController.text = member?.address ?? '';
+    _notesController.text = member?.notes ?? '';
+    _employeeNumberController.text = member?.employeeNumber ?? '';
+    _jobTitleController.text = member?.jobTitle ?? '';
+    _departmentController.text = member?.department ?? '';
+    _hourlyRateController.text =
+        member == null || member.hourlyRate <= 0 ? '' : _trimAmount(member.hourlyRate);
+    _emergencyNameController.text = member?.emergencyContactName ?? '';
+    _emergencyPhoneController.text = member?.emergencyContactPhone ?? '';
+    _emergencyRelationController.text = member?.emergencyContactRelation ?? '';
+    _usernameController.text = member?.username ?? '';
+    _employmentType = EmploymentType.fromValue(member?.employmentType);
+    _status = member?.status ?? StaffStatus.active;
+    _hireDate = member?.hireDate ?? '';
+    _avatarPath = member?.avatarPath;
+
+    final preferredRole = member?.roleId ?? widget.initialRoleId;
+    if (preferredRole != null &&
+        widget.roles.any((role) => role.id == preferredRole)) {
+      _selectedRoleId = preferredRole;
+    } else if (widget.roles.isNotEmpty) {
+      _selectedRoleId = widget.roles.first.id;
+    }
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
+    _notesController.dispose();
+    _employeeNumberController.dispose();
+    _jobTitleController.dispose();
+    _departmentController.dispose();
+    _hourlyRateController.dispose();
+    _emergencyNameController.dispose();
+    _emergencyPhoneController.dispose();
+    _emergencyRelationController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController.text = widget.initialFullName;
-    _phoneController.text = widget.initialPhone;
-    final roles = widget.availableRoles;
-    if (widget.initialRole != null && roles.contains(widget.initialRole)) {
-      _selectedRole = widget.initialRole;
-    } else if (roles.isNotEmpty) {
-      _selectedRole = roles.first;
+  StaffRoleData? get _selectedRole {
+    for (final role in widget.roles) {
+      if (role.id == _selectedRoleId) return role;
     }
+    return null;
+  }
+
+  void _setError(String key, String? message) {
+    if (message == null) {
+      _errors.remove(key);
+    } else {
+      _errors[key] = message;
+    }
+  }
+
+  void _clearError(String key) {
+    if (!_errors.containsKey(key)) return;
+    setState(() => _errors.remove(key));
   }
 
   Future<void> _pickAvatar() async {
@@ -81,25 +146,10 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
         source: ImageSource.gallery,
         imageQuality: 88,
       );
-
-      if (!mounted || file == null) {
-        return;
-      }
-
-      setState(() {
-        _avatarFile = file;
-      });
-
-      showMarketNotice(
-        context,
-        title: 'Photo Added',
-        message: 'Staff profile image is ready to save',
-      );
+      if (!mounted || file == null) return;
+      setState(() => _avatarPath = file.path);
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       showMarketNotice(
         context,
         title: 'Image Unavailable',
@@ -109,45 +159,178 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     }
   }
 
-  Future<void> _saveStaff() async {
-    final role = _selectedRole;
-    if (!_formKey.currentState!.validate() || role == null) {
-      if (role == null) {
-        showMarketNotice(
-          context,
-          title: 'Role Required',
-          message: 'Select a staff role before saving',
-          type: MarketNoticeType.warning,
-        );
-      }
-      return;
-    }
-
-    FocusScope.of(context).unfocus();
+  Future<void> _pickHireDate() async {
+    final now = DateTime.now();
+    final initial = DateTime.tryParse(_hireDate) ?? now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1970),
+      lastDate: DateTime(now.year + 2, 12, 31),
+      helpText: 'Select hire date',
+    );
+    if (picked == null || !mounted) return;
     setState(() {
-      _isSaving = true;
+      _hireDate = picked.toIso8601String().split('T').first;
     });
+  }
 
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    if (!mounted) {
-      return;
+  int _tabForError(String key) {
+    switch (key) {
+      case 'employeeNumber':
+      case 'hourlyRate':
+        return 1;
+      case 'username':
+      case 'password':
+      case 'confirm':
+        return 2;
+      case 'role':
+        return 3;
+      default:
+        return 0;
+    }
+  }
+
+  bool _validate() {
+    _errors.clear();
+
+    if (_nameController.text.trim().isEmpty) {
+      _setError('name', 'Full name is required');
+    }
+    if (_phoneController.text.trim().isEmpty) {
+      _setError('phone', 'Phone number is required');
     }
 
-    showMarketNotice(
-      context,
-      title: 'Staff Saved',
-      message: '${_nameController.text.trim()} was saved as $role',
-    );
+    final email = _emailController.text.trim();
+    if (email.isNotEmpty &&
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      _setError('email', 'Enter a valid email address');
+    }
 
-    Navigator.of(context).pop(
-      StaffFormResult(
-        staffId: widget.staffId,
-        fullName: _nameController.text.trim(),
+    final username = _usernameController.text.trim();
+    if (username.isEmpty) {
+      _setError('username', 'Username is required');
+    } else if (username.length < 5) {
+      _setError('username', 'Username must be at least 5 characters');
+    }
+
+    final password = _passwordController.text;
+    if (!widget.isEditing && password.isEmpty) {
+      _setError('password', 'Password is required');
+    } else if (password.isNotEmpty && password.length < 8) {
+      _setError('password', 'Password must be at least 8 characters');
+    }
+    if (password.isNotEmpty &&
+        _confirmPasswordController.text != password) {
+      _setError('confirm', 'Passwords do not match');
+    }
+
+    final employeeNumber = _employeeNumberController.text.trim();
+    if (employeeNumber.isNotEmpty) {
+      final store = context.read<PosLocalStore>();
+      if (store.staffEmployeeNumberExists(
+        employeeNumber,
+        excludingId: _member?.id,
+      )) {
+        _setError('employeeNumber', 'Employee number is already in use');
+      }
+    }
+
+    final rateText = _hourlyRateController.text.trim().replaceAll(',', '');
+    if (rateText.isNotEmpty) {
+      final rate = double.tryParse(rateText);
+      if (rate == null || rate < 0) {
+        _setError('hourlyRate', 'Enter a valid hourly rate');
+      }
+    }
+
+    if (_selectedRoleId == null) {
+      _setError('role', 'Select a staff role');
+    }
+
+    final store = context.read<PosLocalStore>();
+    if (username.isNotEmpty &&
+        store.staffUsernameExists(username, excludingId: _member?.id)) {
+      _setError('username', 'Username is already in use');
+    }
+
+    if (_errors.isNotEmpty) {
+      final firstKey = _errors.keys.first;
+      setState(() => _selectedTab = _tabForError(firstKey));
+      showMarketNotice(
+        context,
+        title: 'Check the form',
+        message: _errors[firstKey]!,
+        type: MarketNoticeType.warning,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _save() async {
+    FocusScope.of(context).unfocus();
+    if (!_validate()) return;
+
+    final store = context.read<PosLocalStore>();
+    final role = _selectedRole!;
+    final rateText = _hourlyRateController.text.trim().replaceAll(',', '');
+    final hourlyRate = rateText.isEmpty ? 0.0 : double.parse(rateText);
+    final password = _passwordController.text;
+
+    setState(() => _isSaving = true);
+
+    StaffMemberData saved;
+    if (_member == null) {
+      saved = await store.addStaffMember(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
-        role: role,
-        avatarPath: _avatarFile?.path,
-      ),
-    );
+        roleId: role.id,
+        username: _usernameController.text.trim(),
+        password: password,
+        employeeNumber: _employeeNumberController.text.trim(),
+        jobTitle: _jobTitleController.text.trim(),
+        department: _departmentController.text.trim(),
+        hireDate: _hireDate,
+        employmentType: _employmentType?.value ?? '',
+        hourlyRate: hourlyRate,
+        emergencyContactName: _emergencyNameController.text.trim(),
+        emergencyContactPhone: _emergencyPhoneController.text.trim(),
+        emergencyContactRelation: _emergencyRelationController.text.trim(),
+        address: _addressController.text.trim(),
+        notes: _notesController.text.trim(),
+        avatarPath: _avatarPath,
+        status: _status,
+      );
+    } else {
+      saved = await store.updateStaffMember(
+        _member!.copyWith(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
+          roleId: role.id,
+          username: _usernameController.text.trim(),
+          employeeNumber: _employeeNumberController.text.trim(),
+          jobTitle: _jobTitleController.text.trim(),
+          department: _departmentController.text.trim(),
+          hireDate: _hireDate,
+          employmentType: _employmentType?.value ?? '',
+          hourlyRate: hourlyRate,
+          emergencyContactName: _emergencyNameController.text.trim(),
+          emergencyContactPhone: _emergencyPhoneController.text.trim(),
+          emergencyContactRelation: _emergencyRelationController.text.trim(),
+          address: _addressController.text.trim(),
+          notes: _notesController.text.trim(),
+          avatarPath: _avatarPath,
+          status: _status,
+        ),
+        newPassword: password.isEmpty ? null : password,
+      );
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop(saved);
   }
 
   @override
@@ -162,215 +345,44 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     return Theme(
       data: manropeTheme,
       child: Scaffold(
+        backgroundColor: AppColors.pageBackground,
         body: SafeArea(
-          child: Stack(
+          bottom: false,
+          child: Column(
             children: [
-              const Positioned.fill(
-                child: ColoredBox(color: Color(0xFFF8FAFC)),
+              MarketPageHeader(
+                title: widget.isEditing ? 'Edit Staff' : 'Add Staff',
+                subtitle: widget.isEditing
+                    ? 'Update profile, employment, and access'
+                    : 'Create a professional staff profile',
+                centerTitle: false,
+                showBorder: false,
               ),
-              Column(
-                children: [
-                  const MarketPageHeader(title: 'Add / Edit Staff'),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(18, 22, 18, 24),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Center(
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  GestureDetector(
-                                    onTap: _pickAvatar,
-                                    child: Container(
-                                      width: 156,
-                                      height: 156,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEAF0FF),
-                                        shape: BoxShape.circle,
-                                        image: _avatarFile == null
-                                            ? null
-                                            : DecorationImage(
-                                                image: FileImage(
-                                                  File(_avatarFile!.path),
-                                                ),
-                                                fit: BoxFit.cover,
-                                              ),
-                                      ),
-                                      child: _avatarFile == null
-                                          ? const Icon(
-                                              Icons.person,
-                                              color: Color(0xFF2B6FF3),
-                                              size: 78,
-                                            )
-                                          : null,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    right: -4,
-                                    bottom: 12,
-                                    child: GestureDetector(
-                                      onTap: _pickAvatar,
-                                      child: Container(
-                                        width: 54,
-                                        height: 54,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: const Color(0xFFE4E7EC),
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.photo_camera_outlined,
-                                          color: Color(0xFF6B7280),
-                                          size: 28,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 26),
-                            const _StaffFieldLabel('Full Name'),
-                            const SizedBox(height: 10),
-                            _StaffInputField(
-                              controller: _nameController,
-                              hintText: 'Enter full name',
-                              prefixIcon: Icons.person_outline_rounded,
-                              textInputAction: TextInputAction.next,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Full name is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 18),
-                            const _StaffFieldLabel('Phone'),
-                            const SizedBox(height: 10),
-                            _StaffInputField(
-                              controller: _phoneController,
-                              hintText: 'Enter phone number',
-                              prefixIcon: Icons.call_outlined,
-                              keyboardType: TextInputType.phone,
-                              textInputAction: TextInputAction.next,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Phone number is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 18),
-                            const _StaffFieldLabel('Assign Role'),
-                            const SizedBox(height: 10),
-                            _StaffDropdownField(
-                              value: _selectedRole,
-                              hintText: 'Select a role',
-                              prefixIcon: Icons.shield_outlined,
-                              items: widget.availableRoles,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedRole = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 18),
-                            const Row(
-                              children: [
-                                _StaffFieldLabel('Set Password'),
-                                SizedBox(width: 8),
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  color: Color(0xFF7B8494),
-                                  size: 22,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            _StaffInputField(
-                              controller: _passwordController,
-                              hintText: 'Enter password',
-                              prefixIcon: Icons.lock_outline_rounded,
-                              obscureText: _obscurePassword,
-                              textInputAction: TextInputAction.done,
-                              suffix: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                                child: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                  color: const Color(0xFF7B8494),
-                                  size: 26,
-                                ),
-                              ),
-                              validator: (value) {
-                                final password = value ?? '';
-                                if (password.isEmpty) {
-                                  return 'Password is required';
-                                }
-                                if (password.length < 6) {
-                                  return 'Password must be at least 6 characters';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'Password must be at least 6 characters long.',
-                              style: TextStyle(
-                                color: Color(0xFF7B8494),
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 28),
-                            GestureDetector(
-                              onTap: _isSaving ? null : _saveStaff,
-                              child: Container(
-                                height: 74,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1562E8),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _isSaving
-                                          ? Icons.hourglass_top_rounded
-                                          : Icons.save_outlined,
-                                      color: Colors.white,
-                                      size: 26,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      _isSaving ? 'Saving...' : 'Save Staff',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+              _TabSelector(
+                tabs: _tabs,
+                selectedIndex: _selectedTab,
+                onSelected: (index) => setState(() => _selectedTab = index),
+              ),
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: KeyedSubtree(
+                        key: ValueKey<int>(_selectedTab),
+                        child: _buildTab(_selectedTab),
                       ),
                     ),
                   ),
-                ],
+                ),
+              ),
+              _SaveBar(
+                isSaving: _isSaving,
+                isEditing: widget.isEditing,
+                onSave: _isSaving ? null : _save,
               ),
             ],
           ),
@@ -378,10 +390,476 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       ),
     );
   }
+
+  Widget _buildTab(int index) {
+    switch (index) {
+      case 1:
+        return _buildEmploymentTab();
+      case 2:
+        return _buildLoginTab();
+      case 3:
+        return _buildAccessTab();
+      default:
+        return _buildBasicTab();
+    }
+  }
+
+  Widget _buildBasicTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: _pickAvatar,
+                child: Container(
+                  width: 112,
+                  height: 112,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
+                    image: _avatarPath == null
+                        ? null
+                        : DecorationImage(
+                            image: FileImage(File(_avatarPath!)),
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                  child: _avatarPath == null
+                      ? const Icon(
+                          Icons.person_rounded,
+                          color: AppColors.primary,
+                          size: 54,
+                        )
+                      : null,
+                ),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 4,
+                child: GestureDetector(
+                  onTap: _pickAvatar,
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Icon(
+                      Icons.photo_camera_outlined,
+                      color: AppColors.textMuted,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        _FormSection(
+          title: 'Personal Information',
+          description: 'Core contact details used across the POS.',
+          children: [
+            _AppTextField(
+              controller: _nameController,
+              label: 'Full name',
+              hint: 'e.g. Amina Joseph',
+              icon: Icons.person_outline_rounded,
+              errorText: _errors['name'],
+              textCapitalization: TextCapitalization.words,
+              onChanged: (_) => _clearError('name'),
+            ),
+            _AppTextField(
+              controller: _phoneController,
+              label: 'Phone number',
+              hint: 'e.g. +255 712 345 678',
+              icon: Icons.call_outlined,
+              keyboardType: TextInputType.phone,
+              errorText: _errors['phone'],
+              onChanged: (_) => _clearError('phone'),
+            ),
+            _AppTextField(
+              controller: _emailController,
+              label: 'Email (optional)',
+              hint: 'staff@store.co.tz',
+              icon: Icons.mail_outline_rounded,
+              keyboardType: TextInputType.emailAddress,
+              errorText: _errors['email'],
+              onChanged: (_) => _clearError('email'),
+            ),
+            _AppTextField(
+              controller: _addressController,
+              label: 'Address (optional)',
+              hint: 'Street, city',
+              icon: Icons.location_on_outlined,
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 4),
+            const _FieldLabel('Account status'),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: StaffStatus.values.map((status) {
+                final selected = status == _status;
+                return _ChoicePill(
+                  label: status.label,
+                  selected: selected,
+                  onTap: () => setState(() => _status = status),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+            _AppTextField(
+              controller: _notesController,
+              label: 'Notes (optional)',
+              hint: 'Internal notes about this staff member',
+              icon: Icons.sticky_note_2_outlined,
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmploymentTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FormSection(
+          title: 'Employment Details',
+          description: 'HR information kept private to store administrators.',
+          children: [
+            _AppTextField(
+              controller: _employeeNumberController,
+              label: 'Employee number (optional)',
+              hint: 'e.g. EMP-0042',
+              icon: Icons.badge_outlined,
+              errorText: _errors['employeeNumber'],
+              onChanged: (_) => _clearError('employeeNumber'),
+            ),
+            _AppTextField(
+              controller: _jobTitleController,
+              label: 'Job title',
+              hint: 'e.g. Head Cashier',
+              icon: Icons.work_outline_rounded,
+              textCapitalization: TextCapitalization.words,
+            ),
+            _AppTextField(
+              controller: _departmentController,
+              label: 'Department',
+              hint: 'e.g. Front counter',
+              icon: Icons.apartment_outlined,
+              textCapitalization: TextCapitalization.words,
+            ),
+            const _FieldLabel('Hire date'),
+            const SizedBox(height: 10),
+            _DateField(
+              value: _hireDate,
+              onTap: _pickHireDate,
+              onClear: _hireDate.isEmpty
+                  ? null
+                  : () => setState(() => _hireDate = ''),
+            ),
+            const SizedBox(height: 18),
+            _AppDropdown<EmploymentType>(
+              label: 'Employment type',
+              value: _employmentType,
+              hint: 'Select employment type',
+              items: EmploymentType.values
+                  .map(
+                    (type) => DropdownMenuItem<EmploymentType>(
+                      value: type,
+                      child: Text(type.label),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() => _employmentType = value),
+            ),
+            _AppTextField(
+              controller: _hourlyRateController,
+              label: 'Hourly rate (TSh)',
+              hint: '0',
+              icon: Icons.payments_outlined,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              errorText: _errors['hourlyRate'],
+              onChanged: (_) => _clearError('hourlyRate'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _FormSection(
+          title: 'Emergency Contact',
+          description: 'Who to reach if something happens at work.',
+          children: [
+            _AppTextField(
+              controller: _emergencyNameController,
+              label: 'Contact name',
+              hint: 'Full name',
+              icon: Icons.contact_emergency_outlined,
+              textCapitalization: TextCapitalization.words,
+            ),
+            _AppTextField(
+              controller: _emergencyPhoneController,
+              label: 'Contact phone',
+              hint: 'Phone number',
+              icon: Icons.phone_in_talk_outlined,
+              keyboardType: TextInputType.phone,
+            ),
+            _AppTextField(
+              controller: _emergencyRelationController,
+              label: 'Relationship',
+              hint: 'e.g. Spouse, Sibling',
+              icon: Icons.people_outline_rounded,
+              textCapitalization: TextCapitalization.words,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FormSection(
+          title: 'Login Credentials',
+          description: widget.isEditing
+              ? 'Leave the password blank to keep the current one.'
+              : 'Required for staff to sign in at the register.',
+          children: [
+            _AppTextField(
+              controller: _usernameController,
+              label: 'Username',
+              hint: 'At least 5 characters',
+              icon: Icons.alternate_email_rounded,
+              errorText: _errors['username'],
+              onChanged: (_) => _clearError('username'),
+            ),
+            _AppTextField(
+              controller: _passwordController,
+              label: widget.isEditing ? 'New password (optional)' : 'Password',
+              hint: 'At least 8 characters',
+              icon: Icons.lock_outline_rounded,
+              obscureText: _obscurePassword,
+              errorText: _errors['password'],
+              onChanged: (_) => _clearError('password'),
+              suffix: IconButton(
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: AppColors.textMuted,
+                  size: 22,
+                ),
+              ),
+            ),
+            _AppTextField(
+              controller: _confirmPasswordController,
+              label: 'Confirm password',
+              hint: 'Repeat the password',
+              icon: Icons.lock_reset_rounded,
+              obscureText: _obscureConfirm,
+              errorText: _errors['confirm'],
+              onChanged: (_) => _clearError('confirm'),
+              suffix: IconButton(
+                onPressed: () =>
+                    setState(() => _obscureConfirm = !_obscureConfirm),
+                icon: Icon(
+                  _obscureConfirm
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: AppColors.textMuted,
+                  size: 22,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const _InfoCard(
+          icon: Icons.shield_outlined,
+          title: 'Secure by design',
+          message:
+              'Passwords are salted and hashed before they are saved. Only the staff member should know their own password.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccessTab() {
+    final role = _selectedRole;
+    final permissions = role?.permissions ?? const <String>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _FormSection(
+          title: 'Role & Permissions',
+          description:
+              'Permissions are managed by role so access stays consistent across the team.',
+          children: [
+            _AppDropdown<String>(
+              label: 'Assigned role',
+              value: _selectedRoleId,
+              hint: 'Select a role',
+              errorText: _errors['role'],
+              items: widget.roles
+                  .map(
+                    (item) => DropdownMenuItem<String>(
+                      value: item.id,
+                      child: Text(item.title),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                _clearError('role');
+                setState(() => _selectedRoleId = value);
+              },
+            ),
+            if (role != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                role.subtitle,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            const _FieldLabel('Inherited permissions'),
+            const SizedBox(height: 10),
+            if (permissions.isEmpty)
+              const _InfoCard(
+                icon: Icons.info_outline_rounded,
+                title: 'No permissions yet',
+                message:
+                    'This role has no permissions. Open role details to grant access.',
+              )
+            else
+              ...permissions.map(
+                (permission) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _PermissionRow(label: permission),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const _InfoCard(
+          icon: Icons.admin_panel_settings_outlined,
+          title: 'Least privilege',
+          message:
+              'Grant only what each role needs. Access changes apply instantly to every staff member in the role.',
+        ),
+      ],
+    );
+  }
+
+  static String _trimAmount(double value) {
+    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+    return value.toStringAsFixed(2);
+  }
 }
 
-class _StaffFieldLabel extends StatelessWidget {
-  const _StaffFieldLabel(this.label);
+class _TabSelector extends StatelessWidget {
+  const _TabSelector({
+    required this.tabs,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final List<String> tabs;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 18),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F4F9),
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+      ),
+      child: Row(
+        children: List.generate(tabs.length, (index) {
+          final selected = index == selectedIndex;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onSelected(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppRadius.sharp + 2),
+                  boxShadow: selected ? AppShadows.soft : null,
+                ),
+                child: Text(
+                  tabs[index],
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: selected ? AppColors.primaryDeep : AppColors.textMuted,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _FormSection extends StatelessWidget {
+  const _FormSection({
+    required this.title,
+    required this.description,
+    required this.children,
+  });
+
+  final String title;
+  final String description;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.all(18),
+      borderColor: AppColors.border,
+      radius: AppRadius.rounded,
+      showShadow: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppTypography.cardHeader),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 18),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.label);
 
   final String label;
 
@@ -389,151 +867,164 @@ class _StaffFieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
-        color: Color(0xFF374151),
-        fontSize: 16.5,
+      style: AppTypography.bodySmall.copyWith(
+        color: AppColors.textMain,
         fontWeight: FontWeight.w700,
       ),
     );
   }
 }
 
-class _StaffInputField extends StatelessWidget {
-  const _StaffInputField({
+class _AppTextField extends StatelessWidget {
+  const _AppTextField({
     required this.controller,
-    required this.hintText,
-    required this.prefixIcon,
-    this.validator,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.errorText,
     this.keyboardType,
-    this.textInputAction,
     this.obscureText = false,
     this.suffix,
+    this.maxLines = 1,
+    this.textCapitalization = TextCapitalization.none,
+    this.onChanged,
   });
 
   final TextEditingController controller;
-  final String hintText;
-  final IconData prefixIcon;
-  final FormFieldValidator<String>? validator;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final String? errorText;
   final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
   final bool obscureText;
   final Widget? suffix;
+  final int maxLines;
+  final TextCapitalization textCapitalization;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      validator: validator,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      obscureText: obscureText,
-      style: const TextStyle(
-        color: Color(0xFF202938),
-        fontSize: 15.5,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(
-          color: Color(0xFFA3ACB9),
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
-        prefixIcon: Icon(prefixIcon, color: const Color(0xFF667085), size: 28),
-        suffixIcon: suffix == null
-            ? null
-            : Padding(
-                padding: const EdgeInsets.only(right: 14),
-                child: suffix,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _FieldLabel(label),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            obscureText: obscureText,
+            maxLines: obscureText ? 1 : maxLines,
+            textCapitalization: textCapitalization,
+            onChanged: onChanged,
+            style: AppTypography.bodyMain.copyWith(
+              color: AppColors.textMain,
+              fontWeight: FontWeight.w600,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textLight,
+                fontWeight: FontWeight.w500,
               ),
-        suffixIconConstraints: const BoxConstraints(
-          minWidth: 24,
-          minHeight: 24,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 22,
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        border: _staffInputBorder(),
-        enabledBorder: _staffInputBorder(),
-        focusedBorder: _staffInputBorder(const Color(0xFFB7C7EA)),
-        errorBorder: _staffInputBorder(const Color(0xFFE26B6B)),
-        focusedErrorBorder: _staffInputBorder(const Color(0xFFE26B6B)),
-        errorStyle: const TextStyle(
-          color: Color(0xFFD9485F),
-          fontSize: 12.2,
-          fontWeight: FontWeight.w600,
-        ),
+              prefixIcon:
+                  Icon(icon, color: AppColors.textMuted, size: 21),
+              suffixIcon: suffix,
+              filled: true,
+              fillColor: const Color(0xFFFBFCFE),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              errorText: errorText,
+              errorStyle: AppTypography.helperText.copyWith(
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+              border: _border(AppColors.border),
+              enabledBorder: _border(AppColors.border),
+              focusedBorder: _border(AppColors.primary),
+              errorBorder: _border(AppColors.danger),
+              focusedErrorBorder: _border(AppColors.danger),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  OutlineInputBorder _border(Color color) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.input),
+      borderSide: BorderSide(color: color),
     );
   }
 }
 
-class _StaffDropdownField extends StatelessWidget {
-  const _StaffDropdownField({
+class _AppDropdown<T> extends StatelessWidget {
+  const _AppDropdown({
+    required this.label,
     required this.value,
-    required this.hintText,
-    required this.prefixIcon,
+    required this.hint,
     required this.items,
     required this.onChanged,
+    this.errorText,
   });
 
-  final String? value;
-  final String hintText;
-  final IconData prefixIcon;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
+  final String label;
+  final T? value;
+  final String hint;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFDDE2EA)),
-      ),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(prefixIcon, color: const Color(0xFF667085), size: 28),
-          const SizedBox(width: 14),
-          Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: value,
-                hint: Text(
-                  hintText,
-                  style: const TextStyle(
-                    color: Color(0xFFA3ACB9),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                icon: const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: Color(0xFF667085),
-                  size: 28,
-                ),
-                isExpanded: true,
-                dropdownColor: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-                style: const TextStyle(
-                  color: Color(0xFF202938),
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w500,
-                ),
-                items: items
-                    .map(
-                      (role) => DropdownMenuItem<String>(
-                        value: role,
-                        child: Text(role),
-                      ),
-                    )
-                    .toList(),
-                onChanged: onChanged,
+          _FieldLabel(label),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<T>(
+            initialValue: value,
+            items: items,
+            onChanged: onChanged,
+            isExpanded: true,
+            icon: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: AppColors.textMuted,
+            ),
+            style: AppTypography.bodyMain.copyWith(
+              color: AppColors.textMain,
+              fontWeight: FontWeight.w600,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textLight,
+                fontWeight: FontWeight.w500,
+              ),
+              filled: true,
+              fillColor: const Color(0xFFFBFCFE),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              errorText: errorText,
+              errorStyle: AppTypography.helperText.copyWith(
+                color: AppColors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.input),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.input),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.input),
+                borderSide: const BorderSide(color: AppColors.primary),
               ),
             ),
           ),
@@ -543,9 +1034,254 @@ class _StaffDropdownField extends StatelessWidget {
   }
 }
 
-OutlineInputBorder _staffInputBorder([Color color = const Color(0xFFDDE2EA)]) {
-  return OutlineInputBorder(
-    borderRadius: BorderRadius.circular(4),
-    borderSide: BorderSide(color: color),
-  );
+class _DateField extends StatelessWidget {
+  const _DateField({
+    required this.value,
+    required this.onTap,
+    this.onClear,
+  });
+
+  final String value;
+  final VoidCallback onTap;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasValue = value.isNotEmpty;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.input),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFBFCFE),
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.calendar_today_outlined,
+              color: AppColors.textMuted,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                hasValue ? _formatHireDate(value) : 'Select hire date',
+                style: AppTypography.bodyMain.copyWith(
+                  color: hasValue ? AppColors.textMain : AppColors.textLight,
+                  fontWeight: hasValue ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+            if (onClear != null)
+              GestureDetector(
+                onTap: onClear,
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: AppColors.textMuted,
+                  size: 20,
+                ),
+              )
+            else
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textMuted,
+                size: 22,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChoicePill extends StatelessWidget {
+  const _ChoicePill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryLight : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.28)
+                : AppColors.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.bodySmall.copyWith(
+            color: selected ? AppColors.primaryDeep : AppColors.textMuted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PermissionRow extends StatelessWidget {
+  const _PermissionRow({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(AppRadius.sharp + 2),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: const BoxDecoration(
+              color: AppColors.successLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              color: AppColors.success,
+              size: 15,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textMain,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.all(14),
+      backgroundColor: AppColors.primaryLight,
+      borderColor: AppColors.primary.withValues(alpha: 0.16),
+      radius: AppRadius.standard,
+      showShadow: false,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.primaryDeep,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: AppTypography.helperText.copyWith(
+                    color: AppColors.textMuted,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SaveBar extends StatelessWidget {
+  const _SaveBar({
+    required this.isSaving,
+    required this.isEditing,
+    required this.onSave,
+  });
+
+  final bool isSaving;
+  final bool isEditing;
+  final VoidCallback? onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: MarketButton(
+          label: isSaving
+              ? 'Saving...'
+              : (isEditing ? 'Save Changes' : 'Create Staff'),
+          icon: isSaving ? Icons.hourglass_top_rounded : Icons.save_outlined,
+          onTap: onSave ?? () {},
+        ),
+      ),
+    );
+  }
+}
+
+String _formatHireDate(String value) {
+  final date = DateTime.tryParse(value);
+  if (date == null) return value;
+  const months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }

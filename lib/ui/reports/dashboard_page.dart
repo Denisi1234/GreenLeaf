@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../more/duka_ai_page.dart';
 import '../more/expenses_tracking_page.dart';
-import '../more/multi_store_management_page.dart';
 import '../notifications/notifications_page.dart';
 import '../business_category_config.dart';
 import '../../service/pos_local_store.dart';
@@ -16,7 +15,6 @@ import '../widgets/market_shared_widgets.dart';
 import 'components/activity_tile.dart';
 import 'components/overview_card.dart';
 import 'components/quick_action_card.dart';
-import 'report_hub_page.dart';
 import 'reports_catalog_page.dart';
 
 // ignore_for_file: unused_element, unused_field
@@ -1359,7 +1357,7 @@ class _InsightsPromoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
-    final data = _dashboardPromoData(config.category, strings);
+    final data = _dashboardPromoData(strings);
     return SizedBox(
       height: 152,
       child: Stack(
@@ -1468,7 +1466,7 @@ class _InsightsPromoCard extends StatelessWidget {
                                 ),
                               ),
                               child: const Text(
-                                'Multi Store Manage',
+                                'All Reports',
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
@@ -1704,33 +1702,14 @@ List<_DashboardMetricData> _dashboardMetricCards({
   };
 }
 
-_DashboardPromoData _dashboardPromoData(
-  BusinessCategory category,
-  AppStrings strings,
-) {
-  return switch (category) {
-    BusinessCategory.pharmacy => _DashboardPromoData(
-        icon: Icons.medication_rounded,
-        title: strings.trackExpiryAndRefills,
-        subtitle: strings.pharmacyDashboardSubtitle,
-        primaryAction: const ReportsCatalogPage(),
-        secondaryAction: const DukaAiAdvisorPage(),
-      ),
-    BusinessCategory.electronics => _DashboardPromoData(
-        icon: Icons.devices_other_rounded,
-        title: strings.protectHighValueStock,
-        subtitle: strings.electronicsDashboardSubtitle,
-        primaryAction: const ReportHubPage(),
-        secondaryAction: const MultiStoreManagementPage(),
-      ),
-    BusinessCategory.retail => _DashboardPromoData(
-        icon: Icons.auto_awesome_rounded,
-        title: strings.unlockSmartSalesInsights,
-        subtitle: strings.retailDashboardSubtitle,
-        primaryAction: const ExpensesTrackingPage(),
-        secondaryAction: const MultiStoreManagementPage(),
-      ),
-  };
+_DashboardPromoData _dashboardPromoData(AppStrings strings) {
+  return _DashboardPromoData(
+    icon: Icons.auto_awesome_rounded,
+    title: strings.unlockSmartSalesInsights,
+    subtitle: strings.retailDashboardSubtitle,
+    primaryAction: const ExpensesTrackingPage(),
+    secondaryAction: const ReportsCatalogPage(),
+  );
 }
 
 double _inventoryMarginPercent(PosLocalStore store) {
@@ -2745,14 +2724,13 @@ class _OverviewDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFEFC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFFEFC),
-        elevation: 0,
-        foregroundColor: AppColors.ink,
-        title: Text(card.title),
-      ),
-      body: Padding(
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            MarketPageHeader(title: card.title),
+            Expanded(
+              child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2856,6 +2834,10 @@ class _OverviewDetailPage extends StatelessWidget {
                 ),
               ),
             ],
+                ],
+              ),
+            ),
+            ),
           ],
         ),
       ),
@@ -2874,18 +2856,21 @@ class _RecentActivityPage extends StatelessWidget {
       strings,
     );
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFEFC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFFEFC),
-        elevation: 0,
-        foregroundColor: AppColors.ink,
-        title: Text(strings.latestActivity),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
-        children: [
-          _RecentActivityCard(items: items),
-        ],
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            MarketPageHeader(title: strings.latestActivity),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
+                children: [
+                  _RecentActivityCard(items: items),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2899,27 +2884,26 @@ class _ActivityDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFEFC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFFEFC),
-        elevation: 0,
-        foregroundColor: AppColors.ink,
-        title: Text(item.title),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            MarketPageHeader(title: item.title),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
               Text(
                 item.subtitle,
                 style: const TextStyle(
@@ -2950,6 +2934,10 @@ class _ActivityDetailPage extends StatelessWidget {
               ],
             ],
           ),
+        ),
+            ),
+            ),
+          ],
         ),
       ),
     );
