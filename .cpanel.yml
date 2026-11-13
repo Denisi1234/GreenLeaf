@@ -1,0 +1,8 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/alheqffk/api.azagroup.co.tz/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R backend/* $DEPLOYPATH
+    - /bin/chmod 755 $DEPLOYPATH
+    - /bin/chmod -R 755 $DEPLOYPATH/public
