@@ -483,7 +483,7 @@ class MarketButton extends StatelessWidget {
     this.foregroundColor,
     this.borderColor,
     this.height = 48,
-    this.radius = AppRadius.button,
+    this.radius = 0,
     this.paddingHorizontal = AppSpacing.xl,
     this.boxShadow,
     this.fontSize,
@@ -533,9 +533,7 @@ class MarketButton extends StatelessWidget {
           border: effectiveBorderColor != null
               ? Border.all(color: effectiveBorderColor)
               : null,
-          boxShadow: disabled
-              ? null
-              : (boxShadow ?? (isPrimary ? AppShadows.primary : null)),
+          boxShadow: boxShadow,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -573,17 +571,17 @@ class MarketSearchField extends StatelessWidget {
     required this.onChanged,
     this.onClear,
     this.onScanTap,
-    this.height = 56,
-    this.radius = AppRadius.input,
+    this.height = 52,
+    this.radius = 0,
     this.backgroundColor = AppColors.surface,
     this.borderColor = AppColors.border,
-    this.iconColor = Colors.white,
+    this.iconColor = AppColors.textMuted,
     this.hintColor = AppColors.textLight,
     this.textColor = AppColors.textMain,
     this.leadingIcon = Icons.search_rounded,
     this.paddingHorizontal = AppSpacing.lg,
     this.iconSize = 20,
-    this.showShadow = true,
+    this.showShadow = false,
   });
 
   final TextEditingController controller;
@@ -713,8 +711,8 @@ class MarketSurfaceCard extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.backgroundColor = AppColors.surface,
     this.borderColor = AppColors.border,
-    this.radius = AppRadius.standard,
-    this.showShadow = true,
+    this.radius = 0,
+    this.showShadow = false,
   });
 
   final Widget child;

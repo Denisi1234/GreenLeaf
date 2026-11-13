@@ -936,6 +936,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(_t('Delete supplier?', 'Futa msambazaji?')),
         content: Text(
           _t(

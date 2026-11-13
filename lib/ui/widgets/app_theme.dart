@@ -7,7 +7,7 @@ import 'app_design.dart';
 /// neutral text, green primary actions and active states, 10px controls,
 /// 12px dialogs, 14–18px cards and 42–44px touch targets.
 ThemeData buildOsposTheme(TextTheme textTheme) {
-  const controlRadius = BorderRadius.all(Radius.circular(AppRadius.standard));
+  const controlRadius = BorderRadius.zero;
   const minControl = Size(64, AppSpacing.controlHeight);
   final fontFamily = GoogleFonts.manrope().fontFamily;
 
@@ -178,8 +178,8 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surface,
-      isDense: false,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       constraints: const BoxConstraints(minHeight: AppSpacing.controlHeight),
       hintStyle: style(
         fontSize: 14,
@@ -191,9 +191,9 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       border: inputBorder(AppColors.border),
       enabledBorder: inputBorder(AppColors.border),
       disabledBorder: inputBorder(AppColors.borderLight),
-      focusedBorder: inputBorder(AppColors.primary, 1.5),
+      focusedBorder: inputBorder(AppColors.primary, 1.4),
       errorBorder: inputBorder(AppColors.danger, 1.2),
-      focusedErrorBorder: inputBorder(AppColors.danger, 1.5),
+      focusedErrorBorder: inputBorder(AppColors.danger, 1.4),
     ),
 
     // Buttons – 42px min height, 10px radius

@@ -118,6 +118,7 @@ class ReceivingPage extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(sw ? 'Futa upokeaji?' : 'Delete receiving record?'),
         content: Text(
           sw
