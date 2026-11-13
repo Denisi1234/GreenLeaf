@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -32,9 +33,12 @@ class SalesReportPage extends StatelessWidget {
   }
 
   List<MetricData> _buildMetrics(ReportTable table, PosReportData data) {
-    final totalSales = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
-    final totalOrders = table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int));
-    final totalUnits = table.rows.fold<int>(0, (sum, row) => sum + (row[2] as int));
+    final totalSales = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final totalOrders =
+        table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int));
+    final totalUnits =
+        table.rows.fold<int>(0, (sum, row) => sum + (row[2] as int));
     final avgOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0.0;
 
     final cost = table.rows.fold<double>(0, (sum, row) {
@@ -42,40 +46,49 @@ class SalesReportPage extends StatelessWidget {
       return sum + (c is num ? c.toDouble() : 0.0);
     });
     final grossProfit = cost > 0 ? totalSales - cost : null;
-    final grossMargin = grossProfit != null && totalSales > 0 ? (grossProfit / totalSales) * 100 : null;
+    final grossMargin = grossProfit != null && totalSales > 0
+        ? (grossProfit / totalSales) * 100
+        : null;
 
     return [
       MetricData(
         title: 'Total Sales',
         value: '₹${NumberFormat('#,##0.##').format(totalSales)}',
         icon: Icons.attach_money,
-        iconColor: Colors.indigo,
-        tint: Colors.indigo.withValues(alpha: 0.1),
-        valueColor: Colors.indigo,
+        iconColor: Color(0xFF166534),
+        tint: Color(0xFF166534).withValues(alpha: 0.1),
+        valueColor: Color(0xFF166534),
       ),
       MetricData(
         title: 'Total Orders',
         value: NumberFormat('#,###').format(totalOrders),
         icon: Icons.receipt_long,
-        iconColor: Colors.blue,
-        tint: Colors.blue.withValues(alpha: 0.1),
-        valueColor: Colors.blue,
+        iconColor: Color(0xFF15803D),
+        tint: Color(0xFF15803D).withValues(alpha: 0.1),
+        valueColor: Color(0xFF15803D),
       ),
       MetricData(
         title: 'Avg Order Value',
         value: '₹${NumberFormat('#,##0.##').format(avgOrderValue)}',
         icon: Icons.shopping_cart,
-        iconColor: Colors.purple,
-        tint: Colors.purple.withValues(alpha: 0.1),
-        valueColor: Colors.purple,
+        iconColor: Color(0xFF15803D),
+        tint: Color(0xFF15803D).withValues(alpha: 0.1),
+        valueColor: Color(0xFF15803D),
       ),
       MetricData(
         title: 'Gross Margin',
         value: grossMargin != null ? '${grossMargin.toStringAsFixed(1)}%' : '—',
         icon: Icons.trending_up,
-        iconColor: grossMargin != null && grossMargin > 20 ? Colors.green : Colors.orange,
-        tint: (grossMargin != null && grossMargin > 20 ? Colors.green : Colors.orange).withValues(alpha: 0.1),
-        valueColor: grossMargin != null && grossMargin > 20 ? Colors.green : Colors.orange,
+        iconColor: grossMargin != null && grossMargin > 20
+            ? Color(0xFF111111)
+            : AppColors.ink,
+        tint: (grossMargin != null && grossMargin > 20
+                ? Color(0xFF111111)
+                : AppColors.ink)
+            .withValues(alpha: 0.1),
+        valueColor: grossMargin != null && grossMargin > 20
+            ? Color(0xFF111111)
+            : AppColors.ink,
       ),
     ];
   }
@@ -105,10 +118,13 @@ class SalesReportPage extends StatelessWidget {
         .map((e) => TrendPoint(
               label: DateFormat('MMM d').format(e.key),
               value: e.value.fold(0.0, (sum, s) => sum + s.order.total),
-              displayValue: '₹${NumberFormat('#,##0').format(e.value.fold(0.0, (sum, s) => sum + s.order.total))}',
+              displayValue:
+                  '₹${NumberFormat('#,##0').format(e.value.fold(0.0, (sum, s) => sum + s.order.total))}',
             ))
         .toList();
-    final maxValue = trendPoints.isEmpty ? 0.0 : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = trendPoints.isEmpty
+        ? 0.0
+        : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
       title: 'Daily Sales Trend',
@@ -116,7 +132,7 @@ class SalesReportPage extends StatelessWidget {
         points: trendPoints,
         maxValue: maxValue,
         label: 'Sales',
-        color: Colors.indigo,
+        color: Color(0xFF166534),
       ),
     );
   }
@@ -136,26 +152,28 @@ class SalesReportPage extends StatelessWidget {
     final creditRatio = sales.isEmpty ? 0.0 : creditSales / sales.length;
 
     final topDay = _groupByDay(sales).entries.reduce(
-      (a, b) => a.value.fold(0.0, (sum, s) => sum + s.order.total) >
-              b.value.fold(0.0, (sum, s) => sum + s.order.total)
-          ? a
-          : b,
-    );
+          (a, b) => a.value.fold(0.0, (sum, s) => sum + s.order.total) >
+                  b.value.fold(0.0, (sum, s) => sum + s.order.total)
+              ? a
+              : b,
+        );
 
     insights.add(InsightCard(
       title: 'Peak Sales Day',
-      description: 'Highest sales on ${DateFormat('EEEE, MMM d').format(topDay.key)} with ₹${NumberFormat('#,##0').format(topDay.value.fold(0.0, (sum, s) => sum + s.order.total))}',
+      description:
+          'Highest sales on ${DateFormat('EEEE, MMM d').format(topDay.key)} with ₹${NumberFormat('#,##0').format(topDay.value.fold(0.0, (sum, s) => sum + s.order.total))}',
       icon: Icons.calendar_today,
-      color: Colors.indigo,
+      color: Color(0xFF166534),
       severity: InsightSeverity.info,
     ));
 
     if (creditRatio > 0.3) {
       insights.add(InsightCard(
         title: 'High Credit Sales',
-        description: '${(creditRatio * 100).toStringAsFixed(1)}% of sales are on credit. Consider follow-up on outstanding balances.',
+        description:
+            '${(creditRatio * 100).toStringAsFixed(1)}% of sales are on credit. Consider follow-up on outstanding balances.',
         icon: Icons.credit_card,
-        color: Colors.amber,
+        color: Color(0xFF15803D),
         severity: InsightSeverity.warning,
         actionLabel: 'View Balances',
         onAction: () => Navigator.of(context).pushNamed('/reports/balances'),
@@ -165,9 +183,10 @@ class SalesReportPage extends StatelessWidget {
     if (avgOrder < 500) {
       insights.add(InsightCard(
         title: 'Low Average Order Value',
-        description: 'Average order is ₹${NumberFormat('#,##0').format(avgOrder)}. Consider upselling or bundle offers.',
+        description:
+            'Average order is ₹${NumberFormat('#,##0').format(avgOrder)}. Consider upselling or bundle offers.',
         icon: Icons.shopping_bag,
-        color: Colors.blue,
+        color: Color(0xFF15803D),
         severity: InsightSeverity.info,
         actionLabel: 'View Items Report',
         onAction: () => Navigator.of(context).pushNamed('/reports/items'),
@@ -189,14 +208,16 @@ class SalesReportPage extends StatelessWidget {
 
 class _Sale {
   _Sale(this.order, this.date)
-      : gross = order.lines.fold<double>(0, (sum, line) => sum + line.lineTotal);
+      : gross =
+            order.lines.fold<double>(0, (sum, line) => sum + line.lineTotal);
 
   final CompletedOrder order;
   final DateTime date;
   final double gross;
 
   String get customer => _label(order.customerName, 'Unrecorded customer');
-  String get discountLabel => _label(order.discountLabel, 'Unlabelled discount');
+  String get discountLabel =>
+      _label(order.discountLabel, 'Unlabelled discount');
   double get discount =>
       order.discountAmount ??
       (gross - order.total).clamp(0.0, double.infinity).toDouble();

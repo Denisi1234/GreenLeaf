@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -10,8 +11,7 @@ import '../enhanced_report_page.dart'
     show EnhancedReportPage, MetricData, ExportFormat;
 import '../models/report_models.dart';
 import '../pos_report_catalog.dart';
-import '../pos_report_data.dart'
-    show PosReportData, ReportColumn, ReportTable;
+import '../pos_report_data.dart' show PosReportData, ReportColumn, ReportTable;
 import '../services/report_data_service.dart';
 import '../widgets/section_card.dart';
 import '../widgets/trend_chart.dart';
@@ -35,7 +35,11 @@ class ProfitLossReportPage extends StatelessWidget {
   }
 
   List<MetricData> _buildMetrics(ReportTable table, PosReportData data) {
-    double revenue = 0, cogs = 0, grossProfit = 0, expenses = 0, operatingResult = 0;
+    double revenue = 0,
+        cogs = 0,
+        grossProfit = 0,
+        expenses = 0,
+        operatingResult = 0;
 
     for (final row in table.rows) {
       final label = row[0].toString();
@@ -60,7 +64,8 @@ class ProfitLossReportPage extends StatelessWidget {
     }
 
     final grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0.0;
-    final operatingMargin = revenue > 0 ? (operatingResult / revenue) * 100 : 0.0;
+    final operatingMargin =
+        revenue > 0 ? (operatingResult / revenue) * 100 : 0.0;
     final expenseRatio = revenue > 0 ? (expenses / revenue) * 100 : 0.0;
 
     return [
@@ -68,33 +73,48 @@ class ProfitLossReportPage extends StatelessWidget {
         title: 'Revenue',
         value: '₹${NumberFormat('#,##0.##').format(revenue)}',
         icon: Icons.attach_money,
-        iconColor: Colors.indigo,
-        tint: Colors.indigo.withValues(alpha: 0.1),
-        valueColor: Colors.indigo,
+        iconColor: Color(0xFF166534),
+        tint: Color(0xFF166534).withValues(alpha: 0.1),
+        valueColor: Color(0xFF166534),
       ),
       MetricData(
         title: 'Gross Profit',
         value: '₹${NumberFormat('#,##0.##').format(grossProfit)}',
         icon: Icons.trending_up,
-        iconColor: grossProfit >= 0 ? Colors.green : Colors.red,
-        tint: (grossProfit >= 0 ? Colors.green : Colors.red).withValues(alpha: 0.1),
-        valueColor: grossProfit >= 0 ? Colors.green : Colors.red,
+        iconColor: grossProfit >= 0 ? Color(0xFF111111) : Colors.red,
+        tint: (grossProfit >= 0 ? Color(0xFF111111) : Colors.red)
+            .withValues(alpha: 0.1),
+        valueColor: grossProfit >= 0 ? Color(0xFF111111) : Colors.red,
       ),
       MetricData(
         title: 'Operating Result',
         value: '₹${NumberFormat('#,##0.##').format(operatingResult)}',
         icon: Icons.account_balance,
-        iconColor: operatingResult >= 0 ? Colors.green : Colors.red,
-        tint: (operatingResult >= 0 ? Colors.green : Colors.red).withValues(alpha: 0.1),
-        valueColor: operatingResult >= 0 ? Colors.green : Colors.red,
+        iconColor: operatingResult >= 0 ? Color(0xFF111111) : Colors.red,
+        tint: (operatingResult >= 0 ? Color(0xFF111111) : Colors.red)
+            .withValues(alpha: 0.1),
+        valueColor: operatingResult >= 0 ? Color(0xFF111111) : Colors.red,
       ),
       MetricData(
         title: 'Gross Margin',
         value: '${grossMargin.toStringAsFixed(1)}%',
         icon: Icons.percent,
-        iconColor: grossMargin >= 30 ? Colors.green : grossMargin >= 15 ? Colors.orange : Colors.red,
-        tint: (grossMargin >= 30 ? Colors.green : grossMargin >= 15 ? Colors.orange : Colors.red).withValues(alpha: 0.1),
-        valueColor: grossMargin >= 30 ? Colors.green : grossMargin >= 15 ? Colors.orange : Colors.red,
+        iconColor: grossMargin >= 30
+            ? Color(0xFF111111)
+            : grossMargin >= 15
+                ? AppColors.ink
+                : AppColors.textMuted,
+        tint: (grossMargin >= 30
+                ? Color(0xFF111111)
+                : grossMargin >= 15
+                    ? AppColors.ink
+                    : AppColors.textMuted)
+            .withValues(alpha: 0.1),
+        valueColor: grossMargin >= 30
+            ? Color(0xFF111111)
+            : grossMargin >= 15
+                ? AppColors.ink
+                : AppColors.textMuted,
       ),
     ];
   }
@@ -109,7 +129,11 @@ class ProfitLossReportPage extends StatelessWidget {
     final sales = _getSalesInRange(store, range);
     final expenses = _getExpensesInRange(store, range);
 
-    double revenue = 0, cogs = 0, grossProfit = 0, totalExpenses = 0, operatingResult = 0;
+    double revenue = 0,
+        cogs = 0,
+        grossProfit = 0,
+        totalExpenses = 0,
+        operatingResult = 0;
     for (final row in table.rows) {
       final label = row[0].toString();
       final amount = (row[1] as num?)?.toDouble() ?? 0;
@@ -134,7 +158,8 @@ class ProfitLossReportPage extends StatelessWidget {
 
     return [
       _buildPnLStatementCard(table),
-      _buildMarginAnalysisCard(revenue, cogs, grossProfit, totalExpenses, operatingResult),
+      _buildMarginAnalysisCard(
+          revenue, cogs, grossProfit, totalExpenses, operatingResult),
       _buildRevenueTrendCard(context, sales),
       _buildExpenseBreakdownCard(context, expenses),
       _buildInsightsCard(
@@ -176,7 +201,8 @@ class ProfitLossReportPage extends StatelessWidget {
     double operatingResult,
   ) {
     final grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0.0;
-    final operatingMargin = revenue > 0 ? (operatingResult / revenue) * 100 : 0.0;
+    final operatingMargin =
+        revenue > 0 ? (operatingResult / revenue) * 100 : 0.0;
     final expenseRatio = revenue > 0 ? (expenses / revenue) * 100 : 0.0;
 
     return SectionCard(
@@ -190,7 +216,7 @@ class ProfitLossReportPage extends StatelessWidget {
                   label: 'Gross Margin',
                   value: grossMargin,
                   benchmark: 30,
-                  color: Colors.green,
+                  color: Color(0xFF111111),
                 ),
               ),
               Expanded(
@@ -198,7 +224,7 @@ class ProfitLossReportPage extends StatelessWidget {
                   label: 'Operating Margin',
                   value: operatingMargin,
                   benchmark: 15,
-                  color: Colors.blue,
+                  color: Color(0xFF15803D),
                 ),
               ),
               Expanded(
@@ -206,7 +232,7 @@ class ProfitLossReportPage extends StatelessWidget {
                   label: 'Expense Ratio',
                   value: expenseRatio,
                   benchmark: 20,
-                  color: Colors.red,
+                  color: AppColors.ink,
                   lowerIsBetter: true,
                 ),
               ),
@@ -223,10 +249,13 @@ class ProfitLossReportPage extends StatelessWidget {
         .map((e) => TrendPoint(
               label: DateFormat('MMM d').format(e.key),
               value: e.value.fold(0.0, (sum, s) => sum + s.order.total),
-              displayValue: '₹${NumberFormat('#,##0').format(e.value.fold(0.0, (sum, s) => sum + s.order.total))}',
+              displayValue:
+                  '₹${NumberFormat('#,##0').format(e.value.fold(0.0, (sum, s) => sum + s.order.total))}',
             ))
         .toList();
-    final maxValue = trendPoints.isEmpty ? 0.0 : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = trendPoints.isEmpty
+        ? 0.0
+        : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
       title: 'Daily Revenue Trend',
@@ -234,17 +263,19 @@ class ProfitLossReportPage extends StatelessWidget {
         points: trendPoints,
         maxValue: maxValue,
         label: 'Revenue',
-        color: Colors.indigo,
+        color: Color(0xFF166534),
       ),
     );
   }
 
-  Widget _buildExpenseBreakdownCard(BuildContext context, List<Expense> expenses) {
+  Widget _buildExpenseBreakdownCard(
+      BuildContext context, List<Expense> expenses) {
     if (expenses.isEmpty) return const SizedBox.shrink();
 
     final expenseByCategory = <String, double>{};
     for (final expense in expenses) {
-      expenseByCategory[expense.category] = (expenseByCategory[expense.category] ?? 0) + expense.amount;
+      expenseByCategory[expense.category] =
+          (expenseByCategory[expense.category] ?? 0) + expense.amount;
     }
 
     final trendPoints = expenseByCategory.entries
@@ -264,7 +295,7 @@ class ProfitLossReportPage extends StatelessWidget {
         points: trendPoints.take(8).toList(),
         maxValue: maxValue,
         label: 'Amount',
-        color: Colors.red,
+        color: AppColors.primary,
       ),
     );
   }
@@ -280,12 +311,14 @@ class ProfitLossReportPage extends StatelessWidget {
     final insights = <InsightCard>[];
 
     final grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0.0;
-    final operatingMargin = revenue > 0 ? (operatingResult / revenue) * 100 : 0.0;
+    final operatingMargin =
+        revenue > 0 ? (operatingResult / revenue) * 100 : 0.0;
 
     if (operatingResult < 0) {
       insights.add(InsightCard(
         title: 'Operating Loss',
-        description: 'Business is operating at a loss of ₹${NumberFormat('#,##0').format(operatingResult.abs())}. Urgent review of pricing, costs, or sales strategy needed.',
+        description:
+            'Business is operating at a loss of ₹${NumberFormat('#,##0').format(operatingResult.abs())}. Urgent review of pricing, costs, or sales strategy needed.',
         icon: Icons.error_outline,
         color: Colors.red,
         severity: InsightSeverity.critical,
@@ -295,9 +328,10 @@ class ProfitLossReportPage extends StatelessWidget {
     } else if (operatingMargin < 10) {
       insights.add(InsightCard(
         title: 'Thin Operating Margin',
-        description: 'Operating margin is ${operatingMargin.toStringAsFixed(1)}%. Focus on cost reduction or price optimization.',
+        description:
+            'Operating margin is ${operatingMargin.toStringAsFixed(1)}%. Focus on cost reduction or price optimization.',
         icon: Icons.warning_amber,
-        color: Colors.orange,
+        color: AppColors.ink,
         severity: InsightSeverity.warning,
       ));
     }
@@ -305,9 +339,10 @@ class ProfitLossReportPage extends StatelessWidget {
     if (grossMargin < 20) {
       insights.add(InsightCard(
         title: 'Low Gross Margin',
-        description: 'Gross margin of ${grossMargin.toStringAsFixed(1)}% is below healthy threshold. Review product pricing and supplier costs.',
+        description:
+            'Gross margin of ${grossMargin.toStringAsFixed(1)}% is below healthy threshold. Review product pricing and supplier costs.',
         icon: Icons.inventory,
-        color: Colors.red,
+        color: AppColors.ink,
         severity: InsightSeverity.warning,
         actionLabel: 'View Items Report',
         onAction: () => Navigator.of(context).pushNamed('/reports/items'),
@@ -318,9 +353,10 @@ class ProfitLossReportPage extends StatelessWidget {
     if (expenseRatio > 30) {
       insights.add(InsightCard(
         title: 'High Expense Ratio',
-        description: 'Expenses consume ${expenseRatio.toStringAsFixed(1)}% of revenue. Identify cost savings opportunities.',
+        description:
+            'Expenses consume ${expenseRatio.toStringAsFixed(1)}% of revenue. Identify cost savings opportunities.',
         icon: Icons.receipt,
-        color: Colors.amber,
+        color: Color(0xFF15803D),
         severity: InsightSeverity.warning,
         actionLabel: 'Analyze Expenses',
         onAction: () => Navigator.of(context).pushNamed('/reports/expenses'),
@@ -330,9 +366,10 @@ class ProfitLossReportPage extends StatelessWidget {
     if (cogs == 0 && revenue > 0) {
       insights.add(InsightCard(
         title: 'Missing Cost Data',
-        description: 'Cost of goods sold is not recorded for some sales. Profit calculations may be inaccurate.',
+        description:
+            'Cost of goods sold is not recorded for some sales. Profit calculations may be inaccurate.',
         icon: Icons.info_outline,
-        color: Colors.blue,
+        color: Color(0xFF15803D),
         severity: InsightSeverity.info,
         actionLabel: 'Update Product Costs',
         onAction: () {},
@@ -342,9 +379,10 @@ class ProfitLossReportPage extends StatelessWidget {
     if (insights.isEmpty && operatingResult > 0) {
       insights.add(InsightCard(
         title: 'Profitable Operations',
-        description: 'Business is profitable with ${operatingMargin.toStringAsFixed(1)}% operating margin. Consider reinvestment or expansion.',
+        description:
+            'Business is profitable with ${operatingMargin.toStringAsFixed(1)}% operating margin. Consider reinvestment or expansion.',
         icon: Icons.check_circle,
-        color: Colors.green,
+        color: Color(0xFF111111),
         severity: InsightSeverity.success,
       ));
     }
@@ -370,7 +408,8 @@ class ProfitLossReportPage extends StatelessWidget {
 
 class _Sale {
   _Sale(this.order, this.date)
-      : gross = order.lines.fold<double>(0, (sum, line) => sum + line.lineTotal);
+      : gross =
+            order.lines.fold<double>(0, (sum, line) => sum + line.lineTotal);
 
   final CompletedOrder order;
   final DateTime date;
@@ -443,9 +482,9 @@ class _PnLRow extends StatelessWidget {
               fontSize: 14,
               fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
               color: isNegative && value != 0
-                  ? Colors.red
+                  ? AppColors.textBody
                   : isTotal
-                      ? Colors.indigo
+                      ? Color(0xFF166534)
                       : Colors.grey.shade700,
             ),
           ),
@@ -496,7 +535,7 @@ class _MarginGauge extends StatelessWidget {
                 strokeWidth: 8,
                 backgroundColor: Colors.grey.shade200,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  isGood ? color : Colors.red,
+                  isGood ? color : AppColors.textMuted,
                 ),
               ),
             ),
@@ -507,7 +546,7 @@ class _MarginGauge extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: isGood ? color : Colors.red,
+                    color: isGood ? color : AppColors.textMuted,
                   ),
                 ),
                 Text(

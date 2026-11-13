@@ -34,8 +34,9 @@ class ComparisonCard extends StatelessWidget {
         format ?? (num v) => NumberFormat('#,##0.##').format(v);
     final accent = color ?? AppColors.primary;
     final trendGood = isPositive == higherIsBetter;
-    final trendColor = trendGood ? AppColors.success : AppColors.danger;
-    final trendBg = trendGood ? AppColors.successLight : AppColors.dangerLight;
+    final trendColor = trendGood ? AppColors.success : AppColors.textMuted;
+    final trendBg =
+        trendGood ? AppColors.successLight : AppColors.surfaceSecondary;
 
     return Container(
       decoration: BoxDecoration(
@@ -147,12 +148,15 @@ class _ValueColumn extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTypography.helperText.copyWith(color: AppColors.textLight),
+            style:
+                AppTypography.helperText.copyWith(color: AppColors.textLight),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: (isPrimary ? AppTypography.cardHeader : AppTypography.bodyMedium)
+            style: (isPrimary
+                    ? AppTypography.cardHeader
+                    : AppTypography.bodyMedium)
                 .copyWith(
               fontSize: isPrimary ? 18 : 15,
               fontWeight: isPrimary ? FontWeight.w800 : FontWeight.w600,
@@ -195,13 +199,14 @@ class PeriodComparison extends StatelessWidget {
               const Spacer(),
               _PeriodTag(
                 label: currentPeriod,
-                color: AppColors.primaryLight,
+                color: AppColors.surfaceSecondary,
                 textColor: AppColors.primaryDeep,
               ),
               const SizedBox(width: 4),
               Text(
                 'vs',
-                style: AppTypography.helperText.copyWith(color: AppColors.textLight),
+                style: AppTypography.helperText
+                    .copyWith(color: AppColors.textLight),
               ),
               const SizedBox(width: 4),
               _PeriodTag(

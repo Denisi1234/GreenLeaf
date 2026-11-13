@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -31,8 +32,10 @@ class ExpensesReportPage extends StatelessWidget {
   }
 
   List<MetricData> _buildMetrics(ReportTable table, PosReportData data) {
-    final totalExpenses = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final totalEntries = table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int));
+    final totalExpenses = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final totalEntries =
+        table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int));
     final avgExpense = totalEntries > 0 ? totalExpenses / totalEntries : 0.0;
     final categories = table.rows.length;
 
@@ -41,33 +44,33 @@ class ExpensesReportPage extends StatelessWidget {
         title: 'Total Expenses',
         value: 'TSH ${NumberFormat('#,##0.##').format(totalExpenses)}',
         icon: Icons.receipt_long_outlined,
-        iconColor: const Color(0xFFDC2626),
-        tint: const Color(0xFFFEF2F2),
-        valueColor: const Color(0xFFDC2626),
+        iconColor: AppColors.danger,
+        tint: AppColors.dangerLight,
+        valueColor: AppColors.danger,
       ),
       MetricData(
         title: 'Expense Entries',
         value: NumberFormat('#,###').format(totalEntries),
         icon: Icons.list_alt_outlined,
-        iconColor: const Color(0xFF2563EB),
-        tint: const Color(0xFFEFF6FF),
-        valueColor: const Color(0xFF2563EB),
+        iconColor: AppColors.ink,
+        tint: const Color(0xFFF3F4F6),
+        valueColor: AppColors.ink,
       ),
       MetricData(
         title: 'Avg per Entry',
         value: 'TSH ${NumberFormat('#,##0.##').format(avgExpense)}',
         icon: Icons.analytics_outlined,
-        iconColor: const Color(0xFF7C3AED),
-        tint: const Color(0xFFF5F3FF),
-        valueColor: const Color(0xFF7C3AED),
+        iconColor: AppColors.textMuted,
+        tint: const Color(0xFFF3F4F6),
+        valueColor: AppColors.textMuted,
       ),
       MetricData(
         title: 'Categories',
         value: NumberFormat('#,###').format(categories),
         icon: Icons.category,
-        iconColor: Colors.indigo,
-        tint: Colors.indigo.withValues(alpha: 0.1),
-        valueColor: Colors.indigo,
+        iconColor: AppColors.ink,
+        tint: const Color(0xFFF3F4F6),
+        valueColor: AppColors.ink,
       ),
     ];
   }
@@ -80,9 +83,12 @@ class ExpensesReportPage extends StatelessWidget {
   ) {
     final store = context.read<PosLocalStore>();
     final expenses = _getExpensesInRange(store, range);
-    final totalSales = _getSalesInRange(store.orders, range?.start, range?.end).fold(0.0, (sum, s) => sum + s.order.total);
-    final totalExpenses = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final expenseRatio = totalSales > 0 ? (totalExpenses / totalSales) * 100 : 0.0;
+    final totalSales = _getSalesInRange(store.orders, range?.start, range?.end)
+        .fold(0.0, (sum, s) => sum + s.order.total);
+    final totalExpenses = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final expenseRatio =
+        totalSales > 0 ? (totalExpenses / totalSales) * 100 : 0.0;
 
     return [
       _buildExpenseTrendCard(context, expenses),
@@ -94,7 +100,8 @@ class ExpensesReportPage extends StatelessWidget {
   Widget _buildExpenseTrendCard(BuildContext context, List<Expense> expenses) {
     final dailyExpenses = <DateTime, double>{};
     for (final expense in expenses) {
-      final day = DateTime(expense.date.year, expense.date.month, expense.date.day);
+      final day =
+          DateTime(expense.date.year, expense.date.month, expense.date.day);
       dailyExpenses[day] = (dailyExpenses[day] ?? 0.0) + expense.amount;
     }
 
@@ -103,10 +110,13 @@ class ExpensesReportPage extends StatelessWidget {
         .map((day) => TrendPoint(
               label: DateFormat('MMM d').format(day),
               value: dailyExpenses[day]!,
-              displayValue: 'TSH ${NumberFormat('#,##0').format(dailyExpenses[day]!)}',
+              displayValue:
+                  'TSH ${NumberFormat('#,##0').format(dailyExpenses[day]!)}',
             ))
         .toList();
-    final maxValue = trendPoints.isEmpty ? 0.0 : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = trendPoints.isEmpty
+        ? 0.0
+        : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
       title: 'Daily Expense Trend',
@@ -114,7 +124,7 @@ class ExpensesReportPage extends StatelessWidget {
         points: trendPoints,
         maxValue: maxValue,
         label: 'Expenses',
-        color: Colors.red,
+        color: AppColors.danger,
       ),
     );
   }
@@ -146,8 +156,8 @@ class ExpensesReportPage extends StatelessWidget {
                         color: expenseRatio > 30
                             ? Colors.red
                             : expenseRatio > 15
-                                ? Colors.orange
-                                : Colors.green,
+                                ? AppColors.ink
+                                : Color(0xFF111111),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -174,8 +184,8 @@ class ExpensesReportPage extends StatelessWidget {
                   expenseRatio > 30
                       ? Colors.red
                       : expenseRatio > 15
-                          ? Colors.orange
-                          : Colors.green,
+                          ? AppColors.ink
+                          : Color(0xFF111111),
                 ),
               ),
             ],
@@ -185,7 +195,8 @@ class ExpensesReportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInsightsCard(BuildContext context, ReportTable table, double expenseRatio) {
+  Widget _buildInsightsCard(
+      BuildContext context, ReportTable table, double expenseRatio) {
     if (table.rows.isEmpty) return const SizedBox.shrink();
 
     final insights = <InsightCard>[];
@@ -193,22 +204,25 @@ class ExpensesReportPage extends StatelessWidget {
     final topCategory = table.rows.first;
     final topCategoryName = topCategory[0].toString();
     final topCategoryAmount = (topCategory[2] as num).toDouble();
-    final totalExpenses = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final topCategoryShare = totalExpenses > 0 ? (topCategoryAmount / totalExpenses) * 100 : 0.0;
+    final totalExpenses = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final topCategoryShare =
+        totalExpenses > 0 ? (topCategoryAmount / totalExpenses) * 100 : 0.0;
 
     insights.add(InsightCard(
       title: 'Largest Expense Category',
       description:
           '"$topCategoryName" accounts for ${topCategoryShare.toStringAsFixed(1)}% of total expenses (TSH ${NumberFormat('#,##0').format(topCategoryAmount)})',
       icon: Icons.category_outlined,
-      color: const Color(0xFFDC2626),
+      color: AppColors.ink,
       severity: InsightSeverity.info,
     ));
 
     if (expenseRatio > 30) {
       insights.add(InsightCard(
         title: 'High Expense Ratio',
-        description: 'Expenses exceed 30% of sales. Consider cost reduction measures or revenue growth strategies.',
+        description:
+            'Expenses exceed 30% of sales. Consider cost reduction measures or revenue growth strategies.',
         icon: Icons.warning,
         color: Colors.red,
         severity: InsightSeverity.critical,
@@ -234,7 +248,8 @@ class ExpensesReportPage extends StatelessWidget {
 
 class _Sale {
   _Sale(this.order, this.date)
-      : gross = order.lines.fold<double>(0, (sum, line) => sum + line.lineTotal);
+      : gross =
+            order.lines.fold<double>(0, (sum, line) => sum + line.lineTotal);
 
   final CompletedOrder order;
   final DateTime date;

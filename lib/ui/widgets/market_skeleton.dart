@@ -46,8 +46,8 @@ class _MarketSkeletonState extends State<MarketSkeleton>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            color: AppColors.border.withValues(
-                alpha: 0.5 + (_controller.value * 0.5)),
+            color: AppColors.border
+                .withValues(alpha: 0.5 + (_controller.value * 0.5)),
             borderRadius: BorderRadius.circular(widget.radius),
           ),
         );

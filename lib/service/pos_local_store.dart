@@ -13,11 +13,22 @@ import '../ui/models/product_item.dart';
 import '../ui/models/customer_data.dart';
 import '../ui/products/inventory_product_item.dart';
 import 'daftari_recovery_models.dart';
+import 'debit_entry_model.dart';
 import 'duka_ai_service.dart';
+import 'pos_hybrid_database.dart';
 import 'pos_local_database.dart';
+import 'pos_cloud_database.dart';
+import 'php_api_client.dart';
 import 'pos_order_models.dart';
 import 'receipt_settings.dart';
+import 'store_preferences.dart';
 import 'expense_model.dart';
+import 'register_shift_model.dart';
+import 'supplier_model.dart';
+import 'accounting_engine.dart';
+import 'accounting_model.dart';
+import 'tax_settings.dart';
+import 'daily_sales_report_service.dart';
 import 'package:track_mauzo/ui/models/capability.dart';
 
 const _seedInventory = <InventoryProductItem>[
@@ -213,6 +224,9 @@ class AppProfileData {
   final bool open24Hours;
   final String? logoPath;
 
+  /// Currency used for receipts and reports.
+  String get currency => 'TSh';
+
   AppProfileData copyWith({
     String? storeName,
     String? ownerName,
@@ -283,14 +297,17 @@ class StaffRoleData {
 }
 
 enum StaffStatus {
-  active('active', 'Active'),
-  onLeave('on_leave', 'On Leave'),
-  inactive('inactive', 'Inactive');
+  active('active', 'Active', 'Hai'),
+  onLeave('on_leave', 'On Leave', 'Likizo'),
+  inactive('inactive', 'Inactive', 'Hafifu');
 
-  const StaffStatus(this.value, this.label);
+  const StaffStatus(this.value, this.label, this.swahiliLabel);
 
   final String value;
   final String label;
+  final String swahiliLabel;
+
+  String localized(bool isSwahili) => isSwahili ? swahiliLabel : label;
 
   static StaffStatus fromValue(String? value) {
     for (final status in StaffStatus.values) {
@@ -451,6 +468,7 @@ class PosLocalStore extends ChangeNotifier {
   static const _storeId = 'store-default';
   static const _defaultThreadId = 'thread-$_storeId';
   bool _savingCheckout = false;
+  bool _disposed = false;
 
   final PosLocalDatabase _database;
   static const Duration _eastAfricaOffset = Duration(hours: 3);
@@ -468,10 +486,22 @@ class PosLocalStore extends ChangeNotifier {
   final List<DukaAiThread> _dukaAiThreads = <DukaAiThread>[];
   final List<DukaAiMessage> _dukaAiMessages = <DukaAiMessage>[];
   final List<Expense> _expenses = <Expense>[];
+  final List<RegisterShift> _registerShifts = <RegisterShift>[];
+  final List<CashMovement> _cashMovements = <CashMovement>[];
+  final List<Supplier> _suppliers = <Supplier>[];
+  final List<Receiving> _receivings = <Receiving>[];
   AppProfileData _profile = AppProfileData.empty();
   ReceiptSettings _receiptSettings = const ReceiptSettings();
+  StorePreferences _storePreferences = const StorePreferences();
+  TaxSettings _taxSettings = const TaxSettings();
+  final List<Account> _accounts = <Account>[];
+  final List<JournalEntry> _journalEntries = <JournalEntry>[];
+  final List<FixedAsset> _fixedAssets = <FixedAsset>[];
+  final List<BankTransaction> _bankTransactions = <BankTransaction>[];
+  bool _accountsSeeded = false;
   String? _activeDukaAiThreadId;
   Timer? _midnightRefreshTimer;
+  Timer? _dailySmsTimer;
 
   static const String _defaultGeminiApiKey = '';
   static const String _defaultGroqApiKey = '';
@@ -482,20 +512,91 @@ class PosLocalStore extends ChangeNotifier {
   String _groqModel = _defaultGroqModel;
   String _languageCode = _defaultLanguageCode;
   bool _useLiveGeminiOcr = true;
+  bool _isLoggedIn = false;
+  String? _currentUserId;
+  String? _lastAuthError;
+
+  /// Machine-readable reason for the most recent failed sign-in or sign-up.
+  String? get lastAuthError => _lastAuthError;
 
   String get geminiApiKey => _geminiApiKey;
   String get groqApiKey => _groqApiKey;
   String get groqModel => _groqModel;
   String get languageCode => _languageCode;
   ReceiptSettings get receiptSettings => _receiptSettings;
+  StorePreferences get storePreferences => _storePreferences;
+  PhpApiClient? get cloudApi {
+    final database = _database;
+    if (database is PosCloudDatabase) return database.api;
+    if (database is PosHybridDatabase) return database.api;
+    return null;
+  }
+
+  String? _lastPersistenceError;
+  String? get lastPersistenceError => _lastPersistenceError;
+
+  bool _reloading = false;
+
+  Future<void> reloadFromLocal() async {
+    if (_reloading) return;
+    _reloading = true;
+    _isInitialized = false;
+    try {
+      await initialize();
+    } finally {
+      _reloading = false;
+    }
+  }
+
+  Future<void> refreshFromServer() async {
+    final database = _database;
+    if (database is PosHybridDatabase) {
+      await database.retryFailed();
+      await database.syncNow(pull: true);
+    }
+    await reloadFromLocal();
+  }
+
+  Future<({int pending, int failed})> syncHealth() async {
+    final database = _database;
+    if (database is PosHybridDatabase) {
+      return (
+        pending: await database.pendingCount(),
+        failed: await database.failedCount(),
+      );
+    }
+    return (pending: 0, failed: 0);
+  }
+
+  Future<void> retryFailedSync() async {
+    final database = _database;
+    if (database is PosHybridDatabase) {
+      await database.retryFailed();
+      await database.syncNow();
+    }
+    await reloadFromLocal();
+  }
+
   bool get useLiveGeminiOcr => _useLiveGeminiOcr;
+  bool get isLoggedIn => cloudApi != null || _isLoggedIn;
+  String? get currentUserId =>
+      cloudApi?.user['id'] as String? ?? _currentUserId;
+  StaffMemberData? get currentUser {
+    if (_currentUserId == null) return null;
+    return _staffMembers.firstWhere(
+      (s) => s.id == _currentUserId,
+      orElse: () => _staffMembers.first,
+    );
+  }
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
   @override
   void dispose() {
+    _disposed = true;
     _midnightRefreshTimer?.cancel();
+    _dailySmsTimer?.cancel();
     super.dispose();
   }
 
@@ -507,7 +608,7 @@ class PosLocalStore extends ChangeNotifier {
     if (_isInitialized) return;
 
     final storedInventory = await _database.loadInventory(_storeId);
-    if (storedInventory.isEmpty) {
+    if (storedInventory.isEmpty && cloudApi == null) {
       _allInventory
         ..clear()
         ..addAll(_seedInventory);
@@ -522,7 +623,7 @@ class PosLocalStore extends ChangeNotifier {
     _syncProductsFromInventory();
 
     final storedCart = await _database.loadCart(_storeId);
-    if (storedCart.isEmpty) {
+    if (storedCart.isEmpty && cloudApi == null) {
       _cartItems
         ..clear()
         ..addAll(_products.take(3));
@@ -538,10 +639,11 @@ class PosLocalStore extends ChangeNotifier {
       ..addAll(await _database.loadOrders(_storeId));
 
     final storedRoles = await _database.loadStaffRoles(_storeId);
-    if (storedRoles.isEmpty) {
+    if (storedRoles.isEmpty && (cloudApi == null || cloudApi!.isOwner)) {
       _staffRoles
         ..clear()
-        ..addAll(_seedStaffRoles.map((role) => role.copyWith(id: '$_storeId:${role.id}')));
+        ..addAll(_seedStaffRoles
+            .map((role) => role.copyWith(id: '$_storeId:${role.id}')));
       await _database.replaceStaffRoles(
         _staffRoles.map(_staffRoleToMap).toList(),
         _storeId,
@@ -598,40 +700,51 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(storedCustomers.map(_customerFromMap));
 
-    if (_dukaAiThreads.isEmpty) {
-      final now = DateTime.now().toIso8601String();
-      final defaultThread = DukaAiThread(
-        id: _defaultThreadId,
-        title: 'MyDuka AI',
-        preview: '',
-        createdAt: now,
-        updatedAt: now,
-      );
-      _dukaAiThreads.add(defaultThread);
-      await _database.upsertDukaAiThread(defaultThread, _storeId);
-    }
-
-    _activeDukaAiThreadId = _dukaAiThreads.first.id;
-    _dukaAiMessages
+    final storedDebitEntries = await _database.loadDebitEntries(_storeId);
+    _debitEntries
       ..clear()
-      ..addAll(await _database.loadDukaAiMessages(_activeDukaAiThreadId!));
-    if (_dukaAiMessages.isEmpty) {
-      _dukaAiMessages.add(
-        DukaAiMessage(
-          role: 'assistant',
-          content:
-              'Hi, I am DUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
-          createdAt: DateTime.now().toIso8601String(),
-        ),
-      );
-      await _database.replaceDukaAiMessages(
-        _activeDukaAiThreadId!,
-        _dukaAiMessages,
-        _storeId,
-      );
-    }
+      ..addAll(storedDebitEntries.map(DebitEntry.fromMap))
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-    _dukaAiMessages.sort(_compareMessagesByTime);
+    await _reloadRegister();
+    await _reloadSuppliers();
+
+    if (cloudApi == null || cloudApi!.can('View Reports')) {
+      if (_dukaAiThreads.isEmpty) {
+        final now = DateTime.now().toIso8601String();
+        final defaultThread = DukaAiThread(
+          id: _defaultThreadId,
+          title: 'MyDuka AI',
+          preview: '',
+          createdAt: now,
+          updatedAt: now,
+        );
+        _dukaAiThreads.add(defaultThread);
+        await _database.upsertDukaAiThread(defaultThread, _storeId);
+      }
+
+      _activeDukaAiThreadId = _dukaAiThreads.first.id;
+      _dukaAiMessages
+        ..clear()
+        ..addAll(await _database.loadDukaAiMessages(_activeDukaAiThreadId!));
+      if (_dukaAiMessages.isEmpty) {
+        _dukaAiMessages.add(
+          DukaAiMessage(
+            role: 'assistant',
+            content:
+                'Hi, I am DUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
+            createdAt: DateTime.now().toIso8601String(),
+          ),
+        );
+        await _database.replaceDukaAiMessages(
+          _activeDukaAiThreadId!,
+          _dukaAiMessages,
+          _storeId,
+        );
+      }
+
+      _dukaAiMessages.sort(_compareMessagesByTime);
+    }
 
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -642,7 +755,13 @@ class PosLocalStore extends ChangeNotifier {
         _geminiApiKey = map['apiKey'] as String? ?? _defaultGeminiApiKey;
         _groqApiKey = map['groqApiKey'] as String? ?? _defaultGroqApiKey;
         _groqModel = map['groqModel'] as String? ?? _defaultGroqModel;
-        _useLiveGeminiOcr = map['useLiveOcr'] as bool? ?? true;
+        final useLive = map['useLiveOcr'];
+        _useLiveGeminiOcr = useLive == null
+            ? true
+            : (useLive == true ||
+                useLive == 1 ||
+                useLive == '1' ||
+                (useLive is String && useLive.toLowerCase() == 'true'));
       } else {
         // Write default config so it persists
         await file.writeAsString(jsonEncode({
@@ -657,10 +776,14 @@ class PosLocalStore extends ChangeNotifier {
     }
 
     _receiptSettings = await _database.loadReceiptSettings();
+    _taxSettings = await _database.loadTaxSettings();
+    await _reloadAccounting();
     await _loadUiConfig();
+    await _recalculateStockStates();
 
     _updateCartTotals();
     _scheduleMidnightRefresh();
+    _scheduleDailySmsCheck();
     _isInitialized = true;
     notifyListeners();
   }
@@ -679,21 +802,593 @@ class PosLocalStore extends ChangeNotifier {
       if (!_isInitialized) return;
       notifyListeners();
       _scheduleMidnightRefresh();
+      _checkAndSendDailySms();
     });
+  }
+
+  void _scheduleDailySmsCheck() {
+    _dailySmsTimer?.cancel();
+    // Periodically evaluate every 15 minutes if it is time to dispatch daily SMS
+    _dailySmsTimer = Timer.periodic(const Duration(minutes: 15), (_) {
+      if (!_isInitialized || _disposed) return;
+      _checkAndSendDailySms();
+    });
+    // Also perform an initial check on start/init
+    _checkAndSendDailySms();
+  }
+
+  Future<void> _checkAndSendDailySms() async {
+    if (!_storePreferences.autoDailySmsReport) return;
+
+    final nowUtc = DateTime.now().toUtc();
+    final eatNow = nowUtc.add(_eastAfricaOffset);
+    final todayStr =
+        '${eatNow.year}-${eatNow.month.toString().padLeft(2, '0')}-${eatNow.day.toString().padLeft(2, '0')}';
+
+    // Already sent for today
+    if (_storePreferences.lastDailySmsDate == todayStr) return;
+
+    // Parse configured target time (e.g. "21:00")
+    int targetHour = 21;
+    int targetMinute = 0;
+    try {
+      final parts = _storePreferences.dailySmsTime.split(':');
+      if (parts.isNotEmpty) targetHour = int.parse(parts[0]);
+      if (parts.length > 1) targetMinute = int.parse(parts[1]);
+    } catch (_) {}
+
+    // Check if current East Africa Time has reached target time
+    if (eatNow.hour > targetHour ||
+        (eatNow.hour == targetHour && eatNow.minute >= targetMinute)) {
+      final result = await DailySalesReportService.sendDailyReport(store: this);
+      if (result.success) {
+        // Record sent date so we don't duplicate
+        await setStorePreferences(
+            _storePreferences.copyWith(lastDailySmsDate: todayStr));
+      }
+    }
+  }
+
+  Future<DailySmsResult> sendDailySmsNow({String? overridePhone}) async {
+    final result = await DailySalesReportService.sendDailyReport(
+      store: this,
+      overridePhone: overridePhone,
+    );
+    if (result.success) {
+      final eatNow = DateTime.now().toUtc().add(_eastAfricaOffset);
+      final todayStr =
+          '${eatNow.year}-${eatNow.month.toString().padLeft(2, '0')}-${eatNow.day.toString().padLeft(2, '0')}';
+      await setStorePreferences(
+          _storePreferences.copyWith(lastDailySmsDate: todayStr));
+    }
+    return result;
   }
 
   List<Expense> get expenses => List.unmodifiable(_expenses);
 
   Future<void> addExpense(Expense expense) async {
-    _expenses.insert(0, expense);
-    notifyListeners();
     await _database.insertExpense(expense.toMap(), _storeId);
+    await _reloadExpenses();
+    notifyListeners();
+  }
+
+  Future<void> updateExpense(Expense expense) async {
+    if (expense.id == null) return;
+    await _database.updateExpense(expense.id!, expense.toMap());
+    await _reloadExpenses();
+    notifyListeners();
   }
 
   Future<void> deleteExpense(int id) async {
+    await _database.deleteExpense(id);
     _expenses.removeWhere((expense) => expense.id == id);
     notifyListeners();
-    await _database.deleteExpense(id);
+  }
+
+  Future<void> _reloadExpenses() async {
+    _expenses
+      ..clear()
+      ..addAll((await _database.loadExpenses(_storeId)).map(
+        (row) => Expense.fromMap(Map<String, dynamic>.from(row)),
+      ));
+  }
+
+  Future<void> _reloadRegister() async {
+    final storedShifts = await _database.loadRegisterShifts(_storeId);
+    _registerShifts
+      ..clear()
+      ..addAll(storedShifts.map(
+        (row) => RegisterShift.fromMap(Map<String, dynamic>.from(row)),
+      ));
+
+    final storedMovements = await _database.loadCashMovements(_storeId);
+    _cashMovements
+      ..clear()
+      ..addAll(storedMovements.map(
+        (row) => CashMovement.fromMap(Map<String, dynamic>.from(row)),
+      ));
+    _attachMovements();
+  }
+
+  /// Groups the loaded movements onto their shifts for quick reads.
+  void _attachMovements() {
+    final grouped = <String, List<CashMovement>>{};
+    for (final movement in _cashMovements) {
+      grouped
+          .putIfAbsent(movement.shiftId, () => <CashMovement>[])
+          .add(movement);
+    }
+    for (var i = 0; i < _registerShifts.length; i++) {
+      final shift = _registerShifts[i];
+      final key = shift.id?.toString() ?? '';
+      _registerShifts[i] = RegisterShift(
+        id: shift.id,
+        register: shift.register,
+        openedBy: shift.openedBy,
+        openedAt: shift.openedAt,
+        openingFloat: shift.openingFloat,
+        closedAt: shift.closedAt,
+        closedBy: shift.closedBy,
+        countedCash: shift.countedCash,
+        notes: shift.notes,
+        movements: grouped[key] ?? const <CashMovement>[],
+      );
+    }
+    _registerShifts.sort((a, b) => b.openedAt.compareTo(a.openedAt));
+  }
+
+  List<RegisterShift> get registerShifts => List.unmodifiable(_registerShifts);
+
+  RegisterShift? get openShift {
+    for (final shift in _registerShifts) {
+      if (shift.isOpen) return shift;
+    }
+    return null;
+  }
+
+  List<CashMovement> get cashMovements => List.unmodifiable(_cashMovements);
+
+  /// Opens a new register shift, refusing a second concurrent open shift.
+  Future<RegisterShift?> startShift({
+    required String register,
+    required String openedBy,
+    required double openingFloat,
+  }) async {
+    if (openShift != null) return null;
+    final shift = RegisterShift(
+      register: register,
+      openedBy: openedBy,
+      openedAt: DateTime.now(),
+      openingFloat: openingFloat,
+    );
+    final id = await _database.insertRegisterShift(shift.toMap(), _storeId);
+    await _reloadRegister();
+
+    notifyListeners();
+    return _registerShifts.firstWhere(
+      (item) => item.id == id,
+      orElse: () => shift,
+    );
+  }
+
+  /// Closes the given shift with the counted cash total.
+  Future<void> closeShift(
+    int shiftId, {
+    required double countedCash,
+    required String closedBy,
+    String notes = '',
+  }) async {
+    await _database.updateRegisterShift(shiftId, {
+      'closed_at': DateTime.now().toIso8601String(),
+      'closed_by': closedBy,
+      'counted_cash': countedCash,
+      'notes': notes,
+    });
+    await _reloadRegister();
+
+    notifyListeners();
+  }
+
+  Future<void> reopenShift(int shiftId) async {
+    await _database.updateRegisterShift(shiftId, {
+      'closed_at': null,
+      'closed_by': '',
+      'counted_cash': 0,
+    });
+    await _reloadRegister();
+
+    notifyListeners();
+  }
+
+  /// Records a manual drawer movement against the open shift.
+  Future<void> addCashMovement({
+    required CashMovementType type,
+    required double amount,
+    String reason = '',
+    required String recordedBy,
+  }) async {
+    final shift = openShift;
+    if (shift == null || shift.id == null || amount <= 0) return;
+    final movement = CashMovement(
+      shiftId: shift.id.toString(),
+      type: type,
+      amount: amount,
+      reason: reason,
+      at: DateTime.now(),
+      recordedBy: recordedBy,
+    );
+    await _database.insertCashMovement(movement.toMap(), _storeId);
+    await _reloadRegister();
+
+    notifyListeners();
+  }
+
+  Future<void> deleteCashMovement(int id) async {
+    await _database.deleteCashMovement(id);
+    _cashMovements.removeWhere((movement) => movement.id == id);
+    await _reloadRegister();
+
+    notifyListeners();
+  }
+
+  static const AccountingEngine _accounting = AccountingEngine();
+
+  List<Account> get accounts => List.unmodifiable(_accounts);
+
+  List<JournalEntry> get journalEntries => List.unmodifiable(_journalEntries);
+
+  List<FixedAsset> get fixedAssets => List.unmodifiable(_fixedAssets);
+
+  List<BankTransaction> get bankTransactions =>
+      List.unmodifiable(_bankTransactions);
+
+  Future<void> _reloadAccounting() async {
+    final stored = await _database.loadAccounts(_storeId);
+    _accounts
+      ..clear()
+      ..addAll(stored.map(
+        (row) => Account.fromMap(Map<String, dynamic>.from(row)),
+      ));
+    if (_accounts.isEmpty && !_accountsSeeded) {
+      for (final account in Account.defaults()) {
+        final id = await _database.insertAccount(account.toMap(), _storeId);
+        _accounts.add(Account(
+          id: id,
+          code: account.code,
+          name: account.name,
+          type: account.type,
+          openingBalance: account.openingBalance,
+        ));
+      }
+      _accountsSeeded = true;
+      _accounts.sort((a, b) => a.code.compareTo(b.code));
+    }
+
+    final storedEntries = await _database.loadJournalEntries(_storeId);
+    final entries = <JournalEntry>[];
+    for (final row in storedEntries) {
+      final map = Map<String, dynamic>.from(row);
+      final id = map['id'] as int?;
+      final lines = id == null
+          ? const <JournalLine>[]
+          : (await _database.loadJournalLines(_storeId, id))
+              .map((line) =>
+                  JournalLine.fromMap(Map<String, dynamic>.from(line)))
+              .toList();
+      entries.add(JournalEntry.fromMap(map, lines: lines));
+    }
+    _journalEntries
+      ..clear()
+      ..addAll(entries);
+
+    final storedAssets = await _database.loadFixedAssets(_storeId);
+    _fixedAssets
+      ..clear()
+      ..addAll(storedAssets.map(
+        (row) => FixedAsset.fromMap(Map<String, dynamic>.from(row)),
+      ));
+
+    final storedBank = await _database.loadBankTransactions(_storeId);
+    _bankTransactions
+      ..clear()
+      ..addAll(storedBank.map(
+        (row) => BankTransaction.fromMap(Map<String, dynamic>.from(row)),
+      ));
+  }
+
+  Future<Account> saveAccount(Account account) async {
+    if (account.id == null) {
+      final id = await _database.insertAccount(account.toMap(), _storeId);
+      await _reloadAccounting();
+      notifyListeners();
+      return Account(
+        id: id,
+        code: account.code,
+        name: account.name,
+        type: account.type,
+        openingBalance: account.openingBalance,
+      );
+    }
+    await _database.updateAccount(account.id!, account.toMap());
+    await _reloadAccounting();
+    notifyListeners();
+    return account;
+  }
+
+  Future<void> deleteAccount(int id) async {
+    await _database.deleteAccount(id);
+    await _reloadAccounting();
+    notifyListeners();
+  }
+
+  Future<void> saveJournalEntry(JournalEntry entry) async {
+    final id = await _database.insertJournalEntry(entry.toMap(), _storeId);
+    if (entry.lines.isNotEmpty) {
+      await _database.insertJournalLines(
+        [
+          for (final line in entry.lines)
+            {
+              'entry_id': id,
+              'account_id': line.accountId,
+              'debit': line.debit,
+              'credit': line.credit,
+            },
+        ],
+        _storeId,
+      );
+    }
+    await _reloadAccounting();
+    notifyListeners();
+  }
+
+  Future<void> deleteJournalEntry(int id) async {
+    await _database.deleteJournalEntry(id);
+    await _reloadAccounting();
+    notifyListeners();
+  }
+
+  Future<void> saveFixedAsset(FixedAsset asset) async {
+    if (asset.id == null) {
+      await _database.insertFixedAsset(asset.toMap(), _storeId);
+    } else {
+      await _database.updateFixedAsset(asset.id!, asset.toMap());
+    }
+    await _reloadAccounting();
+    notifyListeners();
+  }
+
+  Future<void> deleteFixedAsset(int id) async {
+    await _database.deleteFixedAsset(id);
+    await _reloadAccounting();
+    notifyListeners();
+  }
+
+  Future<void> addBankTransaction(BankTransaction entry) async {
+    await _database.insertBankTransaction(entry.toMap(), _storeId);
+    await _reloadAccounting();
+    notifyListeners();
+  }
+
+  Future<void> setBankTransactionMatched(int id, bool matched) async {
+    await _database.updateBankTransaction(id, {'matched': matched ? 1 : 0});
+    await _reloadAccounting();
+    notifyListeners();
+  }
+
+  Future<void> deleteBankTransaction(int id) async {
+    await _database.deleteBankTransaction(id);
+    await _reloadAccounting();
+    notifyListeners();
+  }
+
+  /// Matches unmatched statement lines to card and mobile money sales.
+  Future<int> autoMatchBankTransactions() async {
+    final bankSales = <CompletedOrder>[];
+    for (final order in _orders) {
+      if (order.status.trim().toLowerCase() != 'completed') continue;
+      final method = order.paymentMethod.toLowerCase();
+      if (method.contains('cash')) continue;
+      if (method.contains('debt') || method.contains('credit')) continue;
+      bankSales.add(order);
+    }
+    var matched = 0;
+    for (final entry in _bankTransactions) {
+      if (entry.matched || entry.id == null) continue;
+      final amount = entry.amount.abs();
+      final hit = bankSales.any((order) =>
+          order.total.round() == amount.round() &&
+          order.dateTime.substring(0, 10) ==
+              entry.date.toIso8601String().substring(0, 10));
+      if (!hit) continue;
+      await setBankTransactionMatched(entry.id!, true);
+      matched++;
+    }
+    return matched;
+  }
+
+  List<LedgerPosting> ledgerPostings() => _accounting.postings(
+        orders: _orders,
+        expenses: _expenses,
+        receivings: _receivings,
+        suppliers: _suppliers,
+        shifts: _registerShifts,
+        fixedAssets: _fixedAssets,
+        journalEntries: _journalEntries,
+        accounts: _accounts,
+        tax: _taxSettings,
+      );
+
+  List<TrialBalanceRow> trialBalance() =>
+      _accounting.trialBalance(ledgerPostings());
+
+  double cashOnHand() {
+    final rows = trialBalance();
+    final row = rows.where((item) => item.code == AccountingEngine.cashCode);
+    return row.fold<double>(0, (sum, item) => sum + item.debit - item.credit);
+  }
+
+  List<Supplier> get suppliers => List.unmodifiable(_suppliers);
+
+  List<Receiving> get receivings => List.unmodifiable(_receivings);
+
+  Supplier? supplierById(int id) {
+    for (final supplier in _suppliers) {
+      if (supplier.id == id) return supplier;
+    }
+    return null;
+  }
+
+  Future<void> _reloadSuppliers() async {
+    final stored = await _database.loadSuppliers(_storeId);
+    _suppliers
+      ..clear()
+      ..addAll(stored.map(
+        (row) => Supplier.fromMap(Map<String, dynamic>.from(row)),
+      ));
+
+    final storedReceivings = await _database.loadReceivings(_storeId);
+    final loaded = <Receiving>[];
+    for (final row in storedReceivings) {
+      final map = Map<String, dynamic>.from(row);
+      final id = map['id'] as int?;
+      final lines = id == null
+          ? const <ReceivingLine>[]
+          : (await _database.loadReceivingLines(_storeId, id))
+              .map((line) =>
+                  ReceivingLine.fromMap(Map<String, dynamic>.from(line)))
+              .toList();
+      loaded.add(Receiving.fromMap(map, lines: lines));
+    }
+    _receivings
+      ..clear()
+      ..addAll(loaded);
+  }
+
+  Future<Supplier> saveSupplier(Supplier supplier) async {
+    if (supplier.id == null) {
+      final id = await _database.insertSupplier(supplier.toMap(), _storeId);
+      await _reloadSuppliers();
+      notifyListeners();
+      return supplier.id == id
+          ? supplier
+          : _suppliers.firstWhere((item) => item.id == id,
+              orElse: () => supplier);
+    }
+    await _database.updateSupplier(supplier.id!, supplier.toMap());
+    await _reloadSuppliers();
+    notifyListeners();
+    return supplier;
+  }
+
+  Future<void> deleteSupplier(int id) async {
+    await _database.deleteSupplier(id);
+    await _reloadSuppliers();
+    notifyListeners();
+  }
+
+  /// Records goods received and adds the quantities to matching stock items.
+  Future<Receiving> saveReceiving(Receiving receiving) async {
+    final id = await _database.insertReceiving(receiving.toMap(), _storeId);
+    if (receiving.lines.isNotEmpty) {
+      await _database.insertReceivingLines(
+        [
+          for (final line in receiving.lines)
+            {
+              'receiving_id': id,
+              'product_name': line.productName,
+              'quantity': line.quantity,
+              'unit_cost': line.unitCost,
+              'selling_price': line.sellingPrice,
+            },
+        ],
+        _storeId,
+      );
+    }
+    for (final line in receiving.lines) {
+      await _applyStockIn(line);
+    }
+    await _reloadSuppliers();
+    notifyListeners();
+    return receiving.id == id
+        ? receiving
+        : Receiving(
+            id: id,
+            supplierId: receiving.supplierId,
+            supplierName: receiving.supplierName,
+            date: receiving.date,
+            invoiceNo: receiving.invoiceNo,
+            total: receiving.total,
+            receivedBy: receiving.receivedBy,
+            notes: receiving.notes,
+            lines: receiving.lines,
+          );
+  }
+
+  Future<void> _applyStockIn(ReceivingLine line) async {
+    final name = line.productName.trim().toLowerCase();
+    if (name.isEmpty || line.quantity <= 0) return;
+    for (final item in _allInventory) {
+      if (item.name.trim().toLowerCase() != name) continue;
+      final updated = item.copyWith(
+        purchasePrice: line.unitCost > 0 ? line.unitCost : item.purchasePrice,
+        stockCount: item.stockCount + line.quantity,
+        sellingPrice:
+            line.sellingPrice > 0 ? line.sellingPrice : item.sellingPrice,
+      );
+      await updateProduct(updated);
+      return;
+    }
+  }
+
+  Future<void> deleteReceiving(int id) async {
+    await _database.deleteReceiving(id);
+    await _reloadSuppliers();
+    notifyListeners();
+  }
+
+  /// Outstanding payable per supplier from opening balances and receipts.
+  double supplierBalance(int supplierId) {
+    final supplier = supplierById(supplierId);
+    final received = receivings
+        .where((receiving) => receiving.supplierId == supplierId)
+        .fold<double>(0, (sum, receiving) => sum + receiving.total);
+    return (supplier?.openingBalance ?? 0) + received;
+  }
+
+  /// Cash collected from orders inside the given window.
+  double cashSalesBetween(DateTime start, DateTime end) {
+    var total = 0.0;
+    for (final order in _orders) {
+      final at = DateTime.tryParse(order.dateTime);
+      if (at == null) continue;
+      if (at.isBefore(start) || at.isAfter(end)) continue;
+      if (order.paymentMethod.toLowerCase().contains('cash')) {
+        total += order.total;
+      }
+    }
+    return total;
+  }
+
+  /// Reconciles one shift against its drawer movements and cash sales.
+  CashUpSummary cashUpFor(RegisterShift shift) {
+    final cashSales = cashSalesBetween(shift.openedAt, shift.endsAt);
+    final cashIn = shift.movements
+        .where((movement) => !movement.type.isOutflow)
+        .fold<double>(0, (sum, movement) => sum + movement.amount);
+    final cashOut = shift.movements
+        .where((movement) => movement.type.isOutflow)
+        .fold<double>(0, (sum, movement) => sum + movement.amount);
+    final expected = shift.openingFloat + cashSales + cashIn - cashOut;
+    final counted = shift.isOpen ? 0.0 : shift.countedCash.toDouble();
+    return CashUpSummary(
+      openingFloat: shift.openingFloat,
+      cashSales: cashSales,
+      cashIn: cashIn,
+      cashOut: cashOut,
+      expected: expected,
+      counted: counted,
+      variance: counted - expected,
+    );
   }
 
   Future<void> updateGeminiSettings({
@@ -728,34 +1423,108 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setLanguageCode(String code) async {
-    final nextCode = AppStrings.normalize(code);
-    if (_languageCode == nextCode) return;
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/track_mauzo_ui_config.json');
-    await file.writeAsString(jsonEncode({'languageCode': nextCode}), flush: true);
-    _languageCode = nextCode;
+  TaxSettings get taxSettings => _taxSettings;
+
+  Future<void> updateTaxSettings(TaxSettings settings) async {
+    await _database.saveTaxSettings(settings);
+    _taxSettings = settings;
     notifyListeners();
   }
 
+  Future<void> setLanguageCode(String code) async {
+    final nextCode = AppStrings.normalize(code);
+    if (_languageCode == nextCode) return;
+    if (_database is PosCloudDatabase) {
+      await cloudApi!.put('preferences', '1', <String, Object?>{
+        'languageCode': nextCode,
+        ..._storePreferences.toJson(),
+      });
+    }
+    _languageCode = nextCode;
+    await _writeUiConfig();
+    if (_database is PosHybridDatabase) {
+      await _database.saveLanguagePreference(nextCode);
+    }
+    notifyListeners();
+  }
+
+  Future<void> setStorePreferences(StorePreferences preferences) async {
+    final thresholdChanged =
+        _storePreferences.lowStockThreshold != preferences.lowStockThreshold;
+    _storePreferences = preferences;
+    if (thresholdChanged) {
+      await _recalculateStockStates();
+    }
+    await _writeUiConfig();
+    if (_database is PosCloudDatabase) {
+      try {
+        await cloudApi!.put('preferences', '1', <String, Object?>{
+          'languageCode': _languageCode,
+          ...preferences.toJson(),
+        });
+      } catch (_) {}
+    }
+    notifyListeners();
+  }
+
+  Future<void> _writeUiConfig() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/track_mauzo_ui_config.json');
+      Map<String, dynamic> existing = <String, dynamic>{};
+      if (await file.exists()) {
+        try {
+          final decoded = jsonDecode(await file.readAsString());
+          if (decoded is Map<String, dynamic>) existing = decoded;
+        } catch (_) {}
+      }
+      existing['languageCode'] = _languageCode;
+      existing.addAll(_storePreferences.toJson());
+      await file.writeAsString(jsonEncode(existing), flush: true);
+    } catch (_) {
+      rethrow;
+    }
+  }
+
   Future<void> _loadUiConfig() async {
+    _storePreferences = const StorePreferences();
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/track_mauzo_ui_config.json');
       if (!await file.exists()) {
-        await file.writeAsString(
-          jsonEncode({'languageCode': _defaultLanguageCode}),
+        final defaults = <String, dynamic>{
+          'languageCode': _defaultLanguageCode,
+          ..._storePreferences.toJson(),
+        };
+        await file.writeAsString(jsonEncode(defaults));
+      } else {
+        final jsonStr = await file.readAsString();
+        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+        _languageCode = AppStrings.normalize(
+          map['languageCode'] as String? ?? _defaultLanguageCode,
         );
-        return;
+        _storePreferences = StorePreferences.fromJson(map);
       }
-
-      final jsonStr = await file.readAsString();
-      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-      _languageCode = AppStrings.normalize(
-        map['languageCode'] as String? ?? _defaultLanguageCode,
-      );
-    } catch (e) {
+    } catch (_) {
       _languageCode = _defaultLanguageCode;
+      _storePreferences = const StorePreferences();
+    }
+
+    if (_database is PosCloudDatabase) {
+      try {
+        final rows = await cloudApi!.rows('preferences');
+        if (rows.isNotEmpty) {
+          _languageCode = AppStrings.normalize(
+            rows.first['languageCode'] as String? ?? _languageCode,
+          );
+          _storePreferences = StorePreferences.fromJson(
+            <String, dynamic>{
+              ..._storePreferences.toJson(),
+              ...Map<String, dynamic>.from(rows.first),
+            },
+          );
+        }
+      } catch (_) {}
     }
   }
 
@@ -838,7 +1607,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.add(product);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _storeId));
+    unawaited(_persistCart());
     return true;
   }
 
@@ -856,7 +1625,7 @@ class PosLocalStore extends ChangeNotifier {
     }
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _storeId));
+    unawaited(_persistCart());
     return true;
   }
 
@@ -866,7 +1635,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _storeId));
+    unawaited(_persistCart());
     return true;
   }
 
@@ -1050,7 +1819,8 @@ class PosLocalStore extends ChangeNotifier {
           ),
         );
       await _database.upsertDukaAiThread(defaultThread, _storeId);
-      await _database.replaceDukaAiMessages(defaultThread.id, _dukaAiMessages, _storeId);
+      await _database.replaceDukaAiMessages(
+          defaultThread.id, _dukaAiMessages, _storeId);
     } else if (wasActive) {
       _activeDukaAiThreadId = _dukaAiThreads.first.id;
       _dukaAiMessages
@@ -1066,7 +1836,7 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _storeId));
+    unawaited(_persistCart());
   }
 
   void updateQuantity(int index, int delta) {
@@ -1080,7 +1850,17 @@ class PosLocalStore extends ChangeNotifier {
     _cartItems.removeAt(index);
     _updateCartTotals();
     notifyListeners();
-    unawaited(_database.replaceCart(_cartItems, _storeId));
+    unawaited(_persistCart());
+  }
+
+  Future<void> _persistCart() async {
+    try {
+      await _database.replaceCart(_cartItems, _storeId);
+      _lastPersistenceError = null;
+    } catch (error) {
+      _lastPersistenceError = error.toString();
+    }
+    if (!_disposed) notifyListeners();
   }
 
   Future<void> clearCart() async {
@@ -1090,21 +1870,27 @@ class PosLocalStore extends ChangeNotifier {
     await _database.replaceCart(_cartItems, _storeId);
   }
 
-  InventoryProductItem addProduct(InventoryProductItem product) {
+  Future<InventoryProductItem> addProduct(InventoryProductItem product) async {
+    if (_allInventory.any((item) => item.code == product.code)) {
+      throw StateError(
+          'A product with this code already exists. Refresh and try again.');
+    }
+    await _database.replaceInventory([product, ..._allInventory], _storeId);
     _allInventory.insert(0, product);
     _syncProductsFromInventory();
     notifyListeners();
-    unawaited(_database.replaceInventory(_allInventory, _storeId));
     return product;
   }
 
-  void updateProduct(InventoryProductItem product) {
+  Future<void> updateProduct(InventoryProductItem product) async {
     final index = _allInventory.indexWhere((item) => item.code == product.code);
     if (index != -1) {
+      final next = List<InventoryProductItem>.from(_allInventory);
+      next[index] = product;
+      await _database.replaceInventory(next, _storeId);
       _allInventory[index] = product;
       _syncProductsFromInventory();
       notifyListeners();
-      unawaited(_database.replaceInventory(_allInventory, _storeId));
     }
   }
 
@@ -1121,6 +1907,7 @@ class PosLocalStore extends ChangeNotifier {
     await _database.replaceCart(_cartItems, _storeId);
 
     final imagePath = removedItem?.imagePath;
+    if (cloudApi != null) return;
     if (imagePath != null && imagePath.isNotEmpty) {
       final file = File(imagePath);
       if (await file.exists()) {
@@ -1180,7 +1967,7 @@ class PosLocalStore extends ChangeNotifier {
       0,
       (sum, line) => sum + line.totalPrice,
     );
-    final total = subtotal - (discountAmount ?? 0);
+    final total = ((subtotal - (discountAmount ?? 0)) * 100).round() / 100;
     final isCashSale = paymentMethod.toLowerCase() == 'cash';
     if (isCashSale && cashTendered < total) {
       throw StateError('Cash tendered is less than total due.');
@@ -1194,7 +1981,8 @@ class PosLocalStore extends ChangeNotifier {
         throw StateError(
             'Product ${line.product.name} is no longer in inventory.');
       }
-      final inventoryItem = stockUpdates[inventoryIndex] ?? _allInventory[inventoryIndex];
+      final inventoryItem =
+          stockUpdates[inventoryIndex] ?? _allInventory[inventoryIndex];
       if (inventoryItem.stockCount < line.quantity) {
         throw StateError(
           'Only ${inventoryItem.stockCount} unit(s) of ${inventoryItem.name} left in stock.',
@@ -1220,14 +2008,14 @@ class PosLocalStore extends ChangeNotifier {
     }
 
     final now = DateTime.now();
-    final order = CompletedOrder(
-      id: 'ORD-${now.millisecondsSinceEpoch}',
+    var order = CompletedOrder(
+      id: 'ORD-${now.microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32).toRadixString(16)}',
       dateTime: now.toIso8601String(),
       date: _formatDate(now),
       time: _formatTime(now),
       total: total,
       status: 'Completed',
-      cashierName: cashierName,
+      cashierName: cloudApi?.user['name'] as String? ?? cashierName,
       register: registerName,
       paymentMethod: paymentMethod,
       cashTendered: isCashSale ? cashTendered : 0,
@@ -1248,6 +2036,22 @@ class PosLocalStore extends ChangeNotifier {
         creditCustomer = _customers[customerIndex].copyWith(
           debitBalance: _customers[customerIndex].debitBalance + total,
         );
+      } else {
+        // Credit taken for a name that is not on file: create the customer so
+        // the debt is tracked instead of being lost.
+        final now = DateTime.now();
+        creditCustomer = CustomerData(
+          id: 'CUST-${now.microsecondsSinceEpoch}',
+          name: customerName.trim(),
+          phone: '',
+          debitBalance: total,
+          createdAt: now,
+        );
+        _customers.add(creditCustomer);
+        await _database.replaceCustomers(
+          _customers.map(_customerToMap).toList(),
+          _storeId,
+        );
       }
     }
 
@@ -1257,16 +2061,42 @@ class PosLocalStore extends ChangeNotifier {
         order: order,
         storeId: _storeId,
         stockUpdates: stockUpdates.values.toList(),
-        creditCustomer: creditCustomer == null ? null : _customerToMap(creditCustomer),
+        creditCustomer:
+            creditCustomer == null ? null : _customerToMap(creditCustomer),
       );
       for (final item in stockUpdates.values) {
-        final index = _allInventory.indexWhere((product) => product.code == item.code);
+        final index =
+            _allInventory.indexWhere((product) => product.code == item.code);
         if (index >= 0) _allInventory[index] = item;
       }
       if (creditCustomer != null) {
         final id = creditCustomer.id;
         final index = _customers.indexWhere((customer) => customer.id == id);
         if (index >= 0) _customers[index] = creditCustomer;
+      }
+      if (creditCustomer != null) {
+        await _appendDebitEntry(
+          DebitEntry.now(
+            id: 'DEB-${order.id}',
+            customerId: creditCustomer.id,
+            customerName: creditCustomer.name,
+            type: DebitType.charge,
+            amount: total,
+            orderId: order.id,
+            recordedBy: order.cashierName,
+            note: 'Credit sale ${order.id}',
+          ),
+        );
+      }
+      if (_database is PosCloudDatabase) {
+        final cloud = _database;
+        order = cloud.savedCheckout!;
+        _allInventory
+          ..clear()
+          ..addAll(cloud.inventoryAfterCheckout!);
+        _customers
+          ..clear()
+          ..addAll(cloud.customersAfterCheckout!.map(_customerFromMap));
       }
       _syncProductsFromInventory();
       _orders.insert(0, order);
@@ -1282,6 +2112,12 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> voidOrder(String orderId) async {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index == -1) return;
+
+    if (_database is PosCloudDatabase) {
+      await _database.deleteOrder(orderId);
+      await refreshFromServer();
+      return;
+    }
 
     final order = _orders[index];
 
@@ -1308,11 +2144,43 @@ class PosLocalStore extends ChangeNotifier {
     }
 
     _orders.removeAt(index);
+    await _reverseVoidedCredit(order);
     _syncProductsFromInventory();
     notifyListeners();
 
-    await _database.replaceInventory(_allInventory, _storeId);
-    await _database.deleteOrder(orderId);
+    final database = _database;
+    if (database is PosHybridDatabase) {
+      await database.replaceInventoryLocal(_allInventory, _storeId);
+      await database.deleteOrder(orderId);
+    } else {
+      await database.replaceInventory(_allInventory, _storeId);
+      await database.deleteOrder(orderId);
+    }
+  }
+
+  /// Removes the ledger charge created by a credit sale that is being voided
+  /// and reduces the customer's outstanding balance accordingly.
+  Future<void> _reverseVoidedCredit(CompletedOrder order) async {
+    if (order.paymentMethod.toLowerCase() != 'credit') return;
+    final name = order.customerName;
+    if (name == null || name.trim().isEmpty) return;
+
+    final index = _customers.indexWhere((customer) => customer.name == name);
+    if (index == -1) return;
+
+    final customer = _customers[index];
+    final remaining = customer.debitBalance - order.total;
+    _customers[index] = customer.copyWith(
+      debitBalance: remaining > 0 ? remaining : 0,
+    );
+    _debitEntries
+        .removeWhere((entry) => entry.orderId == order.id && !entry.isPayment);
+
+    await _database.replaceCustomers(
+      _customers.map(_customerToMap).toList(),
+      _storeId,
+    );
+    await _persistDebitEntries();
   }
 
   Future<void> reopenOrderForEdit(String orderId) async {
@@ -1377,7 +2245,8 @@ class PosLocalStore extends ChangeNotifier {
     return _staffMembers.where((staff) => staff.roleId == roleId).toList();
   }
 
-  Future<StaffRoleData> saveStaffRole(StaffRoleData role) async {    final existingIndex = _staffRoles.indexWhere((item) => item.id == role.id);
+  Future<StaffRoleData> saveStaffRole(StaffRoleData role) async {
+    final existingIndex = _staffRoles.indexWhere((item) => item.id == role.id);
     final nextRole = existingIndex == -1
         ? role.copyWith(sortOrder: _staffRoles.length)
         : role.copyWith(sortOrder: _staffRoles[existingIndex].sortOrder);
@@ -1421,22 +2290,27 @@ class PosLocalStore extends ChangeNotifier {
     );
   }
 
-  Future<StaffMemberData> saveStaffMember(StaffMemberData staff) async {
+  Future<StaffMemberData> saveStaffMember(StaffMemberData staff,
+      {String? cloudPassword}) async {
     final existingIndex =
         _staffMembers.indexWhere((item) => item.id == staff.id);
     final nextStaff = existingIndex == -1
         ? staff
         : staff.copyWith(createdAt: _staffMembers[existingIndex].createdAt);
+    final nextMembers = List<StaffMemberData>.from(_staffMembers);
     if (existingIndex == -1) {
-      _staffMembers.insert(0, nextStaff);
+      nextMembers.insert(0, nextStaff);
     } else {
-      _staffMembers[existingIndex] = nextStaff;
+      nextMembers[existingIndex] = nextStaff;
     }
-    notifyListeners();
-    await _database.replaceStaffMembers(
-      _staffMembers.map(_staffMemberToMap).toList(),
-      _storeId,
+    await _database.saveStaffRecord(
+      {..._staffMemberToMap(nextStaff), 'store_id': _storeId},
+      cloudPassword,
     );
+    _staffMembers
+      ..clear()
+      ..addAll(nextMembers);
+    notifyListeners();
     return nextStaff;
   }
 
@@ -1468,7 +2342,7 @@ class PosLocalStore extends ChangeNotifier {
 
     return saveStaffMember(
       StaffMemberData(
-        id: 'staff-${DateTime.now().millisecondsSinceEpoch}',
+        id: 'staff-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32).toRadixString(16)}',
         name: name,
         email: email,
         phone: phone,
@@ -1492,6 +2366,7 @@ class PosLocalStore extends ChangeNotifier {
         status: status,
         updatedAt: now,
       ),
+      cloudPassword: password,
     );
   }
 
@@ -1508,21 +2383,16 @@ class PosLocalStore extends ChangeNotifier {
       );
     }
     next = next.copyWith(updatedAt: DateTime.now().toIso8601String());
-    return saveStaffMember(next);
+    return saveStaffMember(next, cloudPassword: newPassword);
   }
 
   Future<void> setStaffStatus(String staffId, StaffStatus status) async {
     final index = _staffMembers.indexWhere((staff) => staff.id == staffId);
     if (index == -1) return;
-    _staffMembers[index] = _staffMembers[index].copyWith(
+    await saveStaffMember(_staffMembers[index].copyWith(
       status: status,
       updatedAt: DateTime.now().toIso8601String(),
-    );
-    notifyListeners();
-    await _database.replaceStaffMembers(
-      _staffMembers.map(_staffMemberToMap).toList(),
-      _storeId,
-    );
+    ));
   }
 
   bool staffUsernameExists(String username, {String? excludingId}) {
@@ -1556,21 +2426,13 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> updateStaffMemberRole(String staffId, String roleId) async {
     final index = _staffMembers.indexWhere((staff) => staff.id == staffId);
     if (index == -1) return;
-    _staffMembers[index] = _staffMembers[index].copyWith(roleId: roleId);
-    notifyListeners();
-    await _database.replaceStaffMembers(
-      _staffMembers.map(_staffMemberToMap).toList(),
-      _storeId,
-    );
+    await saveStaffMember(_staffMembers[index].copyWith(roleId: roleId));
   }
 
   Future<void> deleteStaffMember(String staffId) async {
+    await _database.deleteStaffMember(staffId);
     _staffMembers.removeWhere((staff) => staff.id == staffId);
     notifyListeners();
-    await _database.replaceStaffMembers(
-      _staffMembers.map(_staffMemberToMap).toList(),
-      _storeId,
-    );
   }
 
   void _syncProductsFromInventory() {
@@ -1583,7 +2445,7 @@ class PosLocalStore extends ChangeNotifier {
     return ProductItem(
       product.name,
       _deriveProductSize(product),
-      product.sellingPrice.toStringAsFixed(0),
+      product.sellingPrice.toStringAsFixed(2),
       product.artType,
       code: product.code,
       category: product.category,
@@ -1625,8 +2487,30 @@ class PosLocalStore extends ChangeNotifier {
 
   InventoryStockState _deriveStockState(int stockCount) {
     if (stockCount <= 0) return InventoryStockState.outOfStock;
-    if (stockCount <= 20) return InventoryStockState.lowStock;
+    if (stockCount <= _storePreferences.lowStockThreshold) {
+      return InventoryStockState.lowStock;
+    }
     return InventoryStockState.inStock;
+  }
+
+  Future<void> _recalculateStockStates() async {
+    var changed = false;
+    for (var i = 0; i < _allInventory.length; i++) {
+      final item = _allInventory[i];
+      final nextState = _deriveStockState(item.stockCount);
+      if (item.stockState != nextState) {
+        _allInventory[i] = item.copyWith(stockState: nextState);
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    _syncProductsFromInventory();
+    final database = _database;
+    if (database is PosHybridDatabase) {
+      await database.replaceInventoryLocal(_allInventory, _storeId);
+    } else {
+      await database.replaceInventory(_allInventory, _storeId);
+    }
   }
 
   String _deriveProductSize(InventoryProductItem product) {
@@ -1660,17 +2544,30 @@ class PosLocalStore extends ChangeNotifier {
       'Nov',
       'Dec',
     ];
-    return '${monthNames[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+    final month = monthNames[dateTime.month - 1];
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final monthNumber = dateTime.month.toString().padLeft(2, '0');
+    return switch (_storePreferences.dateFormat) {
+      'd MMM yyyy' => '${dateTime.day} $month ${dateTime.year}',
+      'dd/MM/yyyy' => '$day/$monthNumber/${dateTime.year}',
+      'MM/dd/yyyy' => '$monthNumber/$day/${dateTime.year}',
+      'yyyy-MM-dd' => '${dateTime.year}-$monthNumber-$day',
+      _ => '$month ${dateTime.day}, ${dateTime.year}',
+    };
   }
 
   String _formatTime(DateTime dateTime) {
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    if (_storePreferences.uses24HourTime) {
+      return '${dateTime.hour.toString().padLeft(2, '0')}:$minute';
+    }
     final hour = dateTime.hour == 0
         ? 12
         : dateTime.hour > 12
             ? dateTime.hour - 12
             : dateTime.hour;
     final suffix = dateTime.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:${dateTime.minute.toString().padLeft(2, '0')} $suffix';
+    return '$hour:$minute $suffix';
   }
 
   Map<String, Object?> _staffRoleToMap(StaffRoleData role) {
@@ -1755,10 +2652,116 @@ class PosLocalStore extends ChangeNotifier {
   final List<CustomerData> _customers = <CustomerData>[];
   List<CustomerData> get customers => _customers;
 
+  final List<DebitEntry> _debitEntries = <DebitEntry>[];
+
+  /// Full credit ledger, newest first.
+  List<DebitEntry> get debitEntries => _debitEntries;
+
+  /// Ledger entries for one customer, newest first.
+  List<DebitEntry> debitEntriesFor(String customerId) {
+    return _debitEntries
+        .where((entry) => entry.customerId == customerId)
+        .toList(growable: false);
+  }
+
+  /// Total money currently owed by all customers.
+  double get outstandingDebit {
+    var total = 0.0;
+    for (final customer in _customers) {
+      if (customer.debitBalance > 0) total += customer.debitBalance;
+    }
+    return total;
+  }
+
+  /// Number of customers with an unpaid balance.
+  int get debtorCount {
+    var count = 0;
+    for (final customer in _customers) {
+      if (customer.debitBalance > 0) count++;
+    }
+    return count;
+  }
+
+  /// Money collected from credit customers since [since].
+  double debitCollectedSince(DateTime since) {
+    var total = 0.0;
+    for (final entry in _debitEntries) {
+      if (!entry.isPayment) continue;
+      if (entry.createdAt.isBefore(since)) continue;
+      total += entry.amount;
+    }
+    return total;
+  }
+
+  Future<void> _persistDebitEntries() async {
+    await _database.replaceDebitEntries(
+      _debitEntries.map((entry) => entry.toMap()).toList(),
+      _storeId,
+    );
+  }
+
+  Future<void> _appendDebitEntry(DebitEntry entry) async {
+    _debitEntries.insert(0, entry);
+    try {
+      await _database.insertDebitEntry(entry.toMap(), _storeId);
+    } catch (_) {
+      // Cloud accounts keep the ledger on the server; the in-memory entry is
+      // still reported for this session.
+    }
+    notifyListeners();
+  }
+
+  /// Records money a customer paid towards their credit balance.
+  ///
+  /// Returns the updated customer, or null when the payment cannot be applied
+  /// (unknown customer, non-positive amount, or nothing owed).
+  Future<CustomerData?> recordDebtPayment({
+    required String customerId,
+    required double amount,
+    String note = '',
+    String recordedBy = '',
+  }) async {
+    final index =
+        _customers.indexWhere((customer) => customer.id == customerId);
+    if (index == -1) return null;
+    if (amount <= 0) return null;
+
+    final customer = _customers[index];
+    final applied =
+        amount > customer.debitBalance ? customer.debitBalance : amount;
+    if (applied <= 0) return null;
+
+    final updated = customer.copyWith(
+      debitBalance: customer.debitBalance - applied,
+    );
+    _customers[index] = updated;
+    await _database.replaceCustomers(
+      _customers.map(_customerToMap).toList(),
+      _storeId,
+    );
+
+    final entry = DebitEntry.now(
+      id: 'DEB-${DateTime.now().microsecondsSinceEpoch}',
+      customerId: customer.id,
+      customerName: customer.name,
+      type: DebitType.payment,
+      amount: applied,
+      note: note.trim(),
+      recordedBy: recordedBy.trim().isEmpty
+          ? (cloudApi?.user['name'] as String?) ?? ''
+          : recordedBy.trim(),
+    );
+    await _appendDebitEntry(entry);
+    return updated;
+  }
+
   Future<void> addCustomer(CustomerData customer) async {
+    await _database.replaceCustomers(
+      [..._customers, customer].map(_customerToMap).toList(),
+      _storeId,
+    );
     _customers.add(customer);
     notifyListeners();
-    await _database.replaceCustomers(_customers.map(_customerToMap).toList(), _storeId);
   }
 
   CustomerData _customerFromMap(Map<String, Object?> map) {
@@ -1794,15 +2797,48 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> updateCustomer(CustomerData customer) async {
     final index = _customers.indexWhere((c) => c.id == customer.id);
     if (index == -1) return;
+    final next = List<CustomerData>.from(_customers);
+    next[index] = customer;
+    await _database.replaceCustomers(
+        next.map(_customerToMap).toList(), _storeId);
     _customers[index] = customer;
     notifyListeners();
-    await _database.replaceCustomers(_customers.map(_customerToMap).toList(), _storeId);
   }
 
   Future<void> deleteCustomer(String customerId) async {
+    await _database.replaceCustomers(
+      _customers.where((c) => c.id != customerId).map(_customerToMap).toList(),
+      _storeId,
+    );
     _customers.removeWhere((c) => c.id == customerId);
+    _debitEntries.removeWhere((entry) => entry.customerId == customerId);
+    await _persistDebitEntries();
     notifyListeners();
-    await _database.replaceCustomers(_customers.map(_customerToMap).toList(), _storeId);
+  }
+
+  /// Removes a single ledger entry (for example a mis-recorded payment) and
+  /// re-applies it to the customer's outstanding balance.
+  Future<void> deleteDebitEntry(String entryId) async {
+    final index = _debitEntries.indexWhere((entry) => entry.id == entryId);
+    if (index == -1) return;
+    final entry = _debitEntries[index];
+    _debitEntries.removeAt(index);
+
+    final customerIndex =
+        _customers.indexWhere((customer) => customer.id == entry.customerId);
+    if (customerIndex != -1) {
+      final customer = _customers[customerIndex];
+      final next = customer.debitBalance - entry.signedAmount;
+      _customers[customerIndex] =
+          customer.copyWith(debitBalance: next > 0 ? next : 0);
+      await _database.replaceCustomers(
+        _customers.map(_customerToMap).toList(),
+        _storeId,
+      );
+    }
+
+    await _persistDebitEntries();
+    notifyListeners();
   }
 
   CustomerData? customerById(String id) {
@@ -1854,5 +2890,242 @@ class PosLocalStore extends ChangeNotifier {
       'topName': topName,
       'topValue': topValue,
     };
+  }
+
+  // ---------- Auth ----------
+  bool _verifyPassword(String password, String salt, String hash) {
+    final digest = sha256.convert(utf8.encode('$salt:$password')).toString();
+    return digest == hash;
+  }
+
+  Future<bool> login(String identifier, String password) async {
+    _lastAuthError = null;
+    final trimmed = identifier.trim().replaceAll(RegExp(r'\s+'), '');
+    if (trimmed.isEmpty || password.isEmpty) {
+      _lastAuthError = 'missing_credentials';
+      return false;
+    }
+
+    StaffMemberData? member;
+    for (final staff in _staffMembers) {
+      final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
+      final staffUser = staff.username.trim().replaceAll(RegExp(r'\s+'), '');
+      if (staffPhone.isNotEmpty &&
+          (staffPhone == trimmed ||
+              staffPhone.endsWith(trimmed) ||
+              trimmed.endsWith(staffPhone))) {
+        member = staff;
+        break;
+      }
+      if (staffUser.isNotEmpty &&
+          staffUser.toLowerCase() == trimmed.toLowerCase()) {
+        member = staff;
+        break;
+      }
+    }
+
+    if (member == null) {
+      _lastAuthError = 'user_not_found';
+      return false;
+    }
+
+    if (!member.hasLogin || !member.isActive) {
+      _lastAuthError = 'account_inactive';
+      return false;
+    }
+
+    final valid =
+        _verifyPassword(password, member.passwordSalt, member.passwordHash);
+    if (!valid) {
+      _lastAuthError = 'invalid_password';
+      return false;
+    }
+
+    _isLoggedIn = true;
+    _currentUserId = member.id;
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> register({
+    required String name,
+    required String phone,
+    required String password,
+    String? email,
+    String? roleId,
+    String? username,
+  }) async {
+    _lastAuthError = null;
+    final cleanPhone = phone.trim().replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.isEmpty) {
+      _lastAuthError = 'phone_required';
+      return false;
+    }
+    if (password.length < 6) {
+      _lastAuthError = 'invalid_password';
+      return false;
+    }
+
+    // Check if phone already registered
+    for (final staff in _staffMembers) {
+      final existingPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
+      if (existingPhone.isNotEmpty && existingPhone == cleanPhone) {
+        _lastAuthError = 'phone_taken';
+        return false;
+      }
+    }
+
+    // Auto-assign owner role if available or first role
+    final chosenRoleId = roleId ??
+        (_staffRoles.any((r) => r.id == 'owner')
+            ? 'owner'
+            : (_staffRoles.isNotEmpty ? _staffRoles.first.id : 'owner'));
+
+    final generatedUsername = (username != null && username.trim().isNotEmpty)
+        ? username.trim()
+        : cleanPhone;
+
+    await addStaffMember(
+      name: name.trim(),
+      email: email?.trim() ?? '',
+      phone: cleanPhone,
+      roleId: chosenRoleId,
+      username: generatedUsername,
+      password: password,
+    );
+
+    final ok = await login(cleanPhone, password);
+    if (!ok && _lastAuthError == null) _lastAuthError = 'login_failed';
+    return ok;
+  }
+
+  Future<bool> changeCurrentUserPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    _lastAuthError = null;
+    if (newPassword.length < 6) {
+      _lastAuthError = 'password_too_short';
+      return false;
+    }
+
+    StaffMemberData? member;
+    final activeId = _currentUserId ?? currentUserId;
+    if (activeId != null) {
+      for (final staff in _staffMembers) {
+        if (staff.id == activeId) {
+          member = staff;
+          break;
+        }
+      }
+    }
+    if (member == null) {
+      final phone = profile.contactNumber.trim().replaceAll(RegExp(r'\s+'), '');
+      if (phone.isNotEmpty) {
+        for (final staff in _staffMembers) {
+          final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
+          if (staffPhone.isNotEmpty &&
+              (staffPhone == phone ||
+                  staffPhone.endsWith(phone) ||
+                  phone.endsWith(staffPhone))) {
+            member = staff;
+            break;
+          }
+        }
+      }
+    }
+
+    if (member == null || !member.hasPassword) {
+      _lastAuthError = 'user_not_found';
+      return false;
+    }
+    if (!_verifyPassword(
+      currentPassword,
+      member.passwordSalt,
+      member.passwordHash,
+    )) {
+      _lastAuthError = 'current_password_incorrect';
+      return false;
+    }
+
+    final credentials = _hashPassword(newPassword);
+    final updated = member.copyWith(
+      passwordHash: credentials.hash,
+      passwordSalt: credentials.salt,
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+    await saveStaffMember(updated, cloudPassword: newPassword);
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> resetPassword({
+    required String phone,
+    required String newPassword,
+  }) async {
+    _lastAuthError = null;
+    final cleanPhone = phone.trim().replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.isEmpty) {
+      _lastAuthError = 'phone_required';
+      return false;
+    }
+    if (newPassword.length < 6) {
+      _lastAuthError = 'invalid_password';
+      return false;
+    }
+
+    StaffMemberData? member;
+    int index = -1;
+    for (int i = 0; i < _staffMembers.length; i++) {
+      final staffPhone =
+          _staffMembers[i].phone.trim().replaceAll(RegExp(r'\s+'), '');
+      if (staffPhone.isNotEmpty &&
+          (staffPhone == cleanPhone ||
+              staffPhone.endsWith(cleanPhone) ||
+              cleanPhone.endsWith(staffPhone))) {
+        member = _staffMembers[i];
+        index = i;
+        break;
+      }
+    }
+
+    if (member == null || index == -1) {
+      _lastAuthError = 'user_not_found';
+      return false;
+    }
+
+    final credentials = _hashPassword(newPassword);
+    final updated = member.copyWith(
+      passwordHash: credentials.hash,
+      passwordSalt: credentials.salt,
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+
+    await saveStaffMember(updated);
+
+    // If cloud API is enabled, also update cloud password
+    if (cloudApi != null) {
+      try {
+        await cloudApi!.put('staff', updated.id, _staffMemberToMap(updated));
+      } catch (_) {}
+    }
+
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> logout() async {
+    if (cloudApi != null) {
+      try {
+        await cloudApi!.logout();
+      } catch (_) {
+        // Signing out must also work while the device is offline.
+      }
+      await _database.clearSyncSession();
+      return;
+    }
+    _isLoggedIn = false;
+    _currentUserId = null;
+    notifyListeners();
   }
 }

@@ -1,3 +1,4 @@
+import '../widgets/app_image.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -237,7 +238,9 @@ class _AddProductPageState extends State<AddProductPage> {
 
   InventoryStockState _deriveStockState(int stock) {
     if (stock <= 0) return InventoryStockState.outOfStock;
-    if (stock <= 20) return InventoryStockState.lowStock;
+    final threshold =
+        context.read<PosLocalStore>().storePreferences.lowStockThreshold;
+    if (stock <= threshold) return InventoryStockState.lowStock;
     return InventoryStockState.inStock;
   }
 
@@ -368,7 +371,8 @@ class _AddProductPageState extends State<AddProductPage> {
                                             .numberWithOptions(
                                           decimal: true,
                                         ),
-                                        validator: (val) => _validateMoney(val, strings),
+                                        validator: (val) =>
+                                            _validateMoney(val, strings),
                                       ),
                                     ],
                                   ),
@@ -392,7 +396,8 @@ class _AddProductPageState extends State<AddProductPage> {
                                             .numberWithOptions(
                                           decimal: true,
                                         ),
-                                        validator: (val) => _validateMoney(val, strings),
+                                        validator: (val) =>
+                                            _validateMoney(val, strings),
                                       ),
                                     ],
                                   ),
@@ -409,8 +414,9 @@ class _AddProductPageState extends State<AddProductPage> {
                               onChanged: (value) {
                                 setState(() => _selectedCategory = value);
                               },
-                              validator: (value) =>
-                                  value == null ? strings.categoryRequired : null,
+                              validator: (value) => value == null
+                                  ? strings.categoryRequired
+                                  : null,
                             ),
                             _FieldLabel(
                               strings.stockQuantity,
@@ -492,9 +498,9 @@ class _AddProductPageState extends State<AddProductPage> {
                       label: strings.save,
                       icon: Icons.save_outlined,
                       onTap: _saveProduct,
-                      color: const Color(0xFF5B8CFF),
+                      color: AppColors.primary,
                       foregroundColor: Colors.white,
-                      borderColor: const Color(0xFF5B8CFF),
+                      borderColor: AppColors.primary,
                       height: 64,
                       radius: 8,
                       paddingHorizontal: 0,
@@ -583,7 +589,7 @@ class _TextInputField extends StatelessWidget {
       maxLines: maxLines,
       validator: validator,
       style: const TextStyle(
-        color: Color(0xFF33363F),
+        color: Color(0xFF111111),
         fontSize: 14,
         fontWeight: FontWeight.w500,
       ),
@@ -611,7 +617,7 @@ class _TextInputField extends StatelessWidget {
         suffixIcon: trailingIcon != null
             ? Icon(
                 trailingIcon,
-                color: const Color(0xFF5B8CFF),
+                color: AppColors.primary,
                 size: 20,
               )
             : null,
@@ -625,7 +631,7 @@ class _TextInputField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF5B8CFF), width: 1.2),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -664,7 +670,7 @@ class _DropdownInputField extends FormField<String> {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide:
-                      const BorderSide(color: Color(0xFF5B8CFF), width: 1.2),
+                      const BorderSide(color: AppColors.primary, width: 1.2),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -687,7 +693,7 @@ class _DropdownInputField extends FormField<String> {
                   ),
                   icon: const Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xFF5B8CFF),
+                    color: AppColors.primary,
                     size: 24,
                   ),
                   items: items
@@ -697,7 +703,7 @@ class _DropdownInputField extends FormField<String> {
                           child: Text(
                             item,
                             style: const TextStyle(
-                              color: Color(0xFF33363F),
+                              color: Color(0xFF111111),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -743,8 +749,8 @@ class _UploadBox extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.file(
-                    File(imagePath!),
+                  Image(
+                    image: appImageProvider(context, imagePath!),
                     fit: BoxFit.cover,
                   ),
                   Positioned(
@@ -764,14 +770,14 @@ class _UploadBox extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.edit_outlined,
-                            color: Color(0xFF2B6FF3),
+                            color: AppColors.primary,
                             size: 16,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             strings.change,
                             style: const TextStyle(
-                              color: Color(0xFF2B6FF3),
+                              color: AppColors.primary,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -788,10 +794,10 @@ class _UploadBox extends StatelessWidget {
               children: [
                 const CircleAvatar(
                   radius: 34,
-                  backgroundColor: Color(0xFFEAF3FF),
+                  backgroundColor: Color(0xFFF3F4F6),
                   child: Icon(
                     Icons.photo_camera_outlined,
-                    color: Color(0xFF5B8CFF),
+                    color: AppColors.primary,
                     size: 32,
                   ),
                 ),
@@ -799,7 +805,7 @@ class _UploadBox extends StatelessWidget {
                 Text(
                   strings.uploadProductImage,
                   style: const TextStyle(
-                    color: Color(0xFF33363F),
+                    color: Color(0xFF111111),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),

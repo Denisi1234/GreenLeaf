@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -32,42 +33,45 @@ class CustomersReportPage extends StatelessWidget {
 
   List<MetricData> _buildMetrics(ReportTable table, PosReportData data) {
     final totalCustomers = table.rows.length;
-    final totalSales = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
-    final avgPerCustomer = totalCustomers > 0 ? totalSales / totalCustomers : 0.0;
-    final topCustomerSales = table.rows.isNotEmpty ? (table.rows.first[3] as num).toDouble() : 0.0;
+    final totalSales = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final avgPerCustomer =
+        totalCustomers > 0 ? totalSales / totalCustomers : 0.0;
+    final topCustomerSales =
+        table.rows.isNotEmpty ? (table.rows.first[3] as num).toDouble() : 0.0;
 
     return [
       MetricData(
         title: 'Active Customers',
         value: NumberFormat('#,###').format(totalCustomers),
         icon: Icons.people,
-        iconColor: Colors.indigo,
-        tint: Colors.indigo.withValues(alpha: 0.1),
-        valueColor: Colors.indigo,
+        iconColor: Color(0xFF166534),
+        tint: Color(0xFF166534).withValues(alpha: 0.1),
+        valueColor: Color(0xFF166534),
       ),
       MetricData(
         title: 'Total Customer Sales',
         value: '₹${NumberFormat('#,##0.##').format(totalSales)}',
         icon: Icons.attach_money,
-        iconColor: Colors.green,
-        tint: Colors.green.withValues(alpha: 0.1),
-        valueColor: Colors.green,
+        iconColor: Color(0xFF111111),
+        tint: Color(0xFF111111).withValues(alpha: 0.1),
+        valueColor: Color(0xFF111111),
       ),
       MetricData(
         title: 'Avg per Customer',
         value: '₹${NumberFormat('#,##0.##').format(avgPerCustomer)}',
         icon: Icons.analytics,
-        iconColor: Colors.blue,
-        tint: Colors.blue.withValues(alpha: 0.1),
-        valueColor: Colors.blue,
+        iconColor: Color(0xFF15803D),
+        tint: Color(0xFF15803D).withValues(alpha: 0.1),
+        valueColor: Color(0xFF15803D),
       ),
       MetricData(
         title: 'Top Customer',
         value: '₹${NumberFormat('#,##0.##').format(topCustomerSales)}',
         icon: Icons.star,
-        iconColor: Colors.amber,
-        tint: Colors.amber.withValues(alpha: 0.1),
-        valueColor: Colors.amber,
+        iconColor: Color(0xFF15803D),
+        tint: Color(0xFF15803D).withValues(alpha: 0.1),
+        valueColor: Color(0xFF15803D),
       ),
     ];
   }
@@ -107,8 +111,10 @@ class CustomersReportPage extends StatelessWidget {
             child: _SegmentStat(
               label: 'Cash Customers',
               value: NumberFormat('#,###').format(cashCustomers),
-              percentage: totalCustomers > 0 ? (cashCustomers / totalCustomers) * 100 : 0,
-              color: Colors.green,
+              percentage: totalCustomers > 0
+                  ? (cashCustomers / totalCustomers) * 100
+                  : 0,
+              color: Color(0xFF111111),
               icon: Icons.payments,
             ),
           ),
@@ -116,8 +122,10 @@ class CustomersReportPage extends StatelessWidget {
             child: _SegmentStat(
               label: 'Credit Customers',
               value: NumberFormat('#,###').format(creditCustomers),
-              percentage: totalCustomers > 0 ? (creditCustomers / totalCustomers) * 100 : 0,
-              color: Colors.orange,
+              percentage: totalCustomers > 0
+                  ? (creditCustomers / totalCustomers) * 100
+                  : 0,
+              color: AppColors.ink,
               icon: Icons.credit_card,
             ),
           ),
@@ -126,7 +134,7 @@ class CustomersReportPage extends StatelessWidget {
               label: 'Outstanding Credit',
               value: '₹${NumberFormat('#,##0').format(totalCreditBalance)}',
               percentage: 0,
-              color: Colors.red,
+              color: AppColors.ink,
               icon: Icons.account_balance_wallet,
               showPercentage: false,
             ),
@@ -149,24 +157,30 @@ class CustomersReportPage extends StatelessWidget {
     final topCustomer = table.rows.first;
     final topCustomerName = topCustomer[0].toString();
     final topCustomerSales = (topCustomer[3] as num).toDouble();
-    final totalSales = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
-    final topCustomerShare = totalSales > 0 ? (topCustomerSales / totalSales) * 100 : 0.0;
+    final totalSales = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final topCustomerShare =
+        totalSales > 0 ? (topCustomerSales / totalSales) * 100 : 0.0;
 
     insights.add(InsightCard(
       title: 'Top Customer',
-      description: '$topCustomerName contributes ${topCustomerShare.toStringAsFixed(1)}% of customer sales (₹${NumberFormat('#,##0').format(topCustomerSales)})',
+      description:
+          '$topCustomerName contributes ${topCustomerShare.toStringAsFixed(1)}% of customer sales (₹${NumberFormat('#,##0').format(topCustomerSales)})',
       icon: Icons.person,
-      color: Colors.indigo,
+      color: Color(0xFF166534),
       severity: InsightSeverity.success,
     ));
 
     if (creditCustomers > 0) {
       insights.add(InsightCard(
         title: 'Outstanding Receivables',
-        description: '$creditCustomers customers owe ₹${NumberFormat('#,##0').format(totalCreditBalance)}. Regular follow-up recommended.',
+        description:
+            '$creditCustomers customers owe ₹${NumberFormat('#,##0').format(totalCreditBalance)}. Regular follow-up recommended.',
         icon: Icons.money_off,
         color: Colors.red,
-        severity: totalCreditBalance > 10000 ? InsightSeverity.critical : InsightSeverity.warning,
+        severity: totalCreditBalance > 10000
+            ? InsightSeverity.critical
+            : InsightSeverity.warning,
         actionLabel: 'View Balances',
         onAction: () => Navigator.of(context).pushNamed('/reports/balances'),
       ));
@@ -175,9 +189,10 @@ class CustomersReportPage extends StatelessWidget {
     if (table.rows.length < 10) {
       insights.add(InsightCard(
         title: 'Small Customer Base',
-        description: 'Only ${table.rows.length} active customers. Focus on customer acquisition and retention.',
+        description:
+            'Only ${table.rows.length} active customers. Focus on customer acquisition and retention.',
         icon: Icons.group_add,
-        color: Colors.blue,
+        color: Color(0xFF15803D),
         severity: InsightSeverity.info,
       ));
     }

@@ -8,10 +8,13 @@ import 'pos_report_page.dart';
 const Color _ink = AppColors.ink;
 const Color _muted = Color(0xFF6C7483);
 const Color _border = Color(0xFFE7EAF0);
-const Color _blue = Color(0xFF2D6CEA);
 
 class ReportsCatalogPage extends StatefulWidget {
-  const ReportsCatalogPage({super.key});
+  const ReportsCatalogPage({super.key, this.embedded = false});
+
+  /// When true the page renders only the report directory without its own
+  /// scaffold, header or drawer. Used by the Reports tab.
+  final bool embedded;
 
   @override
   State<ReportsCatalogPage> createState() => _ReportsCatalogPageState();
@@ -53,6 +56,43 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
     final visible = _visibleSections;
     final isSearching = _query.trim().isNotEmpty;
 
+    final directory = ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        _ReportSearchField(
+          controller: _searchController,
+          query: _query,
+          onChanged: (value) => setState(() => _query = value),
+          onClear: () {
+            _searchController.clear();
+            setState(() => _query = '');
+          },
+        ),
+        const SizedBox(height: 16),
+        if (visible.isEmpty)
+          _EmptySearchState(query: _query)
+        else
+          for (final section in visible) ...[
+            _ReportSectionTile(
+              key: ValueKey(
+                '${section.categoryTitle}-${isSearching ? _query : ''}',
+              ),
+              section: section,
+              forceExpanded: isSearching,
+            ),
+            const SizedBox(height: 12),
+          ],
+      ],
+    );
+
+    if (widget.embedded) {
+      return ColoredBox(
+        color: AppColors.pageBackground,
+        child: SafeArea(top: false, child: directory),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       drawer: const MarketAppDrawer(selectedItem: 'Home'),
@@ -60,131 +100,9 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
         child: Column(
           children: [
             const _ReportsCatalogHeader(),
-            Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                children: [
-                  _LibrarySummaryCard(
-                    totalReports: posReports.length,
-                    totalCategories: _sections.length,
-                  ),
-                  const SizedBox(height: 16),
-                  _ReportSearchField(
-                    controller: _searchController,
-                    query: _query,
-                    onChanged: (value) => setState(() => _query = value),
-                    onClear: () {
-                      _searchController.clear();
-                      setState(() => _query = '');
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  if (visible.isEmpty)
-                    _EmptySearchState(query: _query)
-                  else
-                    for (final section in visible) ...[
-                      _ReportSectionTile(
-                        key: ValueKey(
-                          '${section.categoryTitle}-${isSearching ? _query : ''}',
-                        ),
-                        section: section,
-                        forceExpanded: isSearching,
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                ],
-              ),
-            ),
+            Expanded(child: directory),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _LibrarySummaryCard extends StatelessWidget {
-  const _LibrarySummaryCard({
-    required this.totalReports,
-    required this.totalCategories,
-  });
-
-  final int totalReports;
-  final int totalCategories;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFEEF4FF), Color(0xFFF8FBFF)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE7FB)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFDCE7FB)),
-            ),
-            child: const Icon(
-              Icons.insights_rounded,
-              color: _blue,
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Report Library',
-                  style: TextStyle(
-                    color: _ink,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$totalReports reports across '
-                  '$totalCategories categories',
-                  style: const TextStyle(
-                    color: _muted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: _blue,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '$totalReports',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -325,23 +243,23 @@ List<_ReportSection> _buildSections() {
 
 Color _accentFor(ReportGroup group) {
   return switch (group) {
-    ReportGroup.graphical => const Color(0xFF2D6CEA),
-    ReportGroup.summary => const Color(0xFF7A57E5),
-    ReportGroup.detailed => const Color(0xFFE28A0F),
-    ReportGroup.inventory => const Color(0xFF46A35F),
-    ReportGroup.accounting => const Color(0xFF1296A8),
-    ReportGroup.operations => const Color(0xFFD6456B),
+    ReportGroup.graphical => AppColors.primary,
+    ReportGroup.summary => AppColors.ink,
+    ReportGroup.detailed => AppColors.danger,
+    ReportGroup.inventory => const Color(0xFF111111),
+    ReportGroup.accounting => const Color(0xFF111111),
+    ReportGroup.operations => AppColors.textMuted,
   };
 }
 
 Color _softFor(ReportGroup group) {
   return switch (group) {
-    ReportGroup.graphical => const Color(0xFFEEF4FF),
-    ReportGroup.summary => const Color(0xFFF4F0FF),
-    ReportGroup.detailed => const Color(0xFFFFF6E8),
-    ReportGroup.inventory => const Color(0xFFF0F8F1),
-    ReportGroup.accounting => const Color(0xFFEDF9FB),
-    ReportGroup.operations => const Color(0xFFFDEEF2),
+    ReportGroup.graphical => const Color(0xFFF3F4F6),
+    ReportGroup.summary => const Color(0xFFF3F4F6),
+    ReportGroup.detailed => AppColors.dangerLight,
+    ReportGroup.inventory => const Color(0xFFF3F4F6),
+    ReportGroup.accounting => const Color(0xFFF3F4F6),
+    ReportGroup.operations => const Color(0xFFF3F4F6),
   };
 }
 
@@ -372,9 +290,21 @@ class _ReportsCatalogHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MarketPageHeader(
+    return MarketPageHeader(
       title: 'Reports',
       titleSize: 21,
+      showBackButton: false,
+      leading: GestureDetector(
+        onTap: () => Navigator.of(context).maybePop(),
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.ink,
+            size: 18,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -444,9 +374,7 @@ class _ReportSectionTile extends StatelessWidget {
           children: [
             if (section.reports.isNotEmpty) ...[
               const Divider(height: 1, color: _border),
-              for (var index = 0;
-                  index < section.reports.length;
-                  index++) ...[
+              for (var index = 0; index < section.reports.length; index++) ...[
                 _ReportListItem(
                   report: section.reports[index],
                   accent: section.accent,

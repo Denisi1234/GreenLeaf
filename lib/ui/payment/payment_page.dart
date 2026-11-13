@@ -11,6 +11,7 @@ import '../widgets/market_shared_widgets.dart';
 import '../more/customers_page.dart';
 import 'record_debit_bottom_sheet.dart';
 import '../../utils/currency_formatter.dart';
+import '../../service/app_notification_service.dart';
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({
@@ -197,6 +198,11 @@ class _PaymentPageState extends State<PaymentPage> {
       builder: (context) => RecordDebitBottomSheet(
         customerName: customer,
         total: _grandTotal,
+        currentBalance: context
+                .read<PosLocalStore>()
+                .customerByName(customer)
+                ?.debitBalance ??
+            0,
       ),
     );
 
@@ -274,20 +280,28 @@ class _PaymentPageState extends State<PaymentPage> {
     }
 
     try {
-      final profile = context.read<PosLocalStore>().profile;
+      final store = context.read<PosLocalStore>();
+      final profile = store.profile;
       final cashierName =
           profile.ownerName.isEmpty ? 'Cashier' : profile.ownerName;
-      final completedOrder =
-          await context.read<PosLocalStore>().completeCashSale(
-                items: _orderLines,
-                cashTendered: paymentMethod == 'Cash' ? tendered : 0,
-                cashierName: cashierName,
-                registerName: 'POS-01',
-                customerName: customerName ?? _selectedCustomer,
-                discountAmount: _discountAmount > 0 ? _discountAmount : null,
-                discountLabel: _discountAmount > 0 ? _discountLabel : null,
-                paymentMethod: paymentMethod,
-              );
+      final registerName = store.openShift?.register ?? 'POS-01';
+      final completedOrder = await store.completeCashSale(
+        items: _orderLines,
+        cashTendered: paymentMethod == 'Cash' ? tendered : 0,
+        cashierName: cashierName,
+        registerName: registerName,
+        customerName: customerName ?? _selectedCustomer,
+        discountAmount: _discountAmount > 0 ? _discountAmount : null,
+        discountLabel: _discountAmount > 0 ? _discountLabel : null,
+        paymentMethod: paymentMethod,
+      );
+
+      // Trigger real OS push notification on the device
+      AppNotificationService.instance.showSaleNotification(
+        receiptNo: completedOrder.receiptNo,
+        totalAmount: completedOrder.total,
+        currency: profile.currency.isNotEmpty ? profile.currency : 'TSh',
+      );
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -337,19 +351,19 @@ class _PaymentPageState extends State<PaymentPage> {
             ),
             if (_selectedCustomer != null)
               Container(
-                color: const Color(0xFFE8F4FF),
+                color: const Color(0xFFF3F4F6),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 child: Row(
                   children: [
                     const Icon(Icons.person_outline,
-                        size: 18, color: Color(0xFF2B5FCE)),
+                        size: 18, color: AppColors.textBody),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Customer: $_selectedCustomer',
                         style: const TextStyle(
-                          color: Color(0xFF2B5FCE),
+                          color: AppColors.textBody,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -358,7 +372,7 @@ class _PaymentPageState extends State<PaymentPage> {
                     GestureDetector(
                       onTap: () => setState(() => _selectedCustomer = null),
                       child: const Icon(Icons.close,
-                          size: 18, color: Color(0xFF2B5FCE)),
+                          size: 18, color: AppColors.textBody),
                     ),
                   ],
                 ),
@@ -403,7 +417,7 @@ class _PaymentPageState extends State<PaymentPage> {
                   const SizedBox(height: 12),
                   _FooterActionButton(
                     label: _clearLabel(config.category),
-                    color: const Color(0xFFE66C73),
+                    color: AppColors.textBody,
                     onTap: _clearCart,
                   ),
                 ],
@@ -555,28 +569,103 @@ class _CounterLineTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            children: [
-              GestureDetector(
-                onTap: onIncrease,
-                child: const Icon(
-                  Icons.add_circle_outline,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: onDecrease,
-                child: const Icon(
-                  Icons.remove_circle_outline,
-                  color: Color(0xFFE66C73),
-                  size: 20,
-                ),
-              ),
-            ],
+          _QuantityStepper(
+            quantity: line.quantity,
+            onDecrease: onDecrease,
+            onIncrease: onIncrease,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuantityStepper extends StatelessWidget {
+  const _QuantityStepper({
+    required this.quantity,
+    required this.onDecrease,
+    required this.onIncrease,
+  });
+
+  final int quantity;
+  final VoidCallback onDecrease;
+  final VoidCallback onIncrease;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFF3F4F6)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StepperButton(
+            icon: Icons.remove_rounded,
+            color: AppColors.textBody,
+            tooltip: 'Remove one',
+            onTap: onDecrease,
+          ),
+          Container(
+            width: 34,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              border: Border.symmetric(
+                vertical: BorderSide(color: Color(0xFFF3F4F6)),
+              ),
+            ),
+            child: Text(
+              '$quantity',
+              style: const TextStyle(
+                color: AppColors.ink,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          _StepperButton(
+            icon: Icons.add_rounded,
+            color: AppColors.textBody,
+            tooltip: 'Add one',
+            onTap: onIncrease,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  const _StepperButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(9),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, color: color, size: 24),
+          ),
+        ),
       ),
     );
   }
@@ -742,7 +831,7 @@ class _TotalsPanel extends StatelessWidget {
                   child: Text(
                     _discountLabelFor(category),
                     style: const TextStyle(
-                      color: Color(0xFFE66C73),
+                      color: AppColors.textBody,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -751,7 +840,7 @@ class _TotalsPanel extends StatelessWidget {
                 Text(
                   '- $discount',
                   style: const TextStyle(
-                    color: Color(0xFFE66C73),
+                    color: AppColors.textBody,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -813,7 +902,7 @@ class _TotalsPanel extends StatelessWidget {
                   child: Text(
                     'Change Due',
                     style: TextStyle(
-                      color: Color(0xFF15803D),
+                      color: Color(0xFF111111),
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -822,7 +911,7 @@ class _TotalsPanel extends StatelessWidget {
                 Text(
                   'TSh $changeDue',
                   style: const TextStyle(
-                    color: Color(0xFF15803D),
+                    color: Color(0xFF111111),
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -936,7 +1025,7 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
               width: 32,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
+                color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -986,7 +1075,7 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
                     'TSh ${_format(isInsufficient ? (widget.grandTotal - _currentInput) : changeDue)}',
                 valueColor: isInsufficient
                     ? const Color(0xFFE11D48)
-                    : const Color(0xFF15803D),
+                    : const Color(0xFF111111),
                 isBold: true,
               ),
             ],
@@ -999,7 +1088,7 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
                   }
                 : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1058,7 +1147,7 @@ class _ChargeBar extends StatelessWidget {
   const _ChargeBar({
     required this.totalLabel,
     required this.onTap,
-    this.accentColor = const Color(0xFFE54040),
+    this.accentColor = AppColors.primary,
   });
 
   final String totalLabel;
@@ -1158,7 +1247,7 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
               width: 32,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
+                color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1226,7 +1315,7 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
               _SummaryRow(
                 label: 'Savings',
                 value: '- TSh ${_format(finalDiscount)}',
-                valueColor: const Color(0xFFE11D48),
+                valueColor: AppColors.textBody,
               ),
               const Spacer(),
               _SummaryRow(
@@ -1248,7 +1337,7 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
               });
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1292,7 +1381,7 @@ class _DiscountModeTab extends StatelessWidget {
           color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? const Color(0xFFD7DDEA) : Colors.transparent,
+            color: isSelected ? const Color(0xFFF3F4F6) : Colors.transparent,
           ),
         ),
         child: Text(
@@ -1301,7 +1390,7 @@ class _DiscountModeTab extends StatelessWidget {
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             color:
-                isSelected ? const Color(0xFF1F2937) : const Color(0xFF64748B),
+                isSelected ? const Color(0xFF111111) : const Color(0xFF64748B),
           ),
         ),
       ),

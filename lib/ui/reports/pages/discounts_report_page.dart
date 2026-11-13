@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -28,10 +29,14 @@ class DiscountsReportPage extends StatelessWidget {
   }
 
   List<MetricData> _buildMetrics(ReportTable table, PosReportData data) {
-    final totalDiscounts = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final totalSales = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
-    final totalDiscountedSales = table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int));
-    final discountRate = totalSales > 0 ? (totalDiscounts / totalSales) * 100 : 0.0;
+    final totalDiscounts = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final totalSales = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final totalDiscountedSales =
+        table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int));
+    final discountRate =
+        totalSales > 0 ? (totalDiscounts / totalSales) * 100 : 0.0;
     final discountTypes = table.rows.length;
 
     return [
@@ -39,33 +44,34 @@ class DiscountsReportPage extends StatelessWidget {
         title: 'Total Discounts Given',
         value: '₹${NumberFormat('#,##0.##').format(totalDiscounts)}',
         icon: Icons.local_offer,
-        iconColor: Colors.orange,
-        tint: Colors.orange.withValues(alpha: 0.1),
-        valueColor: Colors.orange,
+        iconColor: AppColors.ink,
+        tint: AppColors.ink.withValues(alpha: 0.1),
+        valueColor: AppColors.ink,
       ),
       MetricData(
         title: 'Discount Rate',
         value: '${discountRate.toStringAsFixed(1)}%',
         icon: Icons.percent,
-        iconColor: discountRate > 15 ? Colors.red : Colors.green,
-        tint: (discountRate > 15 ? Colors.red : Colors.green).withValues(alpha: 0.1),
-        valueColor: discountRate > 15 ? Colors.red : Colors.green,
+        iconColor: discountRate > 15 ? AppColors.textMuted : Color(0xFF111111),
+        tint: (discountRate > 15 ? AppColors.textMuted : Color(0xFF111111))
+            .withValues(alpha: 0.1),
+        valueColor: discountRate > 15 ? AppColors.textMuted : Color(0xFF111111),
       ),
       MetricData(
         title: 'Discounted Transactions',
         value: NumberFormat('#,###').format(totalDiscountedSales),
         icon: Icons.receipt,
-        iconColor: Colors.blue,
-        tint: Colors.blue.withValues(alpha: 0.1),
-        valueColor: Colors.blue,
+        iconColor: Color(0xFF15803D),
+        tint: Color(0xFF15803D).withValues(alpha: 0.1),
+        valueColor: Color(0xFF15803D),
       ),
       MetricData(
         title: 'Discount Types Used',
         value: NumberFormat('#,###').format(discountTypes),
         icon: Icons.category,
-        iconColor: Colors.indigo,
-        tint: Colors.indigo.withValues(alpha: 0.1),
-        valueColor: Colors.indigo,
+        iconColor: Color(0xFF166534),
+        tint: Color(0xFF166534).withValues(alpha: 0.1),
+        valueColor: Color(0xFF166534),
       ),
     ];
   }
@@ -88,10 +94,13 @@ class DiscountsReportPage extends StatelessWidget {
         .map((row) => TrendPoint(
               label: row[0].toString(),
               value: (row[2] as num).toDouble(),
-              displayValue: '₹${NumberFormat('#,##0').format((row[2] as num).toDouble())}',
+              displayValue:
+                  '₹${NumberFormat('#,##0').format((row[2] as num).toDouble())}',
             ))
         .toList();
-    final maxValue = trendPoints.isEmpty ? 0.0 : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = trendPoints.isEmpty
+        ? 0.0
+        : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
       title: 'Discounts by Type',
@@ -99,16 +108,19 @@ class DiscountsReportPage extends StatelessWidget {
         points: trendPoints,
         maxValue: maxValue,
         label: 'Discount Amount',
-        color: Colors.orange,
+        color: AppColors.ink,
       ),
     );
   }
 
   Widget _buildDiscountImpactCard(ReportTable table) {
-    final totalDiscounts = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final totalSales = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final totalDiscounts = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final totalSales = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
     final avgDiscountPerSale = table.rows.isNotEmpty
-        ? totalDiscounts / table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int))
+        ? totalDiscounts /
+            table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int))
         : 0.0;
 
     return SectionCard(
@@ -121,7 +133,7 @@ class DiscountsReportPage extends StatelessWidget {
                 child: _DiscountStat(
                   label: 'Total Discount Value',
                   value: '₹${NumberFormat('#,##0').format(totalDiscounts)}',
-                  color: Colors.orange,
+                  color: AppColors.ink,
                 ),
               ),
               Expanded(
@@ -131,15 +143,16 @@ class DiscountsReportPage extends StatelessWidget {
                       ? '${((totalDiscounts / totalSales) * 100).toStringAsFixed(1)}%'
                       : '0%',
                   color: totalSales > 0 && (totalDiscounts / totalSales) > 0.15
-                      ? Colors.red
-                      : Colors.green,
+                      ? AppColors.textMuted
+                      : Color(0xFF111111),
                 ),
               ),
               Expanded(
                 child: _DiscountStat(
                   label: 'Avg Discount/Sale',
-                  value: '₹${NumberFormat('#,##0.##').format(avgDiscountPerSale)}',
-                  color: Colors.blue,
+                  value:
+                      '₹${NumberFormat('#,##0.##').format(avgDiscountPerSale)}',
+                  color: Color(0xFF15803D),
                 ),
               ),
             ],
@@ -149,12 +162,12 @@ class DiscountsReportPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700, size: 18),
+                  Icon(Icons.info_outline, color: Color(0xFF166534), size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -162,7 +175,7 @@ class DiscountsReportPage extends StatelessWidget {
                       'discounted vs non-discounted sales conversion.',
                       style: GoogleFonts.manrope(
                         fontSize: 12,
-                        color: Colors.blue.shade800,
+                        color: Color(0xFF14532D),
                       ),
                     ),
                   ),
@@ -183,26 +196,32 @@ class DiscountsReportPage extends StatelessWidget {
     final topDiscount = table.rows.first;
     final topDiscountName = topDiscount[0].toString();
     final topDiscountAmount = (topDiscount[2] as num).toDouble();
-    final totalDiscounts = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final topDiscountShare = totalDiscounts > 0 ? (topDiscountAmount / totalDiscounts) * 100 : 0.0;
+    final totalDiscounts = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final topDiscountShare =
+        totalDiscounts > 0 ? (topDiscountAmount / totalDiscounts) * 100 : 0.0;
 
     insights.add(InsightCard(
       title: 'Most Used Discount',
-      description: '"$topDiscountName" represents ${topDiscountShare.toStringAsFixed(1)}% of all discounts (₹${NumberFormat('#,##0').format(topDiscountAmount)})',
+      description:
+          '"$topDiscountName" represents ${topDiscountShare.toStringAsFixed(1)}% of all discounts (₹${NumberFormat('#,##0').format(topDiscountAmount)})',
       icon: Icons.local_offer,
-      color: Colors.orange,
+      color: AppColors.ink,
       severity: InsightSeverity.info,
     ));
 
-    final totalSales = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
-    final discountRate = totalSales > 0 ? (totalDiscounts / totalSales) * 100 : 0.0;
+    final totalSales = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final discountRate =
+        totalSales > 0 ? (totalDiscounts / totalSales) * 100 : 0.0;
 
     if (discountRate > 20) {
       insights.add(InsightCard(
         title: 'High Discount Rate',
-        description: 'Discounts exceed 20% of sales. Evaluate if discounts are driving volume or eroding margins.',
+        description:
+            'Discounts exceed 20% of sales. Evaluate if discounts are driving volume or eroding margins.',
         icon: Icons.trending_down,
-        color: Colors.red,
+        color: AppColors.textMuted,
         severity: InsightSeverity.warning,
       ));
     }

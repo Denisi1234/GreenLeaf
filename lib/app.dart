@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:track_mauzo/service/pos_local_store.dart';
-import 'package:track_mauzo/ui/widgets/capability_provider.dart';
 
-import 'ui/shell/app_shell.dart';
+import 'ui/auth/auth_wrapper.dart';
 import 'ui/widgets/app_design.dart';
+import 'ui/widgets/app_theme.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -95,107 +95,9 @@ class App extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: GoogleFonts.manrope().fontFamily,
-        textTheme: appTextTheme,
-        primaryTextTheme: appTextTheme,
-        scaffoldBackgroundColor: AppColors.pageBackground,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          brightness: Brightness.light,
-          surface: AppColors.surface,
-          primary: AppColors.primary,
-          secondary: AppColors.green,
-          outline: AppColors.border,
-          outlineVariant: AppColors.divider,
-          surfaceTint: Colors.transparent,
-          onSurface: AppColors.ink,
-          onPrimary: Colors.white,
-          onSecondary: Colors.white,
-          onSurfaceVariant: AppColors.mutedText,
-        ),
-        iconTheme: const IconThemeData(
-          color: Color(0xFF7B8A8B),
-          size: 22,
-        ),
-        primaryIconTheme: const IconThemeData(
-          color: AppColors.ink,
-          size: 22,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.pageBackground,
-          foregroundColor: AppColors.ink,
-          elevation: 0,
-          centerTitle: false,
-          iconTheme: IconThemeData(color: Color(0xFF7B8A8B)),
-          titleTextStyle: TextStyle(
-            color: AppColors.ink,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
-          ),
-        ),
-        cardTheme: const CardThemeData(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
-          ),
-        ),
-        dialogTheme: const DialogThemeData(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
-          ),
-        ),
-        inputDecorationTheme: const InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.white,
-          hintStyle: TextStyle(
-            color: AppColors.mutedText,
-            fontWeight: FontWeight.w500,
-          ),
-          prefixIconColor: AppColors.mutedText,
-          suffixIconColor: AppColors.mutedText,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
-            borderSide: BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
-            borderSide: BorderSide(color: AppColors.primary, width: 1.2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
-            borderSide: BorderSide(color: AppColors.danger, width: 1.1),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
-            borderSide: BorderSide(color: AppColors.danger, width: 1.1),
-          ),
-        ),
-        dividerTheme: const DividerThemeData(
-          color: AppColors.divider,
-          thickness: 1,
-          space: 1,
-        ),
-        snackBarTheme: const SnackBarThemeData(
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
-          ),
-        ),
-        textSelectionTheme: const TextSelectionThemeData(
-          cursorColor: AppColors.primary,
-          selectionColor: Color(0x332C3E50),
-          selectionHandleColor: AppColors.primary,
-        ),
-      ),
-      home: CapabilityProvider(
-        capabilities: store.activeCapabilities,
-        child: const AppShell(),
-      ),
+      themeAnimationDuration: Duration.zero,
+      theme: buildOsposTheme(appTextTheme),
+      home: const AuthWrapper(),
     );
   }
 }

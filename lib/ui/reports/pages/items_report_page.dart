@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -31,8 +32,10 @@ class ItemsReportPage extends StatelessWidget {
   }
 
   List<MetricData> _buildMetrics(ReportTable table, PosReportData data) {
-    final totalUnits = table.rows.fold<int>(0, (sum, row) => sum + (row[2] as int));
-    final totalNetSales = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final totalUnits =
+        table.rows.fold<int>(0, (sum, row) => sum + (row[2] as int));
+    final totalNetSales = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
     final totalCost = table.rows.fold<double>(0, (sum, row) {
       final c = row[4];
       return sum + (c is num ? c.toDouble() : 0.0);
@@ -45,33 +48,42 @@ class ItemsReportPage extends StatelessWidget {
         title: 'Unique Items Sold',
         value: NumberFormat('#,###').format(uniqueItems),
         icon: Icons.inventory_2,
-        iconColor: Colors.indigo,
-        tint: Colors.indigo.withValues(alpha: 0.1),
-        valueColor: Colors.indigo,
+        iconColor: Color(0xFF166534),
+        tint: Color(0xFF166534).withValues(alpha: 0.1),
+        valueColor: Color(0xFF166534),
       ),
       MetricData(
         title: 'Total Units Sold',
         value: NumberFormat('#,###').format(totalUnits),
         icon: Icons.shopping_basket,
-        iconColor: Colors.blue,
-        tint: Colors.blue.withValues(alpha: 0.1),
-        valueColor: Colors.blue,
+        iconColor: Color(0xFF15803D),
+        tint: Color(0xFF15803D).withValues(alpha: 0.1),
+        valueColor: Color(0xFF15803D),
       ),
       MetricData(
         title: 'Total Revenue',
         value: '₹${NumberFormat('#,##0.##').format(totalNetSales)}',
         icon: Icons.attach_money,
-        iconColor: Colors.green,
-        tint: Colors.green.withValues(alpha: 0.1),
-        valueColor: Colors.green,
+        iconColor: Color(0xFF111111),
+        tint: Color(0xFF111111).withValues(alpha: 0.1),
+        valueColor: Color(0xFF111111),
       ),
       MetricData(
         title: 'Gross Profit',
-        value: totalProfit != null ? '₹${NumberFormat('#,##0.##').format(totalProfit)}' : '—',
+        value: totalProfit != null
+            ? '₹${NumberFormat('#,##0.##').format(totalProfit)}'
+            : '—',
         icon: Icons.trending_up,
-        iconColor: totalProfit != null && totalProfit > 0 ? Colors.green : Colors.red,
-        tint: (totalProfit != null && totalProfit > 0 ? Colors.green : Colors.red).withValues(alpha: 0.1),
-        valueColor: totalProfit != null && totalProfit > 0 ? Colors.green : Colors.red,
+        iconColor: totalProfit != null && totalProfit < 0
+            ? AppColors.danger
+            : AppColors.ink,
+        tint: (totalProfit != null && totalProfit < 0
+                ? AppColors.danger
+                : AppColors.ink)
+            .withValues(alpha: 0.1),
+        valueColor: totalProfit != null && totalProfit < 0
+            ? AppColors.danger
+            : AppColors.ink,
       ),
     ];
   }
@@ -94,10 +106,13 @@ class ItemsReportPage extends StatelessWidget {
         .map((row) => TrendPoint(
               label: row[0].toString(),
               value: (row[3] as num).toDouble(),
-              displayValue: '₹${NumberFormat('#,##0').format((row[3] as num).toDouble())}',
+              displayValue:
+                  '₹${NumberFormat('#,##0').format((row[3] as num).toDouble())}',
             ))
         .toList();
-    final maxValue = trendPoints.isEmpty ? 0.0 : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = trendPoints.isEmpty
+        ? 0.0
+        : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
       title: 'Top 10 Products by Revenue',
@@ -109,7 +124,7 @@ class ItemsReportPage extends StatelessWidget {
         points: trendPoints,
         maxValue: maxValue,
         label: 'Revenue',
-        color: Colors.indigo,
+        color: Color(0xFF166534),
       ),
     );
   }
@@ -122,14 +137,17 @@ class ItemsReportPage extends StatelessWidget {
     final topProduct = table.rows.first;
     final topProductName = topProduct[0].toString();
     final topProductRevenue = (topProduct[3] as num).toDouble();
-    final totalRevenue = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
-    final topProductShare = totalRevenue > 0 ? (topProductRevenue / totalRevenue) * 100 : 0.0;
+    final totalRevenue = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final topProductShare =
+        totalRevenue > 0 ? (topProductRevenue / totalRevenue) * 100 : 0.0;
 
     insights.add(InsightCard(
       title: 'Top Performer',
-      description: '"$topProductName" generates ${topProductShare.toStringAsFixed(1)}% of total revenue (₹${NumberFormat('#,##0').format(topProductRevenue)})',
+      description:
+          '"$topProductName" generates ${topProductShare.toStringAsFixed(1)}% of total revenue (₹${NumberFormat('#,##0').format(topProductRevenue)})',
       icon: Icons.star,
-      color: Colors.amber,
+      color: Color(0xFF15803D),
       severity: InsightSeverity.success,
     ));
 
@@ -146,9 +164,10 @@ class ItemsReportPage extends StatelessWidget {
     if (lowMarginItems > 0) {
       insights.add(InsightCard(
         title: 'Low Margin Items',
-        description: '$lowMarginItems items have gross margin below 15%. Review pricing or supplier costs.',
+        description:
+            '$lowMarginItems items have gross margin below 15%. Review pricing or supplier costs.',
         icon: Icons.warning_amber,
-        color: Colors.red,
+        color: AppColors.ink,
         severity: InsightSeverity.warning,
         actionLabel: 'Review Pricing',
         onAction: () {},
@@ -159,9 +178,10 @@ class ItemsReportPage extends StatelessWidget {
     if (zeroCostItems > 0) {
       insights.add(InsightCard(
         title: 'Missing Cost Data',
-        description: '$zeroCostItems items have no unit cost recorded. Profit calculations will be incomplete.',
+        description:
+            '$zeroCostItems items have no unit cost recorded. Profit calculations will be incomplete.',
         icon: Icons.receipt_long,
-        color: Colors.blue,
+        color: Color(0xFF15803D),
         severity: InsightSeverity.info,
         actionLabel: 'Update Costs',
         onAction: () {},

@@ -1,8 +1,10 @@
-import 'dart:math' as math;
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'app_image.dart';
 
 import '../../l10n/app_strings.dart';
 import '../business_category_config.dart';
@@ -110,6 +112,7 @@ class _DrawerMenuLine extends StatelessWidget {
 }
 
 enum MarketNoticeType {
+  info,
   success,
   warning,
   error,
@@ -158,7 +161,7 @@ class HeaderActionButton extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: AppColors.danger,
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
@@ -232,6 +235,7 @@ class MarketPageHeader extends StatelessWidget {
     this.trailing,
     this.actions,
     this.showBackButton = true,
+    this.transparentBackButton = true,
     this.onBack,
     this.isGradient = false,
     this.transparent = false,
@@ -249,6 +253,7 @@ class MarketPageHeader extends StatelessWidget {
   final Widget? trailing;
   final List<Widget>? actions;
   final bool showBackButton;
+  final bool transparentBackButton;
   final VoidCallback? onBack;
   final bool isGradient;
   final bool transparent;
@@ -312,9 +317,10 @@ class MarketPageHeader extends StatelessWidget {
               _BackButton(
                 onTap: () => _handleBack(context),
                 isGradient: hasGradient,
+                transparent: transparentBackButton,
               )
             else
-              const SizedBox(width: 42),
+              const SizedBox(width: 48),
             Expanded(
               child: Column(
                 crossAxisAlignment: centerTitle
@@ -356,7 +362,7 @@ class MarketPageHeader extends StatelessWidget {
             else if (actions != null)
               Row(mainAxisSize: MainAxisSize.min, children: actions!)
             else
-              const SizedBox(width: 42),
+              const SizedBox(width: 48),
           ],
         ),
       ),
@@ -365,36 +371,103 @@ class MarketPageHeader extends StatelessWidget {
 }
 
 class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onTap, required this.isGradient});
+  const _BackButton({
+    required this.onTap,
+    required this.isGradient,
+    this.transparent = false,
+  });
 
   final VoidCallback onTap;
   final bool isGradient;
+  final bool transparent;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: isGradient
-              ? Colors.white.withValues(alpha: 0.16)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.standard),
-          border: Border.all(
-            color: isGradient
-                ? Colors.white.withValues(alpha: 0.18)
-                : AppColors.border,
-          ),
-        ),
-        child: Icon(
-          Icons.arrow_back_ios_new_rounded,
-          color: isGradient ? Colors.white : AppColors.ink,
-          size: 18,
+    final foreground = isGradient ? Colors.white : AppColors.ink;
+
+    return Semantics(
+      button: true,
+      label: 'Back',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: transparent
+              ? null
+              : BoxDecoration(
+                  color: isGradient
+                      ? Colors.white.withValues(alpha: 0.16)
+                      : AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                  border: Border.all(
+                    color: isGradient
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : AppColors.border,
+                  ),
+                ),
+          child: _LongArrowIcon(color: foreground, size: 26),
         ),
       ),
     );
+  }
+}
+
+/// Left-pointing arrow with a long shaft, drawn as vector so it stays crisp at
+/// the larger mobile-friendly size.
+class _LongArrowIcon extends StatelessWidget {
+  const _LongArrowIcon({required this.color, this.size = 26});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size.square(size),
+      painter: _LongArrowPainter(
+        color: color,
+        strokeWidth: (size * 0.085).clamp(1.8, 3.0),
+      ),
+    );
+  }
+}
+
+class _LongArrowPainter extends CustomPainter {
+  const _LongArrowPainter({required this.color, required this.strokeWidth});
+
+  final Color color;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final tip = Offset(size.width * 0.06, size.height * 0.5);
+
+    canvas.drawLine(
+      tip,
+      Offset(size.width * 0.96, size.height * 0.5),
+      paint,
+    );
+
+    final head = Path()
+      ..moveTo(size.width * 0.36, size.height * 0.16)
+      ..lineTo(tip.dx, tip.dy)
+      ..lineTo(size.width * 0.36, size.height * 0.84);
+    canvas.drawPath(head, paint);
+  }
+
+  @override
+  bool shouldRepaint(_LongArrowPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
   }
 }
 
@@ -420,7 +493,7 @@ class MarketButton extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final IconData? icon;
   final bool isPrimary;
   final bool isFullWidth;
@@ -438,12 +511,15 @@ class MarketButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor =
-        color ?? (isPrimary ? AppColors.primary : AppColors.surface);
-    final effectiveForeground =
-        foregroundColor ?? (isPrimary ? Colors.white : AppColors.textMain);
+    final disabled = onTap == null;
+    final effectiveColor = disabled
+        ? AppColors.border
+        : (color ?? (isPrimary ? AppColors.primary : AppColors.surface));
+    final effectiveForeground = disabled
+        ? AppColors.textLight
+        : (foregroundColor ?? (isPrimary ? Colors.white : AppColors.textMain));
     final effectiveBorderColor =
-        borderColor ?? (isPrimary ? null : AppColors.border);
+        borderColor ?? (isPrimary || disabled ? null : AppColors.border);
 
     return InkWell(
       onTap: onTap,
@@ -457,7 +533,9 @@ class MarketButton extends StatelessWidget {
           border: effectiveBorderColor != null
               ? Border.all(color: effectiveBorderColor)
               : null,
-          boxShadow: boxShadow ?? (isPrimary ? AppShadows.primary : null),
+          boxShadow: disabled
+              ? null
+              : (boxShadow ?? (isPrimary ? AppShadows.primary : null)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -670,23 +748,24 @@ void showMarketNotice(
   final overlay = Overlay.of(context);
   late final OverlayEntry entry;
 
-  final accent = type == MarketNoticeType.success
-      ? AppColors.success
-      : (type == MarketNoticeType.warning
-          ? AppColors.warning
-          : AppColors.danger);
+  final accent = switch (type) {
+    MarketNoticeType.success => AppColors.success,
+    MarketNoticeType.warning || MarketNoticeType.info => AppColors.textBody,
+    MarketNoticeType.error => AppColors.danger,
+  };
 
-  final iconBg = type == MarketNoticeType.success
-      ? AppColors.successLight
-      : (type == MarketNoticeType.warning
-          ? AppColors.warningLight
-          : AppColors.dangerLight);
+  final iconBg = switch (type) {
+    MarketNoticeType.success => AppColors.successLight,
+    MarketNoticeType.warning || MarketNoticeType.info => AppColors.surfaceHover,
+    MarketNoticeType.error => AppColors.dangerLight,
+  };
 
-  final icon = type == MarketNoticeType.success
-      ? Icons.check_circle_rounded
-      : (type == MarketNoticeType.warning
-          ? Icons.error_outline_rounded
-          : Icons.cancel_rounded);
+  final icon = switch (type) {
+    MarketNoticeType.success => Icons.check_circle_rounded,
+    MarketNoticeType.warning => Icons.error_outline_rounded,
+    MarketNoticeType.info => Icons.info_outline_rounded,
+    MarketNoticeType.error => Icons.cancel_rounded,
+  };
 
   entry = OverlayEntry(
     builder: (context) => Positioned(
@@ -806,8 +885,8 @@ class AnimatedCartToken extends StatelessWidget {
       child: hasImage
           ? ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.sharp),
-              child: Image.file(
-                File(imagePath!),
+              child: Image(
+                image: appImageProvider(context, imagePath!),
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => FittedBox(
                   fit: BoxFit.contain,
@@ -935,7 +1014,8 @@ class MarketAppDrawer extends StatelessWidget {
             onTap: (context) {
               showMarketNotice(
                 context,
-                title: _dual(strings, 'Warranty Register', 'Usajili wa Dhamana'),
+                title:
+                    _dual(strings, 'Warranty Register', 'Usajili wa Dhamana'),
                 message: _dual(
                   strings,
                   'Warranty registration can be attached here.',
@@ -1114,9 +1194,12 @@ class _DrawerProfileHeader extends StatelessWidget {
     final config = context.read<PosLocalStore>().businessCategoryConfig;
     final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
     final ownerName = profile.ownerName.isEmpty
-        ? (profile.storeName.isEmpty ? strings.setupStoreProfile : profile.storeName)
+        ? (profile.storeName.isEmpty
+            ? strings.setupStoreProfile
+            : profile.storeName)
         : profile.ownerName;
-    final role = profile.roleTitle.isEmpty ? strings.businessOwner : profile.roleTitle;
+    final role =
+        profile.roleTitle.isEmpty ? strings.businessOwner : profile.roleTitle;
     final storeDetail =
         profile.storeName.isEmpty || profile.storeName == ownerName
             ? ''
@@ -1127,7 +1210,7 @@ class _DrawerProfileHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.xs),
           decoration: BoxDecoration(
-            color: AppColors.primaryLight,
+            color: AppColors.surfaceSecondary,
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
           ),
@@ -1348,21 +1431,21 @@ class _LogoutButton extends StatelessWidget {
         height: 60,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.dangerLight,
+          color: AppColors.surfaceSecondary,
           borderRadius: BorderRadius.circular(AppRadius.standard),
         ),
         child: Row(
           children: [
             const Icon(
               Icons.logout_rounded,
-              color: AppColors.danger,
+              color: AppColors.ink,
               size: 24,
             ),
             const SizedBox(width: AppSpacing.lg),
             Text(
               strings.logout,
               style: AppTypography.bodyMain.copyWith(
-                color: AppColors.danger,
+                color: AppColors.ink,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1410,7 +1493,7 @@ class _BottleArt extends StatelessWidget {
               width: 20,
               height: 14,
               decoration: BoxDecoration(
-                color: const Color(0xFF2A6FD4),
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(AppRadius.sharp),
               ),
             ),
@@ -1424,10 +1507,10 @@ class _BottleArt extends StatelessWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFFF9FCFF), Color(0xFFD6E4F3)],
+                  colors: [Color(0xFFF9FCFF), Color(0xFFF3F4F6)],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.rounded),
-                border: Border.all(color: const Color(0xFFB8CBE0)),
+                border: Border.all(color: AppColors.primarySoft),
               ),
               child: Stack(
                 children: [
@@ -1439,7 +1522,7 @@ class _BottleArt extends StatelessWidget {
                       width: 34,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1357BC),
+                        color: AppColors.primaryDeep,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Center(
@@ -1476,7 +1559,11 @@ class _CanArt extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: [Color(0xFFB30810), Color(0xFFFF3434), Color(0xFFC70F17)],
+          colors: [
+            AppColors.primaryDeep,
+            AppColors.primaryBright,
+            AppColors.primary
+          ],
         ),
         borderRadius: BorderRadius.circular(AppRadius.standard),
       ),
@@ -1558,7 +1645,7 @@ class _ChipsBagArt extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFFEEB6B), Color(0xFFF9CF1E)],
+          colors: [AppColors.primarySoft, AppColors.primary],
         ),
         borderRadius: BorderRadius.circular(AppRadius.sharp),
       ),
@@ -1571,7 +1658,7 @@ class _ChipsBagArt extends StatelessWidget {
             child: Container(
               height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFFE32A1C),
+                color: AppColors.primaryDeep,
                 borderRadius: BorderRadius.circular(AppRadius.rounded),
               ),
               child: const Center(
@@ -1595,7 +1682,7 @@ class _ChipsBagArt extends StatelessWidget {
               'Classic',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF5A4A10),
+                color: Color(0xFF111111),
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
@@ -1619,7 +1706,7 @@ class _ChocolateArt extends StatelessWidget {
         height: 34,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFF9F5F0), Color(0xFFE6D7C7)],
+            colors: [Color(0xFFF9F5F0), Color(0xFFF4B9B9)],
           ),
           borderRadius: BorderRadius.circular(AppRadius.sharp),
           boxShadow: const [
@@ -1635,7 +1722,7 @@ class _ChocolateArt extends StatelessWidget {
               child: Text(
                 'Galaxy',
                 style: TextStyle(
-                  color: Color(0xFF532D16),
+                  color: Color(0xFF111111),
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w700,
@@ -1650,7 +1737,7 @@ class _ChocolateArt extends StatelessWidget {
                 height: 18,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF6E3F20), Color(0xFFD0A86B)],
+                    colors: [AppColors.ink, AppColors.primary],
                   ),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(16),
@@ -1687,7 +1774,7 @@ class _CerealBoxArt extends StatelessWidget {
             child: Text(
               "Kellogg's",
               style: TextStyle(
-                color: Color(0xFFCC1E2C),
+                color: AppColors.primaryDeep,
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.w700,
@@ -1701,7 +1788,7 @@ class _CerealBoxArt extends StatelessWidget {
               'CORN\nFLAKES',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF222831),
+                color: Color(0xFF111111),
                 fontSize: 13,
                 height: 1,
                 fontWeight: FontWeight.w800,
@@ -1715,14 +1802,14 @@ class _CerealBoxArt extends StatelessWidget {
             child: Container(
               height: 26,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5E8A5),
+                color: AppColors.primarySoft,
                 borderRadius: BorderRadius.circular(13),
               ),
               child: const Center(
                 child: Text(
                   'flakes',
                   style: TextStyle(
-                    color: Color(0xFF8E6D11),
+                    color: AppColors.primaryDeep,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1749,7 +1836,7 @@ class _SoapBoxArt extends StatelessWidget {
           colors: [Color(0xFFFDFEFF), Color(0xFFF0F4FB)],
         ),
         borderRadius: BorderRadius.circular(AppRadius.sharp),
-        border: Border.all(color: const Color(0xFFDEE3EC)),
+        border: Border.all(color: const Color(0xFFF3F4F6)),
       ),
       child: const Stack(
         children: [
@@ -1759,7 +1846,7 @@ class _SoapBoxArt extends StatelessWidget {
             child: Text(
               'Dove',
               style: TextStyle(
-                color: Color(0xFF284E91),
+                color: AppColors.ink,
                 fontSize: 14,
                 fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.w500,
@@ -1770,7 +1857,7 @@ class _SoapBoxArt extends StatelessWidget {
             bottom: 10,
             left: 12,
             right: 12,
-            child: Divider(color: Color(0xFF3572C4), thickness: 4),
+            child: Divider(color: AppColors.primary, thickness: 4),
           ),
         ],
       ),
@@ -1788,7 +1875,7 @@ class _ToothpasteArt extends StatelessWidget {
       height: 34,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFC3141B), Color(0xFF1C6BCE)],
+          colors: [AppColors.primaryDeep, AppColors.primary],
         ),
         borderRadius: BorderRadius.circular(AppRadius.sharp),
       ),
@@ -1827,7 +1914,7 @@ class _PumpBottleArt extends StatelessWidget {
               width: 34,
               height: 14,
               decoration: BoxDecoration(
-                color: const Color(0xFF9FD776),
+                color: const Color(0xFF111111),
                 borderRadius: BorderRadius.circular(AppRadius.sharp),
               ),
             ),
@@ -1838,7 +1925,7 @@ class _PumpBottleArt extends StatelessWidget {
               width: 18,
               height: 16,
               decoration: BoxDecoration(
-                color: const Color(0xFF9FD776),
+                color: const Color(0xFF111111),
                 borderRadius: BorderRadius.circular(AppRadius.sharp),
               ),
             ),
@@ -1852,14 +1939,14 @@ class _PumpBottleArt extends StatelessWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFFF0FFF0), Color(0xFFCCEEB2)],
+                  colors: [Color(0xFFF3F4F6), Color(0xFF111111)],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.rounded),
               ),
               child: const Center(
                 child: CircleAvatar(
                   radius: 14,
-                  backgroundColor: Color(0xFF5AA73A),
+                  backgroundColor: Color(0xFF111111),
                   child: Text(
                     'D',
                     style: TextStyle(
@@ -1890,7 +1977,7 @@ class _DetergentBagArt extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFFF591D), Color(0xFFF33209)],
+          colors: [AppColors.primaryBright, AppColors.primaryDeep],
         ),
         borderRadius: BorderRadius.circular(AppRadius.sharp),
       ),
@@ -1899,14 +1986,14 @@ class _DetergentBagArt extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: const BoxDecoration(
-            color: Color(0xFFF6C91A),
+            color: AppColors.primary,
             shape: BoxShape.circle,
           ),
           child: const Center(
             child: Text(
               'Tide',
               style: TextStyle(
-                color: Color(0xFF1756B3),
+                color: AppColors.primaryDeep,
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.w900,
@@ -1925,7 +2012,7 @@ class _BottleRibsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0x88B3CAE6)
+      ..color = const Color(0x88F1A8A8)
       ..strokeWidth = 1;
     for (double y = 16; y < size.height - 12; y += 12) {
       canvas.drawLine(Offset(6, y), Offset(size.width - 6, y), paint);

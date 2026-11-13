@@ -2,6 +2,11 @@ import 'package:intl/intl.dart';
 
 import '../../service/expense_model.dart';
 import '../../service/pos_order_models.dart';
+import '../../service/register_shift_model.dart';
+import '../../service/supplier_model.dart';
+import '../../service/accounting_engine.dart';
+import '../../service/accounting_model.dart';
+import '../../service/tax_settings.dart';
 import '../models/customer_data.dart';
 import '../products/inventory_product_item.dart';
 import 'pos_report_catalog.dart';
@@ -30,6 +35,14 @@ class PosReportData {
     required this.expenses,
     required this.customers,
     this.storeName = '',
+    this.shifts = const <RegisterShift>[],
+    this.suppliers = const <Supplier>[],
+    this.receivings = const <Receiving>[],
+    this.tax = const TaxSettings(),
+    this.trialBalanceRows = const <TrialBalanceRow>[],
+    this.fixedAssets = const <FixedAsset>[],
+    this.bankTransactions = const <BankTransaction>[],
+    this.cashUpFor,
   });
 
   final List<CompletedOrder> orders;
@@ -37,6 +50,16 @@ class PosReportData {
   final List<Expense> expenses;
   final List<CustomerData> customers;
   final String storeName;
+  final List<RegisterShift> shifts;
+  final List<Supplier> suppliers;
+  final List<Receiving> receivings;
+  final TaxSettings tax;
+  final List<TrialBalanceRow> trialBalanceRows;
+  final List<FixedAsset> fixedAssets;
+  final List<BankTransaction> bankTransactions;
+
+  /// Resolves the reconciled cash position of a shift.
+  final CashUpSummary Function(RegisterShift shift)? cashUpFor;
 
   List<String> filterOptions(
     ReportData report,
@@ -45,13 +68,16 @@ class PosReportData {
   ) {
     if (report != ReportData.customerDetail &&
         report != ReportData.employeeDetail &&
-        report != ReportData.discountDetail) {
+        report != ReportData.discountDetail &&
+        report != ReportData.supplierDetail) {
       return const [];
     }
     final sales = _salesInRange(orders, start, end);
     final values = switch (report) {
       ReportData.customerDetail => sales.map((sale) => sale.customer),
       ReportData.employeeDetail => sales.map((sale) => sale.order.cashierName),
+      ReportData.supplierDetail =>
+        receivings.map((entry) => entry.supplierName),
       ReportData.discountDetail => sales
           .where((sale) => sale.discount > 0)
           .map((sale) => sale.discountLabel),
@@ -195,6 +221,20 @@ class PosReportData {
       ReportData.creditSales => _saleRows(sales.where((sale) => sale.isCredit)),
       ReportData.discountedItems => _itemRows(discounted),
       ReportData.newCustomers => _newCustomerReport(customers, start, end),
+      ReportData.cashUp => _cashUpTable(sales, start, end),
+      ReportData.shifts => _shiftsTable(sales, start, end),
+      ReportData.suppliers => _suppliersTable(),
+      ReportData.supplierDetail => _supplierDetailTable(selection),
+      ReportData.receivings => _receivingsTable(start, end),
+      ReportData.taxes => _taxTable(sales, byMethod: false),
+      ReportData.salesTaxes => _taxTable(sales, byMethod: true),
+      ReportData.taxCompliance => _taxComplianceTable(sales, spending),
+      ReportData.trialBalance => _trialBalanceTable(),
+      ReportData.balanceSheet => _balanceSheetTable(),
+      ReportData.cashFlow => _cashFlowTable(sales, spending),
+      ReportData.assets => _assetsTable(),
+      ReportData.bank => _bankTable(),
+      ReportData.reconciliation => _reconciliationTable(),
       _ => throw ArgumentError.value(
           report,
           'report',
@@ -203,6 +243,528 @@ class PosReportData {
     };
   }
 
+  ReportTable _trialBalanceTable() {
+    final rows = trialBalanceRows;
+    return ReportTable(
+      const [
+        ReportColumn('Account'),
+        ReportColumn('Name'),
+        ReportColumn('Type'),
+        ReportColumn('Debit', money: true),
+        ReportColumn('Credit', money: true),
+      ],
+      [
+        for (final row in rows)
+          [
+            row.code,
+            row.name,
+            row.type.label,
+            row.debit == 0 ? null : row.debit,
+            row.credit == 0 ? null : row.credit,
+          ],
+      ],
+      note: rows.isEmpty
+          ? 'No ledger activity yet. Sales, expenses, purchases and journal entries populate this report.'
+          : null,
+    );
+  }
+
+  ReportTable _balanceSheetTable() {
+    double totalFor(AccountType type) => trialBalanceRows
+        .where((row) => row.type == type)
+        .fold<double>(0, (sum, row) => sum + row.debit - row.credit);
+    final assets = totalFor(AccountType.asset);
+    final liabilities = -totalFor(AccountType.liability);
+    final equity = -totalFor(AccountType.equity);
+    final income = -totalFor(AccountType.income);
+    final expense = totalFor(AccountType.expense);
+    final retained = income - expense;
+    final rows = <List<Object?>>[
+      for (final row
+          in trialBalanceRows.where((r) => r.type == AccountType.asset))
+        ['Assets', row.name, row.debit - row.credit],
+      for (final row
+          in trialBalanceRows.where((r) => r.type == AccountType.liability))
+        ['Liabilities', row.name, row.credit - row.debit],
+      for (final row
+          in trialBalanceRows.where((r) => r.type == AccountType.equity))
+        ['Equity', row.name, row.credit - row.debit],
+      ['Equity', 'Retained earnings', retained],
+      ['Check', 'Total assets', assets],
+      ['Check', 'Liabilities and equity', liabilities + equity + retained],
+    ];
+    return ReportTable(
+      const [
+        ReportColumn('Section'),
+        ReportColumn('Account'),
+        ReportColumn('Amount', money: true),
+      ],
+      rows,
+      note: trialBalanceRows.isEmpty
+          ? 'No ledger balances yet. Record sales and expenses to build the balance sheet.'
+          : 'Derived from sales, expenses, purchases, payments and manual journal entries.',
+    );
+  }
+
+  ReportTable _cashFlowTable(List<_Sale> sales, List<Expense> spending) {
+    final cashSales = sales
+        .where(
+            (sale) => sale.order.paymentMethod.toLowerCase().contains('cash'))
+        .fold<double>(0, (sum, sale) => sum + sale.order.total);
+    final cashExpenses = spending
+        .where(
+            (expense) => expense.paymentMethod.toLowerCase().contains('cash'))
+        .fold<double>(0, (sum, expense) => sum + expense.amount);
+    final payouts = shifts
+        .expand((shift) => shift.movements)
+        .where((movement) => movement.type.isOutflow)
+        .fold<double>(0, (sum, movement) => sum + movement.amount);
+    final cashIn = shifts
+        .expand((shift) => shift.movements)
+        .where((movement) => !movement.type.isOutflow)
+        .fold<double>(0, (sum, movement) => sum + movement.amount);
+    final operating = cashSales - cashExpenses;
+    final financing = cashIn - payouts;
+    final assetPurchases =
+        fixedAssets.fold<double>(0, (sum, asset) => sum + asset.cost);
+    final net = operating + financing - assetPurchases;
+    return ReportTable(
+      const [
+        ReportColumn('Activity'),
+        ReportColumn('Category'),
+        ReportColumn('Amount', money: true),
+      ],
+      [
+        ['Cash sales', 'Operating', cashSales],
+        ['Cash expenses', 'Operating', -cashExpenses],
+        ['Cash from drawer top-ups', 'Financing', cashIn],
+        ['Drawings and payouts', 'Financing', -payouts],
+        ['Fixed asset purchases', 'Investing', -assetPurchases],
+        ['Net cash movement', 'Total', net],
+      ],
+      note:
+          'Cash basis: card, mobile money and credit sales settle through the bank or receivables.',
+    );
+  }
+
+  ReportTable _assetsTable() {
+    final rows = <List<Object?>>[
+      for (final asset in fixedAssets)
+        [
+          asset.name,
+          asset.category,
+          _day.format(asset.purchaseDate.toLocal()),
+          asset.cost,
+          asset.salvageValue,
+          asset.usefulLifeYears,
+          asset.annualDepreciation,
+          asset.accumulatedDepreciation(),
+          asset.netBookValue(),
+        ],
+    ];
+    return ReportTable(
+      const [
+        ReportColumn('Asset'),
+        ReportColumn('Category'),
+        ReportColumn('Purchased'),
+        ReportColumn('Cost', money: true),
+        ReportColumn('Salvage', money: true),
+        ReportColumn('Life (years)'),
+        ReportColumn('Annual depreciation', money: true),
+        ReportColumn('Accumulated', money: true),
+        ReportColumn('Net book value', money: true),
+      ],
+      rows,
+      note: fixedAssets.isEmpty
+          ? 'No fixed assets recorded. Add assets to track depreciation.'
+          : 'Straight line depreciation, calculated to date.',
+    );
+  }
+
+  ReportTable _bankTable() {
+    return ReportTable(
+      const [
+        ReportColumn('Date'),
+        ReportColumn('Description'),
+        ReportColumn('Reference'),
+        ReportColumn('Amount', money: true),
+        ReportColumn('Status'),
+      ],
+      [
+        for (final entry in bankTransactions)
+          [
+            _day.format(entry.date.toLocal()),
+            entry.description,
+            entry.reference,
+            entry.amount,
+            entry.matched ? 'Matched' : 'Unmatched',
+          ],
+      ],
+      note: bankTransactions.isEmpty
+          ? 'No statement lines imported. Add or paste statement lines to reconcile bank and mobile money.'
+          : null,
+    );
+  }
+
+  ReportTable _reconciliationTable() {
+    final matched = bankTransactions.where((entry) => entry.matched);
+    final unmatched = bankTransactions.where((entry) => !entry.matched);
+    final matchedTotal =
+        matched.fold<double>(0, (sum, entry) => sum + entry.amount);
+    final unmatchedTotal =
+        unmatched.fold<double>(0, (sum, entry) => sum + entry.amount);
+    return ReportTable(
+      const [
+        ReportColumn('Item'),
+        ReportColumn('Count'),
+        ReportColumn('Amount', money: true),
+      ],
+      [
+        ['Matched statement lines', matched.length, matchedTotal],
+        ['Unmatched statement lines', unmatched.length, unmatchedTotal],
+        [
+          'Difference',
+          matched.length + unmatched.length,
+          matchedTotal + unmatchedTotal
+        ],
+      ],
+      note: bankTransactions.isEmpty
+          ? 'No bank statement lines yet. Import or add statement lines to reconcile.'
+          : null,
+    );
+  }
+
+  ReportTable _taxTable(List<_Sale> sales, {required bool byMethod}) {
+    final grouped = <String, _TaxBucket>{};
+    for (final sale in sales) {
+      final gross = sale.order.total;
+      final label = byMethod
+          ? _paymentLabel(sale.order.paymentMethod)
+          : _day.format(sale.date);
+      final bucket = grouped.putIfAbsent(label, () => _TaxBucket());
+      bucket.gross += gross;
+      bucket.tax += tax.taxFromGross(gross);
+      bucket.count += 1;
+    }
+    final rows = <List<Object?>>[
+      for (final entry in grouped.entries)
+        [
+          entry.key,
+          entry.value.count,
+          entry.value.gross,
+          entry.value.tax,
+          entry.value.gross - entry.value.tax,
+        ],
+    ]..sort((a, b) => (b[2] as double).compareTo(a[2] as double));
+    return ReportTable(
+      [
+        ReportColumn(byMethod ? 'Payment method' : 'Date'),
+        const ReportColumn('Orders'),
+        const ReportColumn('Gross sales', money: true),
+        ReportColumn('${tax.taxLabel.isEmpty ? 'Tax' : tax.taxLabel} collected',
+            money: true),
+        const ReportColumn('Net sales', money: true),
+      ],
+      rows,
+      note: tax.enabled
+          ? 'Tax calculated at ${tax.ratePercent.toStringAsFixed(1)}% '
+              '${tax.pricesIncludeTax ? 'included in' : 'added to'} prices.'
+          : 'Tax is disabled. Enable it in Settings → Tax settings to populate tax figures.',
+    );
+  }
+
+  ReportTable _taxComplianceTable(
+    List<_Sale> sales,
+    List<Expense> expenses,
+  ) {
+    final grossSales =
+        sales.fold<double>(0, (sum, sale) => sum + sale.order.total);
+    final outputTax = sales.fold<double>(
+        0, (sum, sale) => sum + tax.taxFromGross(sale.order.total));
+    final expenseTax = tax.trackExpenseTax
+        ? expenses.fold<double>(0, (sum, expense) => sum + expense.taxAmount)
+        : 0.0;
+    final rows = <List<Object?>>[
+      ['Gross sales', grossSales],
+      ['Taxable sales', grossSales],
+      ['${tax.taxLabel.isEmpty ? 'Tax' : tax.taxLabel} collected', outputTax],
+      ['Tax paid on expenses', expenseTax],
+      ['Net tax payable', outputTax - expenseTax],
+      ['Tax rate (%)', tax.ratePercent],
+    ];
+    return ReportTable(
+      const [
+        ReportColumn('Item'),
+        ReportColumn('Amount', money: true),
+      ],
+      rows,
+      note: tax.enabled
+          ? 'Tax identification number: ${tax.taxId.isEmpty ? 'not set' : tax.taxId}.'
+          : 'Tax is disabled. Turn it on in Settings → Tax settings.',
+    );
+  }
+
+  static String _paymentLabel(String method) {
+    final value = method.trim().toLowerCase();
+    if (value.contains('cash')) return 'Cash';
+    if (value.contains('card')) return 'Card';
+    if (value.contains('mobile') ||
+        value.contains('mpesa') ||
+        value.contains('tigopesa') ||
+        value.contains('mixx')) {
+      return 'Mobile money';
+    }
+    if (value.contains('debt') ||
+        value.contains('credit') ||
+        value.contains('kopesh')) {
+      return 'Issued on credit';
+    }
+    if (value.isEmpty) return 'Unknown';
+    return value[0].toUpperCase() + value.substring(1);
+  }
+
+  ReportTable _suppliersTable() {
+    final rows = <List<Object?>>[];
+    for (final supplier in suppliers) {
+      final purchases = receivings
+          .where((entry) => entry.supplierId == supplier.id)
+          .fold<double>(0, (sum, entry) => sum + entry.total);
+      final receipts =
+          receivings.where((entry) => entry.supplierId == supplier.id).length;
+      rows.add([
+        supplier.name,
+        supplier.phone,
+        supplier.address,
+        receipts,
+        purchases,
+        supplier.openingBalance + purchases,
+      ]);
+    }
+    return ReportTable(
+      const [
+        ReportColumn('Supplier'),
+        ReportColumn('Phone'),
+        ReportColumn('Address'),
+        ReportColumn('Deliveries'),
+        ReportColumn('Purchases', money: true),
+        ReportColumn('Balance payable', money: true),
+      ],
+      rows,
+      note: suppliers.isEmpty
+          ? 'No suppliers recorded. Add suppliers to track purchases.'
+          : null,
+    );
+  }
+
+  ReportTable _supplierDetailTable(String? selection) {
+    final entries = receivings
+        .where((entry) => selection == null || entry.supplierName == selection)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final rows = <List<Object?>>[];
+    for (final entry in entries) {
+      rows.add([
+        _day.format(entry.date.toLocal()),
+        entry.supplierName,
+        entry.invoiceNo,
+        entry.itemCount,
+        entry.lines.map((line) => line.productName).join(', '),
+        entry.total,
+        entry.receivedBy,
+        entry.notes,
+      ]);
+    }
+    return ReportTable(
+      const [
+        ReportColumn('Date'),
+        ReportColumn('Supplier'),
+        ReportColumn('Invoice'),
+        ReportColumn('Units'),
+        ReportColumn('Items'),
+        ReportColumn('Total', money: true),
+        ReportColumn('Received by'),
+        ReportColumn('Notes'),
+      ],
+      rows,
+      note: suppliers.isEmpty && receivings.isEmpty
+          ? 'No supplier deliveries recorded yet.'
+          : null,
+    );
+  }
+
+  ReportTable _receivingsTable(DateTime? start, DateTime? end) {
+    final entries = receivings
+        .where((entry) => _inRange(entry.date.toLocal(), start, end))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    return ReportTable(
+      const [
+        ReportColumn('Date'),
+        ReportColumn('Supplier'),
+        ReportColumn('Invoice'),
+        ReportColumn('Items'),
+        ReportColumn('Units'),
+        ReportColumn('Unit cost avg', money: true),
+        ReportColumn('Total', money: true),
+        ReportColumn('Received by'),
+      ],
+      [
+        for (final entry in entries)
+          [
+            _day.format(entry.date.toLocal()),
+            entry.supplierName,
+            entry.invoiceNo,
+            entry.lines.length,
+            entry.itemCount,
+            entry.itemCount == 0 ? 0 : entry.total / entry.itemCount,
+            entry.total,
+            entry.receivedBy,
+          ],
+      ],
+      note: receivings.isEmpty
+          ? 'No goods received yet. Record deliveries to build purchase history.'
+          : null,
+    );
+  }
+
+  ReportTable _cashUpTable(
+    List<_Sale> sales,
+    DateTime? start,
+    DateTime? end,
+  ) {
+    final rows = <List<Object?>>[];
+    for (final shift in _shiftsInRange(start, end)) {
+      final summary = cashUpFor?.call(shift) ?? _fallbackCashUp(shift, sales);
+      rows.add([
+        shift.register,
+        _timestamp.format(shift.openedAt.toLocal()),
+        summary.openingFloat,
+        summary.cashSales,
+        summary.cashIn,
+        summary.cashOut,
+        summary.expected,
+        shift.isOpen ? null : summary.counted,
+        shift.isOpen ? null : summary.variance,
+        shift.status.localized(false),
+        shift.openedBy,
+      ]);
+    }
+    return ReportTable(
+      const [
+        ReportColumn('Register'),
+        ReportColumn('Opened'),
+        ReportColumn('Opening float', money: true),
+        ReportColumn('Cash sales', money: true),
+        ReportColumn('Cash in', money: true),
+        ReportColumn('Payouts', money: true),
+        ReportColumn('Expected cash', money: true),
+        ReportColumn('Counted cash', money: true),
+        ReportColumn('Variance', money: true),
+        ReportColumn('Status'),
+        ReportColumn('Opened by'),
+      ],
+      rows,
+      note: shifts.isEmpty
+          ? 'No register shifts recorded yet. Open a register to start tracking cash.'
+          : null,
+    );
+  }
+
+  ReportTable _shiftsTable(
+    List<_Sale> sales,
+    DateTime? start,
+    DateTime? end,
+  ) {
+    final rows = <List<Object?>>[];
+    for (final shift in _shiftsInRange(start, end)) {
+      final summary = cashUpFor?.call(shift) ?? _fallbackCashUp(shift, sales);
+      rows.add([
+        shift.register,
+        _timestamp.format(shift.openedAt.toLocal()),
+        shift.closedAt == null
+            ? null
+            : _timestamp.format(shift.closedAt!.toLocal()),
+        _durationLabel(shift),
+        shift.openingFloat,
+        summary.cashSales,
+        summary.expected,
+        shift.isOpen ? null : shift.countedCash,
+        shift.openedBy,
+        shift.closedBy.isEmpty ? null : shift.closedBy,
+        shift.status.localized(false),
+        shift.notes.isEmpty ? null : shift.notes,
+      ]);
+    }
+    return ReportTable(
+      const [
+        ReportColumn('Register'),
+        ReportColumn('Opened'),
+        ReportColumn('Closed'),
+        ReportColumn('Duration'),
+        ReportColumn('Opening float', money: true),
+        ReportColumn('Cash sales', money: true),
+        ReportColumn('Expected cash', money: true),
+        ReportColumn('Counted cash', money: true),
+        ReportColumn('Opened by'),
+        ReportColumn('Closed by'),
+        ReportColumn('Status'),
+        ReportColumn('Notes'),
+      ],
+      rows,
+      note: shifts.isEmpty
+          ? 'No shifts recorded. Register Shifts lists every opening and closing of the drawer.'
+          : null,
+    );
+  }
+
+  List<RegisterShift> _shiftsInRange(DateTime? start, DateTime? end) {
+    final dayStart =
+        start == null ? null : DateTime(start.year, start.month, start.day);
+    final dayEnd = end == null
+        ? null
+        : DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
+    final result = shifts
+        .where((shift) =>
+            (dayStart == null || !shift.openedAt.isBefore(dayStart)) &&
+            (dayEnd == null || !shift.openedAt.isAfter(dayEnd)))
+        .toList()
+      ..sort((a, b) => b.openedAt.compareTo(a.openedAt));
+    return result;
+  }
+
+  CashUpSummary _fallbackCashUp(RegisterShift shift, List<_Sale> sales) {
+    final cashSales = sales
+        .where((sale) =>
+            sale.order.paymentMethod.toLowerCase().contains('cash') &&
+            !sale.date.isBefore(shift.openedAt) &&
+            !sale.date.isAfter(shift.endsAt))
+        .fold<double>(0, (sum, sale) => sum + sale.order.total);
+    final cashIn = shift.movements
+        .where((movement) => !movement.type.isOutflow)
+        .fold<double>(0, (sum, movement) => sum + movement.amount);
+    final cashOut = shift.movements
+        .where((movement) => movement.type.isOutflow)
+        .fold<double>(0, (sum, movement) => sum + movement.amount);
+    final expected = shift.openingFloat + cashSales + cashIn - cashOut;
+    final counted = shift.isOpen ? 0.0 : shift.countedCash.toDouble();
+    return CashUpSummary(
+      openingFloat: shift.openingFloat,
+      cashSales: cashSales,
+      cashIn: cashIn,
+      cashOut: cashOut,
+      expected: expected,
+      counted: counted,
+      variance: counted - expected,
+    );
+  }
+
+  static String _durationLabel(RegisterShift shift) {
+    final minutes =
+        shift.endsAt.difference(shift.openedAt).inMinutes.clamp(0, 1440 * 60);
+    final hours = minutes ~/ 60;
+    final rest = minutes % 60;
+    return hours > 0 ? '${hours}h ${rest}m' : '${rest}m';
+  }
 }
 
 final _day = DateFormat('yyyy-MM-dd', 'en_US');
@@ -648,4 +1210,10 @@ ReportTable _newCustomerReport(
         ],
     ],
   );
+}
+
+class _TaxBucket {
+  double gross = 0;
+  double tax = 0;
+  int count = 0;
 }

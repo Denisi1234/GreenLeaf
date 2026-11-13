@@ -22,38 +22,39 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     super.dispose();
   }
 
-  List<_OrderHistoryItem> get _orders =>
-      context.watch<PosLocalStore>().orders
-          .map(
-            (o) => _OrderHistoryItem(
-              id: '#${o.id}',
-              dateTime: '${o.date} • ${o.time}',
-              amount: 'TSH ${o.total.toStringAsFixed(0)}',
-              status: o.status,
-              statusColor: const Color(0xFF2FA45B),
-              statusBg: const Color(0xFFEAF8EE),
-              accentColor: const Color(0xFF2B6FF3),
-              customerName: o.cashierName,
-              customerPhone: '',
-              paymentMethod: o.paymentMethod,
-              paidAmount: 'TSH ${o.cashTendered.toStringAsFixed(0)}',
-              isExpanded: false,
-              lines: o.lines
-                  .map(
-                    (l) => _OrderLine(
-                      l.itemName,
-                      l.quantity,
-                      'TSH ${l.unitPriceValue.toStringAsFixed(0)}',
-                      'TSH ${l.lineTotal.toStringAsFixed(0)}',
-                    ),
-                  )
-                  .toList(),
-              subtotal: 'TSH ${o.total.toStringAsFixed(0)}',
-              tax: 'TSH 0',
-              total: 'TSH ${o.total.toStringAsFixed(0)}',
-            ),
-          )
-          .toList();
+  List<_OrderHistoryItem> get _orders => context
+      .watch<PosLocalStore>()
+      .orders
+      .map(
+        (o) => _OrderHistoryItem(
+          id: '#${o.id}',
+          dateTime: '${o.date} • ${o.time}',
+          amount: 'TSH ${o.total.toStringAsFixed(0)}',
+          status: o.status,
+          statusColor: const Color(0xFF111111),
+          statusBg: const Color(0xFFF3F4F6),
+          accentColor: AppColors.primary,
+          customerName: o.cashierName,
+          customerPhone: '',
+          paymentMethod: o.paymentMethod,
+          paidAmount: 'TSH ${o.cashTendered.toStringAsFixed(0)}',
+          isExpanded: false,
+          lines: o.lines
+              .map(
+                (l) => _OrderLine(
+                  l.itemName,
+                  l.quantity,
+                  'TSH ${l.unitPriceValue.toStringAsFixed(0)}',
+                  'TSH ${l.lineTotal.toStringAsFixed(0)}',
+                ),
+              )
+              .toList(),
+          subtotal: 'TSH ${o.total.toStringAsFixed(0)}',
+          tax: 'TSH 0',
+          total: 'TSH ${o.total.toStringAsFixed(0)}',
+        ),
+      )
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +136,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                                   showMarketNotice(
                                     context,
                                     title: 'Order Scanner',
-                                    message: 'Scan receipt QR/Barcode to find order',
+                                    message:
+                                        'Scan receipt QR/Barcode to find order',
                                   );
                                 },
                                 height: 60,
@@ -177,7 +179,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                                   Text(
                                     'No matching orders',
                                     style: TextStyle(
-                                      color: Color(0xFF202938),
+                                      color: Color(0xFF111111),
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -310,7 +312,7 @@ class _OrderCardState extends State<_OrderCard> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
+                        color: AppColors.surfaceSecondary,
                         borderRadius: BorderRadius.circular(AppRadius.sharp),
                       ),
                       child: const Icon(
@@ -353,7 +355,8 @@ class _OrderCardState extends State<_OrderCard> {
                         ),
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.successLight,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -389,15 +392,18 @@ class _OrderCardState extends State<_OrderCard> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.person_outline_rounded, size: 18, color: AppColors.textMuted),
+                      const Icon(Icons.person_outline_rounded,
+                          size: 18, color: AppColors.textMuted),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         'Cashier: ',
-                        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textMuted),
                       ),
                       Text(
                         order.customerName ?? 'N/A',
-                        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
+                        style: AppTypography.bodySmall
+                            .copyWith(fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
@@ -405,30 +411,37 @@ class _OrderCardState extends State<_OrderCard> {
                   const _TableDivider(),
                   const SizedBox(height: AppSpacing.md),
                   ...order.lines!.map((line) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 4,
-                          child: Text(line.item, style: AppTypography.bodySmall),
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 4,
+                              child: Text(line.item,
+                                  style: AppTypography.bodySmall),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Text('x${line.qty}',
+                                  textAlign: TextAlign.center,
+                                  style: AppTypography.bodySmall),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Text(line.total,
+                                  textAlign: TextAlign.right,
+                                  style: AppTypography.bodySmall
+                                      .copyWith(fontWeight: FontWeight.w700)),
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          flex: 1,
-                          child: Text('x${line.qty}', textAlign: TextAlign.center, style: AppTypography.bodySmall),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(line.total, textAlign: TextAlign.right, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700)),
-                        ),
-                      ],
-                    ),
-                  )),
+                      )),
                   const SizedBox(height: AppSpacing.md),
                   const _TableDivider(),
                   const SizedBox(height: AppSpacing.md),
                   _AmountRow(label: 'Subtotal', value: order.subtotal!),
                   const SizedBox(height: 4),
-                  _AmountRow(label: 'Total', value: order.total!, isEmphasis: true),
+                  _AmountRow(
+                      label: 'Total', value: order.total!, isEmphasis: true),
                   const SizedBox(height: AppSpacing.lg),
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -438,17 +451,20 @@ class _OrderCardState extends State<_OrderCard> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.payments_outlined, size: 20, color: AppColors.primary),
+                        const Icon(Icons.payments_outlined,
+                            size: 20, color: AppColors.primary),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
                             'Paid via ${order.paymentMethod}',
-                            style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
+                            style: AppTypography.bodySmall
+                                .copyWith(fontWeight: FontWeight.w700),
                           ),
                         ),
                         Text(
                           order.paidAmount ?? '',
-                          style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w800),
+                          style: AppTypography.bodySmall
+                              .copyWith(fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
@@ -500,7 +516,8 @@ class _AmountRow extends StatelessWidget {
         Text(
           value,
           style: isEmphasis
-              ? AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary)
+              ? AppTypography.bodySmall.copyWith(
+                  fontWeight: FontWeight.w800, color: AppColors.primary)
               : AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
         ),
       ],

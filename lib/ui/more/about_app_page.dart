@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'privacy_policy_page.dart';
+import 'settings_layout.dart';
 import 'terms_of_service_page.dart';
 
 class AboutAppPage extends StatelessWidget {
@@ -17,93 +17,66 @@ class AboutAppPage extends StatelessWidget {
       _AboutItem('Licenses', Icons.info_outline_rounded),
     ];
 
-    final baseTheme = Theme.of(context);
-    final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme:
-          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
-    );
-
-    return Theme(
-      data: interTheme,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Column(
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
           children: [
             const MarketPageHeader(title: 'App Info'),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                child: Column(
-                  children: [
-                    const Text(
-                      'TrackMauzo',
-                      style: TextStyle(
-                        color: AppColors.ink,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Version 2.4.1',
-                      style: TextStyle(
-                        color: AppColors.mutedText,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'TrackMauzo helps businesses manage sales, records, and daily operations with confidence anytime, anywhere.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.mutedText,
-                          fontSize: 14,
-                          height: 1.5,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    MarketSurfaceCard(
-                      backgroundColor: AppColors.pageBackground,
-                      radius: AppRadius.rounded,
-                      borderColor: AppColors.border,
-                      child: Column(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+                    children: [
+                      const SettingsCard(
+                        icon: Icons.storefront_rounded,
+                        title: 'TrackMauzo',
+                        description:
+                            'Point of sale for small shops — the B2C edition of Open Source POS.',
                         children: [
-                          ...items.asMap().entries.map(
-                            (entry) {
-                              final index = entry.key;
-                              final item = entry.value;
-                              return Column(
-                                children: [
-                                  _AboutTile(item: item),
-                                  if (index != items.length - 1)
-                                    const Divider(
-                                      height: 1,
-                                      color: AppColors.divider,
-                                    ),
-                                ],
-                              );
-                            },
+                          SettingsInfoRow(
+                            label: 'Version',
+                            value: '1.0.0 (1)',
+                          ),
+                          Divider(height: 1),
+                          SettingsInfoRow(
+                            label: 'Edition',
+                            value: 'B2C · Mini',
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 32),
-                    const Text(
-                      '© 2026 TrackMauzo. All rights reserved.',
-                      style: TextStyle(
-                        color: AppColors.mutedText,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                      Container(
+                        decoration: AppDecorations.tile(),
+                        clipBehavior: Clip.antiAlias,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Column(
+                            children: [
+                              for (var index = 0;
+                                  index < items.length;
+                                  index++) ...[
+                                _AboutTile(item: items[index]),
+                                if (index != items.length - 1)
+                                  const Divider(
+                                    height: 1,
+                                    indent: 66,
+                                    color: AppColors.divider,
+                                  ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 24),
+                      Text(
+                        '© 2026 TrackMauzo. All rights reserved.',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.caption,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -121,82 +94,57 @@ class _AboutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      borderColor: AppColors.border,
-      radius: AppRadius.standard,
-      child: GestureDetector(
-        onTap: () {
-          if (item.label == 'Terms of Service') {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (context) => const TermsOfServicePage(),
-              ),
-            );
-            return;
-          }
-
-          if (item.label == 'Privacy Policy') {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (context) => const PrivacyPolicyPage(),
-              ),
-            );
-            return;
-          }
-
-          if (item.label == 'Licenses') {
-            showLicensePage(
-              context: context,
-              applicationName: 'TrackMauzo',
-              applicationVersion: '2.4.1',
-              applicationLegalese: '© 2026 TrackMauzo. All rights reserved.',
-            );
-            return;
-          }
-
-          showMarketNotice(
-            context,
-            title: item.label,
-            message: '${item.label} can be connected to the full document next',
+    return InkWell(
+      onTap: () {
+        if (item.label == 'Terms of Service') {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const TermsOfServicePage(),
+            ),
           );
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.pageBackground,
-                  borderRadius: BorderRadius.circular(AppRadius.standard),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Icon(
-                  item.icon,
+          return;
+        }
+
+        if (item.label == 'Privacy Policy') {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => const PrivacyPolicyPage(),
+            ),
+          );
+          return;
+        }
+
+        if (item.label == 'Licenses') {
+          showLicensePage(
+            context: context,
+            applicationName: 'TrackMauzo',
+            applicationVersion: '1.0.0',
+            applicationLegalese: '© 2026 TrackMauzo. All rights reserved.',
+          );
+          return;
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            SettingsIconBox(icon: item.icon),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                item.label,
+                style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.ink,
-                  size: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  item.label,
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.1,
-                  ),
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.mutedText,
-                size: 20,
-              ),
-            ],
-          ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
+              size: 20,
+            ),
+          ],
         ),
       ),
     );

@@ -19,7 +19,7 @@ class DukaAiIntroCard extends StatelessWidget {
             ),
             child: const Icon(
               Icons.smart_toy_rounded,
-              color: Color(0xFF16A34A),
+              color: Color(0xFF111111),
               size: 56,
             ),
           ),
@@ -27,7 +27,7 @@ class DukaAiIntroCard extends StatelessWidget {
           const Text(
             'Ask any question about your business',
             style: TextStyle(
-              color: Color(0xFF0F172A),
+              color: Color(0xFF111111),
               fontSize: 22,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,

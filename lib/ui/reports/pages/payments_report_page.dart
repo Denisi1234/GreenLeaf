@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -31,9 +32,12 @@ class PaymentsReportPage extends StatelessWidget {
   }
 
   List<MetricData> _buildMetrics(ReportTable table, PosReportData data) {
-    final totalCollected = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final totalCredit = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
-    final totalTransactions = table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int));
+    final totalCollected = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final totalCredit = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final totalTransactions =
+        table.rows.fold<int>(0, (sum, row) => sum + (row[1] as int));
     final paymentMethods = table.rows.length;
 
     return [
@@ -41,33 +45,33 @@ class PaymentsReportPage extends StatelessWidget {
         title: 'Total Collected',
         value: '₹${NumberFormat('#,##0.##').format(totalCollected)}',
         icon: Icons.attach_money,
-        iconColor: Colors.green,
-        tint: Colors.green.withValues(alpha: 0.1),
-        valueColor: Colors.green,
+        iconColor: Color(0xFF111111),
+        tint: Color(0xFF111111).withValues(alpha: 0.1),
+        valueColor: Color(0xFF111111),
       ),
       MetricData(
         title: 'Credit Sales',
         value: '₹${NumberFormat('#,##0.##').format(totalCredit)}',
         icon: Icons.credit_card,
-        iconColor: Colors.orange,
-        tint: Colors.orange.withValues(alpha: 0.1),
-        valueColor: Colors.orange,
+        iconColor: AppColors.ink,
+        tint: AppColors.ink.withValues(alpha: 0.1),
+        valueColor: AppColors.ink,
       ),
       MetricData(
         title: 'Total Transactions',
         value: NumberFormat('#,###').format(totalTransactions),
         icon: Icons.receipt,
-        iconColor: Colors.blue,
-        tint: Colors.blue.withValues(alpha: 0.1),
-        valueColor: Colors.blue,
+        iconColor: Color(0xFF15803D),
+        tint: Color(0xFF15803D).withValues(alpha: 0.1),
+        valueColor: Color(0xFF15803D),
       ),
       MetricData(
         title: 'Payment Methods',
         value: NumberFormat('#,###').format(paymentMethods),
         icon: Icons.payment,
-        iconColor: Colors.indigo,
-        tint: Colors.indigo.withValues(alpha: 0.1),
-        valueColor: Colors.indigo,
+        iconColor: Color(0xFF166534),
+        tint: Color(0xFF166534).withValues(alpha: 0.1),
+        valueColor: Color(0xFF166534),
       ),
     ];
   }
@@ -90,10 +94,13 @@ class PaymentsReportPage extends StatelessWidget {
         .map((row) => TrendPoint(
               label: row[0].toString(),
               value: (row[2] as num).toDouble(),
-              displayValue: '₹${NumberFormat('#,##0').format((row[2] as num).toDouble())}',
+              displayValue:
+                  '₹${NumberFormat('#,##0').format((row[2] as num).toDouble())}',
             ))
         .toList();
-    final maxValue = trendPoints.isEmpty ? 0.0 : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = trendPoints.isEmpty
+        ? 0.0
+        : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
       title: 'Collected by Payment Method',
@@ -101,16 +108,19 @@ class PaymentsReportPage extends StatelessWidget {
         points: trendPoints,
         maxValue: maxValue,
         label: 'Collected',
-        color: Colors.green,
+        color: Color(0xFF111111),
       ),
     );
   }
 
   Widget _buildCollectionEfficiencyCard(ReportTable table) {
-    final totalCollected = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final totalCredit = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final totalCollected = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final totalCredit = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
     final totalSales = totalCollected + totalCredit;
-    final collectionRate = totalSales > 0 ? (totalCollected / totalSales) * 100 : 100.0;
+    final collectionRate =
+        totalSales > 0 ? (totalCollected / totalSales) * 100 : 100.0;
 
     return SectionCard(
       title: 'Collection Efficiency',
@@ -130,16 +140,16 @@ class PaymentsReportPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-Text(
-                        '${collectionRate.toStringAsFixed(1)}%',
-                        style: GoogleFonts.manrope(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w700,
-                          color: collectionRate >= 90
-                              ? Colors.green
-                              : collectionRate >= 70
-                                  ? Colors.orange
-                                  : Colors.red,
+                    Text(
+                      '${collectionRate.toStringAsFixed(1)}%',
+                      style: GoogleFonts.manrope(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                        color: collectionRate >= 90
+                            ? Color(0xFF111111)
+                            : collectionRate >= 70
+                                ? AppColors.ink
+                                : Colors.red,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -164,9 +174,9 @@ Text(
                 backgroundColor: Colors.grey.shade200,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   collectionRate >= 90
-                      ? Colors.green
+                      ? Color(0xFF111111)
                       : collectionRate >= 70
-                          ? Colors.orange
+                          ? AppColors.ink
                           : Colors.red,
                 ),
               ),
@@ -179,21 +189,21 @@ Text(
                 child: _PaymentStat(
                   label: 'Collected',
                   value: '₹${NumberFormat('#,##0').format(totalCollected)}',
-                  color: Colors.green,
+                  color: Color(0xFF111111),
                 ),
               ),
               Expanded(
                 child: _PaymentStat(
                   label: 'On Credit',
                   value: '₹${NumberFormat('#,##0').format(totalCredit)}',
-                  color: Colors.orange,
+                  color: AppColors.ink,
                 ),
               ),
               Expanded(
                 child: _PaymentStat(
                   label: 'Total Sales',
                   value: '₹${NumberFormat('#,##0').format(totalSales)}',
-                  color: Colors.indigo,
+                  color: Color(0xFF166534),
                 ),
               ),
             ],
@@ -211,27 +221,33 @@ Text(
     final topMethod = table.rows.first;
     final topMethodName = topMethod[0].toString();
     final topMethodCollected = (topMethod[2] as num).toDouble();
-    final totalCollected = table.rows.fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
-    final topMethodShare = totalCollected > 0 ? (topMethodCollected / totalCollected) * 100 : 0.0;
+    final totalCollected = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
+    final topMethodShare =
+        totalCollected > 0 ? (topMethodCollected / totalCollected) * 100 : 0.0;
 
     insights.add(InsightCard(
       title: 'Preferred Payment Method',
-      description: '$topMethodName accounts for ${topMethodShare.toStringAsFixed(1)}% of collections (₹${NumberFormat('#,##0').format(topMethodCollected)})',
+      description:
+          '$topMethodName accounts for ${topMethodShare.toStringAsFixed(1)}% of collections (₹${NumberFormat('#,##0').format(topMethodCollected)})',
       icon: Icons.payment,
-      color: Colors.indigo,
+      color: Color(0xFF166534),
       severity: InsightSeverity.info,
     ));
 
-    final totalCredit = table.rows.fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
+    final totalCredit = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
     if (totalCredit > totalCollected) {
       insights.add(InsightCard(
         title: 'Credit Exceeds Collections',
-        description: 'Credit sales (₹${NumberFormat('#,##0').format(totalCredit)}) exceed collected payments (₹${NumberFormat('#,##0').format(totalCollected)}). Review credit policies.',
+        description:
+            'Credit sales (₹${NumberFormat('#,##0').format(totalCredit)}) exceed collected payments (₹${NumberFormat('#,##0').format(totalCollected)}). Review credit policies.',
         icon: Icons.warning,
         color: Colors.red,
         severity: InsightSeverity.critical,
         actionLabel: 'View Credit Sales',
-        onAction: () => Navigator.of(context).pushNamed('/reports/credit_sales'),
+        onAction: () =>
+            Navigator.of(context).pushNamed('/reports/credit_sales'),
       ));
     }
 

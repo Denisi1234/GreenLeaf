@@ -1,91 +1,215 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../../l10n/app_strings.dart';
+import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 
-class RecordDebitBottomSheet extends StatefulWidget {
+String _dual(AppStrings strings, String english, String swahili) =>
+    strings.isSwahili ? swahili : english;
+
+String _money(double value) => 'TSh ${NumberFormat('#,##0.00').format(value)}';
+
+/// Confirms that the running sale is taken on credit for [customerName].
+class RecordDebitBottomSheet extends StatelessWidget {
   const RecordDebitBottomSheet({
     super.key,
     required this.customerName,
     required this.total,
+    required this.currentBalance,
   });
 
   final String customerName;
   final double total;
+  final double currentBalance;
 
-  @override
-  State<RecordDebitBottomSheet> createState() => _RecordDebitBottomSheetState();
-}
-
-class _RecordDebitBottomSheetState extends State<RecordDebitBottomSheet> {
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
+    final newBalance = currentBalance + total;
+
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.zero,
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
-              width: 32,
+              width: 40,
               height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(2),
+              decoration: const BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.zero,
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Record Debit',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'This sale of TSh ${widget.total.toStringAsFixed(0)} will be recorded as credit for ${widget.customerName}.',
-            style: const TextStyle(
-              fontSize: 15,
-              color: Color(0xFF64748B),
-              height: 1.5,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.surfaceSecondary,
+                  borderRadius: BorderRadius.zero,
+                ),
+                child: const Icon(Icons.account_balance_wallet_outlined,
+                    color: AppColors.ink, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _dual(strings, 'Record debit sale',
+                          'Rekodi mauzo ya mkopo'),
+                      style: AppTypography.cardHeader,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      customerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.zero,
+              border: Border.all(color: AppColors.border),
             ),
-            child: const Text(
-              'Confirm Debit Sale',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _RowLine(
+                  label: _dual(strings, 'Sale total', 'Jumla ya mauzo'),
+                  value: _money(total),
+                  strong: true,
+                ),
+                _RowLine(
+                  label: _dual(strings, 'Current balance', 'Deni la sasa'),
+                  value: _money(currentBalance),
+                ),
+                const Divider(
+                    height: 14, thickness: 1, color: AppColors.divider),
+                _RowLine(
+                  label: _dual(
+                      strings, 'Balance after sale', 'Deni baada ya mauzo'),
+                  value: _money(newBalance),
+                  strong: true,
+                  color: AppColors.ink,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF64748B),
+          Text(
+            _dual(
+              strings,
+              'This amount is added to the customer debit ledger and can be settled from Customers, Debit & Credit.',
+              'Kiasi hiki kinaongezwa kwenye daftari la deni la mteja na linaweza kulipwa kupitia Wateja, Madeni na Malipo.',
+            ),
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textMuted,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Material(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.zero,
+            child: InkWell(
+              borderRadius: BorderRadius.zero,
+              highlightColor: Colors.transparent,
+              splashColor: AppColors.primaryDeep.withValues(alpha: 0.4),
+              onTap: () => Navigator.of(context).pop(true),
+              child: SizedBox(
+                height: 50,
+                child: Center(
+                  child: Text(
+                    _dual(strings, 'Confirm debit sale',
+                        'Thibitisha mauzo ya mkopo'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
               ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                strings.cancel,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RowLine extends StatelessWidget {
+  const _RowLine({
+    required this.label,
+    required this.value,
+    this.strong = false,
+    this.color,
+  });
+
+  final String label;
+  final String value;
+  final bool strong;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = color ?? AppColors.ink;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: AppTypography.helperText.copyWith(
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: AppTypography.bodySmall.copyWith(
+              color: resolved,
+              fontWeight: strong ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
         ],

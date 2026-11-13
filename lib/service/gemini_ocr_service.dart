@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class GeminiOcrService {
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  static const String _baseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
   /// Sends the ledger image to Gemini 2.5 Flash to transcribe and clean up
   /// the handwritten notes into standard parsed text.
@@ -51,7 +52,8 @@ class GeminiOcrService {
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw HttpException('Gemini API call failed with status: ${response.statusCode}');
+      throw HttpException(
+          'Gemini API call failed with status: ${response.statusCode}');
     }
 
     final decoded = jsonDecode(response.body);

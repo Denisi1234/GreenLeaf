@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -52,7 +52,17 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
 
     if (created == null || !mounted) return;
 
-    store.addProduct(created);
+    try {
+      await store.addProduct(created);
+    } catch (error) {
+      if (!mounted) return;
+      showMarketNotice(context,
+          title: 'Save Failed',
+          message: error.toString(),
+          type: MarketNoticeType.warning);
+      return;
+    }
+    if (!mounted) return;
     showMarketNotice(
       context,
       title: 'Product Added',
@@ -72,7 +82,17 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
 
     if (updated == null || !mounted) return;
 
-    context.read<PosLocalStore>().updateProduct(updated);
+    try {
+      await context.read<PosLocalStore>().updateProduct(updated);
+    } catch (error) {
+      if (!mounted) return;
+      showMarketNotice(context,
+          title: 'Save Failed',
+          message: error.toString(),
+          type: MarketNoticeType.warning);
+      return;
+    }
+    if (!mounted) return;
     showMarketNotice(
       context,
       title: 'Product Updated',
@@ -155,10 +175,12 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
         drawer: widget.useSharedShell
             ? null
             : const MarketAppDrawer(selectedItem: 'Products'),
-        floatingActionButton: _AddProductFab(
-          onPressed: _openAddProductPage,
-          accentColor: config.primaryColor,
-        ),
+        floatingActionButton: widget.useSharedShell
+            ? null
+            : _AddProductFab(
+                onPressed: _openAddProductPage,
+                accentColor: config.primaryColor,
+              ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: SafeArea(
           top: !widget.useSharedShell,
@@ -320,13 +342,6 @@ class _PinnedSearchPanel extends StatelessWidget {
         hintText: hintText,
         onChanged: onSearchChanged,
         onClear: onClearSearch,
-        onScanTap: () {
-          showMarketNotice(
-            context,
-            title: 'Scanner Active',
-            message: 'SKU Barcode scanner would open here',
-          );
-        },
         backgroundColor: Colors.white,
         borderColor: const Color(0xFFF1F5F9),
         radius: 30,
@@ -626,24 +641,32 @@ class _AddProductFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      heroTag: 'product_management_add_product_fab',
-      onPressed: onPressed,
-      backgroundColor: accentColor,
-      foregroundColor: Colors.white,
-      elevation: 8,
-      highlightElevation: 12,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.standard),
-      ),
-      extendedPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      icon: const Icon(Icons.add_rounded, size: 24),
-      label: Text(
-        'Add Product',
-        style: AppTypography.bodyMedium.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w800,
+    return Material(
+      color: accentColor,
+      borderRadius: BorderRadius.zero,
+      elevation: 4,
+      child: InkWell(
+        borderRadius: BorderRadius.zero,
+        splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
+        highlightColor: Colors.transparent,
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add_rounded, color: Colors.white, size: 18),
+              SizedBox(width: 6),
+              Text(
+                'Ongeza Bidhaa',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -660,8 +683,8 @@ class _ProductArtFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (product.imagePath != null && product.imagePath!.isNotEmpty) {
-      return Image.file(
-        File(product.imagePath!),
+      return Image(
+        image: appImageProvider(context, product.imagePath!),
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
@@ -711,7 +734,7 @@ class _ProductsEmptyState extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.primaryLight,
+              color: AppColors.surfaceSecondary,
               borderRadius: BorderRadius.circular(AppRadius.rounded),
             ),
             child: const Icon(

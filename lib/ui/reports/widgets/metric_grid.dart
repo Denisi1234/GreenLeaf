@@ -41,7 +41,7 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deltaColor = metric.deltaIsPositive == false
-        ? AppColors.danger
+        ? AppColors.textMuted
         : AppColors.success;
 
     return Container(

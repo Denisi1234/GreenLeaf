@@ -1,13 +1,13 @@
 import 'dart:ui';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:track_mauzo/app.dart';
 import 'package:track_mauzo/service/pos_local_store.dart';
+import 'package:track_mauzo/ui/auth/onboarding_page.dart';
 
 void main() {
-  testWidgets('shows the product dashboard', (WidgetTester tester) async {
-    await tester.binding.setSurfaceSize(const Size(1600, 1600));
+  testWidgets('renders clean onboarding page with carousel and controls', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 840));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final store = PosLocalStore();
@@ -20,6 +20,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Products'), findsWidgets);
+    expect(find.byType(OnboardingPage), findsOneWidget);
+    expect(find.text('TrackMauzo'), findsOneWidget);
   });
 }

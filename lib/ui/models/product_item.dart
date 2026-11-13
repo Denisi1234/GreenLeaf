@@ -66,5 +66,6 @@ const productItems = <ProductItem>[
   ProductItem('Dove Beauty Bar', '100g', '3125', ProductArtType.dove),
   ProductItem('Colgate', 'Maximum Protection', '5250', ProductArtType.colgate),
   ProductItem('Dettol Hand Wash', '250 ml', '7125', ProductArtType.dettol),
-  ProductItem('Tide Original', 'Detergent Powder', '12250', ProductArtType.tide),
+  ProductItem(
+      'Tide Original', 'Detergent Powder', '12250', ProductArtType.tide),
 ];

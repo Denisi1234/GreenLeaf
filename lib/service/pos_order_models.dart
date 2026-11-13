@@ -36,6 +36,9 @@ class CompletedOrder {
   final String? customerName;
   final double? discountAmount;
   final String? discountLabel;
+
+  /// Receipt reference printed on customer copies (the order id).
+  String get receiptNo => id;
 }
 
 /// Single line item within an order.

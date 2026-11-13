@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -30,7 +31,7 @@ class StockAlertCard extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F172A),
+                color: const Color(0xFF111111),
               ),
             ),
             if (onViewAll != null)
@@ -41,7 +42,7 @@ class StockAlertCard extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1E67E8),
+                    color: AppColors.textBody,
                   ),
                 ),
               ),
@@ -52,7 +53,7 @@ class StockAlertCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE6EBF2)),
+            border: Border.all(color: const Color(0xFFF3F4F6)),
           ),
           child: Column(
             children: [
@@ -61,7 +62,7 @@ class StockAlertCard extends StatelessWidget {
                   const Divider(
                     height: 1,
                     thickness: 1,
-                    color: Color(0xFFE6EBF2),
+                    color: Color(0xFFF3F4F6),
                     indent: 16,
                     endIndent: 16,
                   ),
@@ -80,7 +81,7 @@ class StockAlertCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE6EBF2)),
+        border: Border.all(color: const Color(0xFFF3F4F6)),
       ),
       child: Row(
         children: [
@@ -88,12 +89,12 @@ class StockAlertCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFFD1FAE5),
+              color: const Color(0xFFF3F4F6),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.check_circle_rounded,
-              color: Color(0xFF059669),
+              color: Color(0xFF111111),
               size: 24,
             ),
           ),
@@ -107,7 +108,7 @@ class StockAlertCard extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    color: const Color(0xFF111111),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -143,14 +144,13 @@ class _StockAlertRow extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isHigh
-                  ? const Color(0xFFFEF2F2)
-                  : const Color(0xFFFFF7ED),
+              color:
+                  isHigh ? AppColors.dangerLight : AppColors.surfaceSecondary,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               isHigh ? Icons.warning_amber_rounded : Icons.inventory_2_outlined,
-              color: isHigh ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+              color: isHigh ? AppColors.danger : AppColors.textMuted,
               size: 20,
             ),
           ),
@@ -164,7 +164,7 @@ class _StockAlertRow extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    color: const Color(0xFF111111),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -183,9 +183,8 @@ class _StockAlertRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: isHigh
-                  ? const Color(0xFFFEF2F2)
-                  : const Color(0xFFFFF7ED),
+              color:
+                  isHigh ? AppColors.dangerLight : AppColors.surfaceSecondary,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -193,7 +192,7 @@ class _StockAlertRow extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: isHigh ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                color: isHigh ? AppColors.danger : AppColors.textMuted,
               ),
             ),
           ),

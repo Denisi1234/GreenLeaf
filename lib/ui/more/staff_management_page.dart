@@ -1,15 +1,19 @@
-import 'dart:io';
+import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_edit_staff_page.dart';
 import 'role_details_page.dart';
 import 'staff_member_details_page.dart';
+
+String _dual(AppStrings strings, String english, String swahili) =>
+    strings.isSwahili ? swahili : english;
 
 class StaffManagementPage extends StatefulWidget {
   const StaffManagementPage({super.key});
@@ -78,14 +82,19 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
     );
     if (!mounted || saved == null) return;
     final role = store.staffRoleById(saved.roleId);
+    final strings = AppStrings.of(store.languageCode);
     showMarketNotice(
       context,
-      title: 'Staff Added',
-      message: '${saved.name} was added as ${role?.title ?? 'staff'}.',
+      title: _dual(strings, 'Staff Added', 'Mfanyakazi Amepangwa'),
+      message: _dual(
+          strings,
+          '${saved.name} was added as ${role?.title ?? 'staff'}.',
+          '${saved.name} ameongezwa kama ${role?.title ?? 'mfanyakazi'}.'),
     );
   }
 
-  Future<void> _openEditStaff(PosLocalStore store, StaffMemberData member) async {
+  Future<void> _openEditStaff(
+      PosLocalStore store, StaffMemberData member) async {
     final saved = await Navigator.of(context).push<StaffMemberData>(
       MaterialPageRoute<StaffMemberData>(
         builder: (context) => AddEditStaffPage(
@@ -95,10 +104,12 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
       ),
     );
     if (!mounted || saved == null) return;
+    final strings = AppStrings.of(store.languageCode);
     showMarketNotice(
       context,
-      title: 'Staff Updated',
-      message: '${saved.name} was updated successfully.',
+      title: _dual(strings, 'Staff Updated', 'Mfanyakazi Amesasishwa'),
+      message: _dual(strings, '${saved.name} was updated successfully.',
+          '${saved.name} amesasishwa kwa mafanikio.'),
     );
   }
 
@@ -117,10 +128,14 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
   ) async {
     await store.setStaffStatus(member.id, status);
     if (!mounted) return;
+    final strings = AppStrings.of(store.languageCode);
     showMarketNotice(
       context,
-      title: 'Status Updated',
-      message: '${member.name} is now ${status.label.toLowerCase()}.',
+      title: _dual(strings, 'Status Updated', 'Hali Imesasishwa'),
+      message: _dual(
+          strings,
+          '${member.name} is now ${status.label.toLowerCase()}.',
+          '${member.name} sasa ni ${status.label.toLowerCase()}.'),
     );
   }
 
@@ -128,22 +143,26 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
     PosLocalStore store,
     StaffMemberData member,
   ) async {
+    final strings = AppStrings.of(store.languageCode);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove staff member'),
+        title: Text(_dual(strings, 'Remove staff member', 'Ondoa Mfanyakazi')),
         content: Text(
-          'Remove ${member.name} from this store? This cannot be undone.',
+          _dual(
+              strings,
+              'Remove ${member.name} from this store? This cannot be undone.',
+              'Ondoa ${member.name} kwenye duka hili? Hili haliwezi kutenduliwa.'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Remove'),
+            child: Text(_dual(strings, 'Remove', 'Ondoa')),
           ),
         ],
       ),
@@ -154,13 +173,15 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
     if (!mounted) return;
     showMarketNotice(
       context,
-      title: 'Staff Removed',
-      message: '${member.name} was removed from the team.',
+      title: _dual(strings, 'Staff Removed', 'Mfanyakazi Ameondolewa'),
+      message: _dual(strings, '${member.name} was removed from the team.',
+          '${member.name} ameondolewa kwenye timu.'),
       type: MarketNoticeType.warning,
     );
   }
 
   void _showActions(PosLocalStore store, StaffMemberData member) {
+    final strings = AppStrings.of(store.languageCode);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -169,8 +190,8 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
         final role = store.staffRoleById(member.roleId);
         return Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.zero,
           ),
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
           child: SafeArea(
@@ -216,13 +237,14 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                         ],
                       ),
                     ),
-                    _StatusPill(status: member.status),
+                    _StatusPill(status: member.status, strings: strings),
                   ],
                 ),
                 const SizedBox(height: 16),
                 _SheetAction(
                   icon: Icons.badge_outlined,
-                  label: 'View full profile',
+                  label: _dual(
+                      strings, 'View full profile', 'Tazama wasifu kamili'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _openDetails(member);
@@ -230,7 +252,8 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                 ),
                 _SheetAction(
                   icon: Icons.edit_outlined,
-                  label: 'Edit staff details',
+                  label: _dual(strings, 'Edit staff details',
+                      'Hariri maelezo ya mfanyakazi'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _openEditStaff(store, member);
@@ -238,18 +261,19 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                 ),
                 _SheetAction(
                   icon: Icons.manage_accounts_outlined,
-                  label: 'Open assigned role',
+                  label: _dual(strings, 'Open assigned role',
+                      'Fungua nafasi iliyopangwa'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _openRole(role);
                   },
                 ),
                 const Divider(height: 24, color: AppColors.divider),
-                const Padding(
-                  padding: EdgeInsets.only(left: 4, bottom: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 8),
                   child: Text(
-                    'SET STATUS',
-                    style: TextStyle(
+                    _dual(strings, 'SET STATUS', 'WEKA HALI'),
+                    style: const TextStyle(
                       color: AppColors.textLight,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -263,7 +287,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                   children: StaffStatus.values.map((status) {
                     final selected = member.status == status;
                     return _ChoicePill(
-                      label: status.label,
+                      label: status.localized(strings.isSwahili),
                       selected: selected,
                       onTap: () {
                         Navigator.of(sheetContext).pop();
@@ -275,7 +299,8 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                 const SizedBox(height: 8),
                 _SheetAction(
                   icon: Icons.delete_outline_rounded,
-                  label: 'Remove staff member',
+                  label:
+                      _dual(strings, 'Remove staff member', 'Ondoa mfanyakazi'),
                   isDestructive: true,
                   onTap: () {
                     Navigator.of(sheetContext).pop();
@@ -292,10 +317,12 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
 
   void _openRole(StaffRoleData? role) {
     if (role == null) {
+      final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
       showMarketNotice(
         context,
-        title: 'Role Missing',
-        message: 'This staff member has no role assigned yet.',
+        title: _dual(strings, 'Role Missing', 'Nafasi Inakosekana'),
+        message: _dual(strings, 'This staff member has no role assigned yet.',
+            'Mfanyakazi huyu hana nafasi iliyopangwa bado.'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -308,6 +335,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
   }
 
   Future<void> _showRolesSheet(PosLocalStore store) async {
+    final strings = AppStrings.of(store.languageCode);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -322,8 +350,8 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
             final roles = store.staffRoles;
             return Container(
               decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                color: AppColors.surface,
+                borderRadius: BorderRadius.zero,
               ),
               child: ListView(
                 controller: controller,
@@ -346,11 +374,16 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Roles & Access',
+                            Text(
+                                _dual(strings, 'Roles & Access',
+                                    'Nafasi na Ruhusa'),
                                 style: AppTypography.h3),
                             const SizedBox(height: 2),
                             Text(
-                              'Permissions apply to every staff member in a role.',
+                              _dual(
+                                  strings,
+                                  'Permissions apply to every staff member in a role.',
+                                  'Ruhusa zinatumika kwa kila mfanyakazi mwenye nafasi hiyo.'),
                               style: AppTypography.bodySmall
                                   .copyWith(color: AppColors.textMuted),
                             ),
@@ -368,19 +401,18 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.pill),
+                            color: AppColors.surfaceSecondary,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.add_rounded,
+                              const Icon(Icons.add_rounded,
                                   color: AppColors.primary, size: 18),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Text(
-                                'New',
-                                style: TextStyle(
+                                _dual(strings, 'New', 'Mpya'),
+                                style: const TextStyle(
                                   color: AppColors.primaryDeep,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w800,
@@ -397,6 +429,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                     (role) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _RoleTile(
+                        strings: strings,
                         role: role,
                         staffCount: store.staffMembersForRole(role.id).length,
                         onTap: () {
@@ -416,39 +449,43 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
   }
 
   Future<void> _createRole(PosLocalStore store) async {
+    final strings = AppStrings.of(store.languageCode);
     final titleController = TextEditingController();
     final subtitleController = TextEditingController();
 
     final created = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('New role'),
+        title: Text(_dual(strings, 'New role', 'Nafasi mpya')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: titleController,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Role name'),
+              decoration: InputDecoration(
+                  labelText: _dual(strings, 'Role name', 'Jina la nafasi')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: subtitleController,
-              decoration: const InputDecoration(labelText: 'Short description'),
+              decoration: InputDecoration(
+                  labelText:
+                      _dual(strings, 'Short description', 'Maelezo mafupi')),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(strings.cancel),
           ),
           ElevatedButton(
             onPressed: () {
               if (titleController.text.trim().isEmpty) return;
               Navigator.of(dialogContext).pop(true);
             },
-            child: const Text('Create'),
+            child: Text(strings.create),
           ),
         ],
       ),
@@ -480,17 +517,15 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
     final staff = _visibleStaff(store);
     final allStaff = store.staffMembers;
-    final activeCount = allStaff
-        .where((member) => member.status == StaffStatus.active)
-        .length;
-    final onLeaveCount = allStaff
-        .where((member) => member.status == StaffStatus.onLeave)
-        .length;
-    final selectedRole = _roleFilterId == null
-        ? null
-        : store.staffRoleById(_roleFilterId!);
+    final activeCount =
+        allStaff.where((member) => member.status == StaffStatus.active).length;
+    final onLeaveCount =
+        allStaff.where((member) => member.status == StaffStatus.onLeave).length;
+    final selectedRole =
+        _roleFilterId == null ? null : store.staffRoleById(_roleFilterId!);
     final baseTheme = Theme.of(context);
     final manropeTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
@@ -502,14 +537,33 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
       data: manropeTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _openAddStaff(store),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.person_add_alt_1_rounded),
-          label: const Text(
-            'Add Staff',
-            style: TextStyle(fontWeight: FontWeight.w800),
+        floatingActionButton: Material(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.zero,
+          child: InkWell(
+            borderRadius: BorderRadius.zero,
+            splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
+            highlightColor: Colors.transparent,
+            onTap: () => _openAddStaff(store),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.person_add_alt_1_rounded,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    strings.addStaff,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
         body: SafeArea(
@@ -517,14 +571,17 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
           child: Column(
             children: [
               MarketPageHeader(
-                title: 'Staff Management',
-                subtitle:
+                title: strings.staffManagementTitle,
+                subtitle: _dual(
+                    strings,
                     '$activeCount active · ${allStaff.length} total · ${store.staffRoles.length} roles',
+                    '$activeCount hai · ${allStaff.length} jumla · ${store.staffRoles.length} nafasi'),
                 centerTitle: false,
                 showBorder: false,
                 actions: [
                   IconButton(
-                    tooltip: 'Roles and access',
+                    tooltip:
+                        _dual(strings, 'Roles and access', 'Nafasi na ruhusa'),
                     onPressed: () => _showRolesSheet(store),
                     icon: const Icon(
                       Icons.admin_panel_settings_outlined,
@@ -543,7 +600,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                       children: [
                         Expanded(
                           child: _StatCard(
-                            label: 'Total',
+                            label: _dual(strings, 'Total', 'Jumla'),
                             value: '${allStaff.length}',
                             icon: Icons.groups_2_outlined,
                             color: AppColors.primary,
@@ -552,7 +609,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _StatCard(
-                            label: 'Active',
+                            label: _dual(strings, 'Active', 'Hai'),
                             value: '$activeCount',
                             icon: Icons.check_circle_outline_rounded,
                             color: AppColors.success,
@@ -561,7 +618,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _StatCard(
-                            label: 'On leave',
+                            label: _dual(strings, 'On leave', 'Likizo'),
                             value: '$onLeaveCount',
                             icon: Icons.event_busy_outlined,
                             color: AppColors.warning,
@@ -572,7 +629,8 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                     const SizedBox(height: 16),
                     MarketSearchField(
                       controller: _searchController,
-                      hintText: 'Search name, role, phone, ID',
+                      hintText: _dual(strings, 'Search name, role, phone, ID',
+                          'Tafuta jina, nafasi, simu, kitambulisho'),
                       onChanged: (value) =>
                           setState(() => _searchQuery = value),
                       onClear: () {
@@ -589,7 +647,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                             (filter) => Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: _ChoicePill(
-                                label: filter.label,
+                                label: filter.localized(strings),
                                 selected: _statusFilter == filter,
                                 onTap: () =>
                                     setState(() => _statusFilter = filter),
@@ -609,12 +667,14 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                     Row(
                       children: [
                         Text(
-                          'Staff Directory',
+                          _dual(strings, 'Staff Directory',
+                              'Orodha ya Wafanyakazi'),
                           style: AppTypography.sectionHeader,
                         ),
                         const Spacer(),
                         Text(
-                          '${staff.length} shown',
+                          _dual(strings, '${staff.length} shown',
+                              '${staff.length} wanaonyeshwa'),
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.textMuted,
                             fontWeight: FontWeight.w600,
@@ -625,6 +685,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                     const SizedBox(height: 12),
                     if (staff.isEmpty)
                       _EmptyState(
+                        strings: strings,
                         hasFilters: _hasFilters,
                         onReset: _resetFilters,
                         onAdd: () => _openAddStaff(store),
@@ -634,6 +695,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                         (member) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _StaffTile(
+                            strings: strings,
                             member: member,
                             role: store.staffRoleById(member.roleId),
                             onTap: () => _openDetails(member),
@@ -684,7 +746,7 @@ class _StatCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       borderColor: AppColors.border,
-      radius: AppRadius.standard,
+      radius: 0,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -694,7 +756,7 @@ class _StatCard extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppRadius.sharp + 2),
+              borderRadius: BorderRadius.zero,
             ),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -719,12 +781,14 @@ class _StatCard extends StatelessWidget {
 
 class _StaffTile extends StatelessWidget {
   const _StaffTile({
+    required this.strings,
     required this.member,
     required this.role,
     required this.onTap,
     required this.onMenu,
   });
 
+  final AppStrings strings;
   final StaffMemberData member;
   final StaffRoleData? role;
   final VoidCallback onTap;
@@ -741,11 +805,11 @@ class _StaffTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.standard),
+      borderRadius: BorderRadius.zero,
       child: MarketSurfaceCard(
         padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
         borderColor: AppColors.border,
-        radius: AppRadius.standard,
+        radius: 0,
         showShadow: false,
         child: Row(
           children: [
@@ -768,7 +832,7 @@ class _StaffTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      _StatusPill(status: member.status),
+                      _StatusPill(status: member.status, strings: strings),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -825,12 +889,13 @@ class _StaffAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: radius,
       backgroundColor: _avatarColorForName(member.name),
-      backgroundImage: path == null || path.isEmpty ? null : FileImage(File(path)),
+      backgroundImage:
+          path == null || path.isEmpty ? null : appImageProvider(context, path),
       child: path == null || path.isEmpty
           ? Text(
               member.initials,
               style: const TextStyle(
-                color: Color(0xFF213045),
+                color: AppColors.ink,
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
               ),
@@ -841,9 +906,10 @@ class _StaffAvatar extends StatelessWidget {
 }
 
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.status});
+  const _StatusPill({required this.status, required this.strings});
 
   final StaffStatus status;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -865,7 +931,7 @@ class _StatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
-        status.label,
+        status.localized(strings.isSwahili),
         style: TextStyle(
           color: color,
           fontSize: 11,
@@ -887,8 +953,8 @@ class _MiniTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: muted ? const Color(0xFFF6F8FB) : AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(AppRadius.sharp),
+        color: AppColors.surfaceSecondary,
+        borderRadius: BorderRadius.zero,
       ),
       child: Text(
         label,
@@ -915,14 +981,16 @@ class _RoleFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = selectedRole?.title ?? 'All roles';
+    final strings = AppStrings.of(store.languageCode);
+    final label =
+        selectedRole?.title ?? _dual(strings, 'All roles', 'Nafasi zote');
     return PopupMenuButton<String>(
-      tooltip: 'Filter by role',
+      tooltip: _dual(strings, 'Filter by role', 'Chuja kwa nafasi'),
       onSelected: (value) => onSelected(value == '__all__' ? null : value),
       itemBuilder: (context) => [
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: '__all__',
-          child: Text('All roles'),
+          child: Text(_dual(strings, 'All roles', 'Nafasi zote')),
         ),
         ...store.staffRoles.map(
           (role) => PopupMenuItem<String>(
@@ -935,7 +1003,8 @@ class _RoleFilterChip extends StatelessWidget {
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: selectedRole == null ? Colors.white : AppColors.primaryLight,
+          color:
+              selectedRole == null ? AppColors.surface : AppColors.primaryLight,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
             color: selectedRole == null
@@ -1038,7 +1107,7 @@ class _SheetAction extends StatelessWidget {
     final color = isDestructive ? AppColors.danger : AppColors.textMain;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.standard),
+      borderRadius: BorderRadius.zero,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         child: Row(
@@ -1068,11 +1137,13 @@ class _SheetAction extends StatelessWidget {
 
 class _RoleTile extends StatelessWidget {
   const _RoleTile({
+    required this.strings,
     required this.role,
     required this.staffCount,
     required this.onTap,
   });
 
+  final AppStrings strings;
   final StaffRoleData role;
   final int staffCount;
   final VoidCallback onTap;
@@ -1081,20 +1152,20 @@ class _RoleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.standard),
+      borderRadius: BorderRadius.zero,
       child: MarketSurfaceCard(
         padding: const EdgeInsets.all(14),
         borderColor: AppColors.border,
-        radius: AppRadius.standard,
+        radius: 0,
         showShadow: false,
         child: Row(
           children: [
             Container(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(AppRadius.sharp + 2),
+              decoration: const BoxDecoration(
+                color: AppColors.surfaceSecondary,
+                borderRadius: BorderRadius.zero,
               ),
               child: const Icon(
                 Icons.shield_outlined,
@@ -1115,7 +1186,10 @@ class _RoleTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${role.permissions.length} permissions · $staffCount staff',
+                    _dual(
+                        strings,
+                        '${role.permissions.length} permissions · $staffCount staff',
+                        '${role.permissions.length} ruhusa · $staffCount wafanyakazi'),
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textMuted,
                     ),
@@ -1136,11 +1210,13 @@ class _RoleTile extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({
+    required this.strings,
     required this.hasFilters,
     required this.onReset,
     required this.onAdd,
   });
 
+  final AppStrings strings;
   final bool hasFilters;
   final VoidCallback onReset;
   final VoidCallback onAdd;
@@ -1150,35 +1226,42 @@ class _EmptyState extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(24),
       borderColor: AppColors.border,
-      radius: AppRadius.rounded,
+      radius: 0,
       showShadow: false,
       child: Column(
         children: [
           Container(
             width: 72,
             height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(AppRadius.rounded),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.zero,
             ),
             child: Icon(
-              hasFilters
-                  ? Icons.search_off_rounded
-                  : Icons.groups_2_outlined,
+              hasFilters ? Icons.search_off_rounded : Icons.groups_2_outlined,
               color: AppColors.primary,
               size: 36,
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            hasFilters ? 'No staff found' : 'No staff yet',
+            hasFilters
+                ? _dual(strings, 'No staff found',
+                    'Hakuna mfanyakazi aliyepatikana')
+                : _dual(strings, 'No staff yet', 'Hakuna mfanyakazi bado'),
             style: AppTypography.cardHeader,
           ),
           const SizedBox(height: 6),
           Text(
             hasFilters
-                ? 'Try a different search or clear the filters to see more staff.'
-                : 'Add your first team member to start assigning roles and access.',
+                ? _dual(
+                    strings,
+                    'Try a different search or clear the filters to see more staff.',
+                    'Jaribu utafutaji mwingine au futa vichujio kuona wafanyakazi zaidi.')
+                : _dual(
+                    strings,
+                    'Add your first team member to start assigning roles and access.',
+                    'Ongeza mfanyakazi wako wa kwanza kuanza kupanga nafasi na ruhusa.'),
             textAlign: TextAlign.center,
             style: AppTypography.bodySmall.copyWith(
               color: AppColors.textMuted,
@@ -1187,11 +1270,12 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           MarketButton(
-            label: hasFilters ? 'Clear filters' : 'Add new staff',
+            label: hasFilters
+                ? _dual(strings, 'Clear filters', 'Futa vichujio')
+                : _dual(strings, 'Add new staff', 'Ongeza mfanyakazi'),
             isFullWidth: false,
-            icon: hasFilters
-                ? Icons.filter_list_off_rounded
-                : Icons.add_rounded,
+            icon:
+                hasFilters ? Icons.filter_list_off_rounded : Icons.add_rounded,
             onTap: hasFilters ? onReset : onAdd,
           ),
         ],
@@ -1201,23 +1285,27 @@ class _EmptyState extends StatelessWidget {
 }
 
 enum _StatusFilter {
-  all('All'),
-  active('Active'),
-  onLeave('On Leave'),
-  inactive('Inactive');
+  all('All', 'Zote'),
+  active('Active', 'Hai'),
+  onLeave('On Leave', 'Likizo'),
+  inactive('Inactive', 'Hafifu');
 
-  const _StatusFilter(this.label);
+  const _StatusFilter(this.label, this.swahiliLabel);
 
   final String label;
+  final String swahiliLabel;
+
+  String localized(AppStrings strings) =>
+      strings.isSwahili ? swahiliLabel : label;
 }
 
 Color _avatarColorForName(String name) {
   const colors = <Color>[
     Color(0xFFF2D9D2),
-    Color(0xFFD9E8F7),
-    Color(0xFFE5F4D8),
-    Color(0xFFFDE8D7),
-    Color(0xFFE7E2FB),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
   ];
   final index = name.hashCode.abs() % colors.length;
   return colors[index];

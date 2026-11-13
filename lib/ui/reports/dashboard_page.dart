@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../more/duka_ai_page.dart';
 import '../more/expenses_tracking_page.dart';
+import '../payment/cash_register_page.dart';
 import '../notifications/notifications_page.dart';
 import '../business_category_config.dart';
 import '../../service/pos_local_store.dart';
@@ -87,15 +88,15 @@ class DashboardPage extends StatelessWidget {
           id: 'open_drawer',
           icon: Icons.point_of_sale_outlined,
           label: strings.openDrawer,
-          iconColor: Color(0xFF2AA24F),
-          iconBackground: Color(0xFFE9F8ED),
+          iconColor: Color(0xFF111111),
+          iconBackground: Color(0xFFF3F4F6),
         ),
         QuickActionData(
           id: 'view_reports',
           icon: Icons.insert_chart_outlined_rounded,
           label: strings.viewReports,
-          iconColor: AppColors.reportsBlue,
-          iconBackground: Color(0xFFECF2FF),
+          iconColor: Color(0xFF333333),
+          iconBackground: Color(0xFFF3F4F6),
         ),
       ];
 
@@ -155,8 +156,8 @@ class DashboardPage extends StatelessWidget {
       _OverviewCardData(
         id: 'sales_today',
         icon: Icons.shopping_bag_outlined,
-        iconColor: const Color(0xFF26A042),
-        iconBackground: const Color(0xFFEAF8EE),
+        iconColor: const Color(0xFF111111),
+        iconBackground: const Color(0xFFF3F4F6),
         title: strings.salesToday,
         value: 'TSH ${totalSales.toStringAsFixed(0)}',
         delta: salesChangePercent == null
@@ -168,8 +169,8 @@ class DashboardPage extends StatelessWidget {
       _OverviewCardData(
         id: 'orders_today',
         icon: Icons.shopping_cart_outlined,
-        iconColor: const Color(0xFF2E6EE8),
-        iconBackground: const Color(0xFFECF3FF),
+        iconColor: Color(0xFF333333),
+        iconBackground: const Color(0xFFF3F4F6),
         title: strings.ordersToday,
         value: transactionCount.toString(),
         footer: strings.updatedToday,
@@ -177,8 +178,8 @@ class DashboardPage extends StatelessWidget {
       _OverviewCardData(
         id: 'average_order',
         icon: Icons.sell_outlined,
-        iconColor: const Color(0xFF9747FF),
-        iconBackground: const Color(0xFFF3EAFE),
+        iconColor: Color(0xFF111111),
+        iconBackground: const Color(0xFFF3F4F6),
         title: strings.averageOrder,
         value: 'TSH ${averageValue.toStringAsFixed(0)}',
         footer: strings.updatedToday,
@@ -186,8 +187,8 @@ class DashboardPage extends StatelessWidget {
       _OverviewCardData(
         id: 'best_seller',
         icon: Icons.inventory_2_outlined,
-        iconColor: const Color(0xFFC38A13),
-        iconBackground: const Color(0xFFFEF5E3),
+        iconColor: Color(0xFF111111),
+        iconBackground: const Color(0xFFF3F4F6),
         title: strings.bestSeller,
         value: topProductEntry?.key ?? strings.noSalesYet,
         footer: topProductEntry == null
@@ -208,16 +209,26 @@ class DashboardPage extends StatelessWidget {
         (sum, line) => sum + line.quantity,
       );
       final paymentMethod = order.paymentMethod.toLowerCase();
+      final isCash = paymentMethod == 'cash';
+      final isCredit = paymentMethod.contains('debt') ||
+          paymentMethod.contains('credit') ||
+          paymentMethod.contains('kopesh');
       return ActivityItemData(
-        icon: paymentMethod == 'cash'
+        icon: isCash
             ? Icons.payments_outlined
-            : Icons.shopping_cart_outlined,
-        iconColor: paymentMethod == 'cash'
-            ? const Color(0xFF2E6EE8)
-            : const Color(0xFF2AA24F),
-        iconBackground: paymentMethod == 'cash'
-            ? const Color(0xFFECF3FF)
-            : const Color(0xFFEAF8EE),
+            : isCredit
+                ? Icons.request_quote_rounded
+                : Icons.shopping_cart_outlined,
+        iconColor: isCash
+            ? AppColors.primary
+            : isCredit
+                ? AppColors.danger
+                : const Color(0xFF111111),
+        iconBackground: isCash
+            ? const Color(0xFFF3F4F6)
+            : isCredit
+                ? AppColors.dangerLight
+                : const Color(0xFFF3F4F6),
         title: '${strings.order} ${order.id}',
         subtitle:
             '$itemCount ${strings.item}${itemCount == 1 ? '' : 's'} - $paymentMethod ${strings.payment}',
@@ -296,7 +307,7 @@ class DashboardPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                        _SummaryPanel(
+                          _SummaryPanel(
                             summary: summary,
                             orders: store.orders,
                             config: config,
@@ -520,7 +531,7 @@ class _ReportsBrandIcon extends StatelessWidget {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: const Color(0xFF5B8CFF),
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Icon(
@@ -663,11 +674,11 @@ class _QuickActionsRow extends StatelessWidget {
               .map(
                 (action) => SizedBox(
                   width: itemWidth,
-                child: QuickActionCard(
-                  action: action,
+                  child: QuickActionCard(
+                    action: action,
                     onTap: () => _handleActionTap(context, action.id),
+                  ),
                 ),
-              ),
               )
               .toList(),
         );
@@ -678,14 +689,10 @@ class _QuickActionsRow extends StatelessWidget {
   void _handleActionTap(BuildContext context, String actionId) {
     switch (actionId) {
       case 'open_drawer':
-        showMarketNotice(
-          context,
-          title: context.read<PosLocalStore>().languageCode == 'sw'
-              ? AppStrings.of('sw').cashDrawer
-              : AppStrings.of('en').cashDrawer,
-          message: context.read<PosLocalStore>().languageCode == 'sw'
-              ? AppStrings.of('sw').cashDrawerOpenedSuccessfully
-              : AppStrings.of('en').cashDrawerOpenedSuccessfully,
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => const CashRegisterPage(),
+          ),
         );
         break;
       case 'view_reports':
@@ -708,14 +715,10 @@ class _QuickActionCard extends StatelessWidget {
   void _handleTap(BuildContext context) {
     switch (action.id) {
       case 'open_drawer':
-        showMarketNotice(
-          context,
-          title: context.read<PosLocalStore>().languageCode == 'sw'
-              ? AppStrings.of('sw').cashDrawer
-              : AppStrings.of('en').cashDrawer,
-          message: context.read<PosLocalStore>().languageCode == 'sw'
-              ? AppStrings.of('sw').cashDrawerOpenedSuccessfully
-              : AppStrings.of('en').cashDrawerOpenedSuccessfully,
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => const CashRegisterPage(),
+          ),
         );
         break;
       case 'view_reports':
@@ -731,14 +734,10 @@ class _QuickActionCard extends StatelessWidget {
   void _handleActionTap(BuildContext context, String label) {
     switch (label) {
       case 'open_drawer':
-        showMarketNotice(
-          context,
-          title: context.read<PosLocalStore>().languageCode == 'sw'
-              ? AppStrings.of('sw').cashDrawer
-              : AppStrings.of('en').cashDrawer,
-          message: context.read<PosLocalStore>().languageCode == 'sw'
-              ? AppStrings.of('sw').cashDrawerOpenedSuccessfully
-              : AppStrings.of('en').cashDrawerOpenedSuccessfully,
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => const CashRegisterPage(),
+          ),
         );
         break;
       case 'view_reports':
@@ -795,7 +794,7 @@ class _QuickActionCard extends StatelessWidget {
                   Text(
                     hero ? 'Run Checkout' : action.label,
                     style: TextStyle(
-                      color: hero ? const Color(0xFFBFD4FF) : labelColor,
+                      color: hero ? const Color(0xFFF3F4F6) : labelColor,
                       fontSize: hero ? 10 : 10.5,
                       fontWeight: FontWeight.w800,
                       letterSpacing: hero ? 0.2 : -0.2,
@@ -1143,8 +1142,10 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
                   delta == null
                       ? _periodLabel(_selectedPeriod)
                       : '${delta >= 0 ? '+' : '-'}${delta.abs().toStringAsFixed(1)}%',
-                  style: const TextStyle(
-                    color: Color(0xFF2FA24A),
+                  style: TextStyle(
+                    color: delta != null && delta < 0
+                        ? AppColors.danger
+                        : AppColors.ink,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1155,7 +1156,7 @@ class _LiveGrowthOverviewCardState extends State<_LiveGrowthOverviewCard> {
                 child: Icon(
                   Icons.arrow_upward_rounded,
                   size: 12,
-                  color: Color(0xFF2FA24A),
+                  color: Color(0xFF111111),
                 ),
               ),
             ],
@@ -1569,8 +1570,8 @@ List<_DashboardMetricData> _dashboardMetricCards({
         ),
         _DashboardMetricData(
           icon: Icons.science_rounded,
-          iconColor: config.primaryColor,
-          iconBackground: config.primaryLightColor,
+          iconColor: AppColors.ink,
+          iconBackground: const Color(0xFFF3F4F6),
           title: strings.marginMix,
           value: '${inventoryMargin.toStringAsFixed(0)}%',
           footer: strings.fromCurrentStockPricing,
@@ -1580,8 +1581,8 @@ List<_DashboardMetricData> _dashboardMetricCards({
         ),
         _DashboardMetricData(
           icon: Icons.inventory_2_outlined,
-          iconColor: config.primaryColor,
-          iconBackground: config.primaryLightColor,
+          iconColor: AppColors.danger,
+          iconBackground: AppColors.dangerLight,
           title: strings.expiringSoon,
           value: '0',
           footer: strings.expiryTrackingNotSet,
@@ -1591,8 +1592,8 @@ List<_DashboardMetricData> _dashboardMetricCards({
         ),
         _DashboardMetricData(
           icon: Icons.receipt_long_rounded,
-          iconColor: config.primaryColor,
-          iconBackground: config.primaryLightColor,
+          iconColor: AppColors.danger,
+          iconBackground: AppColors.dangerLight,
           title: strings.refillQueue,
           value: '0',
           footer: strings.prescriptionRefillsNotTracked,
@@ -1617,8 +1618,8 @@ List<_DashboardMetricData> _dashboardMetricCards({
         ),
         _DashboardMetricData(
           icon: Icons.workspace_premium_rounded,
-          iconColor: config.primaryColor,
-          iconBackground: config.primaryLightColor,
+          iconColor: AppColors.ink,
+          iconBackground: const Color(0xFFF3F4F6),
           title: strings.highValueSales,
           value: highValueOrders.toString(),
           footer: strings.ordersAboveFiftyThousand,
@@ -1628,8 +1629,8 @@ List<_DashboardMetricData> _dashboardMetricCards({
         ),
         _DashboardMetricData(
           icon: Icons.sell_outlined,
-          iconColor: config.primaryColor,
-          iconBackground: config.primaryLightColor,
+          iconColor: AppColors.ink,
+          iconBackground: const Color(0xFFF3F4F6),
           title: strings.topCategory,
           value: topCategory,
           footer: strings.brandDataNotTrackedYet,
@@ -1639,8 +1640,8 @@ List<_DashboardMetricData> _dashboardMetricCards({
         ),
         _DashboardMetricData(
           icon: Icons.shield_outlined,
-          iconColor: config.primaryColor,
-          iconBackground: config.primaryLightColor,
+          iconColor: AppColors.danger,
+          iconBackground: AppColors.dangerLight,
           title: strings.warrantyClaims,
           value: '0',
           footer: strings.serviceClaimsNotTracked,
@@ -1676,8 +1677,8 @@ List<_DashboardMetricData> _dashboardMetricCards({
         ),
         _DashboardMetricData(
           icon: Icons.star_rounded,
-          iconColor: config.primaryColor,
-          iconBackground: config.primaryLightColor,
+          iconColor: AppColors.ink,
+          iconBackground: const Color(0xFFF3F4F6),
           title: strings.bestSeller,
           value: summary.bestSeller,
           footer: summary.bestSellerCount == null
@@ -1689,8 +1690,8 @@ List<_DashboardMetricData> _dashboardMetricCards({
         ),
         _DashboardMetricData(
           icon: Icons.warning_amber_rounded,
-          iconColor: config.primaryColor,
-          iconBackground: config.primaryLightColor,
+          iconColor: AppColors.danger,
+          iconBackground: AppColors.dangerLight,
           title: strings.lowStock,
           value: lowStockCount.toString(),
           footer: strings.itemsNeedRestocking,
@@ -1878,8 +1879,10 @@ class _GrowthOverviewCard extends StatelessWidget {
                   summary.deltaText == null
                       ? strings.today
                       : '${summary.deltaIsPositive == false ? '-' : '+'}${summary.deltaText}',
-                  style: const TextStyle(
-                    color: Color(0xFF2FA24A),
+                  style: TextStyle(
+                    color: summary.deltaIsPositive == false
+                        ? AppColors.danger
+                        : AppColors.ink,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1890,7 +1893,7 @@ class _GrowthOverviewCard extends StatelessWidget {
                 child: Icon(
                   Icons.arrow_upward_rounded,
                   size: 12,
-                  color: Color(0xFF2FA24A),
+                  color: Color(0xFF111111),
                 ),
               ),
             ],
@@ -2014,10 +2017,10 @@ class _OverviewChartPainter extends CustomPainter {
     if (values.isEmpty) return;
 
     final bgPaint = Paint()
-      ..color = const Color(0xFFEEF4FF)
+      ..color = const Color(0xFFF3F4F6)
       ..style = PaintingStyle.fill;
     final linePaint = Paint()
-      ..color = const Color(0xFF5B8CFF)
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.2
       ..strokeCap = StrokeCap.round
@@ -2027,8 +2030,8 @@ class _OverviewChartPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF5B8CFF).withValues(alpha: 0.28),
-          const Color(0xFF5B8CFF).withValues(alpha: 0.02),
+          AppColors.primary.withValues(alpha: 0.28),
+          AppColors.primary.withValues(alpha: 0.02),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
@@ -2064,7 +2067,7 @@ class _OverviewChartPainter extends CustomPainter {
       height: chartHeight * 0.92,
     );
     canvas.drawRect(highlightRect,
-        Paint()..color = const Color(0xFF5B8CFF).withValues(alpha: 0.12));
+        Paint()..color = AppColors.primary.withValues(alpha: 0.12));
 
     final path = Path()..moveTo(points.first.dx, points.first.dy);
     for (var i = 1; i < points.length; i++) {
@@ -2083,12 +2086,12 @@ class _OverviewChartPainter extends CustomPainter {
     canvas.drawPath(areaPath, fillPaint);
     canvas.drawPath(path, linePaint);
 
-    final pointPaint = Paint()..color = const Color(0xFF5B8CFF);
+    final pointPaint = Paint()..color = AppColors.primary;
     final hollowPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
     final outlinePaint = Paint()
-      ..color = const Color(0xFF5B8CFF)
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     for (var i = 0; i < points.length; i++) {
@@ -2108,7 +2111,7 @@ class _OverviewChartPainter extends CustomPainter {
               height: 30),
           const Radius.circular(8),
         );
-        final bubblePaint = Paint()..color = const Color(0xFF5B8CFF);
+        final bubblePaint = Paint()..color = AppColors.primary;
         canvas.drawRRect(bubble, bubblePaint);
         final tp = TextPainter(
           text: TextSpan(
@@ -2169,14 +2172,14 @@ class _EmptySummary extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF4E5),
+                color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFFFCE1B4)),
+                border: Border.all(color: AppColors.border),
               ),
               child: Text(
                 strings.noActiveSales,
                 style: TextStyle(
-                  color: Color(0xFFC77817),
+                  color: AppColors.textMuted,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2208,14 +2211,16 @@ class _EmptySummary extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _MiniSummaryStat(title: strings.orders, value: '0')),
+            Expanded(
+                child: _MiniSummaryStat(title: strings.orders, value: '0')),
             const SizedBox(width: 10),
             Expanded(
               child: _MiniSummaryStat(title: strings.avgBasket, value: 'TSH 0'),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _MiniSummaryStat(title: strings.vsYesterday, value: '100%'),
+              child:
+                  _MiniSummaryStat(title: strings.vsYesterday, value: '100%'),
             ),
           ],
         ),
@@ -2250,14 +2255,14 @@ class _ActiveSummary extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF8EE),
+                color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFFD5F1DE)),
+                border: Border.all(color: const Color(0xFFF3F4F6)),
               ),
               child: Text(
                 strings.liveUpdates,
                 style: TextStyle(
-                  color: Color(0xFF1D8B48),
+                  color: Color(0xFF111111),
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                 ),
@@ -2274,8 +2279,8 @@ class _ActiveSummary extends StatelessWidget {
                 value: 'TSH ${summary.revenue.toStringAsFixed(0)}',
                 footer: summary.deltaText ?? strings.updatedJustNow,
                 accent: summary.deltaIsPositive == false
-                    ? const Color(0xFFC65B4A)
-                    : const Color(0xFF1D8B48),
+                    ? AppColors.danger
+                    : const Color(0xFF111111),
                 showDelta: summary.deltaText != null,
                 deltaIsPositive: summary.deltaIsPositive,
               ),
@@ -2286,7 +2291,7 @@ class _ActiveSummary extends StatelessWidget {
                 title: strings.totalOrders,
                 value: summary.orders.toString(),
                 footer: strings.updatedJustNow,
-                accent: const Color(0xFF2E6EE8),
+                accent: AppColors.primary,
               ),
             ),
           ],
@@ -2299,7 +2304,7 @@ class _ActiveSummary extends StatelessWidget {
                 title: strings.averageTicket,
                 value: 'TSH ${summary.averageOrder.toStringAsFixed(0)}',
                 footer: strings.perOrder,
-                accent: const Color(0xFF9747FF),
+                accent: AppColors.ink,
               ),
             ),
             const SizedBox(width: 10),
@@ -2310,7 +2315,7 @@ class _ActiveSummary extends StatelessWidget {
                 footer: summary.bestSellerCount == null
                     ? strings.nothingSoldYet
                     : '${summary.bestSellerCount} ${strings.soldToday}',
-                accent: const Color(0xFFC38A13),
+                accent: AppColors.primaryDeep,
                 highlightValue: true,
               ),
             ),
@@ -2731,112 +2736,113 @@ class _OverviewDetailPage extends StatelessWidget {
             MarketPageHeader(title: card.title),
             Expanded(
               child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      color: card.iconBackground,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Icon(card.icon, color: card.iconColor, size: 28),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          card.value,
-                          style: const TextStyle(
-                            color: AppColors.ink,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          card.footer,
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'What this means',
-              style: TextStyle(
-                color: AppColors.ink,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              _insight(strings),
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 14,
-                height: 1.6,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            if (card.delta != null) ...[
-              const SizedBox(height: 18),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF8EE),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.trending_up_rounded,
-                      color: card.deltaIsPositive == false
-                          ? const Color(0xFFC65B4A)
-                          : AppColors.success,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      card.deltaIsPositive == false
-                          ? '${card.delta} down from yesterday'
-                          : '${card.delta} up from yesterday',
-                      style: TextStyle(
-                        color: card.deltaIsPositive == false
-                            ? const Color(0xFFC65B4A)
-                            : AppColors.success,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              color: card.iconBackground,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Icon(card.icon,
+                                color: card.iconColor, size: 28),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  card.value,
+                                  style: const TextStyle(
+                                    color: AppColors.ink,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  card.footer,
+                                  style: const TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'What this means',
+                      style: TextStyle(
+                        color: AppColors.ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _insight(strings),
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 14,
+                        height: 1.6,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (card.delta != null) ...[
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.trending_up_rounded,
+                              color: card.deltaIsPositive == false
+                                  ? AppColors.danger
+                                  : AppColors.success,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              card.deltaIsPositive == false
+                                  ? '${card.delta} down from yesterday'
+                                  : '${card.delta} up from yesterday',
+                              style: TextStyle(
+                                color: card.deltaIsPositive == false
+                                    ? AppColors.danger
+                                    : AppColors.success,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-            ],
-                ],
-              ),
-            ),
             ),
           ],
         ),
@@ -2904,38 +2910,38 @@ class _ActivityDetailPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-              Text(
-                item.subtitle,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Time: ${item.time}',
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (item.amount != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Amount: ${item.amount}',
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                      Text(
+                        item.subtitle,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Time: ${item.time}',
+                        style: const TextStyle(
+                          color: AppColors.ink,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (item.amount != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Amount: ${item.amount}',
+                          style: const TextStyle(
+                            color: AppColors.ink,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ],
-            ],
-          ),
-        ),
-            ),
+              ),
             ),
           ],
         ),

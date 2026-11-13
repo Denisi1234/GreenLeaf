@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../l10n/app_strings.dart';
 import '../../../service/pos_local_store.dart';
+import '../../../service/app_notification_service.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
@@ -36,7 +37,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     const _NotificationItem(
       icon: Icons.description_outlined,
       iconColor: AppColors.primary,
-      iconBackground: AppColors.primaryLight,
+      iconBackground: AppColors.surfaceSecondary,
       title: 'Monthly statement ready',
       message: 'Your April 2025 statement is ready to view',
       timeLabel: '7:30 AM',
@@ -89,6 +90,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
               title: strings.notifications,
               onBack: () => Navigator.of(context).pop(),
               actions: [
+                IconButton(
+                  onPressed: () async {
+                    await AppNotificationService.instance.showNotification(
+                      id: 999,
+                      title: 'Jaribio la Notisi 🚀',
+                      body: 'Notisi halisi ya simu inafanya kazi kikamilifu!',
+                    );
+                    if (!context.mounted) return;
+                    showMarketNotice(
+                      context,
+                      title: 'Notisi Imetumwa',
+                      message:
+                          'Tazama juu kwenye mfumo wa notisi wa simu yako.',
+                      type: MarketNoticeType.info,
+                    );
+                  },
+                  tooltip: 'Tuma Notisi ya Jaribio',
+                  icon: const Icon(Icons.notifications_active_outlined,
+                      color: AppColors.primary),
+                ),
                 IconButton(
                   onPressed: _markAllAsRead,
                   tooltip: strings.markAllAsRead,
@@ -146,7 +167,8 @@ class _NotificationTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        color: item.unread ? AppColors.primaryLight.withValues(alpha: 0.35) : null,
+        color:
+            item.unread ? AppColors.primaryLight.withValues(alpha: 0.35) : null,
         child: ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 6),

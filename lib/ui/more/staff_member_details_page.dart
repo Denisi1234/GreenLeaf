@@ -1,14 +1,18 @@
-﻿import 'dart:io';
+import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_edit_staff_page.dart';
 import 'role_details_page.dart';
+
+String _dual(AppStrings strings, String english, String swahili) =>
+    strings.isSwahili ? swahili : english;
 
 class StaffMemberDetailsPage extends StatelessWidget {
   const StaffMemberDetailsPage({super.key, required this.staffId});
@@ -18,6 +22,7 @@ class StaffMemberDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
     StaffMemberData? selected;
     for (final item in store.staffMembers) {
       if (item.id == staffId) {
@@ -36,19 +41,23 @@ class StaffMemberDetailsPage extends StatelessWidget {
     if (selected == null) {
       return Theme(
         data: manropeTheme,
-        child: const Scaffold(
+        child: Scaffold(
           backgroundColor: AppColors.pageBackground,
           body: SafeArea(
             child: Column(
               children: [
                 MarketPageHeader(
-                  title: 'Staff Profile',
+                  title:
+                      _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
                   centerTitle: false,
                   showBorder: false,
                 ),
                 Expanded(
                   child: Center(
-                    child: Text('This staff member no longer exists.'),
+                    child: Text(_dual(
+                        strings,
+                        'This staff member no longer exists.',
+                        'Mfanyakazi huyu hayupo tena.')),
                   ),
                 ),
               ],
@@ -71,13 +80,13 @@ class StaffMemberDetailsPage extends StatelessWidget {
           child: Column(
             children: [
               MarketPageHeader(
-                title: 'Staff Profile',
+                title: _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
                 subtitle: member.name,
                 centerTitle: false,
                 showBorder: false,
                 actions: [
                   IconButton(
-                    tooltip: 'Edit staff',
+                    tooltip: _dual(strings, 'Edit staff', 'Hariri mfanyakazi'),
                     onPressed: () async {
                       final saved =
                           await Navigator.of(context).push<StaffMemberData>(
@@ -193,28 +202,32 @@ class StaffMemberDetailsPage extends StatelessWidget {
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
                   children: [
-                    _ProfileHero(member: member, role: role),
+                    _ProfileHero(
+                        member: member,
+                        role: role,
+                        strings: AppStrings.of(store.languageCode)),
                     const SizedBox(height: 16),
                     _InfoSection(
-                      title: 'Contact Information',
+                      title: _dual(strings, 'Contact Information',
+                          'Taarifa za Mawasiliano'),
                       icon: Icons.contact_phone_outlined,
                       rows: [
                         _InfoRowData(
-                          label: 'Phone',
+                          label: _dual(strings, 'Phone', 'Simu'),
                           value: member.phone,
                           icon: Icons.call_outlined,
                         ),
                         _InfoRowData(
-                          label: 'Email',
+                          label: _dual(strings, 'Email', 'Baruapepe'),
                           value: member.email.isEmpty
-                              ? 'Not provided'
+                              ? _dual(strings, 'Not provided', 'Haijatolewa')
                               : member.email,
                           icon: Icons.mail_outline_rounded,
                         ),
                         _InfoRowData(
-                          label: 'Address',
+                          label: _dual(strings, 'Address', 'Anwani'),
                           value: member.address.isEmpty
-                              ? 'Not provided'
+                              ? _dual(strings, 'Not provided', 'Haijatolewa')
                               : member.address,
                           icon: Icons.location_on_outlined,
                         ),
@@ -222,7 +235,7 @@ class StaffMemberDetailsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _InfoSection(
-                      title: 'Employment',
+                      title: _dual(strings, 'Employment', 'Ajira'),
                       icon: Icons.work_outline_rounded,
                       rows: [
                         _InfoRowData(
@@ -285,7 +298,8 @@ class StaffMemberDetailsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _InfoSection(
-                      title: 'Emergency Contact',
+                      title: _dual(strings, 'Emergency Contact',
+                          'Mawasiliano ya Dharura'),
                       icon: Icons.emergency_outlined,
                       rows: [
                         _InfoRowData(
@@ -317,7 +331,7 @@ class StaffMemberDetailsPage extends StatelessWidget {
                     ],
                     const SizedBox(height: 12),
                     _InfoSection(
-                      title: 'Record',
+                      title: _dual(strings, 'Record', 'Kumbukumbu'),
                       icon: Icons.history_rounded,
                       rows: [
                         _InfoRowData(
@@ -341,11 +355,12 @@ class StaffMemberDetailsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
                     MarketButton(
-                      label: 'Edit Staff Profile',
+                      label: _dual(strings, 'Edit Staff Profile',
+                          'Hariri Wasifu wa Mfanyakazi'),
                       icon: Icons.edit_outlined,
                       onTap: () async {
-                        final saved = await Navigator.of(context)
-                            .push<StaffMemberData>(
+                        final saved =
+                            await Navigator.of(context).push<StaffMemberData>(
                           MaterialPageRoute<StaffMemberData>(
                             builder: (context) => AddEditStaffPage(
                               member: member,
@@ -373,10 +388,12 @@ class StaffMemberDetailsPage extends StatelessWidget {
 }
 
 class _ProfileHero extends StatelessWidget {
-  const _ProfileHero({required this.member, required this.role});
+  const _ProfileHero(
+      {required this.member, required this.role, required this.strings});
 
   final StaffMemberData member;
   final StaffRoleData? role;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +401,7 @@ class _ProfileHero extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
       borderColor: AppColors.border,
-      radius: AppRadius.rounded,
+      radius: 0,
       showShadow: false,
       child: Column(
         children: [
@@ -393,13 +410,14 @@ class _ProfileHero extends StatelessWidget {
               CircleAvatar(
                 radius: 38,
                 backgroundColor: _avatarColorForName(member.name),
-                backgroundImage:
-                    path == null || path.isEmpty ? null : FileImage(File(path)),
+                backgroundImage: path == null || path.isEmpty
+                    ? null
+                    : appImageProvider(context, path),
                 child: path == null || path.isEmpty
                     ? Text(
                         member.initials,
                         style: const TextStyle(
-                          color: Color(0xFF213045),
+                          color: AppColors.ink,
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
@@ -427,7 +445,7 @@ class _ProfileHero extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryLight,
+                              color: AppColors.surfaceSecondary,
                               borderRadius:
                                   BorderRadius.circular(AppRadius.pill),
                             ),
@@ -442,7 +460,7 @@ class _ProfileHero extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        _StatusPill(status: member.status),
+                        _StatusPill(status: member.status, strings: strings),
                       ],
                     ),
                     if (member.jobTitle.isNotEmpty) ...[
@@ -468,15 +486,14 @@ class _ProfileHero extends StatelessWidget {
                 child: _HeroStat(
                   label: 'Employee No.',
                   value: member.employeeNumber.isEmpty
-                      ? 'â€”'
+                      ? '—'
                       : member.employeeNumber,
                 ),
               ),
               Expanded(
                 child: _HeroStat(
                   label: 'Department',
-                  value:
-                      member.department.isEmpty ? 'â€”' : member.department,
+                  value: member.department.isEmpty ? '—' : member.department,
                 ),
               ),
               Expanded(
@@ -542,7 +559,7 @@ class _InfoSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
       borderColor: AppColors.border,
-      radius: AppRadius.rounded,
+      radius: 0,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -632,7 +649,7 @@ class _AccessSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
       borderColor: AppColors.border,
-      radius: AppRadius.rounded,
+      radius: 0,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,9 +683,7 @@ class _AccessSection extends StatelessWidget {
               Expanded(
                 child: _AccessTile(
                   label: 'Username',
-                  value: member.username.isEmpty
-                      ? 'Not set'
-                      : member.username,
+                  value: member.username.isEmpty ? 'Not set' : member.username,
                   icon: Icons.alternate_email_rounded,
                 ),
               ),
@@ -711,10 +726,9 @@ class _AccessSection extends StatelessWidget {
                         horizontal: 9,
                         vertical: 5,
                       ),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.successLight,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.sharp + 2),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: Text(
                         permission,
@@ -753,8 +767,8 @@ class _AccessTile extends StatelessWidget {
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(AppRadius.sharp + 2),
+        color: AppColors.surfaceSecondary,
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: AppColors.borderLight),
       ),
       child: Column(
@@ -794,7 +808,7 @@ class _NotesSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
       borderColor: AppColors.border,
-      radius: AppRadius.rounded,
+      radius: 0,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,9 +839,10 @@ class _NotesSection extends StatelessWidget {
 }
 
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.status});
+  const _StatusPill({required this.status, required this.strings});
 
   final StaffStatus status;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -849,7 +864,7 @@ class _StatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
-        status.label,
+        status.localized(strings.isSwahili),
         style: TextStyle(
           color: color,
           fontSize: 11.5,
@@ -883,10 +898,10 @@ String _formatDate(String value) {
 Color _avatarColorForName(String name) {
   const colors = <Color>[
     Color(0xFFF2D9D2),
-    Color(0xFFD9E8F7),
-    Color(0xFFE5F4D8),
-    Color(0xFFFDE8D7),
-    Color(0xFFE7E2FB),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
   ];
   final index = name.hashCode.abs() % colors.length;
   return colors[index];

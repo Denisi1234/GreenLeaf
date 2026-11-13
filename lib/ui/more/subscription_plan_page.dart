@@ -141,8 +141,8 @@ class _SubscriptionPlanPageState extends State<SubscriptionPlanPage> {
         title: strings.starter,
         description: strings.starterDescription,
         icon: Icons.rocket_launch_outlined,
-        accent: const Color(0xFF2F8C68),
-        soft: const Color(0xFFEAF8F1),
+        accent: const Color(0xFF111111),
+        soft: const Color(0xFFF3F4F6),
         monthlyPrice: 19,
         yearlyPrice: 190,
         features: [
@@ -158,8 +158,8 @@ class _SubscriptionPlanPageState extends State<SubscriptionPlanPage> {
         title: strings.business,
         description: strings.businessDescription,
         icon: Icons.work_outline_rounded,
-        accent: const Color(0xFF2D6CEA),
-        soft: const Color(0xFFEAF2FF),
+        accent: AppColors.primary,
+        soft: const Color(0xFFF3F4F6),
         monthlyPrice: 49,
         yearlyPrice: 490,
         isPopular: true,
@@ -237,13 +237,13 @@ class _BillingPill extends StatelessWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFF3F7FF) : Colors.transparent,
+          color: selected ? const Color(0xFFF3F4F6) : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? const Color(0xFF2D6CEA) : AppColors.mutedText,
+            color: selected ? AppColors.primary : AppColors.mutedText,
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
           ),

@@ -97,7 +97,7 @@ class OverviewCard extends StatelessWidget {
                             ? Icons.arrow_downward_rounded
                             : Icons.arrow_upward_rounded,
                         color: card.deltaIsPositive == false
-                            ? const Color(0xFFC65B4A)
+                            ? AppColors.textMuted
                             : AppColors.reportsGreen,
                         size: 16,
                       ),
@@ -106,7 +106,7 @@ class OverviewCard extends StatelessWidget {
                         card.delta!,
                         style: TextStyle(
                           color: card.deltaIsPositive == false
-                              ? const Color(0xFFC65B4A)
+                              ? AppColors.textMuted
                               : AppColors.reportsGreen,
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,

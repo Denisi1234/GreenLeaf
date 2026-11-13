@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -40,7 +41,7 @@ class TopSellingProductsList extends StatelessWidget {
             const Divider(
               height: 1,
               thickness: 1,
-              color: Color(0xFFE6EBF2),
+              color: Color(0xFFF3F4F6),
             ),
           _ProductRow(
             data: products[i],
@@ -58,7 +59,7 @@ class TopSellingProductsList extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1E67E8),
+                color: AppColors.textBody,
               ),
             ),
           ),
@@ -90,7 +91,7 @@ class _ProductRow extends StatelessWidget {
             height: 28,
             decoration: BoxDecoration(
               color: highlightTop
-                  ? const Color(0xFFFEF3C7)
+                  ? const Color(0xFFF3F4F6)
                   : const Color(0xFFF3F4F6),
               shape: BoxShape.circle,
             ),
@@ -101,7 +102,7 @@ class _ProductRow extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: highlightTop
-                      ? const Color(0xFFB45309)
+                      ? AppColors.primaryDeep
                       : const Color(0xFF667085),
                 ),
               ),
@@ -131,7 +132,7 @@ class _ProductRow extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    color: const Color(0xFF111111),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -152,7 +153,7 @@ class _ProductRow extends StatelessWidget {
             style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF0F172A),
+              color: const Color(0xFF111111),
             ),
           ),
         ],

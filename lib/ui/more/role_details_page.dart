@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../service/pos_local_store.dart';
@@ -16,7 +16,8 @@ class RoleDetailsPage extends StatefulWidget {
 }
 
 class _RoleDetailsPageState extends State<RoleDetailsPage> {
-  Future<void> _showManageStaff(StaffRoleData role) async {    showModalBottomSheet<void>(
+  Future<void> _showManageStaff(StaffRoleData role) async {
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -65,11 +66,11 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
 
     if (saved == true) {
       await store.saveStaffRole(
-            role.copyWith(
-              title: titleController.text.trim(),
-              subtitle: subtitleController.text.trim(),
-            ),
-          );
+        role.copyWith(
+          title: titleController.text.trim(),
+          subtitle: subtitleController.text.trim(),
+        ),
+      );
     }
     titleController.dispose();
     subtitleController.dispose();
@@ -92,7 +93,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete role'),
-        content: Text('Delete the "${role.title}" role? This cannot be undone.'),
+        content:
+            Text('Delete the "${role.title}" role? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -188,7 +190,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                       child: Text(
                         'Permissions',
                         style: TextStyle(
-                          color: Color(0xFF1F2A44),
+                          color: Color(0xFF111111),
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
@@ -237,7 +239,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                           child: Text(
                             'Assigned Staff (${assignedStaff.length})',
                             style: const TextStyle(
-                              color: Color(0xFF1F2A44),
+                              color: Color(0xFF111111),
                               fontSize: 16.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -248,7 +250,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                           child: const Text(
                             'Manage',
                             style: TextStyle(
-                              color: Color(0xFF2B5FCE),
+                              color: AppColors.primary,
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -261,7 +263,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                       const MarketSurfaceCard(
                         padding: EdgeInsets.all(14),
                         backgroundColor: Color(0xFFF7FAFF),
-                        borderColor: Color(0xFFE4EBF7),
+                        borderColor: Color(0xFFF3F4F6),
                         radius: 8,
                         child: Text(
                           'No staff assigned to this role yet.',
@@ -359,7 +361,7 @@ class _PermissionTile extends StatelessWidget {
             child: Checkbox(
               value: checked,
               onChanged: onChanged,
-              activeColor: const Color(0xFF2B5FCE),
+              activeColor: AppColors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -376,7 +378,7 @@ class _PermissionTile extends StatelessWidget {
               child: Text(
                 data.label,
                 style: const TextStyle(
-                  color: Color(0xFF2A3144),
+                  color: Color(0xFF111111),
                   fontSize: 14.8,
                   fontWeight: FontWeight.w500,
                 ),
@@ -399,7 +401,7 @@ class _AssignedStaffTile extends StatelessWidget {
     final avatarColor = _avatarColorForName(data.name);
     return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
-      borderColor: const Color(0xFFE2E7EF),
+      borderColor: const Color(0xFFF3F4F6),
       radius: 8,
       child: Row(
         children: [
@@ -409,7 +411,7 @@ class _AssignedStaffTile extends StatelessWidget {
             child: Text(
               data.initials,
               style: const TextStyle(
-                color: Color(0xFF1F2A44),
+                color: Color(0xFF111111),
                 fontSize: 14.5,
                 fontWeight: FontWeight.w800,
               ),
@@ -423,7 +425,7 @@ class _AssignedStaffTile extends StatelessWidget {
                 Text(
                   data.name,
                   style: const TextStyle(
-                    color: Color(0xFF1F2A44),
+                    color: Color(0xFF111111),
                     fontSize: 15.2,
                     fontWeight: FontWeight.w800,
                   ),
@@ -467,7 +469,7 @@ class _PermissionNote extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
       backgroundColor: const Color(0xFFF7FAFF),
-      borderColor: const Color(0xFFE4EBF7),
+      borderColor: const Color(0xFFF3F4F6),
       radius: 8,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,12 +478,12 @@ class _PermissionNote extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: const BoxDecoration(
-              color: Color(0xFFE8F0FF),
+              color: Color(0xFFF3F4F6),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.shield_outlined,
-              color: Color(0xFF2B5FCE),
+              color: AppColors.primary,
               size: 19,
             ),
           ),
@@ -624,7 +626,7 @@ class _ManageStaffSheet extends StatelessWidget {
                   width: 46,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD9DEE8),
+                    color: const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -635,7 +637,7 @@ class _ManageStaffSheet extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1F2A44),
+                  color: Color(0xFF111111),
                 ),
               ),
               const SizedBox(height: 8),
@@ -654,7 +656,7 @@ class _ManageStaffSheet extends StatelessWidget {
                   icon: const Icon(Icons.person_add_alt_1_rounded),
                   label: const Text('Add Staff to Role'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2B5FCE),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -669,7 +671,7 @@ class _ManageStaffSheet extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16.5,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2A44),
+                  color: Color(0xFF111111),
                 ),
               ),
               const SizedBox(height: 10),
@@ -716,7 +718,7 @@ class _ManageStaffSheet extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2A44),
+                    color: Color(0xFF111111),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -766,7 +768,7 @@ class _StaffMemberTile extends StatelessWidget {
     final avatarColor = _avatarColorForName(staff.name);
     return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
-      borderColor: const Color(0xFFE2E7EF),
+      borderColor: const Color(0xFFF3F4F6),
       radius: 8,
       child: Row(
         children: [
@@ -776,7 +778,7 @@ class _StaffMemberTile extends StatelessWidget {
             child: Text(
               staff.initials,
               style: const TextStyle(
-                color: Color(0xFF1F2A44),
+                color: Color(0xFF111111),
                 fontSize: 14.5,
                 fontWeight: FontWeight.w800,
               ),
@@ -790,7 +792,7 @@ class _StaffMemberTile extends StatelessWidget {
                 Text(
                   staff.name,
                   style: const TextStyle(
-                    color: Color(0xFF1F2A44),
+                    color: Color(0xFF111111),
                     fontSize: 15.2,
                     fontWeight: FontWeight.w800,
                   ),
@@ -848,10 +850,10 @@ class _StaffMemberTile extends StatelessWidget {
 Color _avatarColorForName(String name) {
   const colors = <Color>[
     Color(0xFFF2D9D2),
-    Color(0xFFD9E8F7),
-    Color(0xFFE5F4D8),
-    Color(0xFFFDE8D7),
-    Color(0xFFE7E2FB),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
+    Color(0xFFF3F4F6),
   ];
   final index = name.hashCode.abs() % colors.length;
   return colors[index];

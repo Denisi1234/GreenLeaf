@@ -14,7 +14,8 @@ extension BusinessCategoryX on BusinessCategory {
         BusinessCategory.electronics => 'Electronics',
       };
 
-  String get displayName => this == BusinessCategory.retail ? 'POS' : storageKey;
+  String get displayName =>
+      this == BusinessCategory.retail ? 'POS' : storageKey;
 
   String get drawerLabel => switch (this) {
         BusinessCategory.retail => 'Retail',
@@ -62,11 +63,11 @@ class BusinessCategoryConfig {
     return switch (category) {
       BusinessCategory.retail => const BusinessCategoryConfig(
           category: BusinessCategory.retail,
-          primaryColor: Color(0xFF2563EB),
-          primaryDeepColor: Color(0xFF1D4ED8),
-          primaryLightColor: Color(0xFFEFF6FF),
-          accentColor: Color(0xFF2563EB),
-          surfaceTintColor: Color(0xFFEFF6FF),
+          primaryColor: Color(0xFF15803D),
+          primaryDeepColor: Color(0xFF166534),
+          primaryLightColor: Color(0xFFF0FDF4),
+          accentColor: Color(0xFF111111),
+          surfaceTintColor: Color(0xFFF7F7F8),
           dashboardHeadline: 'Retail floor control',
           dashboardHighlights: [
             'Fast-moving items',
@@ -94,11 +95,11 @@ class BusinessCategoryConfig {
         ),
       BusinessCategory.pharmacy => const BusinessCategoryConfig(
           category: BusinessCategory.pharmacy,
-          primaryColor: Color(0xFF10B981),
-          primaryDeepColor: Color(0xFF059669),
+          primaryColor: Color(0xFF15803D),
+          primaryDeepColor: Color(0xFF166534),
           primaryLightColor: Color(0xFFF0FDF4),
-          accentColor: Color(0xFF10B981),
-          surfaceTintColor: Color(0xFFF0FDF4),
+          accentColor: Color(0xFF111111),
+          surfaceTintColor: Color(0xFFF7F7F8),
           dashboardHeadline: 'Pharmacy control center',
           dashboardHighlights: [
             'Expired soon items',
@@ -121,11 +122,11 @@ class BusinessCategoryConfig {
         ),
       BusinessCategory.electronics => const BusinessCategoryConfig(
           category: BusinessCategory.electronics,
-          primaryColor: Color(0xFF7C3AED),
-          primaryDeepColor: Color(0xFF6D28D9),
-          primaryLightColor: Color(0xFFF5F3FF),
-          accentColor: Color(0xFF7C3AED),
-          surfaceTintColor: Color(0xFFF5F3FF),
+          primaryColor: Color(0xFF15803D),
+          primaryDeepColor: Color(0xFF166534),
+          primaryLightColor: Color(0xFFF0FDF4),
+          accentColor: Color(0xFF111111),
+          surfaceTintColor: Color(0xFFF7F7F8),
           dashboardHeadline: 'Electronics command center',
           dashboardHighlights: [
             'High-value sales',

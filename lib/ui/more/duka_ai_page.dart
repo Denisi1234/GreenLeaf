@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import '../widgets/app_image.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -528,16 +529,16 @@ class _DukaAiPageState extends State<DukaAiPage> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7E6),
+                        color: const Color(0xFFF3F4F6),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFCD9A1)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(
                             Icons.warning_amber_rounded,
-                            color: Color(0xFFB45309),
+                            color: AppColors.ink,
                             size: 18,
                           ),
                           SizedBox(width: 8),
@@ -545,7 +546,7 @@ class _DukaAiPageState extends State<DukaAiPage> {
                             child: Text(
                               'No Gemini API key yet. Add one in Settings to get live answers.',
                               style: TextStyle(
-                                color: Color(0xFF92400E),
+                                color: AppColors.textBody,
                                 fontSize: 12,
                                 height: 1.4,
                                 fontWeight: FontWeight.w600,
@@ -656,12 +657,12 @@ class _DukaAiPageState extends State<DukaAiPage> {
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
                             backgroundColor: isActive
-                                ? const Color(0xFFEAF0FF)
+                                ? const Color(0xFFF3F4F6)
                                 : const Color(0xFFF2F4F7),
                             child: Icon(
                               Icons.chat_bubble_outline_rounded,
                               color: isActive
-                                  ? const Color(0xFF2D6CEA)
+                                  ? AppColors.primary
                                   : AppColors.mutedText,
                               size: 18,
                             ),
@@ -733,7 +734,7 @@ class _DukaAiPageState extends State<DukaAiPage> {
                             child: isActive
                                 ? const Icon(
                                     Icons.check_rounded,
-                                    color: Color(0xFF2E9E59),
+                                    color: Color(0xFF111111),
                                   )
                                 : const Icon(
                                     Icons.more_horiz_rounded,
@@ -920,7 +921,7 @@ class _DukaAiPageState extends State<DukaAiPage> {
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD9E1EB),
+                    color: const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -1380,7 +1381,6 @@ String _formatBubbleTime(String? createdAt) {
   return '$hour:${time.minute.toString().padLeft(2, '0')} $suffix';
 }
 
-
 class _ConversationCard extends StatelessWidget {
   const _ConversationCard({
     required this.messages,
@@ -1526,11 +1526,11 @@ class _CopyButtonState extends State<_CopyButton> {
           ? const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_rounded, size: 13, color: Color(0xFF16A34A)),
+                Icon(Icons.check_rounded, size: 13, color: Color(0xFF111111)),
                 SizedBox(width: 3),
                 Text('Copied',
                     style: TextStyle(
-                        color: Color(0xFF16A34A),
+                        color: Color(0xFF111111),
                         fontSize: 10,
                         fontWeight: FontWeight.w600)),
               ],
@@ -1560,7 +1560,7 @@ class _ChatBubble extends StatelessWidget {
     final isUser = message.isUser;
     final bubbleColor = isUser ? const Color(0xFFF1FBF4) : Colors.white;
     final borderColor =
-        isUser ? const Color(0xFFD4EEDC) : const Color(0xFFE1E6EE);
+        isUser ? const Color(0xFFF3F4F6) : const Color(0xFFF3F4F6);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1586,7 +1586,7 @@ class _ChatBubble extends StatelessWidget {
                     ),
                     child: const Icon(
                       Icons.smart_toy_rounded,
-                      color: Color(0xFF16A34A),
+                      color: Color(0xFF111111),
                       size: 26,
                     ),
                   ),
@@ -1620,7 +1620,7 @@ class _ChatBubble extends StatelessWidget {
                         Text(
                           message.content,
                           style: const TextStyle(
-                            color: Color(0xFF101828),
+                            color: Color(0xFF111111),
                             fontSize: 15,
                             height: 1.5,
                             fontWeight: FontWeight.w500,
@@ -1657,7 +1657,7 @@ class _ChatBubble extends StatelessWidget {
                             const Icon(
                               Icons.done_all_rounded,
                               size: 14,
-                              color: Color(0xFF16A34A),
+                              color: Color(0xFF111111),
                             ),
                           ],
                         ],
@@ -1672,7 +1672,7 @@ class _ChatBubble extends StatelessWidget {
                   height: 30,
                   margin: const EdgeInsets.only(top: 2, left: 10),
                   decoration: const BoxDecoration(
-                    color: Color(0xFF16A34A),
+                    color: Color(0xFF111111),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -1796,7 +1796,7 @@ class _TypingBubbleState extends State<_TypingBubble>
           ),
           child: const Icon(
             Icons.smart_toy_rounded,
-            color: Color(0xFF16A34A),
+            color: Color(0xFF111111),
             size: 26,
           ),
         ),
@@ -1811,8 +1811,8 @@ class _TypingBubbleState extends State<_TypingBubble>
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: Color.lerp(
-                    const Color(0xFFE1E6EE),
-                    const Color(0xFF16A34A),
+                    const Color(0xFFF3F4F6),
+                    const Color(0xFF111111),
                     (_controller.value * 0.3).clamp(0.0, 0.3),
                   )!,
                 ),
@@ -1869,7 +1869,7 @@ class _TypingBubbleState extends State<_TypingBubble>
               decoration: BoxDecoration(
                 color: Color.lerp(
                   const Color(0xFFD1D5DB),
-                  const Color(0xFF16A34A),
+                  const Color(0xFF111111),
                   anim.value,
                 ),
                 shape: BoxShape.circle,
@@ -1890,7 +1890,7 @@ class _AssistantMessageBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const baseStyle = TextStyle(
-      color: Color(0xFF101828),
+      color: Color(0xFF111111),
       fontSize: 15.2,
       height: 1.55,
       fontWeight: FontWeight.w500,
@@ -2033,7 +2033,7 @@ class _CodeBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const codeStyle = TextStyle(
-      color: Color(0xFF0F172A),
+      color: Color(0xFF111111),
       fontSize: 13.2,
       height: 1.45,
       fontWeight: FontWeight.w500,
@@ -2045,7 +2045,7 @@ class _CodeBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE1E6EE)),
+        border: Border.all(color: const Color(0xFFF3F4F6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2169,9 +2169,9 @@ class _ChatAttachmentPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Container(
           color: const Color(0xFFF3F6FA),
-          child: file.existsSync()
-              ? Image.file(
-                  file,
+          child: isNetworkImagePath(imagePath) || file.existsSync()
+              ? Image(
+                  image: appImageProvider(context, imagePath),
                   width: 220,
                   height: 180,
                   fit: BoxFit.cover,
@@ -2222,8 +2222,10 @@ class _ComposerAttachmentPreview extends StatelessWidget {
             width: 48,
             height: 48,
             color: const Color(0xFFF2F5F9),
-            child: file.existsSync()
-                ? Image.file(file, fit: BoxFit.cover)
+            child: isNetworkImagePath(imagePath) || file.existsSync()
+                ? Image(
+                    image: appImageProvider(context, imagePath),
+                    fit: BoxFit.cover)
                 : const Icon(
                     Icons.image_outlined,
                     color: AppColors.mutedText,
@@ -2332,15 +2334,15 @@ class _Composer extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isListening
-                    ? const Color(0xFF16A34A)
-                    : const Color(0xFFE1E6ED),
+                    ? const Color(0xFF111111)
+                    : const Color(0xFFF3F4F6),
                 width: isListening ? 1.5 : 1,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isListening
-                      ? const Color(0x2016A34A)
-                      : const Color(0x060E1726),
+                      ? const Color(0x20111111)
+                      : const Color(0x06111111),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -2383,7 +2385,7 @@ class _Composer extends StatelessWidget {
                     button: true,
                     child: Material(
                       color: isListening
-                          ? const Color(0xFF16A34A)
+                          ? const Color(0xFF111111)
                           : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(14),
                       child: InkWell(
@@ -2396,7 +2398,7 @@ class _Composer extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isListening
-                                  ? const Color(0xFF16A34A)
+                                  ? const Color(0xFF111111)
                                   : const Color(0xFFE7ECF2),
                             ),
                           ),
@@ -2425,10 +2427,10 @@ class _Composer extends StatelessWidget {
                     textInputAction: TextInputAction.send,
                     keyboardType: TextInputType.multiline,
                     textAlignVertical: TextAlignVertical.center,
-                    cursorColor: const Color(0xFF16A34A),
+                    cursorColor: const Color(0xFF111111),
                     onSubmitted: (_) => canSend ? onSend() : null,
                     style: const TextStyle(
-                      color: Color(0xFF33363F),
+                      color: Color(0xFF111111),
                       fontSize: 13.5,
                       fontWeight: FontWeight.w500,
                     ),
@@ -2457,8 +2459,8 @@ class _Composer extends StatelessWidget {
                     color: showStopButton
                         ? const Color(0xFFB42318)
                         : (buttonEnabled
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFFCBD5E1)),
+                            ? const Color(0xFF111111)
+                            : const Color(0xFFF4B8B8)),
                     borderRadius: BorderRadius.circular(14),
                     child: InkWell(
                       onTap: showStopButton
@@ -2564,12 +2566,12 @@ class _StopGeneratingBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.stop_circle_outlined,
-                      size: 18, color: Color(0xFFB42318)),
+                      size: 18, color: AppColors.ink),
                   SizedBox(width: 8),
                   Text(
                     'Stop generating',
                     style: TextStyle(
-                      color: Color(0xFFB42318),
+                      color: AppColors.ink,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -2614,12 +2616,12 @@ class _TipTile extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF6EE),
+                  color: const Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.chat_bubble_outline_rounded,
-                  color: Color(0xFF16A34A),
+                  color: Color(0xFF111111),
                   size: 18,
                 ),
               ),

@@ -11,6 +11,7 @@ import '../products/product_management_page.dart';
 import '../reports/dashboard_page.dart';
 import '../reports/report_hub_page.dart';
 import '../widgets/market_shared_widgets.dart';
+import '../widgets/app_design.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../more/duka_ai_page.dart';
 import '../notifications/notifications_page.dart';
@@ -130,7 +131,8 @@ class _AppShellState extends State<AppShell>
     final isAddFlow = tab == MarketTab.products || tab == MarketTab.sales;
     return switch (category) {
       BusinessCategory.pharmacy => isAddFlow ? 'Ongeza Dawa' : 'Mauzo Mapya',
-      BusinessCategory.electronics => isAddFlow ? 'Ongeza Kifaa' : strings.sales,
+      BusinessCategory.electronics =>
+        isAddFlow ? 'Ongeza Kifaa' : strings.sales,
       BusinessCategory.retail => isAddFlow ? 'Ongeza Bidhaa' : strings.sales,
     };
   }
@@ -296,15 +298,43 @@ class _AppShellState extends State<AppShell>
       ),
       floatingActionButton: (_currentTab == MarketTab.dashboard ||
               _currentTab == MarketTab.sales ||
+              _currentTab == MarketTab.reports ||
               _currentTab == MarketTab.more)
           ? null
-          : FloatingActionButton.extended(
-              heroTag: 'app_shell_primary_action_fab',
-              onPressed: () => _openPrimaryAction(context, _currentTab, store),
-              backgroundColor: config.primaryColor,
-              foregroundColor: Colors.white,
-              icon: Icon(_primaryActionIcon(_currentTab, config.category)),
-              label: Text(_primaryActionLabel(_currentTab, config.category, strings)),
+          : Material(
+              color: config.primaryColor,
+              borderRadius: BorderRadius.zero,
+              elevation: 4,
+              child: InkWell(
+                borderRadius: BorderRadius.zero,
+                splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
+                highlightColor: Colors.transparent,
+                onTap: () => _openPrimaryAction(context, _currentTab, store),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _primaryActionIcon(_currentTab, config.category),
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _primaryActionLabel(
+                            _currentTab, config.category, strings),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: MarketBottomNav(

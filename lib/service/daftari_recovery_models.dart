@@ -121,7 +121,8 @@ class DaftariRecoveryLine {
       productCode: map['product_code'] as String?,
       matchedProductName: map['matched_product_name'] as String?,
       observedAmount: (map['observed_amount'] as num?)?.toInt(),
-      wasManuallyCorrected: (map['was_manually_corrected'] as num?)?.toInt() == 1,
+      wasManuallyCorrected:
+          (map['was_manually_corrected'] as num?)?.toInt() == 1,
     );
   }
 
@@ -196,7 +197,10 @@ String _encodeStringList(List<String> values) {
 
 List<String> _decodeStringList(String? value) {
   if (value == null || value.isEmpty) return const <String>[];
-  return value.split('\u001f').map((item) => item.replaceAll('\\"', '"')).toList();
+  return value
+      .split('\u001f')
+      .map((item) => item.replaceAll('\\"', '"'))
+      .toList();
 }
 
 String _encodeLineList(List<DaftariRecoveryLine> values) {

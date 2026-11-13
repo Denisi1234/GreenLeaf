@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -80,8 +80,9 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     _employeeNumberController.text = member?.employeeNumber ?? '';
     _jobTitleController.text = member?.jobTitle ?? '';
     _departmentController.text = member?.department ?? '';
-    _hourlyRateController.text =
-        member == null || member.hourlyRate <= 0 ? '' : _trimAmount(member.hourlyRate);
+    _hourlyRateController.text = member == null || member.hourlyRate <= 0
+        ? ''
+        : _trimAmount(member.hourlyRate);
     _emergencyNameController.text = member?.emergencyContactName ?? '';
     _emergencyPhoneController.text = member?.emergencyContactPhone ?? '';
     _emergencyRelationController.text = member?.emergencyContactRelation ?? '';
@@ -215,13 +216,15 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     }
 
     final password = _passwordController.text;
+    final minimumLength =
+        context.read<PosLocalStore>().cloudApi == null ? 8 : 10;
     if (!widget.isEditing && password.isEmpty) {
       _setError('password', 'Password is required');
-    } else if (password.isNotEmpty && password.length < 8) {
-      _setError('password', 'Password must be at least 8 characters');
+    } else if (password.isNotEmpty && password.length < minimumLength) {
+      _setError(
+          'password', 'Password must be at least $minimumLength characters');
     }
-    if (password.isNotEmpty &&
-        _confirmPasswordController.text != password) {
+    if (password.isNotEmpty && _confirmPasswordController.text != password) {
       _setError('confirm', 'Passwords do not match');
     }
 
@@ -280,37 +283,16 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
 
     setState(() => _isSaving = true);
 
-    StaffMemberData saved;
-    if (_member == null) {
-      saved = await store.addStaffMember(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        roleId: role.id,
-        username: _usernameController.text.trim(),
-        password: password,
-        employeeNumber: _employeeNumberController.text.trim(),
-        jobTitle: _jobTitleController.text.trim(),
-        department: _departmentController.text.trim(),
-        hireDate: _hireDate,
-        employmentType: _employmentType?.value ?? '',
-        hourlyRate: hourlyRate,
-        emergencyContactName: _emergencyNameController.text.trim(),
-        emergencyContactPhone: _emergencyPhoneController.text.trim(),
-        emergencyContactRelation: _emergencyRelationController.text.trim(),
-        address: _addressController.text.trim(),
-        notes: _notesController.text.trim(),
-        avatarPath: _avatarPath,
-        status: _status,
-      );
-    } else {
-      saved = await store.updateStaffMember(
-        _member!.copyWith(
+    try {
+      StaffMemberData saved;
+      if (_member == null) {
+        saved = await store.addStaffMember(
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           phone: _phoneController.text.trim(),
           roleId: role.id,
           username: _usernameController.text.trim(),
+          password: password,
           employeeNumber: _employeeNumberController.text.trim(),
           jobTitle: _jobTitleController.text.trim(),
           department: _departmentController.text.trim(),
@@ -324,13 +306,45 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
           notes: _notesController.text.trim(),
           avatarPath: _avatarPath,
           status: _status,
-        ),
-        newPassword: password.isEmpty ? null : password,
-      );
-    }
+        );
+      } else {
+        saved = await store.updateStaffMember(
+          _member!.copyWith(
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            phone: _phoneController.text.trim(),
+            roleId: role.id,
+            username: _usernameController.text.trim(),
+            employeeNumber: _employeeNumberController.text.trim(),
+            jobTitle: _jobTitleController.text.trim(),
+            department: _departmentController.text.trim(),
+            hireDate: _hireDate,
+            employmentType: _employmentType?.value ?? '',
+            hourlyRate: hourlyRate,
+            emergencyContactName: _emergencyNameController.text.trim(),
+            emergencyContactPhone: _emergencyPhoneController.text.trim(),
+            emergencyContactRelation: _emergencyRelationController.text.trim(),
+            address: _addressController.text.trim(),
+            notes: _notesController.text.trim(),
+            avatarPath: _avatarPath,
+            status: _status,
+          ),
+          newPassword: password.isEmpty ? null : password,
+        );
+      }
 
-    if (!mounted) return;
-    Navigator.of(context).pop(saved);
+      if (!mounted) return;
+      Navigator.of(context).pop(saved);
+    } catch (error) {
+      if (mounted) {
+        showMarketNotice(context,
+            title: 'Save Failed',
+            message: error.toString(),
+            type: MarketNoticeType.warning);
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -418,13 +432,13 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                   width: 112,
                   height: 112,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
+                    color: AppColors.surfaceSecondary,
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.border),
                     image: _avatarPath == null
                         ? null
                         : DecorationImage(
-                            image: FileImage(File(_avatarPath!)),
+                            image: appImageProvider(context, _avatarPath!),
                             fit: BoxFit.cover,
                           ),
                   ),
@@ -588,7 +602,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               label: 'Hourly rate (TSh)',
               hint: '0',
               icon: Icons.payments_outlined,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               errorText: _errors['hourlyRate'],
               onChanged: (_) => _clearError('hourlyRate'),
             ),
@@ -788,9 +803,9 @@ class _TabSelector extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18),
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F4F9),
-        borderRadius: BorderRadius.circular(AppRadius.standard),
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceHover,
+        borderRadius: BorderRadius.zero,
       ),
       child: Row(
         children: List.generate(tabs.length, (index) {
@@ -802,15 +817,16 @@ class _TabSelector extends StatelessWidget {
                 duration: const Duration(milliseconds: 160),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadius.sharp + 2),
+                  color: selected ? AppColors.surface : Colors.transparent,
+                  borderRadius: BorderRadius.zero,
                   boxShadow: selected ? AppShadows.soft : null,
                 ),
                 child: Text(
                   tabs[index],
                   textAlign: TextAlign.center,
                   style: AppTypography.bodySmall.copyWith(
-                    color: selected ? AppColors.primaryDeep : AppColors.textMuted,
+                    color:
+                        selected ? AppColors.primaryDeep : AppColors.textMuted,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -839,7 +855,7 @@ class _FormSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
       borderColor: AppColors.border,
-      radius: AppRadius.rounded,
+      radius: 0,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -928,11 +944,10 @@ class _AppTextField extends StatelessWidget {
                 color: AppColors.textLight,
                 fontWeight: FontWeight.w500,
               ),
-              prefixIcon:
-                  Icon(icon, color: AppColors.textMuted, size: 21),
+              prefixIcon: Icon(icon, color: AppColors.textMuted, size: 21),
               suffixIcon: suffix,
               filled: true,
-              fillColor: const Color(0xFFFBFCFE),
+              fillColor: AppColors.surfaceSecondary,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               errorText: errorText,
@@ -954,7 +969,7 @@ class _AppTextField extends StatelessWidget {
 
   OutlineInputBorder _border(Color color) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.input),
+      borderRadius: BorderRadius.zero,
       borderSide: BorderSide(color: color),
     );
   }
@@ -1006,7 +1021,7 @@ class _AppDropdown<T> extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
               filled: true,
-              fillColor: const Color(0xFFFBFCFE),
+              fillColor: AppColors.surfaceSecondary,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               errorText: errorText,
@@ -1014,17 +1029,17 @@ class _AppDropdown<T> extends StatelessWidget {
                 color: AppColors.danger,
                 fontWeight: FontWeight.w600,
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.input),
-                borderSide: const BorderSide(color: AppColors.border),
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: AppColors.border),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.input),
-                borderSide: const BorderSide(color: AppColors.border),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: AppColors.border),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.input),
-                borderSide: const BorderSide(color: AppColors.primary),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: AppColors.primary),
               ),
             ),
           ),
@@ -1050,12 +1065,12 @@ class _DateField extends StatelessWidget {
     final hasValue = value.isNotEmpty;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.input),
+      borderRadius: BorderRadius.zero,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFFFBFCFE),
-          borderRadius: BorderRadius.circular(AppRadius.input),
+          color: AppColors.surfaceSecondary,
+          borderRadius: BorderRadius.zero,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(
@@ -1146,8 +1161,8 @@ class _PermissionRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(AppRadius.sharp + 2),
+        color: AppColors.surfaceSecondary,
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: AppColors.borderLight),
       ),
       child: Row(
@@ -1196,9 +1211,9 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
-      backgroundColor: AppColors.primaryLight,
+      backgroundColor: AppColors.surfaceSecondary,
       borderColor: AppColors.primary.withValues(alpha: 0.16),
-      radius: AppRadius.standard,
+      radius: 0,
       showShadow: false,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

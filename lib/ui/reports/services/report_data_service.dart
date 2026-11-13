@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -13,9 +14,9 @@ import '../models/report_models.dart';
 import '../pos_report_data.dart';
 
 class ReportDataService {
-  static const Color _blue = Color(0xFF1E67E8);
+  static const Color _blue = AppColors.primary;
   static const Color _bg = Color(0xFFF6F8FC);
-  static const Color _ink = Color(0xFF0F172A);
+  static const Color _ink = Color(0xFF111111);
 
   static ReportSnapshot buildReportSnapshot({
     required PosLocalStore store,
@@ -658,7 +659,9 @@ class ReportDataService {
     required DateTime endDate,
   }) {
     double sum = 0;
-    for (var day = startDate; !day.isAfter(endDate); day = day.add(const Duration(days: 1))) {
+    for (var day = startDate;
+        !day.isAfter(endDate);
+        day = day.add(const Duration(days: 1))) {
       sum += dailyRevenue[day] ?? 0;
     }
     return sum;
@@ -696,8 +699,7 @@ class ReportDataService {
     final newCustomers = customers
         .where((customer) =>
             !customer.createdAt.isBefore(startDate) &&
-            !customer.createdAt
-                .isAfter(endDate.add(const Duration(days: 1))))
+            !customer.createdAt.isAfter(endDate.add(const Duration(days: 1))))
         .length;
     final topCustomerSpend = <String, double>{};
     for (final order in orders) {
@@ -736,7 +738,7 @@ class ReportDataService {
     );
   }
 
-static String _comparisonPeriodLabel(ReportPeriod period) {
+  static String _comparisonPeriodLabel(ReportPeriod period) {
     switch (period) {
       case ReportPeriod.today:
         return 'vs yesterday';
@@ -794,7 +796,8 @@ static String _comparisonPeriodLabel(ReportPeriod period) {
         for (final order in orders) {
           final orderDate = DateTime.tryParse(order.dateTime);
           if (orderDate != null) {
-            final day = DateTime(orderDate.year, orderDate.month, orderDate.day);
+            final day =
+                DateTime(orderDate.year, orderDate.month, orderDate.day);
             if (earliest == null || day.isBefore(earliest)) {
               earliest = day;
             }
@@ -1064,23 +1067,23 @@ static String _comparisonPeriodLabel(ReportPeriod period) {
   static List<Color> _colorsForLine(OrderLine line) {
     switch (line.artType) {
       case ProductArtType.aquafina:
-        return const [Color(0xFF1E67E8), Color(0xFF69A6FF)];
+        return const [AppColors.primary, AppColors.primarySoft];
       case ProductArtType.coke:
-        return const [Color(0xFFD12D2D), Color(0xFFFF7A7A)];
+        return const [AppColors.danger, AppColors.dangerLight];
       case ProductArtType.lays:
-        return const [Color(0xFFD97706), Color(0xFFF7C35F)];
+        return const [AppColors.ink, AppColors.textLight];
       case ProductArtType.galaxy:
-        return const [Color(0xFF8E3ED8), Color(0xFFC58BFF)];
+        return const [AppColors.primaryBright, AppColors.primarySoft];
       case ProductArtType.kelloggs:
-        return const [Color(0xFFB45309), Color(0xFFF2B46D)];
+        return const [AppColors.ink, AppColors.textLight];
       case ProductArtType.dove:
-        return const [Color(0xFF0F9D8C), Color(0xFF76D6CA)];
+        return const [Color(0xFF111111), Color(0xFF111111)];
       case ProductArtType.colgate:
-        return const [Color(0xFF1D4ED8), Color(0xFF6EA8FF)];
+        return const [AppColors.textBody, AppColors.border];
       case ProductArtType.dettol:
-        return const [Color(0xFF0E7A5E), Color(0xFF6EE7B7)];
+        return const [Color(0xFF111111), Color(0xFF111111)];
       case ProductArtType.tide:
-        return const [Color(0xFFBE185D), Color(0xFFF064A4)];
+        return const [AppColors.ink, AppColors.textLight];
     }
   }
 

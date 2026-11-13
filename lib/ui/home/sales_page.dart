@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../widgets/app_image.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
@@ -589,13 +589,13 @@ class ProductCard extends StatelessWidget {
                           Text(
                             _money(product.priceValue),
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.primary,
+                              color: AppColors.textMain,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                           const Icon(
                             Icons.add_circle_rounded,
-                            color: AppColors.primary,
+                            color: AppColors.textBody,
                             size: 20,
                           ),
                         ],
@@ -622,8 +622,8 @@ class _DashboardTileArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (product.imagePath != null && product.imagePath!.isNotEmpty) {
-      return Image.file(
-        File(product.imagePath!),
+      return Image(
+        image: appImageProvider(context, product.imagePath!),
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
             _DashboardFallbackArt(label: product.name),
@@ -687,127 +687,104 @@ class CheckoutBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: onCheckout,
         borderRadius: BorderRadius.circular(AppRadius.rounded),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.medium,
-      ),
-      child: Row(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.rounded),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppShadows.medium,
+          ),
+          child: Row(
             children: [
-              Container(
-                key: cartKey,
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadius.standard),
-                ),
-                child: const Icon(
-                  Icons.shopping_cart_outlined,
-                  color: AppColors.primary,
-                  size: 24,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    key: cartKey,
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.standard),
+                    ),
+                    child: Icon(
+                      Icons.shopping_cart_outlined,
+                      color: accentColor,
+                      size: 24,
+                    ),
+                  ),
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: accentColor,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(color: AppColors.surface, width: 2),
+                      ),
+                      child: Text(
+                        '$itemCount',
+                        style: AppTypography.helperText.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$itemCount Items',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.ink,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      label,
+                      style: AppTypography.helperText.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.danger,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(color: AppColors.surface, width: 2),
-                  ),
-                  child: Text(
-                    '$itemCount',
-                    style: AppTypography.helperText.copyWith(
-                      color: Colors.white,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'TSH ${total.toStringAsFixed(0)}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.ink,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                ),
+                  Text(
+                    'Total Amount',
+                    style: AppTypography.helperText.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$itemCount Items',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.ink,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  'Current Cart',
-                  style: AppTypography.helperText.copyWith(
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'TSH ${total.toStringAsFixed(0)}',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.ink,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                'Total Amount',
-                style: AppTypography.helperText.copyWith(
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: FloatingActionButton.extended(
-                heroTag: 'sales_checkout_fab',
-                onPressed: onCheckout,
-                backgroundColor: accentColor,
-                foregroundColor: Colors.white,
-                elevation: 8,
-                highlightElevation: 12,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.standard),
-                ),
-                extendedPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.md,
-                ),
-                icon: const Icon(Icons.arrow_forward_rounded, size: 24),
-                label: Text(
-                  label,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -35,43 +35,49 @@ class InventoryReportPage extends StatelessWidget {
 
   List<MetricData> _buildMetrics(ReportTable table, PosReportData data) {
     final totalProducts = table.rows.length;
-    final totalUnits = table.rows.fold<int>(0, (sum, row) => sum + (row[3] as int));
-    final totalCostValue = table.rows.fold<double>(0, (sum, row) => sum + (row[6] as num).toDouble());
-    final totalRetailValue = table.rows.fold<double>(0, (sum, row) => sum + (row[5] as num).toDouble() * (row[3] as int));
-    final lowStockCount = data.inventory.where((item) => item.stockState != InventoryStockState.inStock).length;
+    final totalUnits =
+        table.rows.fold<int>(0, (sum, row) => sum + (row[3] as int));
+    final totalCostValue = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[6] as num).toDouble());
+    final totalRetailValue = table.rows.fold<double>(
+        0, (sum, row) => sum + (row[5] as num).toDouble() * (row[3] as int));
+    final lowStockCount = data.inventory
+        .where((item) => item.stockState != InventoryStockState.inStock)
+        .length;
 
     return [
       MetricData(
         title: 'Total Products',
         value: NumberFormat('#,###').format(totalProducts),
         icon: Icons.inventory_2,
-        iconColor: Colors.indigo,
-        tint: Colors.indigo.withValues(alpha: 0.1),
-        valueColor: Colors.indigo,
+        iconColor: Color(0xFF166534),
+        tint: Color(0xFF166534).withValues(alpha: 0.1),
+        valueColor: Color(0xFF166534),
       ),
       MetricData(
         title: 'Total Units in Stock',
         value: NumberFormat('#,###').format(totalUnits),
         icon: Icons.production_quantity_limits,
-        iconColor: Colors.blue,
-        tint: Colors.blue.withValues(alpha: 0.1),
-        valueColor: Colors.blue,
+        iconColor: Color(0xFF15803D),
+        tint: Color(0xFF15803D).withValues(alpha: 0.1),
+        valueColor: Color(0xFF15803D),
       ),
       MetricData(
         title: 'Inventory Cost Value',
         value: '₹${NumberFormat('#,##0.##').format(totalCostValue)}',
         icon: Icons.attach_money,
-        iconColor: Colors.green,
-        tint: Colors.green.withValues(alpha: 0.1),
-        valueColor: Colors.green,
+        iconColor: Color(0xFF111111),
+        tint: Color(0xFF111111).withValues(alpha: 0.1),
+        valueColor: Color(0xFF111111),
       ),
       MetricData(
         title: 'Low Stock Alerts',
         value: NumberFormat('#,###').format(lowStockCount),
         icon: Icons.warning,
-        iconColor: lowStockCount > 0 ? Colors.red : Colors.green,
-        tint: (lowStockCount > 0 ? Colors.red : Colors.green).withValues(alpha: 0.1),
-        valueColor: lowStockCount > 0 ? Colors.red : Colors.green,
+        iconColor: lowStockCount > 0 ? Colors.red : Color(0xFF111111),
+        tint: (lowStockCount > 0 ? Colors.red : Color(0xFF111111))
+            .withValues(alpha: 0.1),
+        valueColor: lowStockCount > 0 ? Colors.red : Color(0xFF111111),
       ),
     ];
   }
@@ -100,10 +106,13 @@ class InventoryReportPage extends StatelessWidget {
   }
 
   Widget _buildStockValueCard(ReportTable table) {
-    final totalCostValue = table.rows.fold<double>(0, (sum, row) => sum + (row[6] as num).toDouble());
-    final totalRetailValue = table.rows.fold<double>(0, (sum, row) => sum + (row[5] as num).toDouble() * (row[3] as int));
+    final totalCostValue = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[6] as num).toDouble());
+    final totalRetailValue = table.rows.fold<double>(
+        0, (sum, row) => sum + (row[5] as num).toDouble() * (row[3] as int));
     final potentialProfit = totalRetailValue - totalCostValue;
-    final markupPercent = totalCostValue > 0 ? (potentialProfit / totalCostValue) * 100 : 0.0;
+    final markupPercent =
+        totalCostValue > 0 ? (potentialProfit / totalCostValue) * 100 : 0.0;
 
     return SectionCard(
       title: 'Inventory Valuation',
@@ -115,28 +124,28 @@ class InventoryReportPage extends StatelessWidget {
                 child: _ValuationStat(
                   label: 'Cost Value',
                   value: '₹${NumberFormat('#,##0').format(totalCostValue)}',
-                  color: Colors.blue,
+                  color: Color(0xFF15803D),
                 ),
               ),
               Expanded(
                 child: _ValuationStat(
                   label: 'Retail Value',
                   value: '₹${NumberFormat('#,##0').format(totalRetailValue)}',
-                  color: Colors.green,
+                  color: Color(0xFF111111),
                 ),
               ),
               Expanded(
                 child: _ValuationStat(
                   label: 'Potential Profit',
                   value: '₹${NumberFormat('#,##0').format(potentialProfit)}',
-                  color: Colors.amber,
+                  color: Color(0xFF15803D),
                 ),
               ),
               Expanded(
                 child: _ValuationStat(
                   label: 'Markup',
                   value: '${markupPercent.toStringAsFixed(1)}%',
-                  color: Colors.purple,
+                  color: Color(0xFF15803D),
                 ),
               ),
             ],
@@ -155,12 +164,14 @@ class InventoryReportPage extends StatelessWidget {
       final units = (row[3] as int);
       final retail = (row[5] as num).toDouble() * units;
 
-      categoryMap.putIfAbsent(category, () => {
-        'cost': 0.0,
-        'retail': 0.0,
-        'units': 0,
-        'products': 0,
-      });
+      categoryMap.putIfAbsent(
+          category,
+          () => {
+                'cost': 0.0,
+                'retail': 0.0,
+                'units': 0,
+                'products': 0,
+              });
       final cat = categoryMap[category]!;
       cat['cost'] = (cat['cost'] as double) + cost;
       cat['retail'] = (cat['retail'] as double) + retail;
@@ -172,10 +183,13 @@ class InventoryReportPage extends StatelessWidget {
         .map((e) => TrendPoint(
               label: e.key,
               value: (e.value['retail'] as double),
-              displayValue: '₹${NumberFormat('#,##0').format(e.value['retail'] as double)}',
+              displayValue:
+                  '₹${NumberFormat('#,##0').format(e.value['retail'] as double)}',
             ))
         .toList();
-    final maxValue = trendPoints.isEmpty ? 0.0 : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = trendPoints.isEmpty
+        ? 0.0
+        : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
       title: 'Stock Value by Category',
@@ -183,7 +197,7 @@ class InventoryReportPage extends StatelessWidget {
         points: trendPoints,
         maxValue: maxValue,
         label: 'Retail Value',
-        color: Colors.indigo,
+        color: Color(0xFF166534),
       ),
     );
   }
@@ -194,18 +208,23 @@ class InventoryReportPage extends StatelessWidget {
     List<StockAlertItem> lowStockItems,
   ) {
     final insights = <InsightCard>[];
-    final totalCostValue = table.rows.fold<double>(0, (sum, row) => sum + (row[6] as num).toDouble());
+    final totalCostValue = table.rows
+        .fold<double>(0, (sum, row) => sum + (row[6] as num).toDouble());
 
     if (lowStockItems.isNotEmpty) {
       final outOfStock = lowStockItems.where((i) => i.stockCount <= 0).length;
-      final lowStock = lowStockItems.where((i) => i.stockCount > 0 && i.stockCount <= 10).length;
+      final lowStock = lowStockItems
+          .where((i) => i.stockCount > 0 && i.stockCount <= 10)
+          .length;
 
       insights.add(InsightCard(
         title: 'Stock Replenishment Needed',
-        description: '$outOfStock items out of stock, $lowStock items below threshold. Immediate reorder recommended.',
+        description:
+            '$outOfStock items out of stock, $lowStock items below threshold. Immediate reorder recommended.',
         icon: Icons.inventory,
         color: Colors.red,
-        severity: outOfStock > 0 ? InsightSeverity.critical : InsightSeverity.warning,
+        severity:
+            outOfStock > 0 ? InsightSeverity.critical : InsightSeverity.warning,
         actionLabel: 'Create Purchase Order',
         onAction: () {},
       ));
@@ -219,20 +238,24 @@ class InventoryReportPage extends StatelessWidget {
     if (deadStock > 0) {
       insights.add(InsightCard(
         title: 'Dead Stock Identified',
-        description: '$deadStock products have zero stock. Consider discontinuing or promoting.',
+        description:
+            '$deadStock products have zero stock. Consider discontinuing or promoting.',
         icon: Icons.delete_outline,
         color: Colors.grey,
         severity: InsightSeverity.info,
       ));
     }
 
-    final highValueItems = table.rows.where((row) => (row[6] as num).toDouble() > totalCostValue * 0.1).length;
+    final highValueItems = table.rows
+        .where((row) => (row[6] as num).toDouble() > totalCostValue * 0.1)
+        .length;
     if (highValueItems > 0) {
       insights.add(InsightCard(
         title: 'High-Value Inventory Concentration',
-        description: '$highValueItems items represent >10% of inventory value each. Diversify stock to reduce risk.',
+        description:
+            '$highValueItems items represent >10% of inventory value each. Diversify stock to reduce risk.',
         icon: Icons.warning_amber,
-        color: Colors.amber,
+        color: Color(0xFF15803D),
         severity: InsightSeverity.info,
       ));
     }

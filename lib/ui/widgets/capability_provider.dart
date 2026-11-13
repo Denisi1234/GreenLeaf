@@ -15,7 +15,8 @@ class CapabilityProvider extends InheritedWidget {
     return context.dependOnInheritedWidgetOfExactType<CapabilityProvider>();
   }
 
-  bool hasCapability(Capability capability) => capabilities.contains(capability);
+  bool hasCapability(Capability capability) =>
+      capabilities.contains(capability);
 
   @override
   bool updateShouldNotify(CapabilityProvider oldWidget) {

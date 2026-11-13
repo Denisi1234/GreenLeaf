@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'service/pos_local_store.dart';
+import 'service/app_notification_service.dart';
 import 'app.dart';
 import 'ui/widgets/app_design.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppNotificationService.instance.initialize();
   final store = PosLocalStore();
   runApp(
     ChangeNotifierProvider.value(

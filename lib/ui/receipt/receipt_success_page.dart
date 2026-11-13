@@ -99,7 +99,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
       body: SafeArea(
         child: Column(
           children: [
-            Container(height: 8, color: const Color(0xFF355BD8)),
+            Container(height: 8, color: AppColors.primary),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(10, 0, 10, 16),
@@ -120,7 +120,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: const Color(0xFF67BE68),
+                                    color: const Color(0xFF111111),
                                     width: 3,
                                   ),
                                 ),
@@ -138,7 +138,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                                       size: const Size(54, 54),
                                       painter: _CheckMarkPainter(
                                         progress: _checkProgress.value,
-                                        color: const Color(0xFF67BE68),
+                                        color: const Color(0xFF111111),
                                         strokeWidth: 5,
                                       ),
                                     ),
@@ -166,7 +166,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                       Text(
                         'Discount: -TSH${_amount(order.discountAmount!)}',
                         style: const TextStyle(
-                          color: Color(0xFFE66C73),
+                          color: AppColors.primary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -201,7 +201,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                               Text(
                                 order.id,
                                 style: const TextStyle(
-                                  color: Color(0xFF1E293B),
+                                  color: Color(0xFF111111),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -225,7 +225,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                             Text(
                               '$_itemCount',
                               style: const TextStyle(
-                                color: Color(0xFF1E293B),
+                                color: Color(0xFF111111),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -237,7 +237,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                     const SizedBox(height: 24),
                     MarketButton(
                       label: 'VIEW RECEIPT',
-                      color: const Color(0xFF059669),
+                      color: const Color(0xFF111111),
                       foregroundColor: Colors.white,
                       borderColor: Colors.transparent,
                       height: 48,
@@ -245,7 +245,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                       paddingHorizontal: 0,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF059669).withValues(alpha: 0.2),
+                          color: const Color(0xFF111111).withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -255,7 +255,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                     const SizedBox(height: 12),
                     MarketButton(
                       label: 'NEW SALE',
-                      color: const Color(0xFF1E293B),
+                      color: const Color(0xFF111111),
                       foregroundColor: Colors.white,
                       borderColor: Colors.transparent,
                       height: 48,

@@ -174,7 +174,8 @@ class PdfReportService {
     return pdf.save();
   }
 
-  static Future<pw.ImageProvider?> _loadPdfLogoImage(AppProfileData profile) async {
+  static Future<pw.ImageProvider?> _loadPdfLogoImage(
+      AppProfileData profile) async {
     final path = profile.logoPath?.trim();
     if (path == null || path.isEmpty) return null;
 

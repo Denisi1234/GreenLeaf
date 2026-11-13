@@ -66,29 +66,7 @@ class PosReport {
   final ReportData data;
   final bool chart;
 
-  String? get missingData => switch (data) {
-        ReportData.suppliers ||
-        ReportData.supplierDetail ||
-        ReportData.receivings =>
-          'Requires supplier and stock receiving records.',
-        ReportData.taxes ||
-        ReportData.salesTaxes ||
-        ReportData.taxCompliance =>
-          'Requires tax rates and tax amounts recorded at checkout.',
-        ReportData.balanceSheet ||
-        ReportData.trialBalance ||
-        ReportData.cashFlow =>
-          'Requires accounts and a general ledger with opening balances and journal entries.',
-        ReportData.bank ||
-        ReportData.reconciliation =>
-          'Requires payment settlements and imported bank or provider statements.',
-        ReportData.assets =>
-          'Requires a fixed asset and depreciation register.',
-        ReportData.cashUp ||
-        ReportData.shifts =>
-          'Requires register opening balances, drawer movements, and closing counts.',
-        _ => null,
-      };
+  String? get missingData => null;
 
   bool get isSnapshot => switch (data) {
         ReportData.inventory ||

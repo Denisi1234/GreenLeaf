@@ -1,21 +1,27 @@
-import 'dart:io';
+import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../service/pos_local_store.dart';
+import '../notifications/notifications_page.dart';
+import '../widgets/app_design.dart';
+import '../accounting/accounts_page.dart';
+import '../accounting/bank_reconciliation_page.dart';
+import '../accounting/fixed_assets_page.dart';
+import '../payment/cash_register_page.dart';
+import '../settings/tax_settings_page.dart';
+import '../suppliers/suppliers_page.dart';
+import '../widgets/market_shared_widgets.dart';
 import 'customers_page.dart';
+import 'debtors_page.dart';
 import 'duka_ai_page.dart';
 import 'expenses_tracking_page.dart';
+import 'settings_layout.dart';
 import 'settings_page.dart';
-import 'store_profile_page.dart';
 import 'staff_management_page.dart';
 import 'subscription_plan_page.dart';
-import '../notifications/notifications_page.dart';
-import '../../service/pos_local_store.dart';
-import '../widgets/app_design.dart';
-import '../widgets/market_shared_widgets.dart';
 
 class MorePage extends StatelessWidget {
   const MorePage({
@@ -31,14 +37,19 @@ class MorePage extends StatelessWidget {
     final strings = AppStrings.of(store.languageCode);
     final items = [
       _MoreMenuItem(
-        label: strings.storeProfile,
-        icon: Icons.storefront_outlined,
-        action: _MoreMenuAction.storeProfile,
-      ),
-      _MoreMenuItem(
         label: strings.customers,
         icon: Icons.people_alt_outlined,
         action: _MoreMenuAction.customers,
+      ),
+      _MoreMenuItem(
+        label: strings.debitLedger,
+        icon: Icons.account_balance_wallet_outlined,
+        action: _MoreMenuAction.debitLedger,
+      ),
+      _MoreMenuItem(
+        label: store.languageCode == 'sw' ? 'Kasha la Pesa' : 'Cash Register',
+        icon: Icons.point_of_sale_outlined,
+        action: _MoreMenuAction.cashRegister,
       ),
       _MoreMenuItem(
         label: strings.expensesTracking,
@@ -49,6 +60,36 @@ class MorePage extends StatelessWidget {
         label: strings.staffManagement,
         icon: Icons.groups_2_outlined,
         action: _MoreMenuAction.staffManagement,
+      ),
+      _MoreMenuItem(
+        label: store.languageCode == 'sw' ? 'Wasambazaji' : 'Suppliers',
+        icon: Icons.local_shipping_outlined,
+        action: _MoreMenuAction.suppliers,
+      ),
+      _MoreMenuItem(
+        label: store.languageCode == 'sw'
+            ? 'Akaunti na Daftari'
+            : 'Accounts & Ledger',
+        icon: Icons.account_balance_outlined,
+        action: _MoreMenuAction.accounts,
+      ),
+      _MoreMenuItem(
+        label: store.languageCode == 'sw' ? 'Mali za Kudumu' : 'Fixed Assets',
+        icon: Icons.chair_outlined,
+        action: _MoreMenuAction.fixedAssets,
+      ),
+      _MoreMenuItem(
+        label: store.languageCode == 'sw'
+            ? 'Upatanishi wa Benki'
+            : 'Bank Reconciliation',
+        icon: Icons.account_balance_wallet_outlined,
+        action: _MoreMenuAction.bankReconciliation,
+      ),
+      _MoreMenuItem(
+        label:
+            store.languageCode == 'sw' ? 'Mipangilio ya Kodi' : 'Tax Settings',
+        icon: Icons.percent_rounded,
+        action: _MoreMenuAction.taxSettings,
       ),
       _MoreMenuItem(
         label: strings.settings,
@@ -76,82 +117,76 @@ class MorePage extends StatelessWidget {
         : 'TSH ${totalSales.toStringAsFixed(0)}';
     final memberSince =
         profile.memberSince.isEmpty ? strings.notSet : profile.memberSince;
-    final baseTheme = Theme.of(context);
-    final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme:
-          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
-    );
 
-    return Theme(
-      data: interTheme,
-      child: Scaffold(
-        backgroundColor: AppColors.pageBackground,
-        drawer: useSharedShell
-            ? null
-            : MarketAppDrawer(selectedItem: strings.more),
-        body: Stack(
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      drawer:
+          useSharedShell ? null : MarketAppDrawer(selectedItem: strings.more),
+      body: SafeArea(
+        top: !useSharedShell,
+        child: Column(
           children: [
-            const Positioned.fill(
-              child: ColoredBox(color: AppColors.pageBackground),
-            ),
-            SafeArea(
-              top: !useSharedShell,
-              child: Column(
+            if (!useSharedShell)
+              MarketPageHeader(
+                title: strings.more,
+                centerTitle: false,
+                leading: const DrawerMenuButton(),
+                actions: [
+                  MarketHeaderActionButtons(
+                    showNotificationDot: true,
+                    onDukaAiTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const DukaAiAdvisorPage(),
+                        ),
+                      );
+                    },
+                    onNotificationTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const NotificationsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            Expanded(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
                 children: [
-                  if (!useSharedShell)
-                    MarketPageHeader(
-                      title: strings.more,
-                      centerTitle: false,
-                      leading: const DrawerMenuButton(),
-                      actions: [
-                        MarketHeaderActionButtons(
-                          showNotificationDot: true,
-                          onDukaAiTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (context) => const DukaAiAdvisorPage(),
-                              ),
-                            );
-                          },
-                          onNotificationTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (context) => const NotificationsPage(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                  _ProfileSummaryCard(
+                    ownerName: profile.ownerName,
+                    roleTitle: profile.roleTitle,
+                    storeName: profile.storeName,
+                    logoPath: profile.logoPath,
+                    totalSales: totalSalesLabel,
+                    memberSince: memberSince,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const SettingsPage(),
+                      ),
                     ),
-                  Expanded(
-                    child: ListView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
-                      children: [
-                        _ProfileSummaryCard(
-                          ownerName: profile.ownerName,
-                          roleTitle: profile.roleTitle,
-                          storeName: profile.storeName,
-                          logoPath: profile.logoPath,
-                          totalSales: totalSalesLabel,
-                          memberSince: memberSince,
-                        ),
-                        const SizedBox(height: 12),
-                        _MoreMenuCard(items: items),
-                        const SizedBox(height: 12),
-
-                        _LogoutButton(
-                          onTap: () {
-                            showMarketNotice(
-                              context,
-                              title: strings.loggedOut,
-                              message: strings.authNext,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _MoreMenuCard(items: items),
+                  const SizedBox(height: 12),
+                  _LogoutButton(
+                    label: strings.logout,
+                    onTap: () async {
+                      try {
+                        await store.logout();
+                      } catch (error) {
+                        if (!context.mounted) return;
+                        showMarketNotice(
+                          context,
+                          title: 'Sign out failed',
+                          message: error.toString(),
+                          type: MarketNoticeType.warning,
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
@@ -171,6 +206,7 @@ class _ProfileSummaryCard extends StatelessWidget {
     required this.logoPath,
     required this.totalSales,
     required this.memberSince,
+    this.onTap,
   });
 
   final String ownerName;
@@ -179,6 +215,7 @@ class _ProfileSummaryCard extends StatelessWidget {
   final String? logoPath;
   final String totalSales;
   final String memberSince;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -187,93 +224,97 @@ class _ProfileSummaryCard extends StatelessWidget {
         final isNarrow = constraints.maxWidth < 380;
 
         return MarketSurfaceCard(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          backgroundColor: Colors.white.withValues(alpha: 0.92),
-          borderColor: const Color(0xFFE7EAF0),
-          radius: 12,
-          child: Column(
-            children: [
-              if (isNarrow)
-                Column(
-                  children: [
-                    _ProfileAvatar(logoPath: logoPath),
-                    const SizedBox(height: 10),
-                    _ProfileDetails(
-                      centered: true,
-                      ownerName: ownerName,
-                      roleTitle: roleTitle,
-                      storeName: storeName,
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    _ProfileAvatar(logoPath: logoPath),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _ProfileDetails(
+          padding: const EdgeInsets.all(14),
+          backgroundColor: AppColors.surface,
+          borderColor: AppColors.border,
+          radius: AppRadius.tile,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.tile),
+            child: Column(
+              children: [
+                if (isNarrow)
+                  Column(
+                    children: [
+                      _ProfileAvatar(logoPath: logoPath),
+                      const SizedBox(height: 10),
+                      _ProfileDetails(
+                        centered: true,
                         ownerName: ownerName,
                         roleTitle: roleTitle,
                         storeName: storeName,
                       ),
-                    ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Color(0xFF7B8598),
-                      size: 28,
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 12),
-              const Divider(height: 1, color: Color(0xFFE7EAF0)),
-              const SizedBox(height: 10),
-              if (isNarrow)
-                Column(
-                  children: [
-                    _StatBlock(
-                      icon: Icons.receipt_long_outlined,
-                      label: 'Total Sales',
-                      value: totalSales,
-                    ),
-                    const SizedBox(height: 10),
-                    const Divider(height: 1, color: Color(0xFFE7EAF0)),
-                    const SizedBox(height: 10),
-                    _StatBlock(
-                      icon: Icons.calendar_today_outlined,
-                      label: 'Member Since',
-                      value: memberSince,
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatBlock(
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      _ProfileAvatar(logoPath: logoPath),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ProfileDetails(
+                          ownerName: ownerName,
+                          roleTitle: roleTitle,
+                          storeName: storeName,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textMuted,
+                        size: 26,
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppColors.divider),
+                const SizedBox(height: 10),
+                if (isNarrow)
+                  Column(
+                    children: [
+                      _StatBlock(
                         icon: Icons.receipt_long_outlined,
                         label: 'Total Sales',
                         value: totalSales,
                       ),
-                    ),
-                    const SizedBox(
-                      height: 52,
-                      child: VerticalDivider(
-                        color: Color(0xFFE7EAF0),
-                        thickness: 1,
-                      ),
-                    ),
-                    Expanded(
-                      child: _StatBlock(
+                      const SizedBox(height: 10),
+                      const Divider(height: 1, color: AppColors.divider),
+                      const SizedBox(height: 10),
+                      _StatBlock(
                         icon: Icons.calendar_today_outlined,
                         label: 'Member Since',
                         value: memberSince,
                       ),
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 12),
-            ],
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatBlock(
+                          icon: Icons.receipt_long_outlined,
+                          label: 'Total Sales',
+                          value: totalSales,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 48,
+                        child: VerticalDivider(
+                          color: AppColors.divider,
+                          thickness: 1,
+                        ),
+                      ),
+                      Expanded(
+                        child: _StatBlock(
+                          icon: Icons.calendar_today_outlined,
+                          label: 'Member Since',
+                          value: memberSince,
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 4),
+              ],
+            ),
           ),
         );
       },
@@ -289,19 +330,19 @@ class _MoreMenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      backgroundColor: Colors.white.withValues(alpha: 0.92),
-      borderColor: const Color(0xFFE7EAF0),
-      radius: 12,
+      backgroundColor: AppColors.surface,
+      borderColor: AppColors.border,
+      radius: AppRadius.tile,
       child: Column(
         children: [
           for (var index = 0; index < items.length; index++) ...[
             _MoreListTile(item: items[index]),
             if (index != items.length - 1)
               const Padding(
-                padding: EdgeInsets.only(left: 68),
+                padding: EdgeInsets.only(left: 66),
                 child: Divider(
                   height: 1,
-                  color: Color(0xFFE7EAF0),
+                  color: AppColors.divider,
                 ),
               ),
           ],
@@ -319,24 +360,29 @@ class _ProfileAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 84,
-      height: 84,
+      width: 72,
+      height: 72,
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F0FF),
-        borderRadius: BorderRadius.circular(42),
+        color: AppColors.surfaceSecondary,
+        borderRadius: BorderRadius.circular(AppRadius.rounded),
+        border: Border.all(color: AppColors.border),
       ),
-      child: logoPath == null
+      clipBehavior: Clip.antiAlias,
+      child: logoPath == null || logoPath!.isEmpty
           ? const Icon(
-              Icons.person,
-              color: Color(0xFF1562E8),
-              size: 54,
+              Icons.storefront_rounded,
+              color: AppColors.textBody,
+              size: 36,
             )
-          : ClipOval(
-              child: Image.file(
-                File(logoPath!),
-                width: 84,
-                height: 84,
-                fit: BoxFit.cover,
+          : Image(
+              image: appImageProvider(context, logoPath!),
+              width: 72,
+              height: 72,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.storefront_rounded,
+                color: AppColors.textBody,
+                size: 36,
               ),
             ),
     );
@@ -361,7 +407,9 @@ class _ProfileDetails extends StatelessWidget {
     final displayName = ownerName.isNotEmpty
         ? ownerName
         : (storeName.isEmpty ? 'Store profile not set' : storeName);
-    final detailLine = roleTitle.isEmpty ? 'Business Owner' : roleTitle;
+    final detailLine = storeName.isNotEmpty
+        ? storeName
+        : (roleTitle.isEmpty ? 'Business Owner' : roleTitle);
 
     return Column(
       crossAxisAlignment:
@@ -369,20 +417,12 @@ class _ProfileDetails extends StatelessWidget {
       children: [
         Text(
           displayName,
-          style: const TextStyle(
-            color: Color(0xFF202938),
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
+          style: AppTypography.cardHeader,
         ),
         const SizedBox(height: 2),
         Text(
           roleTitle.isEmpty ? 'Business Owner' : roleTitle,
-          style: const TextStyle(
-            color: Color(0xFF7A8393),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
+          style: AppTypography.caption,
         ),
         const SizedBox(height: 6),
         Row(
@@ -390,18 +430,17 @@ class _ProfileDetails extends StatelessWidget {
           children: [
             const Icon(
               Icons.storefront_outlined,
-              color: Color(0xFF1562E8),
-              size: 20,
+              color: AppColors.textBody,
+              size: 18,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
                 detailLine,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF202938),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textMain,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -430,28 +469,20 @@ class _StatBlock extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFF1562E8), size: 20),
+          Icon(icon, color: AppColors.textBody, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Color(0xFF6F7887),
-                    fontSize: 11.8,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(label, style: AppTypography.helperText),
                 const SizedBox(height: 2),
                 Text(
                   value,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF1562E8),
-                    fontSize: 13.4,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textMain,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -471,57 +502,99 @@ class _MoreListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: () {
         switch (item.action) {
-          case _MoreMenuAction.storeProfile:
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const StoreProfilePage(),
-            ),
-          );
-            return;
           case _MoreMenuAction.customers:
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const CustomersPage(),
-            ),
-          );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const CustomersPage(),
+              ),
+            );
+            return;
+          case _MoreMenuAction.debitLedger:
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const DebtorsPage(),
+              ),
+            );
+            return;
+          case _MoreMenuAction.suppliers:
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const SuppliersPage(),
+              ),
+            );
+            return;
+          case _MoreMenuAction.accounts:
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const AccountsPage(),
+              ),
+            );
+            return;
+          case _MoreMenuAction.fixedAssets:
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const FixedAssetsPage(),
+              ),
+            );
+            return;
+          case _MoreMenuAction.bankReconciliation:
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const BankReconciliationPage(),
+              ),
+            );
+            return;
+          case _MoreMenuAction.taxSettings:
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const TaxSettingsPage(),
+              ),
+            );
+            return;
+          case _MoreMenuAction.cashRegister:
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const CashRegisterPage(),
+              ),
+            );
             return;
           case _MoreMenuAction.expenses:
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const ExpensesTrackingPage(),
-            ),
-          );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const ExpensesTrackingPage(),
+              ),
+            );
             return;
           case _MoreMenuAction.staffManagement:
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const StaffManagementPage(),
-            ),
-          );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const StaffManagementPage(),
+              ),
+            );
             return;
           case _MoreMenuAction.subscriptionPlan:
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const SubscriptionPlanPage(),
-            ),
-          );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const SubscriptionPlanPage(),
+              ),
+            );
             return;
           case _MoreMenuAction.settings:
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const SettingsPage(),
-            ),
-          );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const SettingsPage(),
+              ),
+            );
             return;
           case _MoreMenuAction.dukaAi:
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const DukaAiPage(),
-            ),
-          );
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (context) => const DukaAiPage(),
+              ),
+            );
             return;
         }
       },
@@ -529,34 +602,20 @@ class _MoreListTile extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF7F8FE),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE6E8F0)),
-              ),
-              child: Icon(
-                item.icon,
-                color: const Color(0xFF5B8CFF),
-                size: 20,
-              ),
-            ),
+            SettingsIconBox(icon: item.icon),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 item.label,
-                style: const TextStyle(
+                style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.ink,
-                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
             const Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF7B8598),
+              color: AppColors.textMuted,
               size: 22,
             ),
           ],
@@ -568,38 +627,45 @@ class _MoreListTile extends StatelessWidget {
 
 class _LogoutButton extends StatelessWidget {
   const _LogoutButton({
+    required this.label,
     required this.onTap,
   });
 
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: MarketSurfaceCard(
-        backgroundColor: Colors.white.withValues(alpha: 0.92),
-        borderColor: const Color(0xFFE7EAF0),
-        radius: 12,
-        padding: const EdgeInsets.symmetric(vertical: 17),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.logout_rounded,
-              color: Color(0xFFE65B5B),
-              size: 22,
-            ),
-            SizedBox(width: 10),
-            Text(
-              'Log Out',
-              style: TextStyle(
-                color: Color(0xFFE65B5B),
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+    return Material(
+      color: AppColors.surfaceSecondary,
+      borderRadius: BorderRadius.circular(AppRadius.tile),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.tile),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.tile),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.logout_rounded,
+                color: AppColors.ink,
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: AppTypography.bodyMain.copyWith(
+                  color: AppColors.ink,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -619,7 +685,13 @@ class _MoreMenuItem {
 }
 
 enum _MoreMenuAction {
-  storeProfile,
+  cashRegister,
+  suppliers,
+  accounts,
+  fixedAssets,
+  bankReconciliation,
+  taxSettings,
+  debitLedger,
   customers,
   expenses,
   staffManagement,

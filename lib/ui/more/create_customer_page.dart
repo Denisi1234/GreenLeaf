@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
-import '../../ui/models/customer_data.dart';
+import '../models/customer_data.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
@@ -12,6 +13,9 @@ const List<String> kCustomerTagOptions = <String>[
   'Retail',
   'Credit',
 ];
+
+String _dual(AppStrings strings, String english, String swahili) =>
+    strings.isSwahili ? swahili : english;
 
 class CreateCustomerPage extends StatefulWidget {
   const CreateCustomerPage({super.key, this.existing});
@@ -26,33 +30,50 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
   late final TextEditingController _addressController;
+  late Set<String> _tags;
   bool _isSaving = false;
   bool get _isEdit => widget.existing != null;
 
   @override
   void initState() {
     super.initState();
-    final c = widget.existing;
-    _nameController = TextEditingController(text: c?.name ?? '');
-    _phoneController = TextEditingController(text: c?.phone ?? '');
-    _addressController = TextEditingController(text: c?.address ?? '');
+    final customer = widget.existing;
+    _nameController = TextEditingController(text: customer?.name ?? '');
+    _phoneController = TextEditingController(text: customer?.phone ?? '');
+    _emailController = TextEditingController(text: customer?.email ?? '');
+    _addressController = TextEditingController(text: customer?.address ?? '');
+    _tags = <String>{...?customer?.tags};
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _addressController.dispose();
     super.dispose();
   }
 
+  void _toggleTag(String tag) {
+    setState(() {
+      if (_tags.contains(tag)) {
+        _tags.remove(tag);
+      } else {
+        _tags.add(tag);
+      }
+    });
+  }
+
   Future<void> _saveCustomer() async {
+    final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
     if (!_formKey.currentState!.validate()) {
       showMarketNotice(
         context,
-        title: 'Check The Form',
-        message: 'Complete the customer details before saving',
+        title: _dual(strings, 'Check the form', 'Kagua fomu'),
+        message: _dual(strings, 'Complete the customer details before saving',
+            'Kamilisha maelezo ya mteja kabla ya kuhifadhi'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -72,8 +93,9 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
         .copyWith(
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
+      email: _emailController.text.trim(),
       address: _addressController.text.trim(),
-      tags: const [],
+      tags: _tags.toList(growable: false),
     );
 
     try {
@@ -90,145 +112,136 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
 
     if (!mounted) return;
 
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (context, _, __) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check_circle_rounded,
-                  color: Color(0xFF10B981), size: 64),
-              const SizedBox(height: 16),
-              Text(
-                _isEdit ? 'Customer Updated' : 'Customer Saved',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${customer.name} has been ${_isEdit ? 'updated' : 'added'}.',
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
+    showMarketNotice(
+      context,
+      title: _isEdit
+          ? _dual(strings, 'Customer updated', 'Mteja amesasishwa')
+          : _dual(strings, 'Customer saved', 'Mteja amehifadhiwa'),
+      message: _dual(
+        strings,
+        '${customer.name} has been ${_isEdit ? 'updated' : 'added'}.',
+        '${customer.name} ${_isEdit ? 'amesasishwa' : 'ameongezwa'}.',
       ),
     );
-
-    await Future<void>.delayed(const Duration(milliseconds: 1000));
-    if (!mounted) return;
-
-    Navigator.of(context, rootNavigator: true).pop();
     Navigator.of(context).pop(customer.name);
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         child: Column(
           children: [
             MarketPageHeader(
-                title: _isEdit ? 'Edit Customer' : 'Create Customer'),
+              title: _isEdit
+                  ? _dual(strings, 'Edit Customer', 'Hariri Mteja')
+                  : _dual(strings, 'Create Customer', 'Ongeza Mteja'),
+              subtitle: _dual(strings, 'Contact and loyalty details',
+                  'Maelezo ya mawasiliano na uaminifu'),
+              showBorder: false,
+            ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
                 child: Form(
                   key: _formKey,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      MarketSectionHeader(
+                        title: _dual(
+                            strings, 'Customer details', 'Maelezo ya mteja'),
+                        trailing: const SizedBox.shrink(),
+                      ),
+                      const SizedBox(height: 10),
                       _CustomerField(
-                        label: 'Customer Name',
-                        hint: 'Enter customer name',
+                        label: _dual(strings, 'Customer name', 'Jina la mteja'),
+                        hint: _dual(strings, 'Enter customer name',
+                            'Weka jina la mteja'),
                         controller: _nameController,
                         icon: Icons.person_outline_rounded,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Customer name is required';
-                          }
-                          return null;
-                        },
+                        textCapitalization: TextCapitalization.words,
+                        validator: (value) =>
+                            (value == null || value.trim().isEmpty)
+                                ? _dual(strings, 'Customer name is required',
+                                    'Jina la mteja linahitajika')
+                                : null,
                       ),
                       const SizedBox(height: 14),
                       _CustomerField(
-                        label: 'Phone Number',
-                        hint: 'Enter phone number',
+                        label: _dual(strings, 'Phone number', 'Namba ya simu'),
+                        hint: _dual(strings, 'Enter phone number',
+                            'Weka namba ya simu'),
                         controller: _phoneController,
                         icon: Icons.call_outlined,
                         keyboardType: TextInputType.phone,
+                        validator: (value) =>
+                            (value == null || value.trim().isEmpty)
+                                ? _dual(strings, 'Phone number is required',
+                                    'Namba ya simu inahitajika')
+                                : null,
+                      ),
+                      const SizedBox(height: 14),
+                      _CustomerField(
+                        label: _dual(strings, 'Email', 'Barua pepe'),
+                        hint: _dual(strings, 'Optional email address',
+                            'Barua pepe (si lazima)'),
+                        controller: _emailController,
+                        icon: Icons.alternate_email_rounded,
+                        keyboardType: TextInputType.emailAddress,
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Phone number is required';
-                          }
-                          return null;
+                          final email = (value ?? '').trim();
+                          if (email.isEmpty) return null;
+                          final valid =
+                              RegExp(r'^[\w.+-]+@([\w-]+\.)+[\w-]{2,}$')
+                                  .hasMatch(email);
+                          return valid
+                              ? null
+                              : _dual(strings, 'Enter a valid email address',
+                                  'Weka barua pepe sahihi');
                         },
                       ),
                       const SizedBox(height: 14),
                       _CustomerField(
-                        label: 'Address',
-                        hint: 'Optional physical address',
+                        label: _dual(strings, 'Address', 'Anwani'),
+                        hint: _dual(strings, 'Optional physical address',
+                            'Anwani (si lazima)'),
                         controller: _addressController,
                         icon: Icons.location_on_outlined,
                         maxLines: 3,
                       ),
-                      const SizedBox(height: 32),
-                      GestureDetector(
+                      const SizedBox(height: 18),
+                      Text(
+                        _dual(strings, 'Tags', 'Lebo'),
+                        style: AppTypography.label,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final tag in kCustomerTagOptions)
+                            _TagChip(
+                              label: tag,
+                              selected: _tags.contains(tag),
+                              onTap: () => _toggleTag(tag),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+                      _SaveButton(
+                        saving: _isSaving,
+                        label: _isSaving
+                            ? _dual(strings, 'Saving...', 'Inahifadhi...')
+                            : _isEdit
+                                ? _dual(strings, 'Save changes',
+                                    'Hifadhi mabadiliko')
+                                : _dual(
+                                    strings, 'Create customer', 'Unda mteja'),
                         onTap: _isSaving ? null : _saveCustomer,
-                        child: Container(
-                          height: 54,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: const Color(0xFF0F172A),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _isSaving
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
-                                      ),
-                                    )
-                                  : Icon(
-                                      _isEdit
-                                          ? Icons.check_rounded
-                                          : Icons.add_rounded,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _isSaving
-                                    ? 'Saving...'
-                                    : (_isEdit
-                                        ? 'Save Changes'
-                                        : 'Create Customer'),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -236,6 +249,108 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TagChip extends StatelessWidget {
+  const _TagChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryLight : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.border,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected) ...[
+              const Icon(Icons.check_rounded,
+                  size: 13, color: AppColors.primaryDeep),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: AppTypography.helperText.copyWith(
+                color: selected ? AppColors.primaryDeep : AppColors.textBody,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SaveButton extends StatelessWidget {
+  const _SaveButton({
+    required this.saving,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool saving;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: onTap == null ? AppColors.border : AppColors.primary,
+      borderRadius: BorderRadius.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.zero,
+        highlightColor: Colors.transparent,
+        splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
+        onTap: onTap,
+        child: SizedBox(
+          height: 52,
+          child: Center(
+            child: saving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_rounded,
+                          color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );
@@ -250,6 +365,7 @@ class _CustomerField extends StatelessWidget {
     required this.icon,
     this.validator,
     this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
     this.maxLines = 1,
   });
 
@@ -259,6 +375,7 @@ class _CustomerField extends StatelessWidget {
   final IconData icon;
   final FormFieldValidator<String>? validator;
   final TextInputType? keyboardType;
+  final TextCapitalization textCapitalization;
   final int maxLines;
 
   @override
@@ -266,48 +383,45 @@ class _CustomerField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text(label, style: AppTypography.label),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           validator: validator,
           keyboardType: keyboardType,
+          textCapitalization: textCapitalization,
           maxLines: maxLines,
-          style: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 15,
-          ),
+          style: AppTypography.bodyMain,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 15,
-            ),
-            prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
+            hintStyle:
+                AppTypography.bodyMain.copyWith(color: AppColors.textLight),
+            prefixIcon: Icon(icon, color: AppColors.textLight, size: 20),
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
+            fillColor: AppColors.surface,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.border),
             ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+            enabledBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            errorBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.danger, width: 1.5),
+            ),
+            focusedErrorBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.danger, width: 1.5),
             ),
           ),
         ),

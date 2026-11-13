@@ -165,7 +165,7 @@ class _SeverityConfig {
 
 const _severityConfigs = {
   InsightSeverity.info: _SeverityConfig(
-    backgroundColor: AppColors.primaryLight,
+    backgroundColor: AppColors.surfaceSecondary,
     iconColor: AppColors.primary,
     textColor: AppColors.ink,
   ),
@@ -330,12 +330,12 @@ class _TrendPill extends StatelessWidget {
     final color = positive
         ? AppColors.success
         : negative
-            ? AppColors.danger
+            ? AppColors.textMuted
             : AppColors.textMuted;
     final bg = positive
         ? AppColors.successLight
         : negative
-            ? AppColors.dangerLight
+            ? AppColors.surfaceSecondary
             : AppColors.surfaceSecondary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -7,20 +7,185 @@ import 'daftari_recovery_models.dart';
 import 'duka_ai_service.dart';
 import 'pos_order_models.dart';
 import 'receipt_settings.dart';
+import 'register_shift_model.dart';
+import 'supplier_model.dart';
+import 'accounting_model.dart';
+import 'tax_settings.dart';
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
 
 class PosLocalDatabase {
-  PosLocalDatabase._();
+  PosLocalDatabase();
 
-  static final PosLocalDatabase instance = PosLocalDatabase._();
+  static final PosLocalDatabase instance = PosLocalDatabase();
 
   static const _receiptSettingsSchema = '''
     CREATE TABLE receipt_settings (
       id INTEGER PRIMARY KEY CHECK (id = 1),
       show_store_contact INTEGER NOT NULL DEFAULT 1,
+      show_tax_id INTEGER NOT NULL DEFAULT 1,
+      show_order_number INTEGER NOT NULL DEFAULT 1,
+      show_date_time INTEGER NOT NULL DEFAULT 1,
+      show_cashier INTEGER NOT NULL DEFAULT 1,
+      show_customer INTEGER NOT NULL DEFAULT 1,
+      show_payment_method INTEGER NOT NULL DEFAULT 1,
+      show_item_count INTEGER NOT NULL DEFAULT 1,
+      show_discount INTEGER NOT NULL DEFAULT 1,
+      header TEXT NOT NULL DEFAULT '',
       footer TEXT NOT NULL DEFAULT ''
     )
+  ''';
+
+  static const _debitEntriesSchema = '''
+          CREATE TABLE IF NOT EXISTS debit_entries (
+            id TEXT PRIMARY KEY,
+            store_id TEXT NOT NULL,
+            customer_id TEXT NOT NULL,
+            customer_name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            amount REAL NOT NULL DEFAULT 0,
+            note TEXT NOT NULL DEFAULT '',
+            order_id TEXT,
+            recorded_by TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL
+          )
+  ''';
+
+  static const _registerShiftsSchema = '''
+          CREATE TABLE IF NOT EXISTS register_shifts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            register TEXT NOT NULL DEFAULT 'Register 1',
+            opened_by TEXT NOT NULL DEFAULT '',
+            opened_at TEXT NOT NULL,
+            opening_float REAL NOT NULL DEFAULT 0,
+            closed_at TEXT,
+            closed_by TEXT NOT NULL DEFAULT '',
+            counted_cash REAL NOT NULL DEFAULT 0,
+            notes TEXT NOT NULL DEFAULT ''
+          )
+  ''';
+
+  static const _cashMovementsSchema = '''
+          CREATE TABLE IF NOT EXISTS cash_movements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            shift_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            amount REAL NOT NULL DEFAULT 0,
+            reason TEXT NOT NULL DEFAULT '',
+            at TEXT NOT NULL,
+            recorded_by TEXT NOT NULL DEFAULT ''
+          )
+  ''';
+
+  static const _suppliersSchema = '''
+          CREATE TABLE IF NOT EXISTS suppliers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL DEFAULT '',
+            email TEXT NOT NULL DEFAULT '',
+            address TEXT NOT NULL DEFAULT '',
+            opening_balance REAL NOT NULL DEFAULT 0,
+            notes TEXT NOT NULL DEFAULT ''
+          )
+  ''';
+
+  static const _receivingsSchema = '''
+          CREATE TABLE IF NOT EXISTS receivings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            supplier_id INTEGER,
+            supplier_name TEXT NOT NULL DEFAULT '',
+            date TEXT NOT NULL,
+            invoice_no TEXT NOT NULL DEFAULT '',
+            total REAL NOT NULL DEFAULT 0,
+            received_by TEXT NOT NULL DEFAULT '',
+            notes TEXT NOT NULL DEFAULT ''
+          )
+  ''';
+
+  static const _accountsSchema = '''
+          CREATE TABLE IF NOT EXISTS accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            code TEXT NOT NULL,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            opening_balance REAL NOT NULL DEFAULT 0
+          )
+  ''';
+
+  static const _journalEntriesSchema = '''
+          CREATE TABLE IF NOT EXISTS journal_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            memo TEXT NOT NULL DEFAULT '',
+            created_by TEXT NOT NULL DEFAULT ''
+          )
+  ''';
+
+  static const _journalLinesSchema = '''
+          CREATE TABLE IF NOT EXISTS journal_lines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            entry_id INTEGER NOT NULL,
+            account_id INTEGER NOT NULL,
+            debit REAL NOT NULL DEFAULT 0,
+            credit REAL NOT NULL DEFAULT 0
+          )
+  ''';
+
+  static const _fixedAssetsSchema = '''
+          CREATE TABLE IF NOT EXISTS fixed_assets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT '',
+            purchase_date TEXT NOT NULL,
+            cost REAL NOT NULL DEFAULT 0,
+            salvage_value REAL NOT NULL DEFAULT 0,
+            useful_life_years INTEGER NOT NULL DEFAULT 5
+          )
+  ''';
+
+  static const _bankTransactionsSchema = '''
+          CREATE TABLE IF NOT EXISTS bank_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            amount REAL NOT NULL DEFAULT 0,
+            reference TEXT NOT NULL DEFAULT '',
+            matched INTEGER NOT NULL DEFAULT 0,
+            account_name TEXT NOT NULL DEFAULT 'Bank'
+          )
+  ''';
+
+  static const _taxSettingsSchema = '''
+          CREATE TABLE IF NOT EXISTS tax_settings (
+            id INTEGER PRIMARY KEY,
+            enabled INTEGER NOT NULL DEFAULT 0,
+            rate_percent REAL NOT NULL DEFAULT 0,
+            prices_include_tax INTEGER NOT NULL DEFAULT 1,
+            tax_id TEXT NOT NULL DEFAULT '',
+            tax_label TEXT NOT NULL DEFAULT 'VAT',
+            track_expense_tax INTEGER NOT NULL DEFAULT 1
+          )
+  ''';
+
+  static const _receivingLinesSchema = '''
+          CREATE TABLE IF NOT EXISTS receiving_lines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            store_id TEXT NOT NULL,
+            receiving_id INTEGER NOT NULL,
+            product_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 0,
+            unit_cost REAL NOT NULL DEFAULT 0,
+            selling_price REAL NOT NULL DEFAULT 0
+          )
   ''';
 
   static const _storeLocationsSchema = '''
@@ -49,7 +214,7 @@ class PosLocalDatabase {
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 21,
+      version: 29,
       onCreate: (db, version) async {
         await db.execute(_receiptSettingsSchema);
         await db.execute('''
@@ -245,7 +410,13 @@ class PosLocalDatabase {
             category TEXT NOT NULL,
             payment_method TEXT NOT NULL,
             date TEXT NOT NULL,
-            notes TEXT
+            notes TEXT,
+            vendor TEXT NOT NULL DEFAULT '',
+            tax_amount REAL NOT NULL DEFAULT 0,
+            receipt_path TEXT,
+            status TEXT NOT NULL DEFAULT 'submitted',
+            created_at TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -261,6 +432,18 @@ class PosLocalDatabase {
             tags TEXT NOT NULL DEFAULT ''
           )
         ''');
+        await db.execute(_debitEntriesSchema);
+        await db.execute(_registerShiftsSchema);
+        await db.execute(_cashMovementsSchema);
+        await db.execute(_suppliersSchema);
+        await db.execute(_receivingsSchema);
+        await db.execute(_receivingLinesSchema);
+        await db.execute(_taxSettingsSchema);
+        await db.execute(_accountsSchema);
+        await db.execute(_journalEntriesSchema);
+        await db.execute(_journalLinesSchema);
+        await db.execute(_fixedAssetsSchema);
+        await db.execute(_bankTransactionsSchema);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -496,12 +679,14 @@ class PosLocalDatabase {
             'customers'
           ];
           for (final table in tables) {
-            await db.execute('ALTER TABLE $table ADD COLUMN store_id TEXT NOT NULL DEFAULT "store-default"');
+            await db.execute(
+                'ALTER TABLE $table ADD COLUMN store_id TEXT NOT NULL DEFAULT "store-default"');
           }
         }
         if (oldVersion < 18) {
           await db.execute('ALTER TABLE orders ADD COLUMN customer_name TEXT');
-          await db.execute('ALTER TABLE orders ADD COLUMN discount_amount REAL');
+          await db
+              .execute('ALTER TABLE orders ADD COLUMN discount_amount REAL');
           await db.execute('ALTER TABLE orders ADD COLUMN discount_label TEXT');
           await db.execute('ALTER TABLE order_lines ADD COLUMN unit_cost REAL');
         }
@@ -522,7 +707,8 @@ class PosLocalDatabase {
           await db.execute(_receiptSettingsSchema);
         }
         if (oldVersion < 21) {
-          final staffInfo = await db.rawQuery('PRAGMA table_info(staff_members)');
+          final staffInfo =
+              await db.rawQuery('PRAGMA table_info(staff_members)');
           final existingColumns =
               staffInfo.map((column) => column['name'] as String).toSet();
           Future<void> addColumn(String name, String definition) async {
@@ -545,8 +731,7 @@ class PosLocalDatabase {
           await addColumn('hire_date', "hire_date TEXT NOT NULL DEFAULT ''");
           await addColumn(
               'employment_type', "employment_type TEXT NOT NULL DEFAULT ''");
-          await addColumn(
-              'hourly_rate', 'hourly_rate REAL NOT NULL DEFAULT 0');
+          await addColumn('hourly_rate', 'hourly_rate REAL NOT NULL DEFAULT 0');
           await addColumn('emergency_contact_name',
               "emergency_contact_name TEXT NOT NULL DEFAULT ''");
           await addColumn('emergency_contact_phone',
@@ -558,6 +743,93 @@ class PosLocalDatabase {
           await addColumn('avatar_path', 'avatar_path TEXT');
           await addColumn('status', "status TEXT NOT NULL DEFAULT 'active'");
           await addColumn('updated_at', "updated_at TEXT NOT NULL DEFAULT ''");
+        }
+        if (oldVersion < 22) {
+          final receiptInfo =
+              await db.rawQuery('PRAGMA table_info(receipt_settings)');
+          final existingColumns =
+              receiptInfo.map((column) => column['name'] as String).toSet();
+          Future<void> addReceiptColumn(String name, String definition) async {
+            if (!existingColumns.contains(name)) {
+              await db.execute(
+                'ALTER TABLE receipt_settings ADD COLUMN $definition',
+              );
+            }
+          }
+
+          await addReceiptColumn(
+              'show_tax_id', 'show_tax_id INTEGER NOT NULL DEFAULT 1');
+          await addReceiptColumn('show_order_number',
+              'show_order_number INTEGER NOT NULL DEFAULT 1');
+          await addReceiptColumn(
+              'show_date_time', 'show_date_time INTEGER NOT NULL DEFAULT 1');
+          await addReceiptColumn(
+              'show_cashier', 'show_cashier INTEGER NOT NULL DEFAULT 1');
+          await addReceiptColumn(
+              'show_customer', 'show_customer INTEGER NOT NULL DEFAULT 1');
+          await addReceiptColumn('show_payment_method',
+              'show_payment_method INTEGER NOT NULL DEFAULT 1');
+          await addReceiptColumn(
+              'show_item_count', 'show_item_count INTEGER NOT NULL DEFAULT 1');
+          await addReceiptColumn(
+              'show_discount', 'show_discount INTEGER NOT NULL DEFAULT 1');
+          await addReceiptColumn('header', "header TEXT NOT NULL DEFAULT ''");
+        }
+        if (oldVersion < 23) {
+          final expenseInfo = await db.rawQuery('PRAGMA table_info(expenses)');
+          final expenseColumns =
+              expenseInfo.map((column) => column['name'] as String).toSet();
+          Future<void> addExpenseColumn(String name, String definition) async {
+            if (!expenseColumns.contains(name)) {
+              await db.execute('ALTER TABLE expenses ADD COLUMN $definition');
+            }
+          }
+
+          await addExpenseColumn('vendor', "vendor TEXT NOT NULL DEFAULT ''");
+          await addExpenseColumn(
+              'tax_amount', 'tax_amount REAL NOT NULL DEFAULT 0');
+          await addExpenseColumn('receipt_path', 'receipt_path TEXT');
+          await addExpenseColumn(
+              'status', "status TEXT NOT NULL DEFAULT 'submitted'");
+          await addExpenseColumn(
+              'created_at', "created_at TEXT NOT NULL DEFAULT ''");
+          await addExpenseColumn(
+              'updated_at', "updated_at TEXT NOT NULL DEFAULT ''");
+        }
+        if (oldVersion < 24) {
+          await db.execute(_debitEntriesSchema);
+        }
+        if (oldVersion < 25) {
+          await db.execute(_registerShiftsSchema);
+          await db.execute(_cashMovementsSchema);
+        }
+        if (oldVersion < 26) {
+          await db.execute(_suppliersSchema);
+          await db.execute(_receivingsSchema);
+          await db.execute(_receivingLinesSchema);
+        }
+        if (oldVersion < 27) {
+          await db.execute(_taxSettingsSchema);
+        }
+        if (oldVersion < 28) {
+          await db.execute(_accountsSchema);
+          await db.execute(_journalEntriesSchema);
+          await db.execute(_journalLinesSchema);
+          await db.execute(_fixedAssetsSchema);
+          await db.execute(_bankTransactionsSchema);
+        }
+        if (oldVersion < 29) {
+          await db.execute(_registerShiftsSchema);
+          await db.execute(_cashMovementsSchema);
+          await db.execute(_suppliersSchema);
+          await db.execute(_receivingsSchema);
+          await db.execute(_receivingLinesSchema);
+          await db.execute(_taxSettingsSchema);
+          await db.execute(_accountsSchema);
+          await db.execute(_journalEntriesSchema);
+          await db.execute(_journalLinesSchema);
+          await db.execute(_fixedAssetsSchema);
+          await db.execute(_bankTransactionsSchema);
         }
       },
       onOpen: (db) async {
@@ -573,6 +845,17 @@ class PosLocalDatabase {
           INSERT OR IGNORE INTO stores (id, name, address, contact)
           VALUES ('store-default', 'Default Store', 'N/A', 'N/A')
         ''');
+        await db.execute(_registerShiftsSchema);
+        await db.execute(_cashMovementsSchema);
+        await db.execute(_suppliersSchema);
+        await db.execute(_receivingsSchema);
+        await db.execute(_receivingLinesSchema);
+        await db.execute(_taxSettingsSchema);
+        await db.execute(_accountsSchema);
+        await db.execute(_journalEntriesSchema);
+        await db.execute(_journalLinesSchema);
+        await db.execute(_fixedAssetsSchema);
+        await db.execute(_bankTransactionsSchema);
       },
     );
     return _database!;
@@ -649,9 +932,19 @@ class PosLocalDatabase {
     if (rows.isEmpty) return const ReceiptSettings();
 
     final row = rows.single;
+    bool flag(String key) => row[key] == null || row[key] == 1;
     return ReceiptSettings(
-      showStoreContact: row['show_store_contact'] == 1,
-      footer: row['footer'] as String,
+      showStoreContact: flag('show_store_contact'),
+      showTaxId: flag('show_tax_id'),
+      showOrderNumber: flag('show_order_number'),
+      showDateTime: flag('show_date_time'),
+      showCashier: flag('show_cashier'),
+      showCustomer: flag('show_customer'),
+      showPaymentMethod: flag('show_payment_method'),
+      showItemCount: flag('show_item_count'),
+      showDiscount: flag('show_discount'),
+      header: row['header'] as String? ?? '',
+      footer: row['footer'] as String? ?? '',
     );
   }
 
@@ -662,6 +955,15 @@ class PosLocalDatabase {
       {
         'id': 1,
         'show_store_contact': settings.showStoreContact ? 1 : 0,
+        'show_tax_id': settings.showTaxId ? 1 : 0,
+        'show_order_number': settings.showOrderNumber ? 1 : 0,
+        'show_date_time': settings.showDateTime ? 1 : 0,
+        'show_cashier': settings.showCashier ? 1 : 0,
+        'show_customer': settings.showCustomer ? 1 : 0,
+        'show_payment_method': settings.showPaymentMethod ? 1 : 0,
+        'show_item_count': settings.showItemCount ? 1 : 0,
+        'show_discount': settings.showDiscount ? 1 : 0,
+        'header': settings.header,
         'footer': settings.footer,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -731,10 +1033,12 @@ class PosLocalDatabase {
     );
   }
 
-  Future<void> replaceStaffMembers(List<Map<String, Object?>> members, String storeId) async {
+  Future<void> replaceStaffMembers(
+      List<Map<String, Object?>> members, String storeId) async {
     final db = await database;
     final batch = db.batch();
-    batch.delete('staff_members', where: 'store_id = ?', whereArgs: <Object?>[storeId]);
+    batch.delete('staff_members',
+        where: 'store_id = ?', whereArgs: <Object?>[storeId]);
     for (final member in members) {
       batch.insert(
         'staff_members',
@@ -754,6 +1058,12 @@ class PosLocalDatabase {
     );
   }
 
+  Future<void> saveStaffRecord(
+    Map<String, Object?> staff,
+    String? password,
+  ) =>
+      saveStaffMember(staff);
+
   Future<void> deleteStaffMember(String id) async {
     final db = await database;
     await db.delete(
@@ -771,17 +1081,19 @@ class PosLocalDatabase {
       whereArgs: <Object?>[storeId],
       orderBy: 'code ASC',
     );
-    return rows.map(_inventoryFromMap).toList();
+    return rows.map(inventoryFromMap).toList();
   }
 
-  Future<void> replaceInventory(List<InventoryProductItem> items, String storeId) async {
+  Future<void> replaceInventory(
+      List<InventoryProductItem> items, String storeId) async {
     final db = await database;
     final batch = db.batch();
-    batch.delete('inventory_products', where: 'store_id = ?', whereArgs: <Object?>[storeId]);
+    batch.delete('inventory_products',
+        where: 'store_id = ?', whereArgs: <Object?>[storeId]);
     for (final item in items) {
       batch.insert(
         'inventory_products',
-        _inventoryToMap(item, storeId),
+        inventoryToMap(item, storeId),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }
@@ -796,7 +1108,7 @@ class PosLocalDatabase {
       whereArgs: <Object?>[storeId],
       orderBy: 'id ASC',
     );
-    return rows.map(_productFromMap).toList();
+    return rows.map(productFromMap).toList();
   }
 
   Future<void> replaceCart(List<ProductItem> items, String storeId) async {
@@ -808,7 +1120,7 @@ class PosLocalDatabase {
       whereArgs: <Object?>[storeId],
     );
     for (final item in items) {
-      batch.insert('cart_items', _productToMap(item, storeId));
+      batch.insert('cart_items', productToMap(item, storeId));
     }
     await batch.commit(noResult: true);
   }
@@ -832,7 +1144,7 @@ class PosLocalDatabase {
     for (final row in lineRows) {
       final orderId = row['order_id'] as String;
       linesByOrder.putIfAbsent(orderId, () => <OrderLine>[]).add(
-            _orderLineFromMap(row),
+            orderLineFromMap(row),
           );
     }
 
@@ -912,7 +1224,9 @@ class PosLocalDatabase {
           where: 'store_id = ? AND code = ?',
           whereArgs: [storeId, item.code],
         );
-        if (updated != 1) throw StateError('Stock record missing for ${item.code}.');
+        if (updated != 1) {
+          throw StateError('Stock record missing for ${item.code}.');
+        }
       }
       if (creditCustomer != null) {
         final updated = await txn.update(
@@ -921,9 +1235,12 @@ class PosLocalDatabase {
           where: 'store_id = ? AND id = ?',
           whereArgs: [storeId, creditCustomer['id']],
         );
-        if (updated != 1) throw StateError('Customer credit account is unavailable.');
+        if (updated != 1) {
+          throw StateError('Customer credit account is unavailable.');
+        }
       }
-      await txn.delete('cart_items', where: 'store_id = ?', whereArgs: [storeId]);
+      await txn
+          .delete('cart_items', where: 'store_id = ?', whereArgs: [storeId]);
     });
   }
 
@@ -963,14 +1280,55 @@ class PosLocalDatabase {
   ) async {
     final db = await database;
     await db.transaction((txn) async {
-      await txn.delete('customers', where: 'store_id = ?', whereArgs: [storeId]);
+      await txn
+          .delete('customers', where: 'store_id = ?', whereArgs: [storeId]);
       for (final customer in customers) {
         await txn.insert('customers', {...customer, 'store_id': storeId});
       }
     });
   }
 
-  Future<List<DaftariRecoverySession>> loadDaftariSessions(String storeId) async {
+  Future<List<Map<String, Object?>>> loadDebitEntries(String storeId) async {
+    final db = await database;
+    return db.query(
+      'debit_entries',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<void> replaceDebitEntries(
+    List<Map<String, Object?>> entries,
+    String storeId,
+  ) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'debit_entries',
+        where: 'store_id = ?',
+        whereArgs: [storeId],
+      );
+      for (final entry in entries) {
+        await txn.insert('debit_entries', {...entry, 'store_id': storeId});
+      }
+    });
+  }
+
+  Future<void> insertDebitEntry(
+    Map<String, Object?> entry,
+    String storeId,
+  ) async {
+    final db = await database;
+    await db.insert(
+      'debit_entries',
+      {...entry, 'store_id': storeId},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<DaftariRecoverySession>> loadDaftariSessions(
+      String storeId) async {
     final db = await database;
     final rows = await db.query(
       'daftari_recovery_sessions',
@@ -981,7 +1339,8 @@ class PosLocalDatabase {
     return rows.map(DaftariRecoverySession.fromMap).toList();
   }
 
-  Future<void> upsertDaftariSession(DaftariRecoverySession session, String storeId) async {
+  Future<void> upsertDaftariSession(
+      DaftariRecoverySession session, String storeId) async {
     final db = await database;
     await db.insert(
       'daftari_recovery_sessions',
@@ -990,7 +1349,8 @@ class PosLocalDatabase {
     );
   }
 
-  Future<List<DaftariLearningRule>> loadDaftariLearningRules(String storeId) async {
+  Future<List<DaftariLearningRule>> loadDaftariLearningRules(
+      String storeId) async {
     final db = await database;
     final rows = await db.query(
       'daftari_learning_rules',
@@ -1001,7 +1361,8 @@ class PosLocalDatabase {
     return rows.map(DaftariLearningRule.fromMap).toList();
   }
 
-  Future<void> upsertDaftariLearningRule(DaftariLearningRule rule, String storeId) async {
+  Future<void> upsertDaftariLearningRule(
+      DaftariLearningRule rule, String storeId) async {
     final db = await database;
     await db.insert(
       'daftari_learning_rules',
@@ -1111,7 +1472,8 @@ class PosLocalDatabase {
     await batch.commit(noResult: true);
   }
 
-  Map<String, Object?> _inventoryToMap(InventoryProductItem item, String storeId) {
+  Map<String, Object?> inventoryToMap(
+      InventoryProductItem item, String storeId) {
     return <String, Object?>{
       'code': item.code,
       'store_id': storeId,
@@ -1127,7 +1489,7 @@ class PosLocalDatabase {
     };
   }
 
-  InventoryProductItem _inventoryFromMap(Map<String, Object?> map) {
+  InventoryProductItem inventoryFromMap(Map<String, Object?> map) {
     final rawMetadata = map['category_data_json'] as String? ?? '{}';
     final metadata = Map<String, Object?>.from(
         jsonDecode(rawMetadata) as Map<dynamic, dynamic>);
@@ -1146,7 +1508,7 @@ class PosLocalDatabase {
     );
   }
 
-  Map<String, Object?> _productToMap(ProductItem item, String storeId) {
+  Map<String, Object?> productToMap(ProductItem item, String storeId) {
     return <String, Object?>{
       'code': item.code,
       'store_id': storeId,
@@ -1159,7 +1521,7 @@ class PosLocalDatabase {
     };
   }
 
-  ProductItem _productFromMap(Map<String, Object?> map) {
+  ProductItem productFromMap(Map<String, Object?> map) {
     return ProductItem(
       map['name'] as String,
       map['size'] as String,
@@ -1171,7 +1533,7 @@ class PosLocalDatabase {
     );
   }
 
-  OrderLine _orderLineFromMap(Map<String, Object?> map) {
+  OrderLine orderLineFromMap(Map<String, Object?> map) {
     return OrderLine(
       itemCode: map['item_code'] as String?,
       itemCategory: map['item_category'] as String?,
@@ -1196,14 +1558,338 @@ class PosLocalDatabase {
     );
   }
 
-  Future<void> insertExpense(Map<String, Object?> expense, String storeId) async {
+  Future<void> insertExpense(
+      Map<String, Object?> expense, String storeId) async {
     final db = await database;
     await db.insert('expenses', {...expense, 'store_id': storeId});
+  }
+
+  Future<void> updateExpense(int id, Map<String, Object?> expense) async {
+    final db = await database;
+    final data = Map<String, Object?>.from(expense)..remove('id');
+    await db
+        .update('expenses', data, where: 'id = ?', whereArgs: <Object?>[id]);
   }
 
   Future<void> deleteExpense(int id) async {
     final db = await database;
     await db.delete('expenses', where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<List<Map<String, Object?>>> loadRegisterShifts(String storeId,
+      {int? limit}) async {
+    final db = await database;
+    return db.query(
+      'register_shifts',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+      orderBy: 'opened_at DESC',
+      limit: limit,
+    );
+  }
+
+  Future<RegisterShift?> loadOpenShift(String storeId) async {
+    final db = await database;
+    final rows = await db.query(
+      'register_shifts',
+      where: 'store_id = ? AND closed_at IS NULL',
+      whereArgs: <Object?>[storeId],
+      orderBy: 'opened_at DESC',
+      limit: 1,
+    );
+    return rows.isEmpty ? null : RegisterShift.fromMap(rows.first);
+  }
+
+  Future<int> insertRegisterShift(
+      Map<String, Object?> shift, String storeId) async {
+    final db = await database;
+    return db.insert('register_shifts', {...shift, 'store_id': storeId});
+  }
+
+  Future<void> updateRegisterShift(int id, Map<String, Object?> shift) async {
+    final db = await database;
+    final data = Map<String, Object?>.from(shift)..remove('id');
+    await db.update('register_shifts', data,
+        where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<List<Map<String, Object?>>> loadCashMovements(String storeId) async {
+    final db = await database;
+    return db.query(
+      'cash_movements',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+      orderBy: 'at ASC',
+    );
+  }
+
+  Future<void> insertCashMovement(
+      Map<String, Object?> movement, String storeId) async {
+    final db = await database;
+    await db.insert('cash_movements', {...movement, 'store_id': storeId});
+  }
+
+  Future<void> deleteCashMovement(int id) async {
+    final db = await database;
+    await db
+        .delete('cash_movements', where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<List<Map<String, Object?>>> loadAccounts(String storeId) async {
+    final db = await database;
+    return db.query('accounts',
+        where: 'store_id = ?',
+        whereArgs: <Object?>[storeId],
+        orderBy: 'code ASC');
+  }
+
+  Future<int> insertAccount(
+      Map<String, Object?> account, String storeId) async {
+    final db = await database;
+    return db.insert('accounts', {...account, 'store_id': storeId});
+  }
+
+  Future<void> updateAccount(int id, Map<String, Object?> account) async {
+    final db = await database;
+    final data = Map<String, Object?>.from(account)..remove('id');
+    await db
+        .update('accounts', data, where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<void> deleteAccount(int id) async {
+    final db = await database;
+    await db.delete('accounts', where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<List<Map<String, Object?>>> loadJournalEntries(String storeId) async {
+    final db = await database;
+    return db.query('journal_entries',
+        where: 'store_id = ?',
+        whereArgs: <Object?>[storeId],
+        orderBy: 'date DESC');
+  }
+
+  Future<List<Map<String, Object?>>> loadJournalLines(
+      String storeId, int entryId) async {
+    final db = await database;
+    return db.query('journal_lines',
+        where: 'store_id = ? AND entry_id = ?',
+        whereArgs: <Object?>[storeId, entryId]);
+  }
+
+  Future<int> insertJournalEntry(
+      Map<String, Object?> entry, String storeId) async {
+    final db = await database;
+    return db.insert('journal_entries', {...entry, 'store_id': storeId});
+  }
+
+  Future<void> insertJournalLines(
+      List<Map<String, Object?>> lines, String storeId) async {
+    if (lines.isEmpty) return;
+    final db = await database;
+    final batch = db.batch();
+    for (final line in lines) {
+      batch.insert('journal_lines', {...line, 'store_id': storeId});
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> deleteJournalEntry(int id) async {
+    final db = await database;
+    await db.delete('journal_lines',
+        where: 'entry_id = ?', whereArgs: <Object?>[id]);
+    await db
+        .delete('journal_entries', where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<List<Map<String, Object?>>> loadFixedAssets(String storeId) async {
+    final db = await database;
+    return db.query('fixed_assets',
+        where: 'store_id = ?',
+        whereArgs: <Object?>[storeId],
+        orderBy: 'purchase_date DESC');
+  }
+
+  Future<int> insertFixedAsset(
+      Map<String, Object?> asset, String storeId) async {
+    final db = await database;
+    return db.insert('fixed_assets', {...asset, 'store_id': storeId});
+  }
+
+  Future<void> updateFixedAsset(int id, Map<String, Object?> asset) async {
+    final db = await database;
+    final data = Map<String, Object?>.from(asset)..remove('id');
+    await db.update('fixed_assets', data,
+        where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<void> deleteFixedAsset(int id) async {
+    final db = await database;
+    await db.delete('fixed_assets', where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<List<Map<String, Object?>>> loadBankTransactions(
+      String storeId) async {
+    final db = await database;
+    return db.query('bank_transactions',
+        where: 'store_id = ?',
+        whereArgs: <Object?>[storeId],
+        orderBy: 'date DESC');
+  }
+
+  Future<int> insertBankTransaction(
+      Map<String, Object?> entry, String storeId) async {
+    final db = await database;
+    return db.insert('bank_transactions', {...entry, 'store_id': storeId});
+  }
+
+  Future<void> updateBankTransaction(int id, Map<String, Object?> entry) async {
+    final db = await database;
+    await db.update('bank_transactions', entry,
+        where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<void> deleteBankTransaction(int id) async {
+    final db = await database;
+    await db
+        .delete('bank_transactions', where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<TaxSettings> loadTaxSettings() async {
+    final db = await database;
+    final rows = await db.query('tax_settings', limit: 1);
+    if (rows.isEmpty) return const TaxSettings();
+    return TaxSettings.fromJson(rows.first);
+  }
+
+  Future<void> saveTaxSettings(TaxSettings settings) async {
+    final db = await database;
+    final values = <String, Object?>{
+      'enabled': settings.enabled ? 1 : 0,
+      'rate_percent': settings.ratePercent,
+      'prices_include_tax': settings.pricesIncludeTax ? 1 : 0,
+      'tax_id': settings.taxId,
+      'tax_label': settings.taxLabel,
+      'track_expense_tax': settings.trackExpenseTax ? 1 : 0,
+    };
+    final existing = await db.query('tax_settings', limit: 1);
+    if (existing.isEmpty) {
+      await db.insert('tax_settings', {'id': 1, ...values});
+    } else {
+      await db.update('tax_settings', values, where: 'id = 1');
+    }
+  }
+
+  Future<List<Map<String, Object?>>> loadSuppliers(String storeId) async {
+    final db = await database;
+    return db.query('suppliers',
+        where: 'store_id = ?',
+        whereArgs: <Object?>[storeId],
+        orderBy: 'name ASC');
+  }
+
+  Future<int> insertSupplier(
+      Map<String, Object?> supplier, String storeId) async {
+    final db = await database;
+    return db.insert('suppliers', {...supplier, 'store_id': storeId});
+  }
+
+  Future<void> updateSupplier(int id, Map<String, Object?> supplier) async {
+    final db = await database;
+    final data = Map<String, Object?>.from(supplier)..remove('id');
+    await db
+        .update('suppliers', data, where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<void> deleteSupplier(int id) async {
+    final db = await database;
+    await db.delete('suppliers', where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<List<Map<String, Object?>>> loadReceivings(String storeId) async {
+    final db = await database;
+    return db.query('receivings',
+        where: 'store_id = ?',
+        whereArgs: <Object?>[storeId],
+        orderBy: 'date DESC');
+  }
+
+  Future<List<Map<String, Object?>>> loadReceivingLines(
+      String storeId, int receivingId) async {
+    final db = await database;
+    return db.query('receiving_lines',
+        where: 'store_id = ? AND receiving_id = ?',
+        whereArgs: <Object?>[storeId, receivingId]);
+  }
+
+  Future<int> insertReceiving(
+      Map<String, Object?> receiving, String storeId) async {
+    final db = await database;
+    return db.insert('receivings', {...receiving, 'store_id': storeId});
+  }
+
+  Future<void> insertReceivingLines(
+      List<Map<String, Object?>> lines, String storeId) async {
+    if (lines.isEmpty) return;
+    final db = await database;
+    final batch = db.batch();
+    for (final line in lines) {
+      batch.insert('receiving_lines', {...line, 'store_id': storeId});
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> deleteReceiving(int id) async {
+    final db = await database;
+    await db.delete('receiving_lines',
+        where: 'receiving_id = ?', whereArgs: <Object?>[id]);
+    await db.delete('receivings', where: 'id = ?', whereArgs: <Object?>[id]);
+  }
+
+  Future<void> _ensureSyncSessionTable() async {
+    final db = await database;
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS sync_session (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        endpoint TEXT NOT NULL,
+        token TEXT NOT NULL,
+        user_json TEXT NOT NULL,
+        saved_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<Map<String, Object?>?> loadSyncSession() async {
+    await _ensureSyncSessionTable();
+    final db = await database;
+    final rows = await db.query('sync_session', limit: 1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<void> saveSyncSession({
+    required String endpoint,
+    required String token,
+    required Map<String, Object?> user,
+  }) async {
+    await _ensureSyncSessionTable();
+    final db = await database;
+    await db.insert(
+      'sync_session',
+      {
+        'id': 1,
+        'endpoint': endpoint,
+        'token': token,
+        'user_json': jsonEncode(user),
+        'saved_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> clearSyncSession() async {
+    await _ensureSyncSessionTable();
+    final db = await database;
+    await db.delete('sync_session');
   }
 
   String encodeJson(List<String> values) {

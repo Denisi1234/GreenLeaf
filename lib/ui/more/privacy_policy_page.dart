@@ -1,78 +1,62 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'settings_layout.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final baseTheme = Theme.of(context);
-    final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
-    );
-
-    return Theme(
-      data: interTheme,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Column(
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
           children: [
-            const MarketPageHeader(
-              title: 'Privacy Policy',
-            ),
+            const MarketPageHeader(title: 'Privacy Policy'),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                children: const [
-                  _Section(
-                    title: '1. Information We Collect',
-                    content:
-                        'We collect information you provide directly to us when you create an account, such as your name, email address, business details, and payment information.',
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+                    children: const [
+                      SettingsCard(
+                        icon: Icons.privacy_tip_outlined,
+                        title: 'TrackMauzo Privacy Policy',
+                        description: 'Last updated: May 2026',
+                        children: [
+                          _Section(
+                            title: '1. Information We Collect',
+                            content:
+                                'We collect information you provide directly to us when you set up your store, such as your name, email address, business details, and sales records.',
+                          ),
+                          _Section(
+                            title: '2. How We Use Your Information',
+                            content:
+                                'We use the information we collect to provide, maintain, and improve our point-of-sale services, process transactions, and generate business reports.',
+                          ),
+                          _Section(
+                            title: '3. Data Security',
+                            content:
+                                'We implement industry-standard security measures to protect your business and personal information from unauthorized access, disclosure, or destruction.',
+                          ),
+                          _Section(
+                            title: '4. Information Sharing',
+                            content:
+                                'We do not sell your personal or business information to third parties. Data stays on your device unless you configure a cloud sync server.',
+                          ),
+                          _Section(
+                            title: '5. Your Choices',
+                            content:
+                                'You can update your store information at any time through Settings. You may also sign out or remove local data from your device.',
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  _Section(
-                    title: '2. How We Use Your Information',
-                    content:
-                        'We use the information we collect to provide, maintain, and improve our services, process transactions, and communicate with you about your account.',
-                  ),
-                  _Section(
-                    title: '3. Data Security',
-                    content:
-                        'We implement industry-standard security measures to protect your personal information from unauthorized access, disclosure, or destruction.',
-                  ),
-                  _Section(
-                    title: '4. Information Sharing',
-                    content:
-                        'We do not sell your personal information to third parties. We may share information with service providers who assist us in operating our business.',
-                  ),
-                  _Section(
-                    title: '5. Your Choices',
-                    content:
-                        'You can update your account information at any time through the app settings. You may also request deletion of your account and associated data.',
-                  ),
-                  _Section(
-                    title: '6. Cookies and Tracking',
-                    content:
-                        'We use cookies and similar technologies to enhance your experience and analyze how our service is being used.',
-                  ),
-                  _Section(
-                    title: '7. Updates to This Policy',
-                    content:
-                        'We may update this Privacy Policy from time to time. We will notify you of any significant changes by posting the new policy on this page.',
-                  ),
-                  SizedBox(height: 40),
-                  Text(
-                    'Last updated: May 2026',
-                    style: TextStyle(
-                      color: AppColors.mutedText,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
@@ -91,27 +75,23 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 32),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: AppTypography.bodyMain.copyWith(
               color: AppColors.ink,
-              fontSize: 15,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Text(
             content,
-            style: const TextStyle(
-              color: AppColors.mutedText,
-              fontSize: 14,
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textMuted,
               height: 1.5,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
