@@ -4,20 +4,17 @@ import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
 import '../../service/supplier_model.dart';
+import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'suppliers_page.dart';
 
-/// Goods received register: lists stock-in documents and opens the form.
-class ReceivingPage extends StatefulWidget {
+/// Goods received register: lists stock-in documents and opens receiving flow.
+class ReceivingPage extends StatelessWidget {
   const ReceivingPage({super.key, this.presetSupplier});
 
   final Supplier? presetSupplier;
 
-  @override
-  State<ReceivingPage> createState() => _ReceivingPageState();
-}
-
-class _ReceivingPageState extends State<ReceivingPage> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
@@ -38,7 +35,7 @@ class _ReceivingPageState extends State<ReceivingPage> {
             MarketPageHeader(
               title: t('Goods received', 'Bidhaa zilizopokelewa'),
               subtitle:
-                  'TZS ${totalValue.toStringAsFixed(0)} • ${receivings.length}',
+                  '${t('Total', 'Jumla')} ${_money(totalValue)} • ${receivings.length} ${t('records', 'rekodi')}',
               transparentBackButton: true,
               onBack: () => Navigator.of(context).maybePop(),
               actions: [
@@ -46,8 +43,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                   tooltip: t('New receiving', 'Upokeaji mpya'),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (context) => NewReceivingPage(
-                          presetSupplier: widget.presetSupplier),
+                      builder: (context) =>
+                          NewReceivingPage(presetSupplier: presetSupplier),
                     ),
                   ),
                   icon: const Icon(Icons.add_rounded, color: AppColors.ink),
@@ -56,126 +53,35 @@ class _ReceivingPageState extends State<ReceivingPage> {
             ),
             Expanded(
               child: receivings.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.move_to_inbox_outlined,
-                                size: 40, color: AppColors.textLight),
-                            const SizedBox(height: 12),
-                            Text(
-                              t('No goods received yet',
-                                  'Hakuna bidhaa zilizopokelewa'),
-                              style: AppTypography.h3.copyWith(fontSize: 16),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              t(
-                                'Record deliveries from suppliers to update stock and purchase costs.',
-                                'Rekodi usambazaji kutoka kwa wasambazaji ili kusasisha '
-                                    'hifadhi na gharama za manunuzi.',
-                              ),
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textMuted, height: 1.4),
-                            ),
-                            const SizedBox(height: 18),
-                            MarketButton(
-                              label: t('New receiving', 'Upokeaji mpya'),
-                              icon: Icons.add_rounded,
-                              isFullWidth: false,
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (context) => NewReceivingPage(
-                                      presetSupplier: widget.presetSupplier),
-                                ),
-                              ),
-                            ),
-                          ],
+                  ? _EmptyState(
+                      onNew: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) =>
+                              NewReceivingPage(presetSupplier: presetSupplier),
                         ),
                       ),
                     )
                   : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                       children: [
-                        for (final receiving in receivings)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: MarketSurfaceCard(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 14, 12, 10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          receiving.supplierName.isEmpty
-                                              ? t('Unknown supplier',
-                                                  'Msambazaji hajulikani')
-                                              : receiving.supplierName,
-                                          style: AppTypography.bodyMain
-                                              .copyWith(
-                                                  fontWeight: FontWeight.w700),
-                                        ),
-                                      ),
-                                      Text(
-                                        'TZS ${receiving.total.toStringAsFixed(0)}',
-                                        style: AppTypography.bodySmall.copyWith(
-                                            fontWeight: FontWeight.w800),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${receiving.date.toLocal().toString().substring(0, 16)} • '
-                                    '${receiving.itemCount} ${t('units', 'vipande')}'
-                                    '${receiving.invoiceNo.isEmpty ? '' : ' • ${receiving.invoiceNo}'}',
-                                    style: AppTypography.helperText
-                                        .copyWith(color: AppColors.textMuted),
-                                  ),
-                                  if (receiving.lines.isNotEmpty) ...[
-                                    const SizedBox(height: AppSpacing.sm),
-                                    for (final line in receiving.lines.take(4))
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 2),
-                                        child: Text(
-                                          '${line.quantity} × ${line.productName} '
-                                          '— TZS ${line.unitCost.toStringAsFixed(0)}',
-                                          style: AppTypography.helperText
-                                              .copyWith(
-                                                  color: AppColors.textMuted),
-                                        ),
-                                      ),
-                                    if (receiving.lines.length > 4)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 2),
-                                        child: Text(
-                                          '+${receiving.lines.length - 4} ${t('more items', 'bidhaa zaidi')}',
-                                          style: AppTypography.helperText
-                                              .copyWith(
-                                                  color: AppColors.textLight),
-                                        ),
-                                      ),
-                                  ],
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: TextButton.icon(
-                                      onPressed: () =>
-                                          _confirmDelete(receiving),
-                                      icon: const Icon(
-                                          Icons.delete_outline_rounded,
-                                          size: 16),
-                                      label: Text(t('Delete', 'Futa')),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        _flatCard(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < receivings.length; i++) ...[
+                                _ReceivingRow(
+                                  receiving: receivings[i],
+                                  isSwahili: sw,
+                                  onDelete: () =>
+                                      _confirmDelete(context, receivings[i]),
+                                ),
+                                if (i != receivings.length - 1)
+                                  const Divider(
+                                      height: 1, color: AppColors.divider),
+                              ],
+                            ],
                           ),
+                        ),
                       ],
                     ),
             ),
@@ -185,18 +91,38 @@ class _ReceivingPageState extends State<ReceivingPage> {
     );
   }
 
-  Future<void> _confirmDelete(Receiving receiving) async {
+  static String _money(double value) {
+    final negative = value < 0;
+    return '${negative ? '-' : ''}TSh ${formatCurrency(value.abs())}';
+  }
+
+  static Widget _flatCard({
+    required Widget child,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
+  }) {
+    return MarketSurfaceCard(
+      padding: padding,
+      showShadow: false,
+      borderColor: AppColors.border,
+      radius: 0,
+      child: child,
+    );
+  }
+
+  Future<void> _confirmDelete(
+      BuildContext context, Receiving receiving) async {
     if (receiving.id == null) return;
-    final sw = context.read<PosLocalStore>().languageCode == 'sw';
+    final store = context.read<PosLocalStore>();
+    final sw = store.languageCode == 'sw';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text(sw ? 'Futa upokeaji?' : 'Delete receiving?'),
+        title: Text(sw ? 'Futa upokeaji?' : 'Delete receiving record?'),
         content: Text(
           sw
-              ? 'Stock added by this delivery will not be reversed.'
-              : 'Stock added by this delivery will not be reversed.',
+              ? 'Rekodi itaondolewa. Hifadhi iliyoongezwa haitarejeshwa kiotomatiki.'
+              : 'The record will be removed. Stock added by this delivery will not be reversed automatically.',
         ),
         actions: [
           TextButton(
@@ -212,7 +138,152 @@ class _ReceivingPageState extends State<ReceivingPage> {
       ),
     );
     if (confirmed != true) return;
-    await context.read<PosLocalStore>().deleteReceiving(receiving.id!);
+    await store.deleteReceiving(receiving.id!);
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.onNew});
+  final VoidCallback onNew;
+
+  @override
+  Widget build(BuildContext context) {
+    final sw = context.read<PosLocalStore>().languageCode == 'sw';
+    String t(String en, String swahili) => sw ? swahili : en;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      children: [
+        ReceivingPage._flatCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t('No goods received yet', 'Hakuna bidhaa zilizopokelewa bado'),
+                style: AppTypography.bodyMain
+                    .copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                t(
+                  'Record supplier deliveries to increase stock quantities and update purchase costs.',
+                  'Rekodi usambazaji ili kuongeza hifadhi na kusasisha gharama za ununuzi.',
+                ),
+                style: AppTypography.bodySmall
+                    .copyWith(color: AppColors.textMuted, height: 1.45),
+              ),
+              const SizedBox(height: 16),
+              MarketButton(
+                label: t('New receiving', 'Upokeaji mpya'),
+                icon: Icons.add_rounded,
+                onTap: onNew,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReceivingRow extends StatelessWidget {
+  const _ReceivingRow({
+    required this.receiving,
+    required this.isSwahili,
+    required this.onDelete,
+  });
+
+  final Receiving receiving;
+  final bool isSwahili;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final supplier = receiving.supplierName.isEmpty
+        ? (isSwahili ? 'Msambazaji hajulikani' : 'Unknown supplier')
+        : receiving.supplierName;
+    final date = receiving.date.toLocal();
+    final stamp =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final meta = <String>[
+      stamp,
+      '${receiving.itemCount} ${isSwahili ? 'vipande' : 'units'}',
+      if (receiving.invoiceNo.trim().isNotEmpty) receiving.invoiceNo.trim(),
+    ].join(' • ');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      supplier,
+                      style: AppTypography.bodyMain
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      meta,
+                      style: AppTypography.helperText
+                          .copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    ReceivingPage._money(receiving.total),
+                    style: AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.success,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: onDelete,
+                    child: Text(
+                      isSwahili ? 'Futa' : 'Delete',
+                      style: AppTypography.helperText
+                          .copyWith(color: AppColors.danger),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (receiving.lines.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final line in receiving.lines.take(4))
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '${line.quantity} × ${line.productName} — ${ReceivingPage._money(line.unitCost)}',
+                  style: AppTypography.helperText
+                      .copyWith(color: AppColors.textBody),
+                ),
+              ),
+            if (receiving.lines.length > 4)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '+${receiving.lines.length - 4} ${isSwahili ? 'bidhaa zaidi' : 'more items'}',
+                  style: AppTypography.helperText
+                      .copyWith(color: AppColors.textMuted),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -245,23 +316,18 @@ class NewReceivingPage extends StatefulWidget {
 class _NewReceivingPageState extends State<NewReceivingPage> {
   final List<_DraftLine> _lines = [];
   final TextEditingController _invoiceController = TextEditingController();
-  int? _supplierId;
-  String _supplierName = '';
+  Supplier? _supplier;
   bool _saving = false;
 
   bool get _isSwahili =>
-      context.watch<PosLocalStore>().languageCode.trim().toLowerCase() == 'sw';
+      context.read<PosLocalStore>().languageCode.trim().toLowerCase() == 'sw';
 
   String _t(String en, String swahili) => _isSwahili ? swahili : en;
 
   @override
   void initState() {
     super.initState();
-    final preset = widget.presetSupplier;
-    if (preset != null) {
-      _supplierId = preset.id;
-      _supplierName = preset.name;
-    }
+    _supplier = widget.presetSupplier;
   }
 
   @override
@@ -271,10 +337,11 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
   }
 
   double get _total => _lines.fold<double>(0, (sum, line) => sum + line.total);
+  int get _units => _lines.fold<int>(0, (sum, line) => sum + line.quantity);
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<PosLocalStore>();
+    final supplierName = _supplier?.name ?? '';
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       body: SafeArea(
@@ -282,149 +349,40 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
           children: [
             MarketPageHeader(
               title: _t('New receiving', 'Upokeaji mpya'),
-              subtitle: _supplierName.isEmpty
-                  ? _t('Choose supplier and items',
-                      'Chagua msambazaji na bidhaa')
-                  : _supplierName,
+              subtitle: supplierName.isEmpty
+                  ? _t('Record supplier delivery and increase stock',
+                      'Rekodi usambazaji na ongeza hifadhi')
+                  : supplierName,
               transparentBackButton: true,
               onBack: () => Navigator.of(context).maybePop(),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                 children: [
-                  MarketSurfaceCard(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        InkWell(
-                          onTap: _pickSupplier,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.standard),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceSecondary,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.standard),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.local_shipping_outlined,
-                                    size: 18, color: AppColors.ink),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    _supplierName.isEmpty
-                                        ? _t('Select supplier',
-                                            'Chagua msambazaji')
-                                        : _supplierName,
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: _supplierName.isEmpty
-                                          ? AppColors.textLight
-                                          : AppColors.ink,
-                                    ),
-                                  ),
-                                ),
-                                const Icon(Icons.expand_more_rounded,
-                                    size: 20, color: AppColors.textMuted),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        MarketFormField(
-                          label: _t('Invoice / delivery note',
-                              'Ankara / hati ya usambazaji'),
-                          hintText: _t('e.g. INV-1024', 'mf. INV-1024'),
-                          controller: _invoiceController,
-                        ),
-                      ],
-                    ),
+                  _deliveryDetailsCard(supplierName),
+                  const SizedBox(height: 16),
+                  _sectionHeader(
+                    _t('Items received', 'Bidhaa zilizopokelewa'),
+                    trailing:
+                        '${_lines.length} ${_t('lines', 'mistari')} • $_units ${_t('units', 'vipande')}',
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _t('Items received', 'Bidhaa zilizopokelewa'),
-                          style: AppTypography.label,
-                        ),
-                      ),
-                      Text(
-                        '${_lines.length}',
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textMuted),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  if (_lines.isEmpty)
-                    MarketSurfaceCard(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        children: [
-                          Text(
-                            _t(
-                              'No items added yet. Add products to increase stock.',
-                              'Hakuna bidhaa bado. Ongeza bidhaa ili kuongeza hifadhi.',
-                            ),
-                            textAlign: TextAlign.center,
-                            style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textMuted, height: 1.4),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    for (var index = 0; index < _lines.length; index++)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _LineCard(
-                          index: index + 1,
-                          line: _lines[index],
-                          isSwahili: _isSwahili,
-                          onChanged: () => setState(() {}),
-                          onDelete: () =>
-                              setState(() => _lines.removeAt(index)),
-                        ),
-                      ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: 8),
+                  _linesCard(),
+                  const SizedBox(height: 10),
                   MarketButton(
-                    label: _t('Add item', 'Ongeza bidhaa'),
+                    label: _t('Add item line', 'Ongeza mstari wa bidhaa'),
                     icon: Icons.add_rounded,
                     isPrimary: false,
                     onTap: _addLine,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  MarketSurfaceCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _t('Total purchase value', 'Thamani ya manunuzi'),
-                            style: AppTypography.bodySmall
-                                .copyWith(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        Text(
-                          'TZS ${_total.toStringAsFixed(0)}',
-                          style: AppTypography.bodyMain
-                              .copyWith(fontWeight: FontWeight.w800),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: 16),
+                  _summaryCard(),
+                  const SizedBox(height: 20),
                   MarketButton(
                     label: _saving
                         ? _t('Saving...', 'Inahifadhi...')
-                        : _t('Save receiving', 'Hifadhi upokeaji'),
+                        : _t('Save and add to stock', 'Hifadhi na ongeza hifadhini'),
                     icon: Icons.check_rounded,
                     onTap: _saving ? null : _save,
                   ),
@@ -437,122 +395,327 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
     );
   }
 
-  Future<void> _pickSupplier() async {
-    final store = context.read<PosLocalStore>();
-    final suppliers = store.suppliers;
-    if (suppliers.isEmpty) {
-      showMarketNotice(
-        context,
-        title: _t('Suppliers', 'Wasambazaji'),
-        message: _t('Add a supplier first', 'Ongeza msambazaji kwanza'),
-        type: MarketNoticeType.warning,
-      );
-      return;
-    }
-    final selected = await showModalBottomSheet<Supplier>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
-              child: Text(
-                _t('Select supplier', 'Chagua msambazaji'),
-                style: AppTypography.h3.copyWith(fontSize: 16),
+  Widget _deliveryDetailsCard(String supplierName) {
+    return ReceivingPage._flatCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _t('Delivery details', 'Taarifa za usambazaji'),
+            style: AppTypography.sectionHeader.copyWith(color: AppColors.ink),
+          ),
+          const SizedBox(height: 12),
+          Text(_t('Supplier', 'Msambazaji'), style: AppTypography.label),
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: _pickSupplier,
+            child: Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border.all(
+                  color: supplierName.isEmpty
+                      ? AppColors.danger
+                      : AppColors.border,
+                ),
+                borderRadius: BorderRadius.zero,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.local_shipping_outlined,
+                    size: 18,
+                    color: supplierName.isEmpty
+                        ? AppColors.danger
+                        : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      supplierName.isEmpty
+                          ? _t('Select supplier (required)',
+                              'Chagua msambazaji (inahitajika)')
+                          : supplierName,
+                      style: AppTypography.bodyMain.copyWith(
+                        color: supplierName.isEmpty
+                            ? AppColors.danger
+                            : AppColors.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    supplierName.isEmpty
+                        ? _t('Choose', 'Chagua')
+                        : _t('Change', 'Badili'),
+                    style: AppTypography.helperText.copyWith(
+                      color: AppColors.primaryDeep,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
-            for (final supplier in suppliers)
-              ListTile(
-                leading: const Icon(Icons.local_shipping_outlined, size: 18),
-                title: Text(supplier.name),
-                subtitle: Text(supplier.phone),
-                onTap: () => Navigator.of(context).pop(supplier),
+          ),
+          const SizedBox(height: 14),
+          MarketFormField(
+            label: _t('Invoice / delivery note no.',
+                'Namba ya ankara / hati ya usambazaji'),
+            hintText: _t('Optional reference', 'Rejea ya hiari'),
+            controller: _invoiceController,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _linesCard() {
+    if (_lines.isEmpty) {
+      return ReceivingPage._flatCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _t('No items added', 'Hakuna bidhaa zilizoongezwa'),
+              style: AppTypography.bodyMain
+                  .copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _t(
+                'Add each product received. Quantity and unit cost will update stock and purchase value.',
+                'Ongeza kila bidhaa iliyopokelewa. Idadi na gharama vitaongeza hifadhi na thamani ya ununuzi.',
               ),
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textMuted, height: 1.45),
+            ),
           ],
         ),
+      );
+    }
+
+    return ReceivingPage._flatCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppColors.divider)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(_t('Item', 'Bidhaa'),
+                      style: AppTypography.helperText.copyWith(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700)),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(_t('Qty', 'Idadi'),
+                      textAlign: TextAlign.right,
+                      style: AppTypography.helperText.copyWith(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700)),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(_t('Unit cost', 'Gharama'),
+                      textAlign: TextAlign.right,
+                      style: AppTypography.helperText.copyWith(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700)),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(_t('Total', 'Jumla'),
+                      textAlign: TextAlign.right,
+                      style: AppTypography.helperText.copyWith(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 28),
+              ],
+            ),
+          ),
+          for (var i = 0; i < _lines.length; i++) ...[
+            _DraftLineRow(
+              index: i + 1,
+              line: _lines[i],
+              isSwahili: _isSwahili,
+              onChanged: () => setState(() {}),
+              onDelete: () => setState(() => _lines.removeAt(i)),
+            ),
+            if (i != _lines.length - 1)
+              const Divider(height: 1, color: AppColors.divider),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryCard() {
+    return ReceivingPage._flatCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _t('Items / units', 'Bidhaa / vipande'),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textMuted),
+                  ),
+                ),
+                Text(
+                  '${_lines.length} / $_units',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: AppColors.divider),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _t('Total purchase value', 'Jumla ya thamani ya ununuzi'),
+                    style: AppTypography.bodyMain
+                        .copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                Text(
+                  ReceivingPage._money(_total),
+                  style: AppTypography.h3.copyWith(
+                    fontSize: 20,
+                    color: _total > 0 ? AppColors.success : AppColors.ink,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String text, {String? trailing}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            text,
+            style: AppTypography.sectionHeader.copyWith(color: AppColors.ink),
+          ),
+        ),
+        if (trailing != null)
+          Text(
+            trailing,
+            style: AppTypography.helperText
+                .copyWith(color: AppColors.textMuted, fontWeight: FontWeight.w700),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _pickSupplier() async {
+    final selected = await Navigator.of(context).push<Supplier>(
+      MaterialPageRoute<Supplier>(
+        builder: (_) => _SupplierPickerPage(isSwahili: _isSwahili),
       ),
     );
     if (selected == null || !mounted) return;
-    setState(() {
-      _supplierId = selected.id;
-      _supplierName = selected.name;
-    });
+    setState(() => _supplier = selected);
   }
 
   Future<void> _addLine() async {
-    final draft = await showModalBottomSheet<_DraftLine>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+    final draft = await Navigator.of(context).push<_DraftLine>(
+      MaterialPageRoute<_DraftLine>(
+        builder: (_) => _AddReceivingLinePage(isSwahili: _isSwahili),
       ),
-      builder: (context) => _AddLineSheet(isSwahili: _isSwahili),
     );
     if (draft == null) return;
     setState(() => _lines.add(draft));
   }
 
   Future<void> _save() async {
-    if (_supplierId == null) {
+    if (_supplier?.id == null) {
       showMarketNotice(
         context,
         title: _t('Supplier required', 'Msambazaji anahitajika'),
-        message: _t('Choose a supplier', 'Chagua msambazaji'),
-        type: MarketNoticeType.error,
+        message: _t('Select a supplier before saving.',
+            'Chagua msambazaji kabla ya kuhifadhi.'),
+        type: MarketNoticeType.warning,
       );
       return;
     }
-    if (_lines.isEmpty) {
+    final validLines = _lines
+        .where((line) => line.productName.trim().isNotEmpty && line.quantity > 0)
+        .toList();
+    if (validLines.isEmpty) {
       showMarketNotice(
         context,
         title: _t('Items required', 'Bidhaa zinahitajika'),
-        message: _t('Add at least one item', 'Ongeza angalau bidhaa moja'),
-        type: MarketNoticeType.error,
+        message: _t('Add at least one valid item with quantity.',
+            'Ongeza angalau bidhaa moja yenye idadi sahihi.'),
+        type: MarketNoticeType.warning,
       );
       return;
     }
     setState(() => _saving = true);
-    final store = context.read<PosLocalStore>();
-    await store.saveReceiving(
-      Receiving(
-        supplierId: _supplierId,
-        supplierName: _supplierName,
-        date: DateTime.now(),
-        invoiceNo: _invoiceController.text.trim(),
-        total: _total,
-        receivedBy: store.profile.ownerName,
-        lines: [
-          for (final line in _lines)
-            ReceivingLine(
-              productName: line.productName,
-              quantity: line.quantity,
-              unitCost: line.unitCost,
-              sellingPrice: line.sellingPrice,
-            ),
-        ],
-      ),
-    );
-    if (!mounted) return;
-    setState(() => _saving = false);
-    showMarketNotice(
-      context,
-      title: _t('Goods received', 'Bidhaa zimepokelewa'),
-      message: _t(
-          'Stock and purchase cost updated', 'Hifadhi na gharama zimesasishwa'),
-    );
-    Navigator.of(context).maybePop();
+    try {
+      final store = context.read<PosLocalStore>();
+      final total = validLines.fold<double>(0, (sum, line) => sum + line.total);
+      await store.saveReceiving(
+        Receiving(
+          supplierId: _supplier!.id,
+          supplierName: _supplier!.name,
+          date: DateTime.now(),
+          invoiceNo: _invoiceController.text.trim(),
+          total: total,
+          receivedBy: store.profile.ownerName,
+          lines: [
+            for (final line in validLines)
+              ReceivingLine(
+                productName: line.productName.trim(),
+                quantity: line.quantity,
+                unitCost: line.unitCost,
+                sellingPrice: line.sellingPrice,
+              ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      showMarketNotice(
+        context,
+        title: _t('Goods received', 'Bidhaa zimepokelewa'),
+        message: _t('Stock quantities and purchase cost updated.',
+            'Idadi ya hifadhi na gharama ya ununuzi zimesasishwa.'),
+        type: MarketNoticeType.success,
+      );
+      Navigator.of(context).maybePop();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }
 
-class _LineCard extends StatelessWidget {
-  const _LineCard({
+class _DraftLineRow extends StatelessWidget {
+  const _DraftLineRow({
     required this.index,
     required this.line,
     required this.isSwahili,
@@ -566,13 +729,30 @@ class _LineCard extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback onDelete;
 
+  InputDecoration _cellDecoration(String hint) {
+    return InputDecoration(
+      isDense: true,
+      hintText: hint,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      border: const OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: AppColors.border),
+      ),
+      enabledBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: AppColors.primary, width: 1.2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final qtyController = TextEditingValue(text: line.quantity.toString());
-    final costController =
-        TextEditingValue(text: line.unitCost.toStringAsFixed(0));
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 10, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -581,58 +761,82 @@ class _LineCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '$index. ${line.productName}',
-                  style: AppTypography.bodySmall
-                      .copyWith(fontWeight: FontWeight.w700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
                 ),
               ),
-              IconButton(
-                onPressed: onDelete,
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.close_rounded, size: 16),
-                color: AppColors.textLight,
+              InkWell(
+                onTap: onDelete,
+                child: Text(
+                  isSwahili ? 'Ondoa' : 'Remove',
+                  style: AppTypography.helperText.copyWith(
+                    color: AppColors.danger,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
+                flex: 2,
                 child: TextFormField(
-                  initialValue: qtyController.text,
+                  initialValue: line.quantity == 0 ? '' : line.quantity.toString(),
+                  textAlign: TextAlign.right,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(
-                    labelText: isSwahili ? 'Idadi' : 'Quantity',
-                    isDense: true,
-                  ),
-                  onChanged: (value) =>
-                      line.quantity = int.tryParse(value) ?? 0,
-                  onFieldSubmitted: (_) => onChanged(),
+                  decoration: _cellDecoration(isSwahili ? 'Idadi' : 'Qty'),
+                  onChanged: (value) {
+                    line.quantity = int.tryParse(value.trim()) ?? 0;
+                    onChanged();
+                  },
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
+                flex: 3,
                 child: TextFormField(
-                  initialValue: costController.text,
+                  initialValue: line.unitCost <= 0 ? '' : line.unitCost.toStringAsFixed(0),
+                  textAlign: TextAlign.right,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: isSwahili ? 'Gharama' : 'Unit cost',
-                    isDense: true,
+                  decoration: _cellDecoration('TSh'),
+                  onChanged: (value) {
+                    line.unitCost =
+                        double.tryParse(value.trim().replaceAll(',', '')) ?? 0;
+                    onChanged();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.divider),
+                    color: AppColors.surfaceSecondary,
                   ),
-                  onChanged: (value) =>
-                      line.unitCost = double.tryParse(value) ?? 0,
-                  onFieldSubmitted: (_) => onChanged(),
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    ReceivingPage._money(line.total),
+                    style: AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color:
+                          line.total > 0 ? AppColors.success : AppColors.textMuted,
+                    ),
+                  ),
                 ),
               ),
             ],
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              'TZS ${line.total.toStringAsFixed(0)}',
-              style: AppTypography.helperText.copyWith(
-                  color: AppColors.textMuted, fontWeight: FontWeight.w700),
-            ),
           ),
         ],
       ),
@@ -640,22 +844,207 @@ class _LineCard extends StatelessWidget {
   }
 }
 
-class _AddLineSheet extends StatefulWidget {
-  const _AddLineSheet({required this.isSwahili});
+/// Full-page supplier picker (replaces modal).
+class _SupplierPickerPage extends StatelessWidget {
+  const _SupplierPickerPage({required this.isSwahili});
+  final bool isSwahili;
 
+  Future<void> _createSupplier(BuildContext context) async {
+    final created = await Navigator.of(context).push<Supplier>(
+      MaterialPageRoute<Supplier>(
+        builder: (_) => const SupplierFormPage(),
+      ),
+    );
+    if (created == null || !context.mounted) return;
+    Navigator.of(context).pop(created);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    final suppliers = store.suppliers;
+    String t(String en, String swahili) => isSwahili ? swahili : en;
+
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            MarketPageHeader(
+              title: t('Select supplier', 'Chagua msambazaji'),
+              subtitle: t('Choose who delivered these goods',
+                  'Chagua aliyesambaza bidhaa hizi'),
+              transparentBackButton: true,
+              onBack: () => Navigator.of(context).maybePop(),
+              actions: [
+                IconButton(
+                  tooltip: t('Add supplier', 'Ongeza msambazaji'),
+                  onPressed: () => _createSupplier(context),
+                  icon: const Icon(Icons.person_add_alt_1_rounded,
+                      color: AppColors.ink),
+                ),
+              ],
+            ),
+            Expanded(
+              child: suppliers.isEmpty
+                  ? ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      children: [
+                        ReceivingPage._flatCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t('No suppliers found', 'Hakuna wasambazaji'),
+                                style: AppTypography.bodyMain
+                                    .copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                t('Create a supplier to continue with goods received.',
+                                    'Unda msambazaji ili kuendelea na upokeaji wa bidhaa.'),
+                                style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.textMuted, height: 1.45),
+                              ),
+                              const SizedBox(height: 14),
+                              MarketButton(
+                                label: t('Add supplier', 'Ongeza msambazaji'),
+                                icon: Icons.add_rounded,
+                                onTap: () => _createSupplier(context),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      children: [
+                        MarketButton(
+                          label: t('New supplier', 'Msambazaji mpya'),
+                          icon: Icons.person_add_alt_1_rounded,
+                          isPrimary: false,
+                          onTap: () => _createSupplier(context),
+                        ),
+                        const SizedBox(height: 12),
+                        ReceivingPage._flatCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < suppliers.length; i++) ...[
+                                InkWell(
+                                  onTap: () =>
+                                      Navigator.of(context).pop(suppliers[i]),
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        16, 14, 16, 14),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 4,
+                                          height: 36,
+                                          color: store.supplierBalance(
+                                                      suppliers[i].id ?? 0) >
+                                                  0
+                                              ? AppColors.danger
+                                              : AppColors.success,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                suppliers[i].name,
+                                                style: AppTypography.bodyMain
+                                                    .copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w700),
+                                              ),
+                                              if (suppliers[i]
+                                                      .phone
+                                                      .trim()
+                                                      .isNotEmpty ||
+                                                  suppliers[i]
+                                                      .email
+                                                      .trim()
+                                                      .isNotEmpty)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(
+                                                      top: 2),
+                                                  child: Text(
+                                                    [
+                                                      if (suppliers[i]
+                                                          .phone
+                                                          .trim()
+                                                          .isNotEmpty)
+                                                        suppliers[i]
+                                                            .phone
+                                                            .trim(),
+                                                      if (suppliers[i]
+                                                          .email
+                                                          .trim()
+                                                          .isNotEmpty)
+                                                        suppliers[i]
+                                                            .email
+                                                            .trim(),
+                                                    ].join(' • '),
+                                                    style: AppTypography
+                                                        .helperText
+                                                        .copyWith(
+                                                            color: AppColors
+                                                                .textMuted),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(
+                                            Icons.chevron_right_rounded,
+                                            color: AppColors.textLight,
+                                            size: 20),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (i != suppliers.length - 1)
+                                  const Divider(
+                                      height: 1, color: AppColors.divider),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-page add receiving line (replaces modal).
+class _AddReceivingLinePage extends StatefulWidget {
+  const _AddReceivingLinePage({required this.isSwahili});
   final bool isSwahili;
 
   @override
-  State<_AddLineSheet> createState() => _AddLineSheetState();
+  State<_AddReceivingLinePage> createState() => _AddReceivingLinePageState();
 }
 
-class _AddLineSheetState extends State<_AddLineSheet> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _qtyController = TextEditingController(text: '1');
-  final TextEditingController _costController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
+class _AddReceivingLinePageState extends State<_AddReceivingLinePage> {
+  final _nameController = TextEditingController();
+  final _qtyController = TextEditingController(text: '1');
+  final _costController = TextEditingController();
+  final _priceController = TextEditingController();
 
   String _t(String en, String swahili) => widget.isSwahili ? swahili : en;
+
+  double get _lineTotal =>
+      (int.tryParse(_qtyController.text.trim()) ?? 0) *
+      (double.tryParse(_costController.text.trim().replaceAll(',', '')) ?? 0);
 
   @override
   void dispose() {
@@ -666,132 +1055,329 @@ class _AddLineSheetState extends State<_AddLineSheet> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final store = context.watch<PosLocalStore>();
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 18,
-        right: 18,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+  Future<void> _pickFromStock() async {
+    final name = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (_) => _StockPickerPage(isSwahili: widget.isSwahili),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _t('Add item', 'Ongeza bidhaa'),
-            style: AppTypography.h3.copyWith(fontSize: 16),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          MarketFormField(
-            label: _t('Product name', 'Jina la bidhaa'),
-            hintText: _t(
-                'Type or pick from stock', 'Andika au chagua kwenye hifadhi'),
-            controller: _nameController,
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.list_rounded, size: 18),
-              onPressed: () => _pickFromStock(store),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: MarketFormField(
-                  label: _t('Quantity', 'Idadi'),
-                  hintText: '1',
-                  controller: _qtyController,
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: MarketFormField(
-                  label: _t('Unit cost', 'Gharama'),
-                  hintText: '0',
-                  controller: _costController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          MarketFormField(
-            label: _t('Selling price (optional)', 'Bei ya kuuza (si lazima)'),
-            hintText: '0',
-            controller: _priceController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          MarketButton(
-            label: _t('Add to receiving', 'Ongeza kwenye upokeaji'),
-            icon: Icons.check_rounded,
-            onTap: () {
-              final name = _nameController.text.trim();
-              final quantity = int.tryParse(_qtyController.text.trim()) ?? 0;
-              if (name.isEmpty || quantity <= 0) return;
-              Navigator.of(context).pop(
-                _DraftLine(
-                  productName: name,
-                  quantity: quantity,
-                  unitCost: double.tryParse(_costController.text.trim()) ?? 0,
-                  sellingPrice:
-                      double.tryParse(_priceController.text.trim()) ?? 0,
-                ),
-              );
-            },
-          ),
-        ],
+    );
+    if (name == null || !mounted) return;
+    final store = context.read<PosLocalStore>();
+    setState(() {
+      _nameController.text = name;
+      final match = store.inventory.where((item) => item.name == name).toList();
+      if (match.isNotEmpty) {
+        final item = match.first;
+        if (_costController.text.trim().isEmpty) {
+          _costController.text = item.purchasePrice.toStringAsFixed(0);
+        }
+        if (_priceController.text.trim().isEmpty) {
+          _priceController.text = item.sellingPrice.toStringAsFixed(0);
+        }
+      }
+    });
+  }
+
+  void _save() {
+    final name = _nameController.text.trim();
+    final qty = int.tryParse(_qtyController.text.trim()) ?? 0;
+    if (name.isEmpty || qty <= 0) {
+      showMarketNotice(
+        context,
+        title: _t('Item required', 'Bidhaa inahitajika'),
+        message: _t('Enter product name and a valid quantity.',
+            'Weka jina la bidhaa na idadi sahihi.'),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+    Navigator.of(context).pop(
+      _DraftLine(
+        productName: name,
+        quantity: qty,
+        unitCost:
+            double.tryParse(_costController.text.trim().replaceAll(',', '')) ?? 0,
+        sellingPrice:
+            double.tryParse(_priceController.text.trim().replaceAll(',', '')) ?? 0,
       ),
     );
   }
 
-  Future<void> _pickFromStock(PosLocalStore store) async {
-    final items = store.inventory;
-    if (items.isEmpty) return;
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      isScrollControlled: true,
-      builder: (context) => SizedBox(
-        height: MediaQuery.of(context).size.height * 0.6,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
-              child: Text(
-                _t('Stock items', 'Bidhaa za hifadhi'),
-                style: AppTypography.h3.copyWith(fontSize: 16),
+            MarketPageHeader(
+              title: _t('Add item line', 'Ongeza mstari wa bidhaa'),
+              subtitle: _t('Product, quantity, and purchase cost',
+                  'Bidhaa, idadi, na gharama ya ununuzi'),
+              transparentBackButton: true,
+              onBack: () => Navigator.of(context).maybePop(),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                children: [
+                  ReceivingPage._flatCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        MarketFormField(
+                          label: _t('Product name', 'Jina la bidhaa'),
+                          hintText:
+                              _t('Enter or pick product', 'Weka au chagua bidhaa'),
+                          controller: _nameController,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 10),
+                        InkWell(
+                          onTap: _pickFromStock,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.inventory_2_outlined,
+                                    size: 16, color: AppColors.primaryDeep),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _t('Pick from existing stock',
+                                      'Chagua kutoka hifadhi iliyopo'),
+                                  style: AppTypography.helperText.copyWith(
+                                    color: AppColors.primaryDeep,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ReceivingPage._flatCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _t('Quantity and cost', 'Idadi na gharama'),
+                          style: AppTypography.sectionHeader
+                              .copyWith(color: AppColors.ink),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: MarketFormField(
+                                label: _t('Quantity received', 'Idadi iliyopokelewa'),
+                                hintText: '1',
+                                controller: _qtyController,
+                                keyboardType: TextInputType.number,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: MarketFormField(
+                                label: _t('Unit cost (TSh)', 'Gharama ya kipande (TSh)'),
+                                hintText: '0',
+                                controller: _costController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        MarketFormField(
+                          label: _t('Selling price (optional)',
+                              'Bei ya kuuza (hiari)'),
+                          hintText: '0',
+                          controller: _priceController,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ReceivingPage._flatCard(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _t('Line total', 'Jumla ya mstari'),
+                            style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Text(
+                          ReceivingPage._money(_lineTotal),
+                          style: AppTypography.h3.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: _lineTotal > 0
+                                ? AppColors.success
+                                : AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  MarketButton(
+                    label: _t('Add to receiving', 'Ongeza kwenye upokeaji'),
+                    icon: Icons.check_rounded,
+                    onTap: _save,
+                  ),
+                ],
               ),
             ),
-            for (final item in items)
-              ListTile(
-                dense: true,
-                title: Text(item.name),
-                subtitle: Text(
-                  '${item.category} • TZS ${item.purchasePrice.toStringAsFixed(0)}',
-                ),
-                onTap: () => Navigator.of(context).pop(item.name),
-              ),
           ],
         ),
       ),
     );
-    if (selected == null || !mounted) return;
-    setState(() {
-      _nameController.text = selected;
-      if (_costController.text.trim().isEmpty) {
-        final match = items.firstWhere(
-          (item) => item.name == selected,
-          orElse: () => items.first,
-        );
-        _costController.text = match.purchasePrice.toStringAsFixed(0);
-        _priceController.text = match.sellingPrice.toStringAsFixed(0);
-      }
-    });
+  }
+}
+
+/// Full-page stock picker (replaces modal).
+class _StockPickerPage extends StatelessWidget {
+  const _StockPickerPage({required this.isSwahili});
+  final bool isSwahili;
+
+  @override
+  Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    final items = store.inventory;
+    String t(String en, String swahili) => isSwahili ? swahili : en;
+
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            MarketPageHeader(
+              title: t('Pick from stock', 'Chagua kutoka hifadhi'),
+              subtitle: t('Select a product to prefill item details',
+                  'Chagua bidhaa kujaza taarifa za mstari'),
+              transparentBackButton: true,
+              onBack: () => Navigator.of(context).maybePop(),
+            ),
+            Expanded(
+              child: items.isEmpty
+                  ? ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      children: [
+                        ReceivingPage._flatCard(
+                          child: Text(
+                            t('No stock items available.',
+                                'Hakuna bidhaa kwenye hifadhi.'),
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textMuted),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      children: [
+                        ReceivingPage._flatCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < items.length; i++) ...[
+                                InkWell(
+                                  onTap: () => Navigator.of(context)
+                                      .pop(items[i].name),
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        16, 12, 16, 12),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 4,
+                                          height: 40,
+                                          color: items[i].stockCount <= 0
+                                              ? AppColors.danger
+                                              : AppColors.success,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                items[i].name,
+                                                style: AppTypography.bodySmall
+                                                    .copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: AppColors.ink),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                '${items[i].category} • ${t('Cost', 'Gharama')} ${ReceivingPage._money(items[i].purchasePrice)}',
+                                                style: AppTypography.helperText
+                                                    .copyWith(
+                                                        color: AppColors
+                                                            .textMuted),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              '${items[i].stockCount}',
+                                              style: AppTypography.bodySmall
+                                                  .copyWith(
+                                                color: items[i].stockCount <= 0
+                                                    ? AppColors.danger
+                                                    : AppColors.success,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                            Text(
+                                              t('in stock', 'hifadhini'),
+                                              style: AppTypography.helperText
+                                                  .copyWith(
+                                                      color:
+                                                          AppColors.textMuted),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (i != items.length - 1)
+                                  const Divider(
+                                      height: 1, color: AppColors.divider),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

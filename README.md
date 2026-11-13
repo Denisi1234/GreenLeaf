@@ -26,7 +26,7 @@ cards, tabs, navigation and touch targets) and core workflows.
 
 ### Design source of truth
 
-The UI theme is ported from the OSPOS "UI maturity" styles in
+The UI theme is ported from the OSPROS "UI maturity" styles in
 `opensourcepos/public/css/ospos.css` (dashboard, drawer, tabs, module tiles, mobile rules)
 and the brand guide in `opensourcepos/branding/STYLE_GUIDE.md`.
 

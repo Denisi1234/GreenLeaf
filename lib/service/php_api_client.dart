@@ -14,8 +14,11 @@ class ApiException implements Exception {
 }
 
 class PhpApiClient {
-  PhpApiClient(String baseUrl)
-      : baseUrl = baseUrl.replaceFirst(RegExp(r'/+$'), '');
+  static const String defaultBaseUrl = 'https://api.azagroup.co.tz';
+
+  PhpApiClient([String? baseUrl])
+      : baseUrl = (baseUrl != null && baseUrl.isNotEmpty ? baseUrl : defaultBaseUrl)
+            .replaceFirst(RegExp(r'/+$'), '');
 
   final String baseUrl;
   final http.Client _http = http.Client();

@@ -2082,28 +2082,32 @@ class MarketFormField extends StatelessWidget {
                 AppTypography.bodyMain.copyWith(color: AppColors.textLight),
             filled: true,
             fillColor: AppColors.surface,
+            isDense: true,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
+              horizontal: 14,
+              vertical: 14,
             ),
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.border),
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.border),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.border),
+            enabledBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.border),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide:
-                  const BorderSide(color: AppColors.primary, width: 1.5),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.primary, width: 1.4),
             ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.input),
-              borderSide: const BorderSide(color: AppColors.danger),
+            errorBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.danger),
+            ),
+            focusedErrorBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(color: AppColors.danger, width: 1.4),
             ),
           ),
         ),
