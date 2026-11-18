@@ -95,7 +95,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -237,7 +237,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                     const SizedBox(height: 24),
                     MarketButton(
                       label: 'VIEW RECEIPT',
-                      color: const Color(0xFF111111),
+                      color: AppColors.primary,
                       foregroundColor: Colors.white,
                       borderColor: Colors.transparent,
                       height: 48,
@@ -245,7 +245,7 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                       paddingHorizontal: 0,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF111111).withValues(alpha: 0.2),
+                          color: AppColors.primary.withValues(alpha: 0.25),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -255,12 +255,19 @@ class _ReceiptSuccessPageState extends State<ReceiptSuccessPage>
                     const SizedBox(height: 12),
                     MarketButton(
                       label: 'NEW SALE',
-                      color: const Color(0xFF111111),
+                      color: const Color(0xFF10B981), // Fresh emerald green
                       foregroundColor: Colors.white,
                       borderColor: Colors.transparent,
                       height: 48,
                       radius: 8,
                       paddingHorizontal: 0,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                       onTap: () => _startNewSale(context),
                     ),
                   ],

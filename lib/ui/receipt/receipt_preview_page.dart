@@ -103,6 +103,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
       storeAddress: _storeAddress,
       storePhone: _storePhone,
       storeTaxId: _profile.taxId,
+      storeLogoPath: _profile.logoPath,
       paymentMethod: widget.order.paymentMethod,
       header: _receiptSettings.header,
       footer: _receiptSettings.footer,
@@ -317,7 +318,33 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     final pdfFile = await _ensurePdf();
     if (pdfFile == null) return;
     final bytes = await pdfFile.readAsBytes();
-    await Printing.layoutPdf(onLayout: (_) async => bytes);
+
+    // Check if direct printers are available for silent instant printing
+    final printers = await Printing.listPrinters();
+    final directPrinter = printers.firstWhere(
+      (p) => p.isAvailable && (p.name.toLowerCase().contains('pos') || p.name.toLowerCase().contains('thermal') || p.name.toLowerCase().contains('58') || p.name.toLowerCase().contains('80') || p.isDefault),
+      orElse: () => printers.isNotEmpty ? printers.first : const Printer(url: ''),
+    );
+
+    if (directPrinter.url.isNotEmpty) {
+      try {
+        await Printing.directPrintPdf(
+          printer: directPrinter,
+          onLayout: (_) async => bytes,
+        );
+        _showNotice(
+          title: 'Printing Sent',
+          message: 'Direct print dispatched to ${directPrinter.name}',
+        );
+        return;
+      } catch (_) {}
+    }
+
+    // Fallback to system layout
+    await Printing.layoutPdf(
+      name: 'Receipt_${widget.order.receiptNo}',
+      onLayout: (_) async => bytes,
+    );
   }
 
   Future<void> _downloadReceipt() async {
@@ -373,6 +400,148 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     }
 
     throw const FileSystemException('No writable download directory found');
+  }
+
+  String _buildSmsMessage() {
+    final storeName = _cleanValue(_profile.storeName, 'Store');
+    final buffer = StringBuffer()
+      ..writeln('$storeName Receipt #${widget.order.id}')
+      ..writeln('Date: ${widget.order.date} ${widget.order.time}');
+
+    if (widget.order.customerName != null &&
+        widget.order.customerName!.trim().isNotEmpty) {
+      buffer.writeln('Customer: ${widget.order.customerName}');
+    }
+
+    buffer.writeln('Items:');
+    for (final line in widget.order.lines) {
+      buffer.writeln('- ${line.itemName} x${line.quantity}: ${_money(line.lineTotal)}');
+    }
+
+    if (widget.order.discountAmount != null &&
+        widget.order.discountAmount! > 0) {
+      buffer.writeln(
+          '${widget.order.discountLabel ?? 'Discount'}: -${_money(widget.order.discountAmount!)}');
+    }
+
+    buffer.writeln('Total: ${_money(widget.order.total)}');
+    buffer.writeln('Paid via: ${widget.order.paymentMethod}');
+    buffer.writeln(_cleanValue(_receiptSettings.footer, 'Thank you!'));
+    return buffer.toString();
+  }
+
+  Future<void> _sendSms() async {
+    // Look up customer's phone if customer is registered in store
+    String phone = '';
+    final customerName = widget.order.customerName?.trim();
+    if (customerName != null && customerName.isNotEmpty) {
+      final store = context.read<PosLocalStore>();
+      final match = store.customers.where((c) =>
+          c.name.trim().toLowerCase() == customerName.toLowerCase() ||
+          c.phone.trim() == customerName.trim());
+      if (match.isNotEmpty) {
+        phone = match.first.phone.replaceAll(RegExp(r'\s+'), '');
+      }
+    }
+    final message = _buildSmsMessage();
+    final smsUri = Uri(
+      scheme: 'sms',
+      path: phone,
+      queryParameters: <String, String>{
+        'body': message,
+      },
+    );
+
+    try {
+      if (await launchUrl(smsUri, mode: LaunchMode.externalApplication)) {
+        _showNotice(
+          title: 'SMS App Opened',
+          message: 'Receipt loaded into your SMS messaging app',
+        );
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback: share plain text
+    try {
+      await Printing.sharePdf(
+        bytes: await (await _ensurePdf())!.readAsBytes(),
+        filename: 'receipt_${widget.order.id}.pdf',
+      );
+    } catch (e) {
+      _showNotice(
+        title: 'SMS Unavailable',
+        message: 'Could not launch SMS app on this device',
+        type: MarketNoticeType.warning,
+      );
+    }
+  }
+
+  void _showMoreMenu(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+      ),
+      builder: (bottomSheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+                decoration: const BoxDecoration(
+                  border: Border(bottom: BorderSide(color: AppColors.border)),
+                ),
+                child: const Text(
+                  'More Receipt Options',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy_rounded, color: AppColors.ink),
+                title: const Text('Copy Receipt Text'),
+                onTap: () {
+                  Navigator.pop(bottomSheetContext);
+                  Clipboard.setData(ClipboardData(text: _buildWhatsAppMessage()));
+                  _showNotice(
+                    title: 'Copied',
+                    message: 'Receipt details copied to clipboard',
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.email_outlined, color: AppColors.ink),
+                title: const Text('Email Receipt (PDF)'),
+                onTap: () async {
+                  Navigator.pop(bottomSheetContext);
+                  await _sharePdf();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.ink),
+                title: const Text('Export & Download PDF'),
+                onTap: () {
+                  Navigator.pop(bottomSheetContext);
+                  _downloadReceipt();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline, color: AppColors.textMuted),
+                title: const Text('Order Audit Info'),
+                subtitle: Text('ID: ${widget.order.id} · Register: ${widget.order.register}'),
+                onTap: () => Navigator.pop(bottomSheetContext),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _showPlaceholderAction(BuildContext context, String label) {
@@ -446,7 +615,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                         color: AppColors.textMedium),
                   ),
                   IconButton(
-                    onPressed: () => _showPlaceholderAction(context, 'SMS'),
+                    onPressed: _sendSms,
                     icon: const Icon(Icons.sms_outlined,
                         color: AppColors.textMedium),
                   ),
@@ -466,7 +635,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                         color: AppColors.textMedium),
                   ),
                   IconButton(
-                    onPressed: () => _showPlaceholderAction(context, 'More'),
+                    onPressed: () => _showMoreMenu(context),
                     icon: const Icon(Icons.more_vert,
                         color: AppColors.textMedium),
                   ),
@@ -535,6 +704,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                   storeAddress: _storeAddress,
                   storePhone: _storePhone,
                   storeTaxId: _profile.taxId,
+                  storeLogoPath: _profile.logoPath,
                   header: _receiptSettings.header,
                   footer: _cleanValue(
                     _receiptSettings.footer,
@@ -633,6 +803,7 @@ class _ReceiptPaper extends StatelessWidget {
     required this.storeAddress,
     required this.storePhone,
     required this.storeTaxId,
+    this.storeLogoPath,
     required this.header,
     required this.footer,
     required this.receiptNumber,
@@ -656,6 +827,7 @@ class _ReceiptPaper extends StatelessWidget {
   final String storeAddress;
   final String storePhone;
   final String storeTaxId;
+  final String? storeLogoPath;
   final String header;
   final String footer;
   final String receiptNumber;
@@ -715,51 +887,78 @@ class _ReceiptPaper extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      storeName.toUpperCase(),
-                      style: const TextStyle(
-                        color: Color(0xFF111111),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
+                    if (storeLogoPath != null &&
+                        storeLogoPath!.trim().isNotEmpty &&
+                        File(storeLogoPath!).existsSync()) ...[
+                      Container(
+                        width: 48,
+                        height: 48,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.file(
+                          File(storeLogoPath!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
+                      ),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            storeName.toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFF111111),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          if (storeAddress.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              storeAddress,
+                              style: const TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                          if (storePhone.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              storePhone,
+                              style: const TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                          if (settings.showTaxId &&
+                              storeTaxId.trim().isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'TIN: $storeTaxId',
+                              style: const TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    if (storeAddress.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        storeAddress,
-                        style: const TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                    if (storePhone.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        storePhone,
-                        style: const TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                    if (settings.showTaxId && storeTaxId.trim().isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        'TIN: $storeTaxId',
-                        style: const TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

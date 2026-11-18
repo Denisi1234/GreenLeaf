@@ -84,7 +84,7 @@ class App extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'TrackMauzo',
+      title: 'AZA POS',
       locale: Locale(store.languageCode),
       supportedLocales: const [
         Locale('sw'),

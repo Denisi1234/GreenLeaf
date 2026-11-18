@@ -7,6 +7,7 @@ import '../../service/debit_entry_model.dart';
 import '../../service/pos_local_store.dart';
 import '../models/customer_data.dart';
 import '../widgets/app_design.dart';
+import '../widgets/workspace_widgets.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'customer_details_page.dart';
 import 'record_payment_sheet.dart';
@@ -97,36 +98,44 @@ class _DebtorsPageState extends State<DebtorsPage> {
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(18, 4, 18, 32),
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(strings, 'Outstanding', 'Madeni'),
-                              value: _money(outstanding, compact: true),
-                              icon: Icons.account_balance_wallet_outlined,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(strings, 'Debtors', 'Wadaiwa'),
-                              value: '${debtors.length}',
-                              icon: Icons.people_alt_outlined,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(
-                                  strings, 'Collected (month)', 'Makusanyo'),
-                              value: _money(collected, compact: true),
-                              icon: Icons.savings_outlined,
-                              color: AppColors.textBody,
-                            ),
-                          ),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, metricConstraints) {
+                          final columns = metricConstraints.maxWidth >= 760 ? 3 : 1;
+                          final width = (metricConstraints.maxWidth - (columns - 1) * 12) / columns;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Total outstanding', 'Jumla ya madeni'),
+                                  value: _money(outstanding, compact: true),
+                                  icon: Icons.account_balance_wallet_outlined,
+                                  color: outstanding > 0 ? AppColors.dangerDeep : AppColors.ink,
+                                ),
+                              ),
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Debtors count', 'Idadi ya wadaiwa'),
+                                  value: '${debtors.length}',
+                                  icon: Icons.people_alt_outlined,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Collected this month', 'Makusanyo mwezi huu'),
+                                  value: _money(collected, compact: true),
+                                  icon: Icons.savings_outlined,
+                                  color: AppColors.successDeep,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       MarketSearchField(
@@ -466,14 +475,14 @@ class _DebtorCard extends StatelessWidget {
 
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      borderColor: const Color(0xFFD6E4F0),
+      radius: 10,
+      showShadow: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -483,9 +492,9 @@ class _DebtorCard extends StatelessWidget {
                     width: 42,
                     height: 42,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: AppColors.surfaceSecondary,
-                      borderRadius: BorderRadius.zero,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       customer.initials,
@@ -608,10 +617,10 @@ class _DebtorCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.border),
+                        side: const BorderSide(color: Color(0xFFD6E4F0)),
                         padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       onPressed: onTap,
@@ -622,10 +631,10 @@ class _DebtorCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Material(
-                      color: AppColors.ink,
-                      borderRadius: BorderRadius.zero,
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(8),
                       child: InkWell(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(8),
                         highlightColor: Colors.transparent,
                         onTap: onSettle,
                         child: SizedBox(
@@ -723,19 +732,19 @@ class _LedgerTile extends StatelessWidget {
         isPayment ? AppColors.successLight : AppColors.surfaceSecondary;
 
     return MarketSurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      borderColor: const Color(0xFFD6E4F0),
+      radius: 10,
+      showShadow: true,
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: background,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               isPayment ? Icons.south_west_rounded : Icons.north_east_rounded,

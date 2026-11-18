@@ -12,7 +12,9 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../service/pos_local_store.dart';
+import '../../service/store_models.dart';
 import '../widgets/app_design.dart';
+import '../widgets/workspace_widgets.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'models/report_models.dart';
 import '../accounting/accounts_page.dart';
@@ -59,7 +61,7 @@ class EnhancedReportPage extends StatefulWidget {
 }
 
 class _EnhancedReportPageState extends State<EnhancedReportPage> {
-  static const _pageSize = 25;
+  int _pageSize = 25;
 
   DateTimeRange? _range;
   String? _selection;
@@ -73,14 +75,50 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
   bool _sortAscending = true;
   final Set<String> _hiddenColumns = <String>{};
 
+  List<StoreSnapshot>? _multiStoreSnapshots;
+  bool _loadingSnapshots = false;
+  String? _snapshotsError;
+
+  PresetPeriod _selectedPreset = PresetPeriod.thisMonth;
+
   @override
   void initState() {
     super.initState();
     final today = DateUtils.dateOnly(DateTime.now());
     _range = DateTimeRange(
-      start: DateTime(today.year, today.month),
+      start: DateTime(today.year, today.month, 1),
       end: today,
     );
+    if (widget.report.isSnapshot) {
+      _range = null;
+      _selectedPreset = PresetPeriod.allTime;
+    }
+    if (widget.report.isMultiStore) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadSnapshots());
+    }
+  }
+
+  Future<void> _loadSnapshots() async {
+    if (!mounted) return;
+    setState(() {
+      _loadingSnapshots = true;
+      _snapshotsError = null;
+    });
+    try {
+      final store = context.read<PosLocalStore>();
+      final snaps = await store.loadAllStoreSnapshots();
+      if (!mounted) return;
+      setState(() {
+        _multiStoreSnapshots = snaps;
+        _loadingSnapshots = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _snapshotsError = e.toString();
+        _loadingSnapshots = false;
+      });
+    }
   }
 
   @override
@@ -147,17 +185,84 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     return rows;
   }
 
+  DateTime _earliestActivityDate() {
+    final store = context.read<PosLocalStore>();
+    DateTime? earliest;
+
+    void checkDate(DateTime? d) {
+      if (d == null) return;
+      final day = DateTime(d.year, d.month, d.day);
+      if (earliest == null || day.isBefore(earliest!)) {
+        earliest = day;
+      }
+    }
+
+    // Orders
+    for (final order in store.orders) {
+      checkDate(DateTime.tryParse(order.dateTime)?.toLocal());
+    }
+
+    // Expenses
+    for (final expense in store.expenses) {
+      checkDate(expense.date);
+    }
+
+    // Shifts
+    for (final shift in store.registerShifts) {
+      checkDate(shift.openedAt.toLocal());
+    }
+
+    // Customers
+    for (final customer in store.customers) {
+      checkDate(customer.createdAt.toLocal());
+    }
+
+    // Receivings
+    for (final receiving in store.receivings) {
+      checkDate(receiving.date);
+    }
+
+    // Bank Transactions
+    for (final tx in store.bankTransactions) {
+      checkDate(tx.date);
+    }
+
+    // Default fallback: Start of current year, or today if no historical records exist
+    final now = DateTime.now();
+    return earliest ?? DateTime(now.year, 1, 1);
+  }
+
   Future<void> _chooseRange() async {
     final today = DateUtils.dateOnly(DateTime.now());
+    final earliest = _earliestActivityDate();
+    final firstDate = earliest.isBefore(today)
+        ? earliest
+        : today.subtract(const Duration(days: 365));
+
     final range = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(1900),
+      firstDate: firstDate,
       lastDate:
           today.isAfter(_range?.end ?? today) ? today : (_range?.end ?? today),
       initialDateRange: _range,
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+                surface: AppColors.surface,
+                onSurface: AppColors.ink,
+              ),
+        ),
+        child: child!,
+      ),
     );
     if (!mounted || range == null) return;
-    _setRange(range);
+    setState(() {
+      _range = range;
+      _selection = null;
+      _page = 0;
+    });
   }
 
   void _setRange(DateTimeRange? range) {
@@ -169,6 +274,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
   }
 
   void _applyPreset(PresetPeriod preset) {
+    setState(() => _selectedPreset = preset);
     final today = DateUtils.dateOnly(DateTime.now());
     DateTime start;
     DateTime end = today;
@@ -212,7 +318,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         end = DateTime(today.year - 1, 12, 31);
         break;
       case PresetPeriod.allTime:
-        start = DateTime(1900);
+        start = _earliestActivityDate();
         break;
     }
     _setRange(DateTimeRange(start: start, end: end));
@@ -424,7 +530,9 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     final headers = table.columns.map((c) => c.label).toList();
     final lines = <String>[
       widget.report.title,
-      if (_range != null)
+      if (widget.report.isSnapshot)
+        'Current snapshot'
+      else if (_range != null)
         '${DateFormat('yyyy-MM-dd').format(_range!.start)} - ${DateFormat('yyyy-MM-dd').format(_range!.end)}'
       else
         'All dates',
@@ -506,9 +614,11 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     final primary = PdfColor.fromHex('#2C3E50');
     final headerBg = PdfColor.fromHex('#ECF0F1');
     final border = PdfColor.fromHex('#DCE4EC');
-    final rangeLabel = _range != null
-        ? '${DateFormat('MMM d, yyyy').format(_range!.start)} – ${DateFormat('MMM d, yyyy').format(_range!.end)}'
-        : 'All Time';
+    final rangeLabel = widget.report.isSnapshot
+        ? 'Current snapshot'
+        : _range != null
+            ? '${DateFormat('MMM d, yyyy').format(_range!.start)} – ${DateFormat('MMM d, yyyy').format(_range!.end)}'
+            : 'All Time';
 
     pdf.addPage(
       pw.MultiPage(
@@ -663,6 +773,69 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     final missing = widget.report.missingData;
     if (missing != null) return _buildMissingDataView(missing);
 
+    if (widget.report.isMultiStore) {
+      if (_loadingSnapshots) {
+        return Scaffold(
+          backgroundColor: AppColors.pageBackground,
+          body: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: widget.report.title,
+                  subtitle: 'Loading all stores…',
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      if (_snapshotsError != null) {
+        return Scaffold(
+          backgroundColor: AppColors.pageBackground,
+          body: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: widget.report.title,
+                  subtitle: 'Could not load stores',
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_snapshotsError!,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.danger)),
+                          const SizedBox(height: 16),
+                          MarketButton(
+                            label: 'Retry',
+                            icon: Icons.refresh_rounded,
+                            isFullWidth: false,
+                            onTap: _loadSnapshots,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
     final store = context.watch<PosLocalStore>();
     final report = widget.report;
     final data = PosReportData(
@@ -670,7 +843,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
       inventory: store.inventory,
       expenses: store.expenses,
       customers: store.customers,
-      storeName: store.profile.storeName,
+      storeName: store.activeStoreName,
       shifts: store.registerShifts,
       cashUpFor: store.cashUpFor,
       suppliers: store.suppliers,
@@ -679,6 +852,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
       trialBalanceRows: store.trialBalance(),
       fixedAssets: store.fixedAssets,
       bankTransactions: store.bankTransactions,
+      storeSnapshots: _multiStoreSnapshots ?? const <StoreSnapshot>[],
     );
     final choices = data.filterOptions(report.data, _range?.start, _range?.end);
     final selection = choices.contains(_selection) ? _selection : null;
@@ -686,12 +860,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         start: _range?.start, end: _range?.end, selection: selection);
     final additionalMetrics =
         widget.additionalMetricsBuilder?.call(table, data) ??
-            _buildDefaultMetrics(table);
-    final localizations = MaterialLocalizations.of(context);
-    final range = _range;
-    final rangeLabel = range == null
-        ? 'All dates'
-        : '${localizations.formatCompactDate(range.start)} – ${localizations.formatCompactDate(range.end)}';
+            const <MetricData>[];
     final processedRows = _processedRows(table);
     final lastPage =
         processedRows.isEmpty ? 0 : (processedRows.length - 1) ~/ _pageSize;
@@ -699,58 +868,52 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     final pageRows =
         processedRows.skip(page * _pageSize).take(_pageSize).toList();
 
+    final visible = _visibleColumnIndexes(table);
+    final exportTable = ReportTable(
+      [for (final index in visible) table.columns[index]],
+      [
+        for (final row in processedRows)
+          [for (final index in visible) index < row.length ? row[index] : null]
+      ],
+      note: table.note,
+    );
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
+      appBar: AppBar(
+        title: Text(report.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.sectionHeader),
+        toolbarHeight: 72,
+        actions: [_buildExportMenu(exportTable), const SizedBox(width: 12)],
+      ),
       body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: report.title,
-              subtitle: rangeLabel,
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-              actions: [_buildExportMenu(table)],
-            ),
+          top: false,
+          child: Column(children: [
             _buildToolbar(table, choices, selection),
-            if (table.note != null) _buildNoteBanner(table.note!),
             Expanded(
-              child: pageRows.isEmpty
-                  ? _buildEmptyState(report)
-                  : _buildContent(table, pageRows, additionalMetrics),
-            ),
+                child: pageRows.isEmpty
+                    ? _buildEmptyState(report, table.note)
+                    : _buildContent(table, pageRows, additionalMetrics, data,
+                        processedRows)),
             _buildPagination(
                 page, lastPage, processedRows.length, pageRows.length),
-          ],
-        ),
-      ),
+          ])),
     );
   }
 
-  Widget _buildExportMenu(ReportTable table) {
-    return Tooltip(
-      message: 'Export / Print',
-      child: GestureDetector(
-        onTap: _exporting ? null : () => _showExportSheet(table),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.standard),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: _exporting
-              ? const Padding(
-                  padding: EdgeInsets.all(10),
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: AppColors.primary),
-                )
-              : const Icon(Icons.ios_share_rounded,
-                  color: AppColors.ink, size: 22),
-        ),
-      ),
-    );
-  }
+  Widget _buildExportMenu(ReportTable table) => OutlinedButton.icon(
+        onPressed: _exporting || table.rows.isEmpty
+            ? null
+            : () => _showExportSheet(table),
+        icon: _exporting
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.ios_share_outlined, size: 18),
+        label: const Text('Export'),
+      );
 
   Future<void> _showExportSheet(ReportTable table) async {
     await showModalBottomSheet<void>(
@@ -771,7 +934,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                         .copyWith(fontSize: 18, color: AppColors.ink)),
                 const SizedBox(height: 4),
                 Text(
-                  '${widget.report.title} • ${table.rows.length} rows',
+                  '${widget.report.title} • ${table.rows.length} ${table.rows.length == 1 ? 'record' : 'records'}',
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.textMuted),
                 ),
@@ -810,7 +973,11 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final format in ExportFormat.values)
+                    for (final format in [
+                      ExportFormat.csv,
+                      ExportFormat.excel,
+                      ExportFormat.pdf
+                    ])
                       _formatChip(format, () {
                         Navigator.of(sheetContext).pop();
                         setState(() => _exportFormat = format);
@@ -818,12 +985,31 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                       }),
                   ],
                 ),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: Text('Other formats', style: AppTypography.bodySmall),
+                  children: [
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      for (final format in [
+                        ExportFormat.json,
+                        ExportFormat.xml,
+                        ExportFormat.txt,
+                        ExportFormat.sql
+                      ])
+                        _formatChip(format, () {
+                          Navigator.of(sheetContext).pop();
+                          setState(() => _exportFormat = format);
+                          _exportReport(table);
+                        }),
+                    ])
+                  ],
+                ),
                 const SizedBox(height: 16),
                 _sheetSectionLabel('More'),
                 _sheetAction(
                   icon: Icons.copy_all_rounded,
                   title: 'Copy table',
-                  subtitle: 'Copy the full table as CSV',
+                  subtitle: 'Copy all matching rows as CSV',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _copyCsv(table);
@@ -869,7 +1055,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.standard),
+      borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
@@ -939,117 +1125,109 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     }
   }
 
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _selection = null;
+      _range = null;
+      _selectedPreset = PresetPeriod.allTime;
+      _page = 0;
+    });
+  }
+
   Widget _buildToolbar(
       ReportTable table, List<String> choices, String? selection) {
+    final localization = MaterialLocalizations.of(context);
+    final range = _range;
+    final dateLabel = range == null
+        ? 'All dates'
+        : '${localization.formatCompactDate(range.start)} – ${localization.formatCompactDate(range.end)}';
     return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(AppRadius.standard),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() {
-                      _searchQuery = value;
-                      _page = 0;
-                    }),
-                    textInputAction: TextInputAction.search,
-                    style:
-                        AppTypography.bodySmall.copyWith(color: AppColors.ink),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      hintText: 'Search this report',
-                      hintStyle: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textLight),
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          size: 19, color: AppColors.textMuted),
-                      suffixIcon: _searchQuery.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: 'Clear search',
-                              icon: const Icon(Icons.close_rounded, size: 18),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {
-                                  _searchQuery = '';
-                                  _page = 0;
-                                });
-                              },
-                            ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 11, horizontal: 4),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _ToolbarButton(
-                icon: Icons.view_column_outlined,
-                label: 'Columns',
-                onTap: () => _showColumnsSheet(table),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+          color: AppColors.surface,
+          border: Border(bottom: BorderSide(color: AppColors.border))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Expanded(
+              child: TextField(
+            controller: _searchController,
+            onChanged: (value) => setState(() {
+              _searchQuery = value;
+              _page = 0;
+            }),
+            decoration: InputDecoration(
+                hintText: 'Search this report',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => setState(() {
+                              _searchController.clear();
+                              _searchQuery = '';
+                              _page = 0;
+                            }))),
+          )),
+          const SizedBox(width: 12),
+          IconButton.outlined(
+              tooltip: 'Show columns',
+              onPressed: () => _showColumnsSheet(table),
+              icon: const Icon(Icons.view_column_outlined, size: 22)),
+        ]),
+        const SizedBox(height: 12),
+        Wrap(
             spacing: 8,
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              _ToolbarButton(
-                  icon: Icons.date_range_rounded,
-                  label: _range == null ? 'Date range' : 'Change dates',
-                  onTap: _chooseRange),
-              _PresetPeriodMenu(onPresetSelected: _applyPreset),
-              if (_range != null)
-                _ToolbarButton(
-                    icon: Icons.close_rounded,
-                    label: 'All dates',
-                    onTap: () => _setRange(null)),
-              if (_hasCostProfitColumns(table))
-                _ToolbarButton(
-                    icon: _costProfitHidden(table)
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    label: 'Cost/Profit',
-                    onTap: () => setState(() {
-                          final labels = _costProfitLabels(table);
-                          if (_costProfitHidden(table)) {
-                            _hiddenColumns.removeAll(labels);
-                          } else {
-                            _hiddenColumns.addAll(labels);
-                          }
-                        })),
+              if (!widget.report.isSnapshot) ...[
+                OutlinedButton.icon(
+                    onPressed: _chooseRange,
+                    icon: const Icon(Icons.calendar_today_outlined, size: 17),
+                    label: Text(dateLabel)),
+                _PresetPeriodMenu(
+                    selectedPreset: _selectedPreset,
+                    onPresetSelected: _applyPreset),
+              ] else
+                const WorkspaceStatus(
+                    label: 'Current snapshot', color: AppColors.textBody),
               if (choices.isNotEmpty)
-                _FilterMenu(
-                    choices: choices,
-                    selection: selection,
-                    onSelected: (value) => setState(() {
-                          _selection = value;
-                          _page = 0;
-                        })),
-              if (selection != null)
-                _ToolbarButton(
-                    icon: Icons.filter_alt_off_rounded,
-                    label: 'Clear filter',
-                    onTap: () => setState(() {
-                          _selection = null;
-                          _page = 0;
-                        })),
-            ],
-          ),
-        ],
-      ),
+                SizedBox(
+                    width: 220,
+                    child: DropdownButtonFormField<String>(
+                      key: ValueKey(selection),
+                      initialValue: selection,
+                      isExpanded: true,
+                      decoration:
+                          const InputDecoration(labelText: 'Filter records'),
+                      items: [
+                        const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text('All records',
+                                overflow: TextOverflow.ellipsis)),
+                        ...choices.map((value) => DropdownMenuItem(
+                            value: value,
+                            child:
+                                Text(value, overflow: TextOverflow.ellipsis)))
+                      ],
+                      onChanged: (value) => setState(() {
+                        _selection = value;
+                        _page = 0;
+                      }),
+                    )),
+              if (_searchQuery.isNotEmpty ||
+                  selection != null ||
+                  (!widget.report.isSnapshot && _range != null))
+                TextButton(
+                    onPressed: _clearFilters,
+                    style: TextButton.styleFrom(
+                        foregroundColor: AppColors.dangerDeep),
+                    child: const Text('Clear filters')),
+            ]),
+      ]),
     );
   }
 
@@ -1092,6 +1270,22 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                       ),
                     ),
                     const Divider(height: 1),
+                    if (_hasCostProfitColumns(table))
+                      SwitchListTile(
+                        title: const Text('Show cost and profit'),
+                        value: !_costProfitHidden(table),
+                        onChanged: (show) {
+                          setSheetState(() {
+                            if (show) {
+                              _hiddenColumns
+                                  .removeAll(_costProfitLabels(table));
+                            } else {
+                              _hiddenColumns.addAll(_costProfitLabels(table));
+                            }
+                          });
+                          setState(() {});
+                        },
+                      ),
                     Flexible(
                       child: ListView(
                         shrinkWrap: true,
@@ -1134,11 +1328,11 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
 
   Widget _buildNoteBanner(String note) => Container(
         width: double.infinity,
-        color: AppColors.warningLight,
+        color: AppColors.surfaceSecondary,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(children: [
           const Icon(Icons.info_outline_rounded,
-              size: 16, color: AppColors.warning),
+              size: 16, color: AppColors.textMuted),
           const SizedBox(width: 8),
           Expanded(
               child: Text(note,
@@ -1147,60 +1341,48 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         ]),
       );
 
-  Widget _buildEmptyState(PosReport report) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                  color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(AppRadius.rounded)),
-              child: const Icon(Icons.analytics_outlined,
-                  size: 36, color: AppColors.textLight),
-            ),
-            const SizedBox(height: 16),
-            Text('No data available',
-                style: AppTypography.cardHeader.copyWith(color: AppColors.ink)),
-            const SizedBox(height: 8),
-            Text(
-                'No records match the current filters for ${report.title.toLowerCase()}.',
-                textAlign: TextAlign.center,
-                style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.textMuted)),
-            const SizedBox(height: 20),
-            if (_setupAction case final setup?)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: MarketButton(
-                    label: setup.$2,
-                    icon: setup.$3,
-                    isFullWidth: false,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => setup.$1(),
-                        ),
-                      );
-                    }),
-              ),
-            MarketButton(
-                label: 'Clear filters',
-                icon: Icons.clear_all_rounded,
-                isFullWidth: false,
-                onTap: () {
-                  _searchController.clear();
-                  setState(() {
-                    _searchQuery = '';
-                    _selection = null;
-                    _range = null;
-                    _page = 0;
-                  });
-                }),
-          ]),
-        ),
-      );
+  Widget _buildEmptyState(PosReport report, String? note) => Center(
+          child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: WorkspacePanel(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.table_chart_outlined,
+                  size: 36, color: AppColors.textMuted),
+              const SizedBox(height: 16),
+              Text('No data available', style: AppTypography.h3),
+              const SizedBox(height: 8),
+              Text('No records match the selected dates and filters.',
+                  textAlign: TextAlign.center, style: AppTypography.bodySmall),
+              if (note != null) ...[
+                const SizedBox(height: 12),
+                Text(note,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textMuted))
+              ],
+              const SizedBox(height: 16),
+              if (_searchQuery.isEmpty &&
+                  _selection == null &&
+                  _setupAction != null)
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                          builder: (_) => _setupAction!.$1())),
+                  icon: Icon(_setupAction!.$3, size: 18),
+                  label: Text(_setupAction!.$2),
+                ),
+              if (_searchQuery.isNotEmpty ||
+                  _selection != null ||
+                  (!report.isSnapshot && _range != null))
+                TextButton(
+                    onPressed: _clearFilters,
+                    style: TextButton.styleFrom(
+                        foregroundColor: AppColors.dangerDeep),
+                    child: const Text('Clear filters')),
+            ]))),
+      ));
 
   (Widget Function(), String, IconData)? get _setupAction {
     final data = widget.report.data;
@@ -1254,84 +1436,29 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     }
   }
 
-  List<MetricData> _buildDefaultMetrics(ReportTable table) {
-    final rows = table.rows;
-    final moneyIndexes = <int>[];
-    final numericIndexes = <int>[];
-    for (var i = 0; i < table.columns.length; i++) {
-      final hasNumeric = rows.any((row) => i < row.length && row[i] is num);
-      if (!hasNumeric) continue;
-      if (table.columns[i].money) {
-        moneyIndexes.add(i);
-      } else {
-        numericIndexes.add(i);
-      }
-    }
-    double totalFor(int index) {
-      var total = 0.0;
-      for (final row in rows) {
-        final value = index < row.length ? row[index] : null;
-        if (value is num) total += value.toDouble();
-      }
-      return total;
-    }
-
-    String money(num v) => 'TSH ${NumberFormat('#,##0.##').format(v)}';
-    String count(num v) => NumberFormat('#,##0').format(v);
-    final metrics = <MetricData>[
-      MetricData(
-          title: 'Records',
-          value: count(rows.length),
-          icon: Icons.table_rows_outlined,
-          iconColor: AppColors.primary,
-          tint: AppColors.surfaceSecondary,
-          valueColor: AppColors.primary),
-    ];
-    if (moneyIndexes.isNotEmpty) {
-      final index = moneyIndexes.first;
-      final total = totalFor(index);
-      metrics.add(MetricData(
-          title: 'Total ${table.columns[index].label}',
-          value: money(total),
-          icon: Icons.payments_outlined,
-          iconColor: AppColors.success,
-          tint: AppColors.successLight,
-          valueColor: AppColors.success));
-      if (rows.isNotEmpty) {
-        metrics.add(MetricData(
-            title: 'Average ${table.columns[index].label}',
-            value: money(total / rows.length),
-            icon: Icons.functions_rounded,
-            iconColor: AppColors.chart4,
-            tint: const Color(0xFFF3F4F6),
-            valueColor: AppColors.chart4));
-      }
-    }
-    if (moneyIndexes.length > 1) {
-      final index = moneyIndexes.last;
-      metrics.add(MetricData(
-          title: 'Total ${table.columns[index].label}',
-          value: money(totalFor(index)),
-          icon: Icons.trending_up_rounded,
-          iconColor: AppColors.warning,
-          tint: AppColors.warningLight,
-          valueColor: AppColors.warning));
-    } else if (moneyIndexes.isEmpty && numericIndexes.isNotEmpty) {
-      final index = numericIndexes.first;
-      metrics.add(MetricData(
-          title: 'Total ${table.columns[index].label}',
-          value: NumberFormat('#,##0.##').format(totalFor(index)),
-          icon: Icons.functions_rounded,
-          iconColor: AppColors.primary,
-          tint: AppColors.surfaceSecondary,
-          valueColor: AppColors.primary));
-    }
-    return metrics;
-  }
-
-  Widget _buildContent(ReportTable table, List<List<Object?>> pageRows,
-      List<MetricData> additionalMetrics) {
+  Widget _buildContent(
+      ReportTable table,
+      List<List<Object?>> pageRows,
+      List<MetricData> additionalMetrics,
+      PosReportData data,
+      List<List<Object?>> matchingRows) {
     return CustomScrollView(slivers: [
+      SliverToBoxAdapter(
+          child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(children: [
+                Expanded(
+                    child: Text(
+                        widget.report.isSnapshot
+                            ? 'Current records'
+                            : 'Report results',
+                        style: AppTypography.sectionHeader)),
+                Text(
+                    '${matchingRows.length} ${matchingRows.length == 1 ? 'record' : 'records'}',
+                    style: AppTypography.label),
+              ]))),
+      if (table.note != null)
+        SliverToBoxAdapter(child: _buildNoteBanner(table.note!)),
       if (additionalMetrics.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
@@ -1351,16 +1478,8 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Column(
-              children: widget.additionalSectionsBuilder!(
-                      context,
-                      table,
-                      PosReportData(
-                          orders: const [],
-                          inventory: const [],
-                          expenses: const [],
-                          customers: const [],
-                          storeName: ''),
-                      _range)
+              children: widget.additionalSectionsBuilder!
+                      (context, table, data, _range)
                   .map((w) => Padding(
                       padding: const EdgeInsets.only(bottom: 16), child: w))
                   .toList(),
@@ -1371,20 +1490,12 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: widget.customBuilder!(
-                context,
-                table,
-                PosReportData(
-                    orders: const [],
-                    inventory: const [],
-                    expenses: const [],
-                    customers: const [],
-                    storeName: ''),
-                _range,
-                _selection),
+            child:
+                widget.customBuilder!(context, table, data, _range, _selection),
           ),
         ),
-      if (table.chartColumn != null &&
+      if (widget.report.chart &&
+          table.chartColumn != null &&
           widget.additionalSectionsBuilder == null &&
           widget.customBuilder == null)
         SliverToBoxAdapter(
@@ -1392,7 +1503,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: MarketSurfaceCard(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                child: _buildTrendChart(table, pageRows)),
+                child: _buildTrendChart(table, matchingRows)),
           ),
         ),
       SliverPadding(
@@ -1404,7 +1515,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
 
   Widget _buildTrendChart(ReportTable table, List<List<Object?>> pageRows) {
     final index = table.chartColumn!;
-    final points = pageRows.map((row) {
+    final points = pageRows.where((row) => row[index] is num).map((row) {
       final value = (row[index] as num).toDouble();
       return TrendPoint(
         label: row.first.toString(),
@@ -1421,62 +1532,77 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         points: points,
         maxValue: maxValue,
         label: table.columns[index].label,
-        color: AppColors.primary);
+        color: AppColors.successDeep);
   }
 
   Widget _buildDataTable(ReportTable table, List<List<Object?>> pageRows) {
     final visible = _visibleColumnIndexes(table);
     final sortIndex =
         _sortColumn == null ? null : visible.indexOf(_sortColumn!);
-
-    return MarketSurfaceCard(
-      padding: EdgeInsets.zero,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.standard),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowColor:
-                WidgetStateProperty.all(AppColors.surfaceSecondary),
-            headingTextStyle: AppTypography.label.copyWith(
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
-                color: AppColors.primaryDeep),
-            dataTextStyle: AppTypography.bodySmall.copyWith(fontSize: 12),
-            columnSpacing: 16,
-            horizontalMargin: 12,
-            dividerThickness: 0.6,
-            showCheckboxColumn: false,
-            sortColumnIndex:
-                sortIndex == null || sortIndex < 0 ? null : sortIndex,
-            sortAscending: _sortAscending,
-            columns: [
-              for (final i in visible)
-                DataColumn(
-                  label: Text(table.columns[i].label),
-                  numeric: table.columns[i].money,
-                  onSort: (_, ascending) => setState(() {
-                    _sortColumn = i;
-                    _sortAscending = ascending;
-                    _page = 0;
-                  }),
-                )
-            ],
-            rows: [
-              for (final row in pageRows)
-                DataRow(cells: [
-                  for (final i in visible)
-                    DataCell(ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 240),
-                      child: _buildCell(
-                          i < row.length ? row[i] : null, table.columns[i]),
-                    )),
-                ])
-            ],
-          ),
-        ),
-      ),
-    );
+    return WorkspacePanel(
+        padding: EdgeInsets.zero,
+        child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minWidth: constraints.maxWidth),
+                      child: DataTable(
+                        headingRowColor: const WidgetStatePropertyAll(
+                            AppColors.surfaceSecondary),
+                        headingTextStyle: AppTypography.tableHeader
+                            .copyWith(color: AppColors.textBody),
+                        dataTextStyle: AppTypography.bodySmall,
+                        columnSpacing: 28,
+                        horizontalMargin: 20,
+                        dataRowMinHeight: 52,
+                        dataRowMaxHeight: 72,
+                        dividerThickness: 0.6,
+                        showCheckboxColumn: false,
+                        sortColumnIndex: sortIndex == null || sortIndex < 0
+                            ? null
+                            : sortIndex,
+                        sortAscending: _sortAscending,
+                        columns: [
+                          for (final index in visible)
+                            DataColumn(
+                              label: ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 180),
+                                  child: Text(table.columns[index].label,
+                                      maxLines: 2)),
+                              numeric: table.columns[index].money,
+                              onSort: (_, ascending) => setState(() {
+                                _sortColumn = index;
+                                _sortAscending = ascending;
+                                _page = 0;
+                              }),
+                            )
+                        ],
+                        rows: [
+                          for (var rowIndex = 0;
+                              rowIndex < pageRows.length;
+                              rowIndex++)
+                            DataRow(
+                              color: WidgetStatePropertyAll(rowIndex.isOdd
+                                  ? AppColors.surfaceSecondary
+                                      .withValues(alpha: 0.45)
+                                  : AppColors.surface),
+                              cells: [
+                                for (final index in visible)
+                                  DataCell(ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 260),
+                                      child: _buildCell(
+                                          index < pageRows[rowIndex].length
+                                              ? pageRows[rowIndex][index]
+                                              : null,
+                                          table.columns[index])))
+                              ],
+                            )
+                        ],
+                      )),
+                )));
   }
 
   Widget _buildCell(Object? value, ReportColumn column) {
@@ -1486,7 +1612,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         column.money ? 'TSH $formatted' : formatted,
         style: AppTypography.bodySmall.copyWith(
             fontWeight: column.money ? FontWeight.w700 : FontWeight.w500,
-            color: column.money ? AppColors.primaryDeep : AppColors.ink),
+            color: value < 0 ? AppColors.dangerDeep : AppColors.ink),
         textAlign: column.money ? TextAlign.right : TextAlign.left,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -1499,39 +1625,51 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
   }
 
   Widget _buildPagination(
-      int page, int lastPage, int totalRows, int pageRowsCount) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.divider))),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(
-            totalRows == 0
-                ? 'No records'
-                : '${page * _pageSize + 1}–${page * _pageSize + pageRowsCount} of $totalRows',
-            style: AppTypography.helperText
-                .copyWith(fontSize: 13, color: AppColors.textMuted)),
-        Row(children: [
+          int page, int lastPage, int totalRows, int pageRowsCount) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.border))),
+        child: Row(children: [
+          Expanded(
+              child: Text(
+                  totalRows == 0
+                      ? 'No records'
+                      : '${page * _pageSize + 1}–${page * _pageSize + pageRowsCount} of $totalRows',
+                  style: AppTypography.label)),
+          Tooltip(
+              message: 'Rows per page',
+              child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                value: _pageSize,
+                isDense: true,
+                items: [
+                  for (final size in [10, 25, 50, 100])
+                    DropdownMenuItem(
+                        value: size,
+                        child: Text('$size', style: AppTypography.bodySmall))
+                ],
+                onChanged: (value) => setState(() {
+                  _pageSize = value ?? 25;
+                  _page = 0;
+                }),
+              ))),
+          const SizedBox(width: 8),
           IconButton(
               tooltip: 'Previous page',
               onPressed:
                   page == 0 ? null : () => setState(() => _page = page - 1),
-              icon: const Icon(Icons.chevron_left_rounded, size: 22),
-              color: AppColors.ink),
-          Text('${page + 1} / ${lastPage + 1}',
-              style: AppTypography.label.copyWith(color: AppColors.ink)),
+              icon: const Icon(Icons.chevron_left_rounded)),
+          Text('${page + 1}/${lastPage + 1}', style: AppTypography.label),
           IconButton(
               tooltip: 'Next page',
               onPressed: page == lastPage
                   ? null
                   : () => setState(() => _page = page + 1),
-              icon: const Icon(Icons.chevron_right_rounded, size: 22),
-              color: AppColors.ink),
+              icon: const Icon(Icons.chevron_right_rounded)),
         ]),
-      ]),
-    );
-  }
+      );
 
   Widget _buildMissingDataView(String missing) {
     return Scaffold(
@@ -1651,104 +1789,79 @@ extension PresetPeriodLabel on PresetPeriod {
   }
 }
 
-class _ToolbarButton extends StatelessWidget {
-  const _ToolbarButton(
-      {required this.icon, required this.label, required this.onTap});
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.textMain,
-        side: const BorderSide(color: AppColors.border),
-        backgroundColor: AppColors.surface,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        textStyle: AppTypography.label.copyWith(fontSize: 13),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.standard)),
-      ),
-    );
-  }
-}
-
 class _PresetPeriodMenu extends StatelessWidget {
-  const _PresetPeriodMenu({required this.onPresetSelected});
+  const _PresetPeriodMenu({
+    required this.onPresetSelected,
+    this.selectedPreset,
+  });
   final void Function(PresetPeriod) onPresetSelected;
+  final PresetPeriod? selectedPreset;
+
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<PresetPeriod>(
       tooltip: 'Quick date ranges',
       onSelected: onPresetSelected,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.standard)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       itemBuilder: (context) => [
         for (final preset in PresetPeriod.values)
           PopupMenuItem(
-              value: preset,
-              child: Text(preset.label, style: AppTypography.bodySmall)),
-      ],
-      child: IgnorePointer(
-        child: _ToolbarButton(
-            icon: Icons.flash_on_rounded, label: 'Quick ranges', onTap: () {}),
-      ),
-    );
-  }
-}
-
-class _FilterMenu extends StatelessWidget {
-  const _FilterMenu(
-      {required this.choices,
-      required this.selection,
-      required this.onSelected});
-  final List<String> choices;
-  final String? selection;
-  final void Function(String) onSelected;
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      tooltip: 'Filter records',
-      initialValue: selection,
-      onSelected: onSelected,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.standard)),
-      itemBuilder: (context) => [
-        for (final value in choices)
-          PopupMenuItem(
-              value: value, child: Text(value, style: AppTypography.bodySmall)),
-      ],
-      child: IgnorePointer(
-        child: OutlinedButton.icon(
-          onPressed: () {},
-          icon: Icon(
-            selection != null
-                ? Icons.filter_alt_rounded
-                : Icons.filter_list_rounded,
-            size: 18,
-            color: selection != null ? AppColors.primary : AppColors.textMuted,
-          ),
-          label: Text(
-            selection ?? 'Filter',
-            style: AppTypography.label.copyWith(
-              fontSize: 13,
-              color: selection != null ? AppColors.primary : AppColors.textMain,
-              fontWeight: selection != null ? FontWeight.w700 : FontWeight.w600,
+            value: preset,
+            child: Row(
+              children: [
+                if (selectedPreset == preset)
+                  const Icon(Icons.check_rounded,
+                      size: 16, color: AppColors.primary)
+                else
+                  const SizedBox(width: 16),
+                const SizedBox(width: 8),
+                Text(
+                  preset.label,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: selectedPreset == preset
+                        ? AppColors.primary
+                        : AppColors.ink,
+                    fontWeight: selectedPreset == preset
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textMain,
-            side: BorderSide(
-                color:
-                    selection != null ? AppColors.primary : AppColors.border),
-            backgroundColor: AppColors.surface,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard)),
-          ),
+      ],
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.bolt_rounded,
+              size: 16,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              selectedPreset?.label ?? 'Quick',
+              style: AppTypography.label.copyWith(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: AppColors.textMuted,
+            ),
+          ],
         ),
       ),
     );

@@ -581,9 +581,9 @@ class _ReceiptCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasReceipt = path != null && path!.isNotEmpty;
     return MarketSurfaceCard(
-      radius: 0,
-      borderColor: AppColors.border,
-      showShadow: false,
+      radius: 10,
+      borderColor: const Color(0xFFD6E4F0),
+      showShadow: true,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

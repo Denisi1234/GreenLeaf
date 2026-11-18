@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
@@ -17,6 +16,7 @@ class TaxSettingsPage extends StatefulWidget {
 
 class _TaxSettingsPageState extends State<TaxSettingsPage> {
   late TaxSettings _draft;
+  bool _saving = false;
 
   bool get _isSwahili =>
       context.watch<PosLocalStore>().languageCode.trim().toLowerCase() == 'sw';
@@ -210,10 +210,11 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   MarketButton(
-                    label:
-                        _t('Save tax settings', 'Hifadhi mipangilio ya kodi'),
+                    label: _saving
+                        ? _t('Saving...', 'Inahifadhi...')
+                        : _t('Save tax settings', 'Hifadhi mipangilio ya kodi'),
                     icon: Icons.check_rounded,
-                    onTap: _save,
+                    onTap: _saving ? null : _save,
                   ),
                 ],
               ),
@@ -225,15 +226,35 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
     final store = context.read<PosLocalStore>();
-    await store.updateTaxSettings(_draft);
-    if (!mounted) return;
-    showMarketNotice(
-      context,
-      title: _t('Tax settings', 'Mipangilio ya kodi'),
-      message: _t('Tax settings saved', 'Mipangilio ya kodi imehifadhiwa'),
-    );
-    Navigator.of(context).maybePop();
+    final navigator = Navigator.of(context);
+    final sw = store.languageCode.trim().toLowerCase() == 'sw';
+    try {
+      await store.updateTaxSettings(_draft);
+      if (!mounted) return;
+      showMarketNotice(
+        context,
+        title: sw ? 'Mipangilio ya kodi' : 'Tax settings',
+        message: sw
+            ? 'Mipangilio ya kodi imehifadhiwa'
+            : 'Tax settings saved',
+        type: MarketNoticeType.success,
+      );
+      navigator.pop();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      showMarketNotice(
+        context,
+        title: sw ? 'Mipangilio ya kodi' : 'Tax settings',
+        message: sw
+            ? 'Imeshindwa kuhifadhi mipangilio ya kodi'
+            : 'Failed to save tax settings',
+        type: MarketNoticeType.error,
+      );
+    }
   }
 }
 

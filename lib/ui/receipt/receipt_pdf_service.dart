@@ -24,6 +24,7 @@ class ReceiptPdfService {
     required String storePhone,
     required String paymentMethod,
     String storeTaxId = '',
+    String? storeLogoPath,
     String header = '',
     String footer = '',
     String? customerName,
@@ -41,6 +42,17 @@ class ReceiptPdfService {
     final pdf = pw.Document();
     final baseFont = await PdfGoogleFonts.notoSansRegular();
     final boldFont = await PdfGoogleFonts.notoSansBold();
+
+    pw.ImageProvider? logoImage;
+    if (storeLogoPath != null && storeLogoPath.trim().isNotEmpty) {
+      try {
+        final logoFile = File(storeLogoPath.trim());
+        if (await logoFile.exists()) {
+          final logoBytes = await logoFile.readAsBytes();
+          logoImage = pw.MemoryImage(logoBytes);
+        }
+      } catch (_) {}
+    }
 
     final subtotal =
         items.fold<double>(0, (sum, line) => sum + line.totalPrice);
@@ -65,6 +77,7 @@ class ReceiptPdfService {
           storeAddress: cleanStoreAddress,
           storePhone: cleanStorePhone,
           storeTaxId: storeTaxId.trim(),
+          logoImage: logoImage,
           header: header.trim(),
           receiptNumber: receiptNumber,
           date: date,
@@ -202,6 +215,7 @@ class ReceiptPdfService {
     required String storeAddress,
     required String storePhone,
     required String storeTaxId,
+    pw.ImageProvider? logoImage,
     required String header,
     required String receiptNumber,
     required String date,
@@ -233,48 +247,63 @@ class ReceiptPdfService {
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
             pw.Expanded(
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
-                  if (header.isNotEmpty) ...[
-                    pw.Text(
-                      header,
-                      style: pw.TextStyle(
-                        fontSize: 9,
-                        fontStyle: pw.FontStyle.italic,
-                        color: PdfColor.fromHex('#64748B'),
-                      ),
+                  if (logoImage != null) ...[
+                    pw.Container(
+                      width: 48,
+                      height: 48,
+                      margin: const pw.EdgeInsets.only(right: 12),
+                      child: pw.Image(logoImage, fit: pw.BoxFit.contain),
                     ),
-                    pw.SizedBox(height: 4),
                   ],
-                  pw.Text(
-                    storeName.toUpperCase(),
-                    style: pw.TextStyle(
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColor.fromHex('#1E293B'),
-                      letterSpacing: 1.2,
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        if (header.isNotEmpty) ...[
+                          pw.Text(
+                            header,
+                            style: pw.TextStyle(
+                              fontSize: 9,
+                              fontStyle: pw.FontStyle.italic,
+                              color: PdfColor.fromHex('#64748B'),
+                            ),
+                          ),
+                          pw.SizedBox(height: 4),
+                        ],
+                        pw.Text(
+                          storeName.toUpperCase(),
+                          style: pw.TextStyle(
+                            fontSize: 18,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColor.fromHex('#1E293B'),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        if (storeAddress.isNotEmpty)
+                          pw.Text(
+                            storeAddress,
+                            style: const pw.TextStyle(
+                                fontSize: 9, color: PdfColors.grey600),
+                          ),
+                        if (storePhone.isNotEmpty)
+                          pw.Text(
+                            'Tel: $storePhone',
+                            style: const pw.TextStyle(
+                                fontSize: 9, color: PdfColors.grey600),
+                          ),
+                        if (showTaxId && storeTaxId.isNotEmpty)
+                          pw.Text(
+                            'TIN: $storeTaxId',
+                            style: const pw.TextStyle(
+                                fontSize: 9, color: PdfColors.grey600),
+                          ),
+                      ],
                     ),
                   ),
-                  pw.SizedBox(height: 4),
-                  if (storeAddress.isNotEmpty)
-                    pw.Text(
-                      storeAddress,
-                      style: const pw.TextStyle(
-                          fontSize: 9, color: PdfColors.grey600),
-                    ),
-                  if (storePhone.isNotEmpty)
-                    pw.Text(
-                      'Tel: $storePhone',
-                      style: const pw.TextStyle(
-                          fontSize: 9, color: PdfColors.grey600),
-                    ),
-                  if (showTaxId && storeTaxId.isNotEmpty)
-                    pw.Text(
-                      'TIN: $storeTaxId',
-                      style: const pw.TextStyle(
-                          fontSize: 9, color: PdfColors.grey600),
-                    ),
                 ],
               ),
             ),

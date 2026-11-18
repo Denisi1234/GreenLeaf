@@ -60,7 +60,7 @@ void main() {
     expect(report.rows.single, ['Default Store', 2, 4, 300, null, null]);
   });
 
-  testWidgets('catalog search opens live reports and data requirements',
+  testWidgets('catalog search opens live reports and empty-state guidance',
       (tester) async {
     final store = PosLocalStore();
     addTearDown(store.dispose);
@@ -81,7 +81,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(InkWell, 'Detailed Receivings').last);
     await tester.pumpAndSettle();
-    expect(find.text('Requires supplier and stock receiving records.'),
+    expect(
+        find.text(
+            'No goods received yet. Record deliveries to build purchase history.'),
         findsOneWidget);
   });
 }

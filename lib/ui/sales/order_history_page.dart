@@ -447,7 +447,8 @@ class _OrderCardState extends State<_OrderCard> {
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceSecondary,
-                      borderRadius: BorderRadius.circular(AppRadius.sharp),
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
                       children: [
@@ -469,12 +470,108 @@ class _OrderCardState extends State<_OrderCard> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  if (order.status != 'Voided' && order.status != 'Returned') ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFEF4444),
+                              side: const BorderSide(color: Color(0xFFEF4444)),
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.assignment_return_outlined, size: 18),
+                            label: const Text(
+                              'Return / Restock',
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                            ),
+                            onPressed: () {
+                              _showReturnDialog(context, order);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
           ],
         ],
       ),
+    );
+  }
+  void _showReturnDialog(BuildContext context, _OrderHistoryItem order) {
+    final rawId = order.id.replaceFirst('#', '');
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) {
+        bool restock = true;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              title: Text('Process Return ${order.id}'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Order total: ${order.amount}\nPayment: ${order.paymentMethod}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Return items to inventory stock', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    value: restock,
+                    onChanged: (val) => setDialogState(() => restock = val ?? true),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEF4444),
+                    foregroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(dialogCtx);
+                    final store = context.read<PosLocalStore>();
+                    try {
+                      await store.voidOrder(rawId);
+                      if (!context.mounted) return;
+                      showMarketNotice(
+                        context,
+                        title: 'Order Returned',
+                        message: 'Sale ${order.id} was processed as return.',
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      showMarketNotice(
+                        context,
+                        title: 'Return Failed',
+                        message: e.toString(),
+                        type: MarketNoticeType.warning,
+                      );
+                    }
+                  },
+                  child: const Text('Confirm Return'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

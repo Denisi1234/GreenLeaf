@@ -21,6 +21,7 @@ import 'pos_cloud_database.dart';
 import 'php_api_client.dart';
 import 'pos_order_models.dart';
 import 'receipt_settings.dart';
+import 'store_models.dart';
 import 'store_preferences.dart';
 import 'expense_model.dart';
 import 'register_shift_model.dart';
@@ -29,100 +30,11 @@ import 'accounting_engine.dart';
 import 'accounting_model.dart';
 import 'tax_settings.dart';
 import 'daily_sales_report_service.dart';
+import 'subscription_models.dart';
+import 'pos_suspended_sale_model.dart';
 import 'package:track_mauzo/ui/models/capability.dart';
 
-const _seedInventory = <InventoryProductItem>[
-  InventoryProductItem(
-    code: 'P001',
-    name: 'Mineral Water 500ml',
-    category: 'Beverages',
-    purchasePrice: 2200,
-    sellingPrice: 3000,
-    stockCount: 120,
-    stockState: InventoryStockState.inStock,
-    artType: ProductArtType.aquafina,
-  ),
-  InventoryProductItem(
-    code: 'P002',
-    name: 'Coca-Cola',
-    category: 'Beverages',
-    purchasePrice: 2800,
-    sellingPrice: 3750,
-    stockCount: 85,
-    stockState: InventoryStockState.inStock,
-    artType: ProductArtType.coke,
-  ),
-  InventoryProductItem(
-    code: 'P003',
-    name: "Lay's Classic",
-    category: 'Snacks',
-    purchasePrice: 3400,
-    sellingPrice: 4500,
-    stockCount: 60,
-    stockState: InventoryStockState.inStock,
-    artType: ProductArtType.lays,
-  ),
-  InventoryProductItem(
-    code: 'P004',
-    name: 'Galaxy Milk',
-    category: 'Snacks',
-    purchasePrice: 3100,
-    sellingPrice: 4000,
-    stockCount: 40,
-    stockState: InventoryStockState.inStock,
-    artType: ProductArtType.galaxy,
-  ),
-  InventoryProductItem(
-    code: 'P005',
-    name: "Kellogg's Corn Flakes",
-    category: 'Groceries',
-    purchasePrice: 6400,
-    sellingPrice: 8500,
-    stockCount: 32,
-    stockState: InventoryStockState.inStock,
-    artType: ProductArtType.kelloggs,
-  ),
-  InventoryProductItem(
-    code: 'P006',
-    name: 'Dove Beauty Bar',
-    category: 'Personal Care',
-    purchasePrice: 2400,
-    sellingPrice: 3125,
-    stockCount: 54,
-    stockState: InventoryStockState.inStock,
-    artType: ProductArtType.dove,
-  ),
-  InventoryProductItem(
-    code: 'P007',
-    name: 'Colgate',
-    category: 'Personal Care',
-    purchasePrice: 3900,
-    sellingPrice: 5250,
-    stockCount: 28,
-    stockState: InventoryStockState.inStock,
-    artType: ProductArtType.colgate,
-  ),
-  InventoryProductItem(
-    code: 'P008',
-    name: 'Dettol Hand Wash',
-    category: 'Personal Care',
-    purchasePrice: 5200,
-    sellingPrice: 7125,
-    stockCount: 24,
-    stockState: InventoryStockState.inStock,
-    artType: ProductArtType.dettol,
-  ),
-  InventoryProductItem(
-    code: 'P009',
-    name: 'Tide Original',
-    category: 'Household',
-    purchasePrice: 9100,
-    sellingPrice: 12250,
-    stockCount: 18,
-    stockState: InventoryStockState.lowStock,
-    artType: ProductArtType.tide,
-  ),
-];
+
 
 const _staffPermissionCatalog = <String>[
   'View Sales',
@@ -133,40 +45,6 @@ const _staffPermissionCatalog = <String>[
   'Manage Staff',
   'Manage Payments',
   'System Settings',
-];
-
-const _seedStaffRoles = <StaffRoleData>[
-  StaffRoleData(
-    id: 'role-admin',
-    title: 'Admin',
-    subtitle: 'Super full access',
-    permissions: _staffPermissionCatalog,
-    sortOrder: 0,
-  ),
-  StaffRoleData(
-    id: 'role-manager',
-    title: 'Manager',
-    subtitle: 'Store management access',
-    permissions: <String>[
-      'View Sales',
-      'View Reports',
-      'Process Returns',
-      'Discounts',
-      'Manage Inventory',
-      'Manage Staff',
-    ],
-    sortOrder: 1,
-  ),
-  StaffRoleData(
-    id: 'role-cashier',
-    title: 'Cashier',
-    subtitle: 'Limited access for front counter',
-    permissions: <String>[
-      'View Sales',
-      'Process Returns',
-    ],
-    sortOrder: 2,
-  ),
 ];
 
 class AppProfileData {
@@ -465,8 +343,10 @@ class PosLocalStore extends ChangeNotifier {
   PosLocalStore({PosLocalDatabase? database})
       : _database = database ?? PosLocalDatabase.instance;
 
-  static const _storeId = 'store-default';
-  static const _defaultThreadId = 'thread-$_storeId';
+  static const _defaultStoreId = 'store-default';
+  String _activeStoreId = _defaultStoreId;
+  final List<Store> _stores = <Store>[];
+  String get _defaultThreadId => 'thread-$_activeStoreId';
   bool _savingCheckout = false;
   bool _disposed = false;
 
@@ -490,6 +370,7 @@ class PosLocalStore extends ChangeNotifier {
   final List<CashMovement> _cashMovements = <CashMovement>[];
   final List<Supplier> _suppliers = <Supplier>[];
   final List<Receiving> _receivings = <Receiving>[];
+  final List<SuspendedSale> _suspendedSales = <SuspendedSale>[];
   AppProfileData _profile = AppProfileData.empty();
   ReceiptSettings _receiptSettings = const ReceiptSettings();
   StorePreferences _storePreferences = const StorePreferences();
@@ -592,6 +473,36 @@ class PosLocalStore extends ChangeNotifier {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
+  StoreSubscription _subscription = StoreSubscription.free();
+  StoreSubscription get subscription => _subscription;
+  int get maxAllowedStores => _subscription.maxStores;
+  bool get canAddMoreStores => _stores.length < maxAllowedStores;
+
+  Future<void> activateSubscription({
+    required String planId,
+    required String planName,
+    required int maxStores,
+    required double priceTzs,
+    required String orderId,
+    required String phoneNumber,
+    int durationDays = 30,
+  }) async {
+    final now = DateTime.now();
+    _subscription = StoreSubscription(
+      planId: planId,
+      planName: planName,
+      maxStores: maxStores,
+      priceTzs: priceTzs,
+      orderId: orderId,
+      phoneNumber: phoneNumber,
+      subscribedAt: now,
+      expiresAt: now.add(Duration(days: durationDays)),
+      isActive: true,
+    );
+    await _saveUiConfig();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _disposed = true;
@@ -607,54 +518,58 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    final storedInventory = await _database.loadInventory(_storeId);
-    if (storedInventory.isEmpty && cloudApi == null) {
-      _allInventory
-        ..clear()
-        ..addAll(_seedInventory);
-      await _database.replaceInventory(_allInventory, _storeId);
-    } else {
-      _allInventory
-        ..clear()
-        ..addAll(storedInventory);
+    await _loadUiConfig();
+    await _ensureStoresLoaded();
+    final db = _database;
+    if (db is PosHybridDatabase) {
+      db.storeId = _activeStoreId;
     }
-    // ... continue updating other loaders
+
+    _accountsSeeded = false;
+    _allInventory.clear();
+    _products.clear();
+    _cartItems.clear();
+    _orders.clear();
+    _expenses.clear();
+    _customers.clear();
+    _debitEntries.clear();
+    _staffRoles.clear();
+    _staffMembers.clear();
+    _daftariSessions.clear();
+    _daftariLearningRules.clear();
+    _dukaAiThreads.clear();
+    _dukaAiMessages.clear();
+    _registerShifts.clear();
+    _cashMovements.clear();
+    _suppliers.clear();
+    _receivings.clear();
+    _accounts.clear();
+    _journalEntries.clear();
+    _fixedAssets.clear();
+    _bankTransactions.clear();
+
+    final storedInventory = await _database.loadInventory(_activeStoreId);
+    _allInventory
+      ..clear()
+      ..addAll(storedInventory);
 
     _syncProductsFromInventory();
 
-    final storedCart = await _database.loadCart(_storeId);
-    if (storedCart.isEmpty && cloudApi == null) {
-      _cartItems
-        ..clear()
-        ..addAll(_products.take(3));
-      await _database.replaceCart(_cartItems, _storeId);
-    } else {
-      _cartItems
-        ..clear()
-        ..addAll(storedCart);
-    }
+    final storedCart = await _database.loadCart(_activeStoreId);
+    _cartItems
+      ..clear()
+      ..addAll(storedCart);
 
     _orders
       ..clear()
-      ..addAll(await _database.loadOrders(_storeId));
+      ..addAll(await _database.loadOrders(_activeStoreId));
 
-    final storedRoles = await _database.loadStaffRoles(_storeId);
-    if (storedRoles.isEmpty && (cloudApi == null || cloudApi!.isOwner)) {
-      _staffRoles
-        ..clear()
-        ..addAll(_seedStaffRoles
-            .map((role) => role.copyWith(id: '$_storeId:${role.id}')));
-      await _database.replaceStaffRoles(
-        _staffRoles.map(_staffRoleToMap).toList(),
-        _storeId,
-      );
-    } else {
-      _staffRoles
-        ..clear()
-        ..addAll(storedRoles.map(_staffRoleFromMap));
-    }
+    final storedRoles = await _database.loadStaffRoles(_activeStoreId);
+    _staffRoles
+      ..clear()
+      ..addAll(storedRoles.map(_staffRoleFromMap));
 
-    final storedMembers = await _database.loadStaffMembers(_storeId);
+    final storedMembers = await _database.loadStaffMembers(_activeStoreId);
     _staffMembers
       ..clear()
       ..addAll(storedMembers.map(_staffMemberFromMap));
@@ -682,25 +597,25 @@ class PosLocalStore extends ChangeNotifier {
 
     _daftariSessions
       ..clear()
-      ..addAll(await _database.loadDaftariSessions(_storeId));
+      ..addAll(await _database.loadDaftariSessions(_activeStoreId));
     _daftariLearningRules
       ..clear()
-      ..addAll(await _database.loadDaftariLearningRules(_storeId));
+      ..addAll(await _database.loadDaftariLearningRules(_activeStoreId));
     _dukaAiThreads
       ..clear()
-      ..addAll(await _database.loadDukaAiThreads(_storeId));
+      ..addAll(await _database.loadDukaAiThreads(_activeStoreId));
 
-    final storedExpenses = await _database.loadExpenses(_storeId);
+    final storedExpenses = await _database.loadExpenses(_activeStoreId);
     _expenses
       ..clear()
       ..addAll(storedExpenses.map(Expense.fromMap));
 
-    final storedCustomers = await _database.loadCustomers(_storeId);
+    final storedCustomers = await _database.loadCustomers(_activeStoreId);
     _customers
       ..clear()
       ..addAll(storedCustomers.map(_customerFromMap));
 
-    final storedDebitEntries = await _database.loadDebitEntries(_storeId);
+    final storedDebitEntries = await _database.loadDebitEntries(_activeStoreId);
     _debitEntries
       ..clear()
       ..addAll(storedDebitEntries.map(DebitEntry.fromMap))
@@ -720,7 +635,7 @@ class PosLocalStore extends ChangeNotifier {
           updatedAt: now,
         );
         _dukaAiThreads.add(defaultThread);
-        await _database.upsertDukaAiThread(defaultThread, _storeId);
+        await _database.upsertDukaAiThread(defaultThread, _activeStoreId);
       }
 
       _activeDukaAiThreadId = _dukaAiThreads.first.id;
@@ -739,7 +654,7 @@ class PosLocalStore extends ChangeNotifier {
         await _database.replaceDukaAiMessages(
           _activeDukaAiThreadId!,
           _dukaAiMessages,
-          _storeId,
+          _activeStoreId,
         );
       }
 
@@ -778,7 +693,6 @@ class PosLocalStore extends ChangeNotifier {
     _receiptSettings = await _database.loadReceiptSettings();
     _taxSettings = await _database.loadTaxSettings();
     await _reloadAccounting();
-    await _loadUiConfig();
     await _recalculateStockStates();
 
     _updateCartTotals();
@@ -867,7 +781,7 @@ class PosLocalStore extends ChangeNotifier {
   List<Expense> get expenses => List.unmodifiable(_expenses);
 
   Future<void> addExpense(Expense expense) async {
-    await _database.insertExpense(expense.toMap(), _storeId);
+    await _database.insertExpense(expense.toMap(), _activeStoreId);
     await _reloadExpenses();
     notifyListeners();
   }
@@ -888,20 +802,20 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> _reloadExpenses() async {
     _expenses
       ..clear()
-      ..addAll((await _database.loadExpenses(_storeId)).map(
+      ..addAll((await _database.loadExpenses(_activeStoreId)).map(
         (row) => Expense.fromMap(Map<String, dynamic>.from(row)),
       ));
   }
 
   Future<void> _reloadRegister() async {
-    final storedShifts = await _database.loadRegisterShifts(_storeId);
+    final storedShifts = await _database.loadRegisterShifts(_activeStoreId);
     _registerShifts
       ..clear()
       ..addAll(storedShifts.map(
         (row) => RegisterShift.fromMap(Map<String, dynamic>.from(row)),
       ));
 
-    final storedMovements = await _database.loadCashMovements(_storeId);
+    final storedMovements = await _database.loadCashMovements(_activeStoreId);
     _cashMovements
       ..clear()
       ..addAll(storedMovements.map(
@@ -961,7 +875,7 @@ class PosLocalStore extends ChangeNotifier {
       openedAt: DateTime.now(),
       openingFloat: openingFloat,
     );
-    final id = await _database.insertRegisterShift(shift.toMap(), _storeId);
+    final id = await _database.insertRegisterShift(shift.toMap(), _activeStoreId);
     await _reloadRegister();
 
     notifyListeners();
@@ -1017,7 +931,7 @@ class PosLocalStore extends ChangeNotifier {
       at: DateTime.now(),
       recordedBy: recordedBy,
     );
-    await _database.insertCashMovement(movement.toMap(), _storeId);
+    await _database.insertCashMovement(movement.toMap(), _activeStoreId);
     await _reloadRegister();
 
     notifyListeners();
@@ -1043,7 +957,7 @@ class PosLocalStore extends ChangeNotifier {
       List.unmodifiable(_bankTransactions);
 
   Future<void> _reloadAccounting() async {
-    final stored = await _database.loadAccounts(_storeId);
+    final stored = await _database.loadAccounts(_activeStoreId);
     _accounts
       ..clear()
       ..addAll(stored.map(
@@ -1051,7 +965,7 @@ class PosLocalStore extends ChangeNotifier {
       ));
     if (_accounts.isEmpty && !_accountsSeeded) {
       for (final account in Account.defaults()) {
-        final id = await _database.insertAccount(account.toMap(), _storeId);
+        final id = await _database.insertAccount(account.toMap(), _activeStoreId);
         _accounts.add(Account(
           id: id,
           code: account.code,
@@ -1064,14 +978,14 @@ class PosLocalStore extends ChangeNotifier {
       _accounts.sort((a, b) => a.code.compareTo(b.code));
     }
 
-    final storedEntries = await _database.loadJournalEntries(_storeId);
+    final storedEntries = await _database.loadJournalEntries(_activeStoreId);
     final entries = <JournalEntry>[];
     for (final row in storedEntries) {
       final map = Map<String, dynamic>.from(row);
       final id = map['id'] as int?;
       final lines = id == null
           ? const <JournalLine>[]
-          : (await _database.loadJournalLines(_storeId, id))
+          : (await _database.loadJournalLines(_activeStoreId, id))
               .map((line) =>
                   JournalLine.fromMap(Map<String, dynamic>.from(line)))
               .toList();
@@ -1081,14 +995,14 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(entries);
 
-    final storedAssets = await _database.loadFixedAssets(_storeId);
+    final storedAssets = await _database.loadFixedAssets(_activeStoreId);
     _fixedAssets
       ..clear()
       ..addAll(storedAssets.map(
         (row) => FixedAsset.fromMap(Map<String, dynamic>.from(row)),
       ));
 
-    final storedBank = await _database.loadBankTransactions(_storeId);
+    final storedBank = await _database.loadBankTransactions(_activeStoreId);
     _bankTransactions
       ..clear()
       ..addAll(storedBank.map(
@@ -1098,7 +1012,7 @@ class PosLocalStore extends ChangeNotifier {
 
   Future<Account> saveAccount(Account account) async {
     if (account.id == null) {
-      final id = await _database.insertAccount(account.toMap(), _storeId);
+      final id = await _database.insertAccount(account.toMap(), _activeStoreId);
       await _reloadAccounting();
       notifyListeners();
       return Account(
@@ -1122,7 +1036,7 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<void> saveJournalEntry(JournalEntry entry) async {
-    final id = await _database.insertJournalEntry(entry.toMap(), _storeId);
+    final id = await _database.insertJournalEntry(entry.toMap(), _activeStoreId);
     if (entry.lines.isNotEmpty) {
       await _database.insertJournalLines(
         [
@@ -1134,7 +1048,7 @@ class PosLocalStore extends ChangeNotifier {
               'credit': line.credit,
             },
         ],
-        _storeId,
+        _activeStoreId,
       );
     }
     await _reloadAccounting();
@@ -1149,7 +1063,7 @@ class PosLocalStore extends ChangeNotifier {
 
   Future<void> saveFixedAsset(FixedAsset asset) async {
     if (asset.id == null) {
-      await _database.insertFixedAsset(asset.toMap(), _storeId);
+      await _database.insertFixedAsset(asset.toMap(), _activeStoreId);
     } else {
       await _database.updateFixedAsset(asset.id!, asset.toMap());
     }
@@ -1164,7 +1078,7 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<void> addBankTransaction(BankTransaction entry) async {
-    await _database.insertBankTransaction(entry.toMap(), _storeId);
+    await _database.insertBankTransaction(entry.toMap(), _activeStoreId);
     await _reloadAccounting();
     notifyListeners();
   }
@@ -1239,21 +1153,21 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<void> _reloadSuppliers() async {
-    final stored = await _database.loadSuppliers(_storeId);
+    final stored = await _database.loadSuppliers(_activeStoreId);
     _suppliers
       ..clear()
       ..addAll(stored.map(
         (row) => Supplier.fromMap(Map<String, dynamic>.from(row)),
       ));
 
-    final storedReceivings = await _database.loadReceivings(_storeId);
+    final storedReceivings = await _database.loadReceivings(_activeStoreId);
     final loaded = <Receiving>[];
     for (final row in storedReceivings) {
       final map = Map<String, dynamic>.from(row);
       final id = map['id'] as int?;
       final lines = id == null
           ? const <ReceivingLine>[]
-          : (await _database.loadReceivingLines(_storeId, id))
+          : (await _database.loadReceivingLines(_activeStoreId, id))
               .map((line) =>
                   ReceivingLine.fromMap(Map<String, dynamic>.from(line)))
               .toList();
@@ -1266,7 +1180,7 @@ class PosLocalStore extends ChangeNotifier {
 
   Future<Supplier> saveSupplier(Supplier supplier) async {
     if (supplier.id == null) {
-      final id = await _database.insertSupplier(supplier.toMap(), _storeId);
+      final id = await _database.insertSupplier(supplier.toMap(), _activeStoreId);
       await _reloadSuppliers();
       notifyListeners();
       return supplier.id == id
@@ -1288,7 +1202,7 @@ class PosLocalStore extends ChangeNotifier {
 
   /// Records goods received and adds the quantities to matching stock items.
   Future<Receiving> saveReceiving(Receiving receiving) async {
-    final id = await _database.insertReceiving(receiving.toMap(), _storeId);
+    final id = await _database.insertReceiving(receiving.toMap(), _activeStoreId);
     if (receiving.lines.isNotEmpty) {
       await _database.insertReceivingLines(
         [
@@ -1301,7 +1215,7 @@ class PosLocalStore extends ChangeNotifier {
               'selling_price': line.sellingPrice,
             },
         ],
-        _storeId,
+        _activeStoreId,
       );
     }
     for (final line in receiving.lines) {
@@ -1467,25 +1381,6 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _writeUiConfig() async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/track_mauzo_ui_config.json');
-      Map<String, dynamic> existing = <String, dynamic>{};
-      if (await file.exists()) {
-        try {
-          final decoded = jsonDecode(await file.readAsString());
-          if (decoded is Map<String, dynamic>) existing = decoded;
-        } catch (_) {}
-      }
-      existing['languageCode'] = _languageCode;
-      existing.addAll(_storePreferences.toJson());
-      await file.writeAsString(jsonEncode(existing), flush: true);
-    } catch (_) {
-      rethrow;
-    }
-  }
-
   Future<void> _loadUiConfig() async {
     _storePreferences = const StorePreferences();
     try {
@@ -1494,6 +1389,7 @@ class PosLocalStore extends ChangeNotifier {
       if (!await file.exists()) {
         final defaults = <String, dynamic>{
           'languageCode': _defaultLanguageCode,
+          'activeStoreId': _activeStoreId,
           ..._storePreferences.toJson(),
         };
         await file.writeAsString(jsonEncode(defaults));
@@ -1503,7 +1399,16 @@ class PosLocalStore extends ChangeNotifier {
         _languageCode = AppStrings.normalize(
           map['languageCode'] as String? ?? _defaultLanguageCode,
         );
+        final savedStoreId = (map['activeStoreId'] as String?)?.trim();
+        if (savedStoreId != null && savedStoreId.isNotEmpty) {
+          _activeStoreId = savedStoreId;
+        }
         _storePreferences = StorePreferences.fromJson(map);
+        if (map['subscription'] is Map<String, dynamic>) {
+          _subscription = StoreSubscription.fromJson(
+            Map<String, dynamic>.from(map['subscription'] as Map),
+          );
+        }
       }
     } catch (_) {
       _languageCode = _defaultLanguageCode;
@@ -1528,9 +1433,234 @@ class PosLocalStore extends ChangeNotifier {
     }
   }
 
+  Future<void> _saveUiConfig() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/track_mauzo_ui_config.json');
+      Map<String, dynamic> existing = <String, dynamic>{};
+      if (await file.exists()) {
+        try {
+          final decoded = jsonDecode(await file.readAsString());
+          if (decoded is Map<String, dynamic>) existing = decoded;
+        } catch (_) {}
+      }
+      existing['languageCode'] = _languageCode;
+      existing['activeStoreId'] = _activeStoreId;
+      existing['subscription'] = _subscription.toJson();
+      existing.addAll(_storePreferences.toJson());
+      await file.writeAsString(jsonEncode(existing), flush: true);
+    } catch (_) {}
+  }
+
+  Future<void> _writeUiConfig() => _saveUiConfig();
+
   List<ProductItem> get products => List.unmodifiable(_products);
   List<ProductItem> get cartItems => List.unmodifiable(_cartItems);
   List<CompletedOrder> get orders => List.unmodifiable(_orders);
+  List<Store> get stores => List.unmodifiable(_stores);
+  String get activeStoreId => _activeStoreId;
+  Store get activeStore {
+    for (final store in _stores) {
+      if (store.id == _activeStoreId) return store;
+    }
+    if (_stores.isNotEmpty) return _stores.first;
+    return const Store(
+      id: _defaultStoreId,
+      name: 'Default Store',
+      address: '',
+      contact: '',
+    );
+  }
+  String get activeStoreName {
+    final name = activeStore.name.trim();
+    return name.isEmpty ? profile.storeName : name;
+  }
+
+  Future<void> _ensureStoresLoaded() async {
+    try {
+      final rows = await _database.loadStores();
+      _stores
+        ..clear()
+        ..addAll(rows.map((row) => Store.fromMap(Map<String, dynamic>.from(row))));
+    } catch (_) {
+      _stores.clear();
+    }
+    if (_stores.isEmpty) {
+      _stores.add(const Store(
+        id: _defaultStoreId,
+        name: 'Default Store',
+        address: '',
+        contact: '',
+      ));
+      try {
+        await _database.upsertStore(_stores.first.toMap());
+      } catch (_) {}
+    }
+    if (!_stores.any((s) => s.id == _activeStoreId)) {
+      _activeStoreId = _stores.first.id;
+    }
+    final db = _database;
+    if (db is PosHybridDatabase) {
+      db.storeId = _activeStoreId;
+    }
+  }
+
+  Future<void> saveStore(Store store) async {
+    await _database.upsertStore(store.toMap());
+    await _ensureStoresLoaded();
+    if (_activeStoreId == store.id) {
+      _profile = _profile.copyWith(storeName: store.name);
+    }
+    notifyListeners();
+  }
+
+  Future<void> createStore({
+    required String name,
+    String address = '',
+    String contact = '',
+  }) async {
+    final id = 'store-${DateTime.now().millisecondsSinceEpoch}';
+    final store = Store(id: id, name: name.trim(), address: address.trim(), contact: contact.trim());
+    await saveStore(store);
+  }
+
+  Future<void> deleteStore(String id) async {
+    if (id == _defaultStoreId || _stores.length <= 1) return;
+    await _database.deleteStore(id);
+    if (_activeStoreId == id) {
+      _activeStoreId = _defaultStoreId;
+      await _saveUiConfig();
+      await _reloadActiveStoreData();
+    } else {
+      await _ensureStoresLoaded();
+      notifyListeners();
+    }
+  }
+
+  Future<void> switchStore(String id) async {
+    if (id == _activeStoreId) return;
+    if (!_stores.any((s) => s.id == id)) return;
+    _activeStoreId = id;
+    final db = _database;
+    if (db is PosHybridDatabase) {
+      db.storeId = _activeStoreId;
+    }
+    await _saveUiConfig();
+    await _reloadActiveStoreData();
+  }
+
+  Future<void> _reloadActiveStoreData() async {
+    await _ensureStoresLoaded();
+    _isInitialized = false;
+    await initialize();
+  }
+
+  Future<List<StoreSnapshot>> loadAllStoreSnapshots() async {
+    await _ensureStoresLoaded();
+    final snapshots = <StoreSnapshot>[];
+    for (final store in _stores) {
+      snapshots.add(await _loadStoreSnapshot(store));
+    }
+    return snapshots;
+  }
+
+  Future<StoreSnapshot> _loadStoreSnapshot(Store store) async {
+    final sid = store.id;
+    final orders = await _database.loadOrders(sid);
+    final inventory = await _database.loadInventory(sid);
+    final expenses = (await _database.loadExpenses(sid))
+        .map((e) => Expense.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+    final customers = (await _database.loadCustomers(sid))
+        .map((c) => _customerFromMap(Map<String, Object?>.from(c)))
+        .toList();
+    final shiftRows = await _database.loadRegisterShifts(sid);
+    final movementRows = await _database.loadCashMovements(sid);
+    final movements = movementRows
+        .map((m) => CashMovement.fromMap(Map<String, dynamic>.from(m)))
+        .toList();
+    final shifts = shiftRows.map((s) {
+      final shift = RegisterShift.fromMap(Map<String, dynamic>.from(s));
+      final shiftKey = shift.id?.toString() ?? '';
+      final list = movements.where((m) => m.shiftId == shiftKey).toList()
+        ..sort((a, b) => b.at.compareTo(a.at));
+      return RegisterShift(
+        id: shift.id,
+        register: shift.register,
+        openedBy: shift.openedBy,
+        openedAt: shift.openedAt,
+        openingFloat: shift.openingFloat,
+        closedAt: shift.closedAt,
+        closedBy: shift.closedBy,
+        countedCash: shift.countedCash,
+        notes: shift.notes,
+        movements: list,
+      );
+    }).toList();
+    final suppliers = (await _database.loadSuppliers(sid))
+        .map((s) => Supplier.fromMap(Map<String, dynamic>.from(s)))
+        .toList();
+    final receivingRows = await _database.loadReceivings(sid);
+    final receivings = <Receiving>[];
+    for (final row in receivingRows) {
+      final map = Map<String, dynamic>.from(row);
+      final id = map['id'] as int?;
+      final lines = id == null
+          ? const <ReceivingLine>[]
+          : (await _database.loadReceivingLines(sid, id))
+              .map((l) => ReceivingLine.fromMap(Map<String, dynamic>.from(l)))
+              .toList();
+      receivings.add(Receiving.fromMap(map, lines: lines));
+    }
+    final tax = await _database.loadTaxSettings();
+    final accounts = (await _database.loadAccounts(sid))
+        .map((a) => Account.fromMap(Map<String, dynamic>.from(a)))
+        .toList();
+    final journalRows = await _database.loadJournalEntries(sid);
+    final journalEntries = <JournalEntry>[];
+    for (final row in journalRows) {
+      final map = Map<String, dynamic>.from(row);
+      final id = map['id'] as int?;
+      final lines = id == null
+          ? const <JournalLine>[]
+          : (await _database.loadJournalLines(sid, id))
+              .map((l) => JournalLine.fromMap(Map<String, dynamic>.from(l)))
+              .toList();
+      journalEntries.add(JournalEntry.fromMap(map, lines: lines));
+    }
+    final fixedAssets = (await _database.loadFixedAssets(sid))
+        .map((a) => FixedAsset.fromMap(Map<String, dynamic>.from(a)))
+        .toList();
+    final bankTransactions = (await _database.loadBankTransactions(sid))
+        .map((b) => BankTransaction.fromMap(Map<String, dynamic>.from(b)))
+        .toList();
+    final postings = _accounting.postings(
+      orders: orders,
+      expenses: expenses,
+      receivings: receivings,
+      suppliers: suppliers,
+      shifts: shifts,
+      fixedAssets: fixedAssets,
+      journalEntries: journalEntries,
+      accounts: accounts,
+      tax: tax,
+    );
+    final trial = _accounting.trialBalance(postings);
+    return StoreSnapshot(
+      store: store,
+      orders: orders,
+      inventory: inventory,
+      expenses: expenses,
+      customers: customers,
+      shifts: shifts,
+      suppliers: suppliers,
+      receivings: receivings,
+      tax: tax,
+      trialBalanceRows: trial,
+      fixedAssets: fixedAssets,
+      bankTransactions: bankTransactions,
+    );
+  }
   List<InventoryProductItem> get inventory => List.unmodifiable(_allInventory);
   List<StaffRoleData> get staffRoles => List.unmodifiable(_staffRoles);
   List<StaffMemberData> get staffMembers => List.unmodifiable(_staffMembers);
@@ -1649,7 +1779,7 @@ class PosLocalStore extends ChangeNotifier {
           .sort((left, right) => right.createdAt.compareTo(left.createdAt));
     }
     notifyListeners();
-    await _database.upsertDaftariSession(session, _storeId);
+    await _database.upsertDaftariSession(session, _activeStoreId);
   }
 
   Future<void> rememberDaftariCorrection({
@@ -1698,7 +1828,7 @@ class PosLocalStore extends ChangeNotifier {
       return right.hitCount.compareTo(left.hitCount);
     });
     notifyListeners();
-    await _database.upsertDaftariLearningRule(updated, _storeId);
+    await _database.upsertDaftariLearningRule(updated, _activeStoreId);
   }
 
   Future<void> replaceDukaAiMessages(List<DukaAiMessage> messages) async {
@@ -1713,7 +1843,7 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(messages);
     notifyListeners();
-    await _database.replaceDukaAiMessages(threadId, _dukaAiMessages, _storeId);
+    await _database.replaceDukaAiMessages(threadId, _dukaAiMessages, _activeStoreId);
   }
 
   Future<DukaAiThread> createDukaAiThread({
@@ -1736,8 +1866,8 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(seedMessages ?? const <DukaAiMessage>[]);
     notifyListeners();
-    await _database.upsertDukaAiThread(thread, _storeId);
-    await _database.replaceDukaAiMessages(thread.id, _dukaAiMessages, _storeId);
+    await _database.upsertDukaAiThread(thread, _activeStoreId);
+    await _database.replaceDukaAiMessages(thread.id, _dukaAiMessages, _activeStoreId);
     return thread;
   }
 
@@ -1768,7 +1898,7 @@ class PosLocalStore extends ChangeNotifier {
     _dukaAiThreads
         .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
-    await _database.upsertDukaAiThread(updated, _storeId);
+    await _database.upsertDukaAiThread(updated, _activeStoreId);
   }
 
   Future<void> updateDukaAiThreadPreview(
@@ -1786,7 +1916,7 @@ class PosLocalStore extends ChangeNotifier {
     _dukaAiThreads
         .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
     notifyListeners();
-    await _database.upsertDukaAiThread(updated, _storeId);
+    await _database.upsertDukaAiThread(updated, _activeStoreId);
   }
 
   Future<void> deleteDukaAiThread(String threadId) async {
@@ -1818,9 +1948,9 @@ class PosLocalStore extends ChangeNotifier {
             createdAt: DateTime.now().toIso8601String(),
           ),
         );
-      await _database.upsertDukaAiThread(defaultThread, _storeId);
+      await _database.upsertDukaAiThread(defaultThread, _activeStoreId);
       await _database.replaceDukaAiMessages(
-          defaultThread.id, _dukaAiMessages, _storeId);
+          defaultThread.id, _dukaAiMessages, _activeStoreId);
     } else if (wasActive) {
       _activeDukaAiThreadId = _dukaAiThreads.first.id;
       _dukaAiMessages
@@ -1855,7 +1985,7 @@ class PosLocalStore extends ChangeNotifier {
 
   Future<void> _persistCart() async {
     try {
-      await _database.replaceCart(_cartItems, _storeId);
+      await _database.replaceCart(_cartItems, _activeStoreId);
       _lastPersistenceError = null;
     } catch (error) {
       _lastPersistenceError = error.toString();
@@ -1863,11 +1993,48 @@ class PosLocalStore extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  List<SuspendedSale> get suspendedSales => List.unmodifiable(_suspendedSales);
+
+  /// Holds / parks current cart (OSPOS Suspended Sale pattern)
+  Future<SuspendedSale?> suspendCurrentSale({String? customerName, String? comment}) async {
+    if (_cartItems.isEmpty) return null;
+    final sale = SuspendedSale(
+      id: 'HOLD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      createdAt: DateTime.now(),
+      items: List<ProductItem>.from(_cartItems),
+      customerName: customerName,
+      comment: comment,
+    );
+    _suspendedSales.insert(0, sale);
+    _cartItems.clear();
+    _updateCartTotals();
+    notifyListeners();
+    await _persistCart();
+    return sale;
+  }
+
+  /// Resumes a previously suspended sale and puts its items back into the active cart
+  Future<void> resumeSuspendedSale(String id) async {
+    final index = _suspendedSales.indexWhere((s) => s.id == id);
+    if (index == -1) return;
+    final sale = _suspendedSales.removeAt(index);
+    _cartItems.addAll(sale.items);
+    _updateCartTotals();
+    notifyListeners();
+    await _persistCart();
+  }
+
+  /// Cancels / deletes a suspended sale without resuming it
+  void deleteSuspendedSale(String id) {
+    _suspendedSales.removeWhere((s) => s.id == id);
+    notifyListeners();
+  }
+
   Future<void> clearCart() async {
     _cartItems.clear();
     _updateCartTotals();
     notifyListeners();
-    await _database.replaceCart(_cartItems, _storeId);
+    await _database.replaceCart(_cartItems, _activeStoreId);
   }
 
   Future<InventoryProductItem> addProduct(InventoryProductItem product) async {
@@ -1875,7 +2042,7 @@ class PosLocalStore extends ChangeNotifier {
       throw StateError(
           'A product with this code already exists. Refresh and try again.');
     }
-    await _database.replaceInventory([product, ..._allInventory], _storeId);
+    await _database.replaceInventory([product, ..._allInventory], _activeStoreId);
     _allInventory.insert(0, product);
     _syncProductsFromInventory();
     notifyListeners();
@@ -1887,7 +2054,7 @@ class PosLocalStore extends ChangeNotifier {
     if (index != -1) {
       final next = List<InventoryProductItem>.from(_allInventory);
       next[index] = product;
-      await _database.replaceInventory(next, _storeId);
+      await _database.replaceInventory(next, _activeStoreId);
       _allInventory[index] = product;
       _syncProductsFromInventory();
       notifyListeners();
@@ -1903,8 +2070,8 @@ class PosLocalStore extends ChangeNotifier {
     _syncProductsFromInventory();
     _updateCartTotals();
     notifyListeners();
-    await _database.replaceInventory(_allInventory, _storeId);
-    await _database.replaceCart(_cartItems, _storeId);
+    await _database.replaceInventory(_allInventory, _activeStoreId);
+    await _database.replaceCart(_cartItems, _activeStoreId);
 
     final imagePath = removedItem?.imagePath;
     if (cloudApi != null) return;
@@ -1935,7 +2102,7 @@ class PosLocalStore extends ChangeNotifier {
 
     _syncProductsFromInventory();
     notifyListeners();
-    await _database.replaceInventory(_allInventory, _storeId);
+    await _database.replaceInventory(_allInventory, _activeStoreId);
   }
 
   Future<CompletedOrder> completeCashSale({
@@ -2050,7 +2217,7 @@ class PosLocalStore extends ChangeNotifier {
         _customers.add(creditCustomer);
         await _database.replaceCustomers(
           _customers.map(_customerToMap).toList(),
-          _storeId,
+          _activeStoreId,
         );
       }
     }
@@ -2059,7 +2226,7 @@ class PosLocalStore extends ChangeNotifier {
     try {
       await _database.saveCheckout(
         order: order,
-        storeId: _storeId,
+        storeId: _activeStoreId,
         stockUpdates: stockUpdates.values.toList(),
         creditCustomer:
             creditCustomer == null ? null : _customerToMap(creditCustomer),
@@ -2150,10 +2317,10 @@ class PosLocalStore extends ChangeNotifier {
 
     final database = _database;
     if (database is PosHybridDatabase) {
-      await database.replaceInventoryLocal(_allInventory, _storeId);
+      await database.replaceInventoryLocal(_allInventory, _activeStoreId);
       await database.deleteOrder(orderId);
     } else {
-      await database.replaceInventory(_allInventory, _storeId);
+      await database.replaceInventory(_allInventory, _activeStoreId);
       await database.deleteOrder(orderId);
     }
   }
@@ -2178,7 +2345,7 @@ class PosLocalStore extends ChangeNotifier {
 
     await _database.replaceCustomers(
       _customers.map(_customerToMap).toList(),
-      _storeId,
+      _activeStoreId,
     );
     await _persistDebitEntries();
   }
@@ -2259,7 +2426,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffRoles(
       _staffRoles.map(_staffRoleToMap).toList(),
-      _storeId,
+      _activeStoreId,
     );
     return nextRole;
   }
@@ -2276,7 +2443,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffRoles(
       _staffRoles.map(_staffRoleToMap).toList(),
-      _storeId,
+      _activeStoreId,
     );
   }
 
@@ -2286,7 +2453,7 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
     await _database.replaceStaffRoles(
       _staffRoles.map(_staffRoleToMap).toList(),
-      _storeId,
+      _activeStoreId,
     );
   }
 
@@ -2304,7 +2471,7 @@ class PosLocalStore extends ChangeNotifier {
       nextMembers[existingIndex] = nextStaff;
     }
     await _database.saveStaffRecord(
-      {..._staffMemberToMap(nextStaff), 'store_id': _storeId},
+      {..._staffMemberToMap(nextStaff), 'store_id': _activeStoreId},
       cloudPassword,
     );
     _staffMembers
@@ -2453,6 +2620,10 @@ class PosLocalStore extends ChangeNotifier {
     );
   }
 
+  int availableStockForProduct(ProductItem product) {
+    return _availableStockForProduct(product);
+  }
+
   int _availableStockForProduct(ProductItem product) {
     final index = _findInventoryIndex(product);
     if (index == -1) return 0;
@@ -2507,9 +2678,9 @@ class PosLocalStore extends ChangeNotifier {
     _syncProductsFromInventory();
     final database = _database;
     if (database is PosHybridDatabase) {
-      await database.replaceInventoryLocal(_allInventory, _storeId);
+      await database.replaceInventoryLocal(_allInventory, _activeStoreId);
     } else {
-      await database.replaceInventory(_allInventory, _storeId);
+      await database.replaceInventory(_allInventory, _activeStoreId);
     }
   }
 
@@ -2696,14 +2867,14 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> _persistDebitEntries() async {
     await _database.replaceDebitEntries(
       _debitEntries.map((entry) => entry.toMap()).toList(),
-      _storeId,
+      _activeStoreId,
     );
   }
 
   Future<void> _appendDebitEntry(DebitEntry entry) async {
     _debitEntries.insert(0, entry);
     try {
-      await _database.insertDebitEntry(entry.toMap(), _storeId);
+      await _database.insertDebitEntry(entry.toMap(), _activeStoreId);
     } catch (_) {
       // Cloud accounts keep the ledger on the server; the in-memory entry is
       // still reported for this session.
@@ -2737,7 +2908,7 @@ class PosLocalStore extends ChangeNotifier {
     _customers[index] = updated;
     await _database.replaceCustomers(
       _customers.map(_customerToMap).toList(),
-      _storeId,
+      _activeStoreId,
     );
 
     final entry = DebitEntry.now(
@@ -2758,7 +2929,7 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> addCustomer(CustomerData customer) async {
     await _database.replaceCustomers(
       [..._customers, customer].map(_customerToMap).toList(),
-      _storeId,
+      _activeStoreId,
     );
     _customers.add(customer);
     notifyListeners();
@@ -2800,7 +2971,7 @@ class PosLocalStore extends ChangeNotifier {
     final next = List<CustomerData>.from(_customers);
     next[index] = customer;
     await _database.replaceCustomers(
-        next.map(_customerToMap).toList(), _storeId);
+        next.map(_customerToMap).toList(), _activeStoreId);
     _customers[index] = customer;
     notifyListeners();
   }
@@ -2808,7 +2979,7 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> deleteCustomer(String customerId) async {
     await _database.replaceCustomers(
       _customers.where((c) => c.id != customerId).map(_customerToMap).toList(),
-      _storeId,
+      _activeStoreId,
     );
     _customers.removeWhere((c) => c.id == customerId);
     _debitEntries.removeWhere((entry) => entry.customerId == customerId);
@@ -2833,7 +3004,7 @@ class PosLocalStore extends ChangeNotifier {
           customer.copyWith(debitBalance: next > 0 ? next : 0);
       await _database.replaceCustomers(
         _customers.map(_customerToMap).toList(),
-        _storeId,
+        _activeStoreId,
       );
     }
 

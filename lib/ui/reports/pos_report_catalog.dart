@@ -4,7 +4,8 @@ enum ReportGroup {
   detailed('Detailed Reports'),
   inventory('Inventory Reports'),
   accounting('Accounting & Register'),
-  operations('TrackMauzo Reports');
+  operations('TrackMauzo Reports'),
+  multiStore('Multi-Store Reports');
 
   const ReportGroup(this.label);
   final String label;
@@ -56,6 +57,29 @@ enum ReportData {
   creditSales,
   discountedItems,
   newCustomers,
+  multiStoreSales,
+  multiStoreProfit,
+  multiStoreExpenses,
+  multiStoreInventoryValue,
+  multiStoreLowStock,
+  multiStoreOutOfStock,
+  multiStoreCustomers,
+  multiStoreNewCustomers,
+  multiStoreCredit,
+  multiStoreSuppliers,
+  multiStoreReceivings,
+  multiStoreTax,
+  multiStoreCashFlow,
+  multiStoreBank,
+  multiStoreAssets,
+  multiStoreStaff,
+  multiStorePayments,
+  multiStoreDiscounts,
+  multiStoreCategories,
+  multiStoreItems,
+  multiStoreRegister,
+  multiStoreComparison,
+  multiStorePerformance,
 }
 
 class PosReport {
@@ -74,10 +98,17 @@ class PosReport {
         ReportData.balances ||
         ReportData.stockByCategory ||
         ReportData.stockValue ||
-        ReportData.outOfStock =>
+        ReportData.outOfStock ||
+        ReportData.multiStoreInventoryValue ||
+        ReportData.multiStoreLowStock ||
+        ReportData.multiStoreOutOfStock ||
+        ReportData.multiStoreAssets ||
+        ReportData.multiStoreCredit =>
           true,
         _ => false,
       };
+
+  bool get isMultiStore => group == ReportGroup.multiStore;
 }
 
 const posReports = [
@@ -252,4 +283,27 @@ const posReports = [
     ReportData.discountedItems,
   ),
   PosReport('New Customers', ReportGroup.operations, ReportData.newCustomers),
+  PosReport('Multi-Store Sales Comparison', ReportGroup.multiStore, ReportData.multiStoreSales, chart: true),
+  PosReport('Multi-Store Profit Comparison', ReportGroup.multiStore, ReportData.multiStoreProfit, chart: true),
+  PosReport('Multi-Store Expenses Comparison', ReportGroup.multiStore, ReportData.multiStoreExpenses, chart: true),
+  PosReport('Multi-Store Inventory Value', ReportGroup.multiStore, ReportData.multiStoreInventoryValue),
+  PosReport('Multi-Store Low Stock', ReportGroup.multiStore, ReportData.multiStoreLowStock),
+  PosReport('Multi-Store Out of Stock', ReportGroup.multiStore, ReportData.multiStoreOutOfStock),
+  PosReport('Multi-Store Customer Base', ReportGroup.multiStore, ReportData.multiStoreCustomers),
+  PosReport('Multi-Store New Customers', ReportGroup.multiStore, ReportData.multiStoreNewCustomers),
+  PosReport('Multi-Store Outstanding Credit', ReportGroup.multiStore, ReportData.multiStoreCredit),
+  PosReport('Multi-Store Suppliers & Purchases', ReportGroup.multiStore, ReportData.multiStoreSuppliers),
+  PosReport('Multi-Store Goods Received', ReportGroup.multiStore, ReportData.multiStoreReceivings),
+  PosReport('Multi-Store Tax Summary', ReportGroup.multiStore, ReportData.multiStoreTax),
+  PosReport('Multi-Store Cash Flow', ReportGroup.multiStore, ReportData.multiStoreCashFlow),
+  PosReport('Multi-Store Bank Position', ReportGroup.multiStore, ReportData.multiStoreBank),
+  PosReport('Multi-Store Fixed Assets', ReportGroup.multiStore, ReportData.multiStoreAssets),
+  PosReport('Multi-Store Staff & Registers', ReportGroup.multiStore, ReportData.multiStoreStaff),
+  PosReport('Multi-Store Payment Methods', ReportGroup.multiStore, ReportData.multiStorePayments, chart: true),
+  PosReport('Multi-Store Discounts', ReportGroup.multiStore, ReportData.multiStoreDiscounts),
+  PosReport('Multi-Store Category Performance', ReportGroup.multiStore, ReportData.multiStoreCategories),
+  PosReport('Multi-Store Top Items', ReportGroup.multiStore, ReportData.multiStoreItems),
+  PosReport('Multi-Store Register/Cash-Up', ReportGroup.multiStore, ReportData.multiStoreRegister),
+  PosReport('Multi-Store Side-by-Side Comparison', ReportGroup.multiStore, ReportData.multiStoreComparison),
+  PosReport('Multi-Store Performance Scorecard', ReportGroup.multiStore, ReportData.multiStorePerformance),
 ];

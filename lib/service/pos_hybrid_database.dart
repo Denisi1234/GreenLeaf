@@ -20,7 +20,7 @@ import 'receipt_settings.dart';
 class PosHybridDatabase extends PosLocalDatabase {
   PosHybridDatabase(this.api);
 
-  static const String _storeId = 'store-default';
+  String storeId = 'store-default';
 
   final PhpApiClient api;
 
@@ -312,19 +312,19 @@ class PosHybridDatabase extends PosLocalDatabase {
     final products = await api.rows('products');
     await super.replaceInventory(
       products.map(inventoryFromMap).toList(),
-      _storeId,
+      storeId,
     );
 
     final customers = await api.rows('customers');
-    await super.replaceCustomers(customers, _storeId);
+    await super.replaceCustomers(customers, storeId);
 
     if (api.can('View Sales') || api.can('View Reports')) {
       await _replaceOrdersLocal(await api.rows('orders'));
     }
 
     if (api.can('Manage Staff')) {
-      await super.replaceStaffRoles(await api.rows('roles'), _storeId);
-      await super.replaceStaffMembers(await api.rows('staff'), _storeId);
+      await super.replaceStaffRoles(await api.rows('roles'), storeId);
+      await super.replaceStaffMembers(await api.rows('staff'), storeId);
     }
 
     if (api.can('View Reports') || api.can('Manage Payments')) {
@@ -386,19 +386,19 @@ class PosHybridDatabase extends PosLocalDatabase {
       await txn.delete(
         'order_lines',
         where: 'order_id IN (SELECT id FROM orders WHERE store_id = ?)',
-        whereArgs: [_storeId],
+        whereArgs: [storeId],
       );
       await txn.delete(
         'orders',
         where: 'store_id = ?',
-        whereArgs: [_storeId],
+        whereArgs: [storeId],
       );
       for (final order in orders) {
         await txn.insert(
           'orders',
           {
             'id': order['id'],
-            'store_id': _storeId,
+            'store_id': storeId,
             'date_time': order['date_time'],
             'date_label': order['date_label'],
             'time_label': order['time_label'],
@@ -441,7 +441,7 @@ class PosHybridDatabase extends PosLocalDatabase {
     await db.delete(
       'expenses',
       where: 'store_id = ?',
-      whereArgs: [_storeId],
+      whereArgs: [storeId],
     );
   }
 
@@ -453,14 +453,14 @@ class PosHybridDatabase extends PosLocalDatabase {
       await txn.delete(
         'expenses',
         where: 'store_id = ?',
-        whereArgs: [_storeId],
+        whereArgs: [storeId],
       );
       for (final expense in expenses) {
         await txn.insert(
           'expenses',
           {
             ...expense,
-            'store_id': _storeId,
+            'store_id': storeId,
             'id': (expense['id'] as num?)?.toInt(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -475,12 +475,12 @@ class PosHybridDatabase extends PosLocalDatabase {
       await txn.delete(
         'daftari_recovery_sessions',
         where: 'store_id = ?',
-        whereArgs: [_storeId],
+        whereArgs: [storeId],
       );
       await txn.delete(
         'daftari_learning_rules',
         where: 'store_id = ?',
-        whereArgs: [_storeId],
+        whereArgs: [storeId],
       );
     });
   }
@@ -492,13 +492,13 @@ class PosHybridDatabase extends PosLocalDatabase {
     for (final row in sessions) {
       await super.upsertDaftariSession(
         DaftariRecoverySession.fromMap(row),
-        _storeId,
+        storeId,
       );
     }
     for (final row in rules) {
       await super.upsertDaftariLearningRule(
         DaftariLearningRule.fromMap(row),
-        _storeId,
+        storeId,
       );
     }
   }
@@ -509,12 +509,12 @@ class PosHybridDatabase extends PosLocalDatabase {
       await txn.delete(
         'myduka_ai_threads',
         where: 'store_id = ?',
-        whereArgs: [_storeId],
+        whereArgs: [storeId],
       );
       await txn.delete(
         'myduka_ai_messages',
         where: 'store_id = ?',
-        whereArgs: [_storeId],
+        whereArgs: [storeId],
       );
     });
   }
@@ -530,7 +530,7 @@ class PosHybridDatabase extends PosLocalDatabase {
           'myduka_ai_threads',
           {
             'id': thread['id'],
-            'store_id': _storeId,
+            'store_id': storeId,
             'title': thread['title'] ?? '',
             'preview': thread['preview'] ?? '',
             'created_at': thread['created_at'] ?? '',
@@ -541,7 +541,7 @@ class PosHybridDatabase extends PosLocalDatabase {
       }
       for (final message in messages) {
         await txn.insert('myduka_ai_messages', {
-          'store_id': _storeId,
+          'store_id': storeId,
           'thread_id': message['thread_id'],
           'role': message['role'],
           'content': message['content'],

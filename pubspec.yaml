@@ -1,7 +1,7 @@
 name: track_mauzo
 description: TrackMauzo - Your Ultimate Business Tracking Solution
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   flutter: ">=3.35.0 <3.36.0"

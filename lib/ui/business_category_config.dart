@@ -63,9 +63,9 @@ class BusinessCategoryConfig {
     return switch (category) {
       BusinessCategory.retail => const BusinessCategoryConfig(
           category: BusinessCategory.retail,
-          primaryColor: Color(0xFF15803D),
-          primaryDeepColor: Color(0xFF166534),
-          primaryLightColor: Color(0xFFF0FDF4),
+          primaryColor: Color(0xFF68CADD),
+          primaryDeepColor: Color(0xFF4FAEC1),
+          primaryLightColor: Color(0xFFF0F9FB),
           accentColor: Color(0xFF111111),
           surfaceTintColor: Color(0xFFF7F7F8),
           dashboardHeadline: 'Retail floor control',
@@ -95,9 +95,9 @@ class BusinessCategoryConfig {
         ),
       BusinessCategory.pharmacy => const BusinessCategoryConfig(
           category: BusinessCategory.pharmacy,
-          primaryColor: Color(0xFF15803D),
-          primaryDeepColor: Color(0xFF166534),
-          primaryLightColor: Color(0xFFF0FDF4),
+          primaryColor: Color(0xFF68CADD),
+          primaryDeepColor: Color(0xFF4FAEC1),
+          primaryLightColor: Color(0xFFF0F9FB),
           accentColor: Color(0xFF111111),
           surfaceTintColor: Color(0xFFF7F7F8),
           dashboardHeadline: 'Pharmacy control center',
@@ -122,9 +122,9 @@ class BusinessCategoryConfig {
         ),
       BusinessCategory.electronics => const BusinessCategoryConfig(
           category: BusinessCategory.electronics,
-          primaryColor: Color(0xFF15803D),
-          primaryDeepColor: Color(0xFF166534),
-          primaryLightColor: Color(0xFFF0FDF4),
+          primaryColor: Color(0xFF68CADD),
+          primaryDeepColor: Color(0xFF4FAEC1),
+          primaryLightColor: Color(0xFFF0F9FB),
           accentColor: Color(0xFF111111),
           surfaceTintColor: Color(0xFFF7F7F8),
           dashboardHeadline: 'Electronics command center',

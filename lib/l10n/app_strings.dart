@@ -24,7 +24,7 @@ class AppStrings {
   String get reports => _pick('Reports', 'Ripoti');
   String get more => _pick('More', 'Zaidi');
   String get home => _pick('Home', 'Nyumbani');
-  String get inventory => _pick('Inventory', 'Hifadhi');
+  String get inventory => _pick('Items', 'Vitu');
   String get settings => _pick('Settings', 'Mipangilio');
   String get english => _pick('English (US)', 'Kiingereza (US)');
   String get swahili => _pick('Swahili', 'Kiswahili');

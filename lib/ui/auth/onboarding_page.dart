@@ -77,7 +77,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final isSwahili = store.languageCode == 'sw';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -362,12 +362,14 @@ class _ModernGreenRibbonLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 32,
-      height: 32,
+      width: 44,
+      height: 44,
       alignment: Alignment.center,
-      child: CustomPaint(
-        size: const Size(28, 28),
-        painter: _RibbonLogoPainter(),
+      child: Image.asset(
+        'assets/images/app_logo.png',
+        width: 44,
+        height: 44,
+        fit: BoxFit.contain,
       ),
     );
   }

@@ -272,8 +272,8 @@ class _BrandLockup extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        OsposMark(size: 42, light: light),
-        const SizedBox(width: 12),
+        OsposMark(size: 52, light: light),
+        const SizedBox(width: 14),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -282,9 +282,9 @@ class _BrandLockup extends StatelessWidget {
               'TrackMauzo',
               style: TextStyle(
                 color: light ? Colors.white : AppColors.ink,
-                fontSize: 18,
+                fontSize: 21,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
+                letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 1),
@@ -292,9 +292,9 @@ class _BrandLockup extends StatelessWidget {
               'POINT OF SALE',
               style: TextStyle(
                 color: light ? AppColors.primarySoft : AppColors.textMuted,
-                fontSize: 9.5,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.8,
+                letterSpacing: 2.0,
               ),
             ),
           ],
@@ -333,10 +333,11 @@ class OsposMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset(
-      light ? AuthShell.markWhiteAsset : AuthShell.markAsset,
+    return Image.asset(
+      AuthShell.logoAsset,
       width: size,
       height: size,
+      fit: BoxFit.contain,
     );
   }
 }

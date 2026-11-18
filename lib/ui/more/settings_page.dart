@@ -14,6 +14,7 @@ import '../../service/receipt_settings.dart';
 import '../../service/store_preferences.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
+import '../widgets/workspace_widgets.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'about_app_page.dart';
 import 'help_support_page.dart';
@@ -25,8 +26,7 @@ import 'terms_of_service_page.dart';
 
 /// Professional settings workspace.
 ///
-/// Six flat sections (Business, Receipts, Language, Data, Account, About) in a
-/// horizontal tab bar, so the same layout works on phones, tablets and desktop.
+/// Six sections in a searchable sidebar on desktop and a section list on mobile.
 /// Section state is preserved while switching tabs, including unsaved edits.
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -81,159 +81,227 @@ List<_SectionInfo> _tabs(String lang) {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  _Section _selected = _Section.business;
+  _Section? _selectedSection;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  final Set<_Section> _visited = {_Section.business};
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _openDetail(_Section section) {
+    setState(() {
+      _selectedSection = section;
+      _visited.add(section);
+    });
+  }
+
+  Widget _buildPane(_Section section) {
+    switch (section) {
+      case _Section.business:
+        return const _BusinessPane();
+      case _Section.receipt:
+        return const _ReceiptForm();
+      case _Section.language:
+        return const _LanguagePane();
+      case _Section.data:
+        return const _DataSyncPane();
+      case _Section.account:
+        return const _AccountPane();
+      case _Section.about:
+        return const _AboutPane();
+    }
+  }
+
+  String _description(_Section section, String lang) {
+    final (en, sw) = switch (section) {
+      _Section.business => (
+          'Business details, currency and daily reports',
+          'Taarifa za biashara, sarafu na ripoti za kila siku'
+        ),
+      _Section.receipt => (
+          'Receipt layout, branding and printing',
+          'Mpangilio wa risiti, nembo na uchapishaji'
+        ),
+      _Section.language => (
+          'Language and regional preferences',
+          'Lugha na mapendeleo ya eneo'
+        ),
+      _Section.data => (
+          'Cloud connection, sync and backups',
+          'Muunganisho wa wingu, usawazishaji na nakala'
+        ),
+      _Section.account => (
+          'Profile, password and security',
+          'Wasifu, nenosiri na usalama'
+        ),
+      _Section.about => (
+          'App information, support and policies',
+          'Taarifa za programu, msaada na sera'
+        ),
+    };
+    return settingsText(lang, en, sw);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<PosLocalStore>();
-    final lang = store.languageCode;
+    final lang = context.watch<PosLocalStore>().languageCode;
     final tabs = _tabs(lang);
-
+    final filtered = tabs
+        .where((tab) => '${tab.label} ${_description(tab.section, lang)}'
+            .toLowerCase()
+            .contains(_searchQuery.trim().toLowerCase()))
+        .toList();
+    final selected = _selectedSection ?? _Section.business;
+    final current = tabs.firstWhere((tab) => tab.section == selected);
+    final panes = IndexedStack(
+      index: selected.index,
+      children: [
+        for (final tab in tabs)
+          _visited.contains(tab.section)
+              ? KeyedSubtree(
+                  key: ValueKey(tab.section),
+                  child: TickerMode(
+                      enabled: tab.section == selected,
+                      child: _buildPane(tab.section)))
+              : const SizedBox.shrink()
+      ],
+    );
+    final search = TextField(
+      controller: _searchController,
+      onChanged: (value) => setState(() => _searchQuery = value),
+      decoration: InputDecoration(
+        hintText: settingsText(lang, 'Search settings', 'Tafuta mipangilio'),
+        prefixIcon: const Icon(Icons.search_rounded),
+        suffixIcon: _searchQuery.isEmpty
+            ? null
+            : IconButton(
+                tooltip: settingsText(lang, 'Clear search', 'Futa utafutaji'),
+                onPressed: () => setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }),
+                icon: const Icon(Icons.close_rounded),
+              ),
+      ),
+    );
+    Widget menu(bool wide) =>
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          search,
+          const SizedBox(height: 16),
+          Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Text(
+                          settingsText(lang, 'No matching settings',
+                              'Hakuna mipangilio inayolingana'),
+                          style: AppTypography.bodySmall))
+                  : ListView.separated(
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final tab = filtered[index];
+                        final active = wide && tab.section == selected;
+                        return Material(
+                          color: active
+                              ? AppColors.primaryLight
+                              : AppColors.surface,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: BorderSide(
+                                  color: active
+                                      ? AppColors.primaryDeep
+                                      : AppColors.border)),
+                          clipBehavior: Clip.antiAlias,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 6),
+                            leading: Icon(tab.icon,
+                                color: active
+                                    ? AppColors.primaryDeep
+                                    : AppColors.textMuted),
+                            title: Text(tab.label,
+                                style: AppTypography.bodyMedium
+                                    .copyWith(fontWeight: FontWeight.w700)),
+                            subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(_description(tab.section, lang),
+                                    style: AppTypography.label)),
+                            trailing: wide
+                                ? null
+                                : const Icon(Icons.chevron_right_rounded,
+                                    size: 20),
+                            onTap: () => _openDetail(tab.section),
+                          ),
+                        );
+                      },
+                    )),
+          const SizedBox(height: 12),
+          const _ConnectionBadge(),
+        ]);
+    final detail =
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
+          child: WorkspaceHeading(
+            title: current.label,
+            subtitle: _description(selected, lang),
+          )),
+      Expanded(
+          child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: panes,
+              ))),
+    ]);
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 760;
-            return Column(
-              children: [
-                MarketPageHeader(
-                  title: settingsText(lang, 'Settings', 'Mipangilio'),
-                  subtitle: wide
-                      ? settingsText(
-                          lang,
-                          'Configure how TrackMauzo works for your business',
-                          'Sanidi jinsi TrackMauzo inavyofanya kazi kwa biashara yako',
-                        )
-                      : null,
-                  centerTitle: false,
-                  onBack: () => Navigator.of(context).pop(),
-                  trailing: wide ? const _ConnectionBadge() : null,
-                ),
-                _SettingsTabBar(
-                  tabs: tabs,
-                  selected: _selected,
-                  onSelect: (section) {
-                    FocusScope.of(context).unfocus();
-                    setState(() => _selected = section);
-                  },
-                ),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1000),
-                      child: IndexedStack(
-                        index: _selected.index,
-                        children: const [
-                          _BusinessPane(),
-                          _ReceiptForm(),
-                          _LanguagePane(),
-                          _DataSyncPane(),
-                          _AccountPane(),
-                          _AboutPane(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
+      body: SafeArea(child: LayoutBuilder(builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 900;
+        return PopScope(
+          canPop: wide || _selectedSection == null,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && !wide) setState(() => _selectedSection = null);
           },
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsTabBar extends StatelessWidget {
-  const _SettingsTabBar({
-    required this.tabs,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  final List<_SectionInfo> tabs;
-  final _Section selected;
-  final ValueChanged<_Section> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1000),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                for (final tab in tabs)
-                  _SettingsTab(
-                    info: tab,
-                    active: tab.section == selected,
-                    onTap: () => onSelect(tab.section),
-                  ),
-              ],
+          child: Column(children: [
+            MarketPageHeader(
+              title: settingsText(lang, 'Settings', 'Mipangilio'),
+              subtitle: settingsText(lang, 'Manage your business preferences',
+                  'Dhibiti mapendeleo ya biashara yako'),
+              onBack: () {
+                if (!wide && _selectedSection != null) {
+                  setState(() => _selectedSection = null);
+                } else {
+                  Navigator.of(context).maybePop();
+                }
+              },
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsTab extends StatelessWidget {
-  const _SettingsTab({
-    required this.info,
-    required this.active,
-    required this.onTap,
-  });
-
-  final _SectionInfo info;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.primary : AppColors.textMuted;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        hoverColor: AppColors.surfaceHover,
-        child: AnimatedContainer(
-          duration: AppDurations.fast,
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: active ? AppColors.primary : Colors.transparent,
-                width: 2.5,
-              ),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(info.icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Text(
-                info.label,
-                style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            Expanded(
+                child: Padding(
+              padding: EdgeInsets.all(wide ? 24 : 16),
+              child: wide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                          SizedBox(width: 270, child: menu(true)),
+                          const SizedBox(width: 24),
+                          Expanded(child: detail),
+                        ])
+                  : IndexedStack(
+                      index: _selectedSection == null ? 0 : 1,
+                      children: [
+                          menu(false),
+                          TickerMode(
+                              enabled: _selectedSection != null, child: detail)
+                        ]),
+            )),
+          ]),
+        );
+      })),
     );
   }
 }

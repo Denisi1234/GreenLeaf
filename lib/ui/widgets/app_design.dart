@@ -3,65 +3,64 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../business_category_config.dart';
 
-/// Design tokens ported from the OSPOS "UI maturity" theme
-/// (opensourcepos/public/css/ospos.css – dashboard, drawer, tabs & tiles).
+/// Design tokens ported from the OSPOS signature theme with full light gray background.
 class AppColors {
-  // Brand / action colors (black, white and green identity)
-  static const primary = Color(0xFF15803D);
-  static const primaryDeep = Color(0xFF166534);
-  static const primaryBright = Color(0xFF16A34A);
-  static const primaryLight = Color(0xFFF0FDF4);
-  static const primarySoft = Color(0xFFDCFCE7);
+  // Brand / action colors (Cyan & Teal identity matching OpenSourcePOS #22B8C4 and brand #68CADD)
+  static const primary = Color(0xFF22B8C4);
+  static const primaryDeep = Color(0xFF1396A1);
+  static const primaryBright = Color(0xFF68CADD);
+  static const primaryLight = Color(0xFFE0F4F8);
+  static const primarySoft = Color(0xFFF0F9FB);
 
   // Brand identity
-  static const brand = Color(0xFF111111);
-  static const drawerHeader = Color(0xFF0A0A0A);
+  static const brand = Color(0xFF22B8C4);
+  static const drawerHeader = Color(0xFF182735);
 
-  // Neutral black / grey text scale
-  static const ink = Color(0xFF0A0A0A);
-  static const textMain = Color(0xFF1A1A1A);
+  // Neutral text scale (Crisp dark text on light gray surfaces)
+  static const ink = Color(0xFF111827);
+  static const textMain = Color(0xFF1F2937);
   static const textStrong = Color(0xFF000000);
-  static const textBody = Color(0xFF333333);
-  static const textSecondary = Color(0xFF4D4D4D);
-  static const textMuted = Color(0xFF666666);
-  static const textLight = Color(0xFF999999);
-  static const textPlaceholder = Color(0xFFA3A3A3);
+  static const textBody = Color(0xFF374151);
+  static const textSecondary = Color(0xFF4B5563);
+  static const textMuted = Color(0xFF6B7280);
+  static const textLight = Color(0xFF9CA3AF);
+  static const textPlaceholder = Color(0xFF9CA3AF);
 
-  // Background & surface
-  static const pageBackground = Color(0xFFF7F7F8);
-  static const surface = Colors.white;
-  static const surfaceSecondary = Color(0xFFF7F7F8);
-  static const surfaceHover = Color(0xFFF1F1F1);
+  // Background & surface (Light blue-grey theme matching dashboard & more page)
+  static const pageBackground = Color(0xFFEAF2F9); // Soft light-blue grey (#EAF2F9)
+  static const surface = Colors.white;             // Clean crisp white surface
+  static const surfaceSecondary = Color(0xFFF1F5F9); // Elevated subtle slate
+  static const surfaceHover = Color(0xFFE2E8F0);     // Hover state
   static const cardWhite = surface;
   static const surfaceSubtle = surfaceSecondary;
-  static const kpiSurface = Color(0xFFF5F5F5);
+  static const kpiSurface = Colors.white;
 
-  // Borders & dividers
-  static const border = Color(0xFFE5E5E5);
-  static const borderLight = Color(0xFFF0F0F0);
-  static const borderInput = Color(0xFFE5E5E5);
-  static const divider = Color(0xFFE5E5E5);
+  // Borders & dividers (Clean light-blue borders matching dashboard)
+  static const border = Color(0xFFD6E4F0);
+  static const borderLight = Color(0xFFE2E8F0);
+  static const borderInput = Color(0xFFCBD5E1);
+  static const divider = Color(0xFFE2E8F0);
 
-  // Feedback colors
-  static const success = Color(0xFF15803D);
-  static const successBright = Color(0xFF16A34A);
-  static const successDeep = Color(0xFF166534);
-  static const successLight = Color(0xFFF0FDF4);
-  static const warning = Color(0xFF111111);
-  static const warningDeep = Color(0xFF000000);
-  static const warningLight = Color(0xFFF3F4F6);
-  static const danger = Color(0xFFDC2626);
-  static const dangerBright = Color(0xFFEF4444);
+  // Feedback colors (Clear and high contrast)
+  static const success = Color(0xFF10B981);
+  static const successBright = Color(0xFF059669);
+  static const successDeep = Color(0xFF047857);
+  static const successLight = Color(0xFFD1FAE5);
+  static const warning = Color(0xFFF59E0B);
+  static const warningDeep = Color(0xFFD97706);
+  static const warningLight = Color(0xFFFEF3C7);
+  static const danger = Color(0xFFEF4444);
+  static const dangerBright = Color(0xFFDC2626);
   static const dangerDeep = Color(0xFFB91C1C);
-  static const dangerLight = Color(0xFFFEF2F2);
-  static const dangerBorder = Color(0xFFFEE2E2);
-  static const info = Color(0xFF15803D);
-  static const infoLight = Color(0xFFF0FDF4);
+  static const dangerLight = Color(0xFFFEE2E2);
+  static const dangerBorder = Color(0xFFFCA5A5);
+  static const info = Color(0xFF22B8C4);
+  static const infoLight = Color(0xFFE0F4F8);
 
   // KPI tones
-  static const toneViolet = Color(0xFF15803D);
-  static const toneIndigo = Color(0xFF166534);
-  static const toneTeal = Color(0xFF111111);
+  static const toneViolet = Color(0xFF10B981);
+  static const toneIndigo = Color(0xFF22B8C4);
+  static const toneTeal = Color(0xFF0284C7);
   static const toneLime = Color(0xFF16A34A);
 
   // Reports page specific colors
@@ -72,16 +71,16 @@ class AppColors {
   static const reportsGreen = success;
 
   // Chart colors
-  static const chart1 = Color(0xFF15803D);
-  static const chart2 = Color(0xFFDC2626);
-  static const chart3 = Color(0xFF111111);
-  static const chart4 = Color(0xFF6B7280);
-  static const chart5 = Color(0xFFB91C1C);
-  static const chartGrid = Color(0xFFEDEDED);
-  static const chartLabel = textPlaceholder;
+  static const chart1 = Color(0xFF10B981);
+  static const chart2 = Color(0xFFEF4444);
+  static const chart3 = Color(0xFF22B8C4);
+  static const chart4 = Color(0xFFF59E0B);
+  static const chart5 = Color(0xFF6B7280);
+  static const chartGrid = Color(0xFFD1D5DB);
+  static const chartLabel = textMuted;
 
   // Overlays
-  static const backdrop = Color(0x8C000000);
+  static const backdrop = Color(0x66000000);
 
   // Legacy aliases (for compatibility)
   static const mutedText = textMuted;

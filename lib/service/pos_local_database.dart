@@ -8,8 +8,6 @@ import 'duka_ai_service.dart';
 import 'pos_order_models.dart';
 import 'receipt_settings.dart';
 import 'register_shift_model.dart';
-import 'supplier_model.dart';
-import 'accounting_model.dart';
 import 'tax_settings.dart';
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
@@ -1903,4 +1901,42 @@ class PosLocalDatabase {
     }
     return decoded.map((item) => item.toString()).toList();
   }
+
+
+  Future<List<Map<String, Object?>>> loadStores() async {
+    final db = await database;
+    final rows = await db.query('stores', orderBy: 'name ASC');
+    if (rows.isEmpty) {
+      return <Map<String, Object?>>[
+        <String, Object?>{
+          'id': 'store-default',
+          'name': 'Default Store',
+          'address': '',
+          'contact': '',
+        },
+      ];
+    }
+    return rows;
+  }
+
+  Future<void> upsertStore(Map<String, Object?> store) async {
+    final db = await database;
+    await db.insert(
+      'stores',
+      <String, Object?>{
+        'id': store['id'],
+        'name': store['name'],
+        'address': store['address'] ?? '',
+        'contact': store['contact'] ?? '',
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> deleteStore(String storeId) async {
+    if (storeId == 'store-default') return;
+    final db = await database;
+    await db.delete('stores', where: 'id = ?', whereArgs: <Object?>[storeId]);
+  }
+
 }

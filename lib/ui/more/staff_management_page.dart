@@ -744,10 +744,10 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      borderColor: const Color(0xFFD6E4F0),
+      radius: 10,
+      showShadow: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -807,10 +807,10 @@ class _StaffTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.zero,
       child: MarketSurfaceCard(
-        padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
-        borderColor: AppColors.border,
-        radius: 0,
-        showShadow: false,
+        padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+        borderColor: const Color(0xFFD6E4F0),
+        radius: 10,
+        showShadow: true,
         child: Row(
           children: [
             _StaffAvatar(member: member, radius: 24),
@@ -1155,9 +1155,9 @@ class _RoleTile extends StatelessWidget {
       borderRadius: BorderRadius.zero,
       child: MarketSurfaceCard(
         padding: const EdgeInsets.all(14),
-        borderColor: AppColors.border,
-        radius: 0,
-        showShadow: false,
+        borderColor: const Color(0xFFD6E4F0),
+        radius: 10,
+        showShadow: true,
         child: Row(
           children: [
             Container(
@@ -1225,9 +1225,9 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(24),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      borderColor: const Color(0xFFD6E4F0),
+      radius: 10,
+      showShadow: true,
       child: Column(
         children: [
           Container(

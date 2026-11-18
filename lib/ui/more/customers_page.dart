@@ -15,6 +15,7 @@ import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../models/customer_data.dart';
 import '../widgets/app_design.dart';
+import '../widgets/workspace_widgets.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'create_customer_page.dart';
 import 'debtors_page.dart';
@@ -119,35 +120,53 @@ class _CustomersPageState extends State<CustomersPage> {
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(strings, 'Customers', 'Wateja'),
-                              value: '${all.length}',
-                              icon: Icons.people_alt_outlined,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(strings, 'Buyers', 'Wanunuzi'),
-                              value: '${all.isEmpty ? 0 : withOrders}',
-                              icon: Icons.shopping_bag_outlined,
-                              color: AppColors.toneTeal,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(strings, 'Lifetime sales', 'Mauzo'),
-                              value: _formatMoney(lifetime, compact: true),
-                              icon: Icons.trending_up_rounded,
-                              color: AppColors.textBody,
-                            ),
-                          ),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, metricConstraints) {
+                          final columns = metricConstraints.maxWidth >= 760 ? 4 : 2;
+                          final width = (metricConstraints.maxWidth - (columns - 1) * 12) / columns;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Total customers', 'Wateja wote'),
+                                  value: '${all.length}',
+                                  icon: Icons.people_alt_outlined,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Active buyers', 'Wanunuzi hai'),
+                                  value: '${all.isEmpty ? 0 : withOrders}',
+                                  icon: Icons.shopping_bag_outlined,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Lifetime sales', 'Jumla ya mauzo'),
+                                  value: _formatMoney(lifetime, compact: true),
+                                  icon: Icons.trending_up_rounded,
+                                  color: AppColors.successDeep,
+                                ),
+                              ),
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Outstanding debt', 'Madeni yote'),
+                                  value: _formatMoney(outstanding, compact: true),
+                                  icon: Icons.account_balance_wallet_outlined,
+                                  color: outstanding > 0 ? AppColors.dangerDeep : AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       if (outstanding > 0) ...[
                         const SizedBox(height: 10),
@@ -976,23 +995,23 @@ class _CustomerCard extends StatelessWidget {
 
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      borderColor: const Color(0xFFD6E4F0),
+      radius: 10,
+      showShadow: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
           child: Row(
             children: [
               Container(
                 width: 46,
                 height: 46,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.zero,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   customer.initials,

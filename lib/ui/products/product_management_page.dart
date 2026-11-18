@@ -1,5 +1,3 @@
-import '../widgets/app_image.dart';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -7,14 +5,14 @@ import 'package:provider/provider.dart';
 import '../../service/pos_local_store.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
+import '../widgets/workspace_widgets.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_product_page.dart';
-import '../more/duka_ai_page.dart';
 import '../notifications/notifications_page.dart';
 import 'inventory_product_item.dart';
 
 String _formatPrice(double value) {
-  return 'TSH ${formatCurrency(value)}';
+  return 'Sh ${formatCurrency(value)}';
 }
 
 class ProductManagementPage extends StatefulWidget {
@@ -32,7 +30,32 @@ class ProductManagementPage extends StatefulWidget {
 class _ProductManagementPageState extends State<ProductManagementPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _selectedCategory = 'All';
+  String? _category;
+  String _stockFilter = 'all';
+  int _sortColumn = 0;
+  bool _sortAscending = true;
+  int _page = 0;
+  static const _pageSize = 20;
+
+  void _resetFilters() => setState(() {
+        _searchController.clear();
+        _searchQuery = '';
+        _category = null;
+        _stockFilter = 'all';
+        _page = 0;
+      });
+
+  String _status(InventoryProductItem item) => item.stockCount <= 0
+      ? 'Out of stock'
+      : item.stockCount <= 5
+          ? 'Low stock'
+          : 'In stock';
+
+  Color _statusColor(InventoryProductItem item) => item.stockCount <= 0
+      ? AppColors.dangerDeep
+      : item.stockCount <= 5
+          ? AppColors.warningDeep
+          : AppColors.successDeep;
 
   @override
   void dispose() {
@@ -56,21 +79,25 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       await store.addProduct(created);
     } catch (error) {
       if (!mounted) return;
-      showMarketNotice(context,
-          title: 'Save Failed',
-          message: error.toString(),
-          type: MarketNoticeType.warning);
+      showMarketNotice(
+        context,
+        title: 'Save Failed',
+        message: error.toString(),
+        type: MarketNoticeType.warning,
+      );
       return;
     }
     if (!mounted) return;
     showMarketNotice(
       context,
-      title: 'Product Added',
+      title: 'Item Added',
       message: '${created.name} is now in your items list',
+      type: MarketNoticeType.success,
     );
   }
 
   Future<void> _editProduct(InventoryProductItem product) async {
+    final store = context.read<PosLocalStore>();
     final updated = await Navigator.of(context).push<InventoryProductItem>(
       MaterialPageRoute<InventoryProductItem>(
         builder: (context) => AddProductPage(
@@ -83,197 +110,706 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     if (updated == null || !mounted) return;
 
     try {
-      await context.read<PosLocalStore>().updateProduct(updated);
+      await store.updateProduct(updated);
     } catch (error) {
       if (!mounted) return;
-      showMarketNotice(context,
-          title: 'Save Failed',
-          message: error.toString(),
-          type: MarketNoticeType.warning);
+      showMarketNotice(
+        context,
+        title: 'Update Failed',
+        message: error.toString(),
+        type: MarketNoticeType.warning,
+      );
       return;
     }
     if (!mounted) return;
     showMarketNotice(
       context,
-      title: 'Product Updated',
-      message: '${updated.name} has been updated successfully',
+      title: 'Item Updated',
+      message: '${updated.name} was updated',
+      type: MarketNoticeType.success,
     );
   }
 
-  void _deleteProduct(InventoryProductItem product) {
-    showDialog<void>(
+  Future<void> _deleteProduct(InventoryProductItem product) async {
+    final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Product?'),
-        content: Text(
-            'Are you sure you want to delete "${product.name}"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+        ),
+        title: Text(
+          'Delete Item?',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: const Color(0xFF0F172A),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final store = context.read<PosLocalStore>();
-              Navigator.pop(context);
-              await store.removeProduct(product.code);
-              if (!context.mounted) return;
-              showMarketNotice(
-                context,
-                title: 'Product Deleted',
-                message: '${product.name} has been removed',
-                type: MarketNoticeType.warning,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
+        ),
+        content: Text(
+          'Are you sure you want to remove "${product.name}"? This cannot be undone.',
+          style: GoogleFonts.manrope(
+            fontSize: 14,
+            color: const Color(0xFF475569),
+          ),
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF64748B),
+              side: const BorderSide(color: Color(0xFFCBD5E1)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
+    );
+
+    if (shouldDelete != true || !mounted) return;
+
+    final store = context.read<PosLocalStore>();
+    try {
+      await store.removeProduct(product.code);
+    } catch (error) {
+      if (!mounted) return;
+      showMarketNotice(
+        context,
+        title: 'Delete Failed',
+        message: error.toString(),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+    if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: 'Item Deleted',
+      message: '${product.name} was deleted',
+      type: MarketNoticeType.success,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<PosLocalStore>();
-    final config = store.businessCategoryConfig;
+    final inventory = context.watch<PosLocalStore>().inventory;
+    final categories = inventory.map((item) => item.category).toSet().toList()
+      ..sort();
     final query = _searchQuery.trim().toLowerCase();
-    final categories = <String>{
-      'All',
-      ...store.inventory.map((product) => product.category),
-    }.toList();
-    final filteredItems = store.inventory.where((product) {
-      final matchesCategory =
-          _selectedCategory == 'All' || product.category == _selectedCategory;
-      if (!matchesCategory) return false;
-      if (query.isEmpty) return true;
-      final stockLabel = product.stockState == InventoryStockState.lowStock
-          ? 'low stock'
-          : product.stockState == InventoryStockState.outOfStock
-              ? 'out of stock'
-              : 'in stock';
-      return product.name.toLowerCase().contains(query) ||
-          product.category.toLowerCase().contains(query) ||
-          product.code.toLowerCase().contains(query) ||
-          stockLabel.contains(query) ||
-          product.purchasePrice.toStringAsFixed(0).contains(query) ||
-          product.sellingPrice.toStringAsFixed(0).contains(query);
+    final filtered = inventory.where((item) {
+      final matchesQuery = query.isEmpty ||
+          [
+            item.name,
+            item.code,
+            item.category,
+            ...item.categoryData.values.map((value) => value.toString())
+          ].any((value) => value.toLowerCase().contains(query));
+      final matchesStock = switch (_stockFilter) {
+        'low' => item.stockCount > 0 && item.stockCount <= 5,
+        'out' => item.stockCount <= 0,
+        _ => true,
+      };
+      return matchesQuery &&
+          matchesStock &&
+          (_category == null || item.category == _category);
     }).toList();
-    final baseTheme = Theme.of(context);
-    final interTheme = baseTheme.copyWith(
-      textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme:
-          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
-    );
+    filtered.sort((a, b) {
+      final comparison = switch (_sortColumn) {
+        1 => a.category.compareTo(b.category),
+        2 => a.purchasePrice.compareTo(b.purchasePrice),
+        3 => a.sellingPrice.compareTo(b.sellingPrice),
+        4 => a.stockCount.compareTo(b.stockCount),
+        _ => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      };
+      return _sortAscending ? comparison : -comparison;
+    });
+    final lowCount = inventory
+        .where((item) => item.stockCount > 0 && item.stockCount <= 5)
+        .length;
+    final outCount = inventory.where((item) => item.stockCount <= 0).length;
+    final stockValue = inventory.fold<double>(
+        0,
+        (sum, item) =>
+            sum + item.purchasePrice * item.stockCount.clamp(0, 1 << 31));
+    final hasFilters =
+        query.isNotEmpty || _category != null || _stockFilter != 'all';
 
-    return Theme(
-      data: interTheme,
-      child: Scaffold(
-        backgroundColor: AppColors.pageBackground,
-        drawer: widget.useSharedShell
-            ? null
-            : const MarketAppDrawer(selectedItem: 'Products'),
-        floatingActionButton: widget.useSharedShell
-            ? null
-            : _AddProductFab(
-                onPressed: _openAddProductPage,
-                accentColor: config.primaryColor,
-              ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        body: SafeArea(
-          top: !widget.useSharedShell,
-          child: Stack(
-            children: [
-              const Positioned.fill(
-                child: ColoredBox(color: AppColors.pageBackground),
-              ),
-              Column(
-                children: [
-                  if (!widget.useSharedShell) const _ProductsHeader(),
-                  _PinnedSearchPanel(
-                    controller: _searchController,
-                    hintText: config.productHint,
-                    onSearchChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                    onClearSearch: () {
-                      setState(() {
-                        _searchController.clear();
-                        _searchQuery = '';
-                      });
-                    },
-                  ),
-                  Expanded(
-                    child: CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                            child: _CategoryStrip(
-                              categories: categories,
-                              selectedCategory: _selectedCategory,
-                              onSelected: (value) {
-                                setState(() {
-                                  _selectedCategory = value;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                        if (filteredItems.isEmpty)
-                          SliverFillRemaining(
-                            hasScrollBody: false,
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                              child: _ProductsEmptyState(
-                                query: _searchQuery,
-                                category: _selectedCategory,
-                                onAddTap: _openAddProductPage,
-                                onClearFilter: () {
-                                  setState(() {
-                                    _searchController.clear();
-                                    _searchQuery = '';
-                                    _selectedCategory = 'All';
-                                  });
-                                },
-                              ),
-                            ),
-                          )
-                        else
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 92),
-                            sliver: SliverGrid(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 14,
-                                crossAxisSpacing: 14,
-                                childAspectRatio: 0.72,
-                              ),
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  final product = filteredItems[index];
-                                  return _ProductGridCard(
-                                    product: product,
-                                    onTap: () => _editProduct(product),
-                                    onDelete: () => _deleteProduct(product),
-                                  );
-                                },
-                                childCount: filteredItems.length,
-                              ),
-                            ),
-                          ),
-                      ],
+    return Scaffold(
+      backgroundColor: AppColors.pageBackground,
+      drawer: widget.useSharedShell
+          ? null
+          : const MarketAppDrawer(selectedItem: 'Items'),
+      body: SafeArea(
+        top: !widget.useSharedShell,
+        child: Column(children: [
+          if (!widget.useSharedShell) const _ProductsHeader(),
+          Expanded(child: LayoutBuilder(builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 900;
+            final page = _page.clamp(
+                0, filtered.isEmpty ? 0 : (filtered.length - 1) ~/ _pageSize);
+            final rows =
+                filtered.skip(page * _pageSize).take(_pageSize).toList();
+            return CustomScrollView(slivers: [
+              SliverPadding(
+                padding: EdgeInsets.all(wide ? 24 : 16),
+                sliver: SliverList.list(children: [
+                  WorkspaceHeading(
+                    title: 'Inventory',
+                    subtitle:
+                        'Manage your products, pricing and stock availability.',
+                    action: FilledButton.icon(
+                      onPressed: _openAddProductPage,
+                      style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.successDeep),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Add item'),
                     ),
                   ),
-                ],
+                  const SizedBox(height: 20),
+                  LayoutBuilder(builder: (context, metricConstraints) {
+                    final columns = metricConstraints.maxWidth >= 760 ? 4 : 2;
+                    final width =
+                        (metricConstraints.maxWidth - (columns - 1) * 12) /
+                            columns;
+                    return Wrap(spacing: 12, runSpacing: 12, children: [
+                      SizedBox(
+                          width: width,
+                          child: WorkspaceMetric(
+                              label: 'Total items',
+                              value: '${inventory.length}',
+                              icon: Icons.inventory_2_outlined)),
+                      SizedBox(
+                          width: width,
+                          child: WorkspaceMetric(
+                              label: 'Stock value',
+                              value: _formatPrice(stockValue),
+                              icon: Icons.account_balance_wallet_outlined)),
+                      SizedBox(
+                          width: width,
+                          child: WorkspaceMetric(
+                              label: 'Low stock',
+                              value: '$lowCount',
+                              icon: Icons.trending_down_rounded,
+                              color: lowCount > 0
+                                  ? AppColors.warningDeep
+                                  : AppColors.textMuted)),
+                      SizedBox(
+                          width: width,
+                          child: WorkspaceMetric(
+                              label: 'Out of stock',
+                              value: '$outCount',
+                              icon: Icons.inventory_outlined,
+                              color: outCount > 0
+                                  ? AppColors.dangerDeep
+                                  : AppColors.textMuted)),
+                    ]);
+                  }),
+                  const SizedBox(height: 20),
+                  WorkspacePanel(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _searchController,
+                            onChanged: (value) => setState(() {
+                              _searchQuery = value;
+                              _page = 0;
+                            }),
+                            decoration: InputDecoration(
+                              hintText: 'Search by name, code or barcode',
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              suffixIcon: query.isEmpty
+                                  ? null
+                                  : IconButton(
+                                      tooltip: 'Clear search',
+                                      icon: const Icon(Icons.close_rounded),
+                                      onPressed: () => setState(() {
+                                        _searchController.clear();
+                                        _searchQuery = '';
+                                        _page = 0;
+                                      }),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                SizedBox(
+                                    width: 200,
+                                    child: DropdownButtonFormField<String>(
+                                      key: ValueKey('category-$_category'),
+                                      initialValue:
+                                          categories.contains(_category)
+                                              ? _category
+                                              : null,
+                                      isExpanded: true,
+                                      decoration: const InputDecoration(
+                                          labelText: 'Category'),
+                                      items: [
+                                        const DropdownMenuItem<String>(
+                                            value: null,
+                                            child: Text('All categories',
+                                                overflow:
+                                                    TextOverflow.ellipsis)),
+                                        ...categories.map((category) =>
+                                            DropdownMenuItem(
+                                                value: category,
+                                                child: Text(category,
+                                                    overflow:
+                                                        TextOverflow.ellipsis)))
+                                      ],
+                                      onChanged: (value) => setState(() {
+                                        _category = value;
+                                        _page = 0;
+                                      }),
+                                    )),
+                                SizedBox(
+                                    width: 180,
+                                    child: DropdownButtonFormField<String>(
+                                      key: ValueKey('stock-$_stockFilter'),
+                                      isExpanded: true,
+                                      initialValue: _stockFilter,
+                                      decoration: const InputDecoration(
+                                          labelText: 'Stock status'),
+                                      items: const [
+                                        DropdownMenuItem(
+                                            value: 'all',
+                                            child: Text('All stock',
+                                                overflow:
+                                                    TextOverflow.ellipsis)),
+                                        DropdownMenuItem(
+                                            value: 'low',
+                                            child: Text('Low stock',
+                                                overflow:
+                                                    TextOverflow.ellipsis)),
+                                        DropdownMenuItem(
+                                            value: 'out',
+                                            child: Text('Out of stock',
+                                                overflow:
+                                                    TextOverflow.ellipsis))
+                                      ],
+                                      onChanged: (value) => setState(() {
+                                        _stockFilter = value ?? 'all';
+                                        _page = 0;
+                                      }),
+                                    )),
+                                if (hasFilters)
+                                  TextButton.icon(
+                                    onPressed: _resetFilters,
+                                    style: TextButton.styleFrom(
+                                        foregroundColor: AppColors.dangerDeep),
+                                    icon: const Icon(
+                                        Icons.filter_alt_off_outlined,
+                                        size: 18),
+                                    label: const Text('Clear filters'),
+                                  ),
+                              ]),
+                        ]),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(children: [
+                    Expanded(
+                        child: Text('${filtered.length} items',
+                            style: AppTypography.sectionHeader)),
+                    if (!wide)
+                      PopupMenuButton<int>(
+                        tooltip: 'Sort inventory',
+                        onSelected: (value) => setState(() {
+                          _sortColumn = value;
+                          _page = 0;
+                        }),
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(value: 0, child: Text('Sort by name')),
+                          PopupMenuItem(value: 4, child: Text('Sort by stock')),
+                          PopupMenuItem(
+                              value: 3, child: Text('Sort by sale price'))
+                        ],
+                        icon: const Icon(Icons.sort_rounded),
+                      ),
+                  ]),
+                  const SizedBox(height: 12),
+                  if (filtered.isEmpty)
+                    WorkspacePanel(
+                        child: _ItemsEmptyState(
+                            query: hasFilters ? 'filters' : '',
+                            onAddTap: _openAddProductPage,
+                            onClearFilter: _resetFilters))
+                  else if (wide)
+                    WorkspacePanel(
+                        padding: EdgeInsets.zero,
+                        child: LayoutBuilder(
+                            builder: (context, tableConstraints) =>
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                          minWidth: tableConstraints.maxWidth),
+                                      child: DataTable(
+                                        headingRowColor:
+                                            const WidgetStatePropertyAll(
+                                                AppColors.surfaceSecondary),
+                                        headingTextStyle:
+                                            AppTypography.tableHeader,
+                                        dataTextStyle: AppTypography.bodySmall,
+                                        horizontalMargin: 20,
+                                        columnSpacing: 24,
+                                        dataRowMinHeight: 64,
+                                        dataRowMaxHeight: 72,
+                                        sortColumnIndex: _sortColumn,
+                                        sortAscending: _sortAscending,
+                                        columns: [
+                                          for (final entry in [
+                                            'Item',
+                                            'Category',
+                                            'Cost price',
+                                            'Sale price',
+                                            'Quantity'
+                                          ].asMap().entries)
+                                            DataColumn(
+                                                label: Text(entry.value),
+                                                numeric: entry.key >= 2,
+                                                onSort: (index, ascending) =>
+                                                    setState(() {
+                                                      _sortColumn = index;
+                                                      _sortAscending =
+                                                          ascending;
+                                                      _page = 0;
+                                                    })),
+                                          const DataColumn(
+                                              label: Text('Status')),
+                                          const DataColumn(
+                                              label: Text('Actions')),
+                                        ],
+                                        rows: rows
+                                            .map((item) => DataRow(cells: [
+                                                  DataCell(
+                                                      ConstrainedBox(
+                                                          constraints:
+                                                              const BoxConstraints(
+                                                                  maxWidth:
+                                                                      240),
+                                                          child: Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .center,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(item.name,
+                                                                  maxLines: 1,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                  style: AppTypography
+                                                                      .bodySmall
+                                                                      .copyWith(
+                                                                          fontWeight:
+                                                                              FontWeight.w700)),
+                                                              Text(item.code,
+                                                                  style:
+                                                                      AppTypography
+                                                                          .label)
+                                                            ],
+                                                          )),
+                                                      onTap: () =>
+                                                          _editProduct(item)),
+                                                  DataCell(Text(item.category)),
+                                                  DataCell(Text(_formatPrice(
+                                                      item.purchasePrice))),
+                                                  DataCell(Text(_formatPrice(
+                                                      item.sellingPrice))),
+                                                  DataCell(Text(
+                                                      '${item.stockCount}')),
+                                                  DataCell(WorkspaceStatus(
+                                                      label: _status(item),
+                                                      color:
+                                                          _statusColor(item))),
+                                                  DataCell(Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        IconButton(
+                                                            tooltip:
+                                                                'Edit item',
+                                                            onPressed: () =>
+                                                                _editProduct(
+                                                                    item),
+                                                            icon: const Icon(
+                                                                Icons
+                                                                    .edit_outlined,
+                                                                size: 19)),
+                                                        IconButton(
+                                                            tooltip:
+                                                                'Delete item',
+                                                            onPressed: () =>
+                                                                _deleteProduct(
+                                                                    item),
+                                                            icon: const Icon(
+                                                                Icons
+                                                                    .delete_outline_rounded,
+                                                                color: AppColors
+                                                                    .dangerDeep,
+                                                                size: 19)),
+                                                      ])),
+                                                ]))
+                                            .toList(),
+                                      )),
+                                )))
+                  else
+                    ...rows.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _ItemRowCard(
+                          product: item,
+                          onTap: () => _editProduct(item),
+                          onDelete: () => _deleteProduct(item),
+                        ))),
+                  if (filtered.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Row(children: [
+                        Expanded(
+                            child: Text(
+                                '${page * _pageSize + 1}–${page * _pageSize + rows.length} of ${filtered.length}',
+                                style: AppTypography.label)),
+                        IconButton(
+                            tooltip: 'Previous page',
+                            onPressed: page > 0
+                                ? () => setState(() => _page = page - 1)
+                                : null,
+                            icon: const Icon(Icons.chevron_left_rounded)),
+                        Text('${page + 1}', style: AppTypography.bodySmall),
+                        IconButton(
+                            tooltip: 'Next page',
+                            onPressed: (page + 1) * _pageSize < filtered.length
+                                ? () => setState(() => _page = page + 1)
+                                : null,
+                            icon: const Icon(Icons.chevron_right_rounded)),
+                      ]),
+                    ),
+                  const SizedBox(height: 72),
+                ]),
               ),
-            ],
+            ]);
+          })),
+        ]),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Item Row Card (Matches the reference screenshot)
+// ---------------------------------------------------------------------------
+class _ItemRowCard extends StatelessWidget {
+  const _ItemRowCard({
+    required this.product,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final InventoryProductItem product;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLowStock = product.stockCount <= 5 && product.stockCount > 0;
+    final isOutOfStock = product.stockCount <= 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top row: Item Name and Share / Action icon
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        product.name,
+                        style: GoogleFonts.manrope(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textMain,
+                        ),
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      onSelected: (val) {
+                        if (val == 'edit') onTap();
+                        if (val == 'delete') onDelete();
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.more_horiz_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 20,
+                      ),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.edit_outlined,
+                                  size: 18, color: Color(0xFF0284C7)),
+                              const SizedBox(width: 8),
+                              Text('Edit',
+                                  style: GoogleFonts.manrope(
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.delete_outline_rounded,
+                                  size: 18, color: Color(0xFFEF4444)),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Delete',
+                                style: GoogleFonts.manrope(
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFEF4444),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Metrics row: Sale Price | Purchase Price | In Stock (exact layout from screenshot)
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sale Price',
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _formatPrice(product.sellingPrice),
+                            style: GoogleFonts.manrope(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Purchase Price',
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _formatPrice(product.purchasePrice),
+                            style: GoogleFonts.manrope(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'In Stock',
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            product.stockCount.toString(),
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: isOutOfStock
+                                  ? const Color(0xFFEF4444)
+                                  : (isLowStock
+                                      ? const Color(0xFFF59E0B)
+                                      : const Color(0xFF10B981)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -281,32 +817,112 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Empty State
+// ---------------------------------------------------------------------------
+class _ItemsEmptyState extends StatelessWidget {
+  const _ItemsEmptyState({
+    required this.query,
+    required this.onAddTap,
+    required this.onClearFilter,
+  });
+
+  final String query;
+  final VoidCallback onAddTap;
+  final VoidCallback onClearFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFilter = query.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      alignment: Alignment.center,
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFE2E8F0),
+              border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              size: 32,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            hasFilter
+                ? 'No items match your search'
+                : 'No items found in stock',
+            style: GoogleFonts.manrope(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMain,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hasFilter
+                ? 'Try searching with a different name or item code.'
+                : 'Use Add item to register your first product.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.manrope(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (hasFilter)
+            OutlinedButton(
+              onPressed: onClearFilter,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.dangerDeep,
+                side: const BorderSide(color: AppColors.dangerBorder),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
+              child: Text(
+                'Clear Search',
+                style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Header (for standalone non-shared-shell usage)
+// ---------------------------------------------------------------------------
 class _ProductsHeader extends StatelessWidget {
   const _ProductsHeader();
 
   @override
   Widget build(BuildContext context) {
     return MarketPageHeader(
-      title: 'Products',
+      title: 'Items',
       showBackButton: false,
       centerTitle: false,
       showBorder: false,
-      titleSize: 24,
-      titleWeight: FontWeight.w700,
+      titleSize: 22,
+      titleWeight: FontWeight.w800,
       actions: [
         MarketHeaderActionButtons(
+          showDukaAi: false,
           aiBackground: const Color(0xFFF8FAFC),
           notificationBackground: const Color(0xFFF8FAFC),
           aiBorderColor: const Color(0xFFE5EAF0),
           notificationBorderColor: const Color(0xFFE5EAF0),
           showNotificationDot: true,
-          onDukaAiTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (context) => const DukaAiAdvisorPage(),
-              ),
-            );
-          },
+          onDukaAiTap: () {},
           onNotificationTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -316,470 +932,6 @@ class _ProductsHeader extends StatelessWidget {
           },
         ),
       ],
-    );
-  }
-}
-
-class _PinnedSearchPanel extends StatelessWidget {
-  const _PinnedSearchPanel({
-    required this.controller,
-    required this.hintText,
-    required this.onSearchChanged,
-    required this.onClearSearch,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final ValueChanged<String> onSearchChanged;
-  final VoidCallback onClearSearch;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: MarketSearchField(
-        controller: controller,
-        hintText: hintText,
-        onChanged: onSearchChanged,
-        onClear: onClearSearch,
-        backgroundColor: Colors.white,
-        borderColor: const Color(0xFFF1F5F9),
-        radius: 30,
-        height: 60,
-        showShadow: true,
-      ),
-    );
-  }
-}
-
-class _CategoryStrip extends StatelessWidget {
-  const _CategoryStrip({
-    required this.categories,
-    required this.selectedCategory,
-    required this.onSelected,
-  });
-
-  final List<String> categories;
-  final String selectedCategory;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 38,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.zero,
-        itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final selected = category == selectedCategory;
-          return _CategoryChip(
-            label: category,
-            selected: selected,
-            onTap: () => onSelected(category),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.rounded),
-        child: Container(
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.rounded),
-            border: Border.all(
-              color: selected ? AppColors.primary : AppColors.border,
-              width: 1,
-            ),
-            boxShadow: selected ? AppShadows.primary : null,
-          ),
-          child: Text(
-            label,
-            style: AppTypography.bodySmall.copyWith(
-              color: selected ? Colors.white : AppColors.textMain,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProductGridCard extends StatelessWidget {
-  const _ProductGridCard({
-    required this.product,
-    required this.onTap,
-    required this.onDelete,
-  });
-
-  final InventoryProductItem product;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.standard),
-        boxShadow: AppShadows.soft,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.standard),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 4,
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(AppRadius.standard),
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(AppRadius.standard),
-                    ),
-                    child: _ProductArtFrame(product: product),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  product.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.ink,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _formatPrice(product.sellingPrice),
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _EditActionsButton(
-                            onEdit: onTap,
-                            onDelete: onDelete,
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: product.stockCount > 5
-                                  ? AppColors.success
-                                  : (product.stockCount > 0
-                                      ? AppColors.warning
-                                      : AppColors.danger),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${product.stockCount} in stock',
-                            style: AppTypography.helperText.copyWith(
-                              color: AppColors.textMuted,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-enum _ProductCardAction {
-  edit,
-  delete,
-}
-
-class _EditActionsButton extends StatelessWidget {
-  const _EditActionsButton({
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<_ProductCardAction>(
-      onSelected: (action) {
-        switch (action) {
-          case _ProductCardAction.edit:
-            onEdit();
-            break;
-          case _ProductCardAction.delete:
-            onDelete();
-            break;
-        }
-      },
-      offset: const Offset(0, 42),
-      position: PopupMenuPosition.over,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.standard),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem<_ProductCardAction>(
-          value: _ProductCardAction.edit,
-          child: Row(
-            children: [
-              const Icon(Icons.edit_outlined,
-                  size: 18, color: AppColors.primary),
-              const SizedBox(width: AppSpacing.md),
-              Text('Edit', style: AppTypography.bodyMedium),
-            ],
-          ),
-        ),
-        PopupMenuItem<_ProductCardAction>(
-          value: _ProductCardAction.delete,
-          child: Row(
-            children: [
-              const Icon(Icons.delete_outline_rounded,
-                  size: 18, color: AppColors.danger),
-              const SizedBox(width: AppSpacing.md),
-              Text('Delete',
-                  style: AppTypography.bodyMedium
-                      .copyWith(color: AppColors.danger)),
-            ],
-          ),
-        ),
-      ],
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.xs),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.circular(AppRadius.sharp),
-        ),
-        child: const Icon(
-          Icons.more_vert_rounded,
-          color: AppColors.textMuted,
-          size: 18,
-        ),
-      ),
-    );
-  }
-}
-
-class _AddProductFab extends StatelessWidget {
-  const _AddProductFab({
-    required this.onPressed,
-    this.accentColor = AppColors.primary,
-  });
-
-  final VoidCallback onPressed;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: accentColor,
-      borderRadius: BorderRadius.zero,
-      elevation: 4,
-      child: InkWell(
-        borderRadius: BorderRadius.zero,
-        splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
-        highlightColor: Colors.transparent,
-        onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add_rounded, color: Colors.white, size: 18),
-              SizedBox(width: 6),
-              Text(
-                'Ongeza Bidhaa',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProductArtFrame extends StatelessWidget {
-  const _ProductArtFrame({
-    required this.product,
-  });
-
-  final InventoryProductItem product;
-
-  @override
-  Widget build(BuildContext context) {
-    if (product.imagePath != null && product.imagePath!.isNotEmpty) {
-      return Image(
-        image: appImageProvider(context, product.imagePath!),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, __, ___) => Center(
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: ProductArt(type: product.artType),
-          ),
-        ),
-      );
-    }
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: ProductArt(type: product.artType),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProductsEmptyState extends StatelessWidget {
-  const _ProductsEmptyState({
-    required this.query,
-    required this.category,
-    required this.onAddTap,
-    required this.onClearFilter,
-  });
-
-  final String query;
-  final String category;
-  final VoidCallback onAddTap;
-  final VoidCallback onClearFilter;
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.all(AppSpacing.xxxl),
-      radius: AppRadius.extraRounded,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(AppRadius.rounded),
-            ),
-            child: const Icon(
-              Icons.inventory_2_outlined,
-              size: 40,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            query.isEmpty && category == 'All'
-                ? 'No products yet'
-                : 'No products found',
-            textAlign: TextAlign.center,
-            style: AppTypography.h3,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            query.isEmpty && category == 'All'
-                ? 'Your inventory will appear here once products are added.'
-                : 'Try another search or switch to a different category.',
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textMuted,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          if (query.isEmpty && category == 'All')
-            MarketButton(
-              label: 'Add Product',
-              onTap: onAddTap,
-              isFullWidth: false,
-              icon: Icons.add_rounded,
-            )
-          else
-            MarketButton(
-              label: 'Clear Filters',
-              onTap: onClearFilter,
-              isPrimary: false,
-              isFullWidth: false,
-              icon: Icons.filter_list_off_rounded,
-            ),
-        ],
-      ),
     );
   }
 }

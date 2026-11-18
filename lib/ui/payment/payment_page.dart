@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,6 +7,7 @@ import '../../service/pos_local_store.dart';
 import '../business_category_config.dart';
 import '../models/product_item.dart';
 import '../widgets/app_design.dart';
+import '../widgets/workspace_widgets.dart';
 import '../more/create_customer_page.dart';
 import '../receipt/receipt_success_page.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -31,6 +34,9 @@ class _PaymentPageState extends State<PaymentPage> {
   double _discountAmount = 0;
   String? _discountLabel;
   double? _cashReceived;
+  String _paymentMethod = 'Cash';
+  bool _savingSale = false;
+  bool _saleCompleted = false;
 
   @override
   void initState() {
@@ -51,8 +57,9 @@ class _PaymentPageState extends State<PaymentPage> {
   double get _subtotal =>
       _orderLines.fold(0, (sum, line) => sum + line.totalPrice);
   double get _tax => 0;
+  double get _appliedDiscount => _discountAmount.clamp(0, _subtotal);
   double get _grandTotal =>
-      (_subtotal + _tax - _discountAmount).clamp(0, double.infinity);
+      (_subtotal + _tax - _appliedDiscount).clamp(0, double.infinity);
   double get _changeDue =>
       (_cashReceived != null && _cashReceived! > _grandTotal)
           ? _cashReceived! - _grandTotal
@@ -79,6 +86,7 @@ class _PaymentPageState extends State<PaymentPage> {
   String _amount(double value) => formatCurrency(value);
 
   void _increaseQuantity(OrderLineItem line) {
+    if (_savingSale) return;
     final didAdd = context.read<PosLocalStore>().addToCart(line.product);
     if (!didAdd) {
       showMarketNotice(
@@ -95,6 +103,7 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   void _decreaseQuantity(OrderLineItem line) {
+    if (_savingSale) return;
     final didRemove =
         context.read<PosLocalStore>().removeSingleFromCart(line.product);
     if (!didRemove) return;
@@ -107,6 +116,26 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future<void> _clearCart() async {
+    if (_savingSale || !_hasItems) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear current sale?'),
+        content: Text(
+            'Remove all $_unitCount units and reset the payment details for this sale?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Keep sale')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style:
+                  FilledButton.styleFrom(backgroundColor: AppColors.dangerDeep),
+              child: const Text('Clear sale')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     await context.read<PosLocalStore>().clearCart();
     if (!mounted) return;
     setState(() {
@@ -114,7 +143,39 @@ class _PaymentPageState extends State<PaymentPage> {
       _discountAmount = 0;
       _discountLabel = null;
       _cashReceived = null;
+      _selectedCustomer = null;
+      _paymentMethod = 'Cash';
     });
+  }
+
+  Future<void> _chooseCustomer() async {
+    final create = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+          child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+              leading: const Icon(Icons.people_outline),
+              title: const Text('Select existing customer'),
+              subtitle: const Text('Find a customer already in your records'),
+              onTap: () => Navigator.pop(context, false)),
+          ListTile(
+              leading: const Icon(Icons.person_add_alt_outlined),
+              title: const Text('Create new customer'),
+              subtitle: const Text(
+                  'Save customer details and attach them to this sale'),
+              onTap: () => Navigator.pop(context, true)),
+        ]),
+      )),
+    );
+    if (create == null || !mounted) return;
+    if (create) {
+      await _addCustomer();
+    } else {
+      await _selectExistingCustomer();
+    }
   }
 
   Future<void> _addCustomer() async {
@@ -136,7 +197,7 @@ class _PaymentPageState extends State<PaymentPage> {
       ),
     );
 
-    if (customerName != null) {
+    if (customerName != null && mounted) {
       setState(() => _selectedCustomer = customerName);
     }
     return customerName;
@@ -187,7 +248,8 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future<void> _recordDebit() async {
-    final customer = await _selectExistingCustomer();
+    if (_savingSale || !_hasItems) return;
+    final customer = _selectedCustomer ?? await _selectExistingCustomer();
 
     if (customer == null || !mounted) return;
 
@@ -212,7 +274,12 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future<void> _confirmPayment() async {
-    _completeSale();
+    if (_savingSale || !_hasItems) return;
+    if (_paymentMethod == 'Cash' && _cashReceived == null) {
+      await _enterCashReceived();
+      if (!mounted || _cashReceived == null) return;
+    }
+    await _completeSale(paymentMethod: _paymentMethod);
   }
 
   bool _validateStockBeforeCheckout() {
@@ -254,6 +321,7 @@ class _PaymentPageState extends State<PaymentPage> {
     String? customerName,
     String paymentMethod = 'Cash',
   }) async {
+    if (_savingSale || _saleCompleted) return;
     if (!_hasItems) {
       showMarketNotice(
         context,
@@ -279,6 +347,7 @@ class _PaymentPageState extends State<PaymentPage> {
       return;
     }
 
+    setState(() => _savingSale = true);
     try {
       final store = context.read<PosLocalStore>();
       final profile = store.profile;
@@ -291,17 +360,20 @@ class _PaymentPageState extends State<PaymentPage> {
         cashierName: cashierName,
         registerName: registerName,
         customerName: customerName ?? _selectedCustomer,
-        discountAmount: _discountAmount > 0 ? _discountAmount : null,
+        discountAmount: _appliedDiscount > 0 ? _appliedDiscount : null,
         discountLabel: _discountAmount > 0 ? _discountLabel : null,
         paymentMethod: paymentMethod,
       );
 
-      // Trigger real OS push notification on the device
-      AppNotificationService.instance.showSaleNotification(
-        receiptNo: completedOrder.receiptNo,
-        totalAmount: completedOrder.total,
-        currency: profile.currency.isNotEmpty ? profile.currency : 'TSh',
-      );
+      _saleCompleted = true;
+      // A notification failure must not turn a saved sale into a retry.
+      unawaited(AppNotificationService.instance
+          .showSaleNotification(
+            receiptNo: completedOrder.receiptNo,
+            totalAmount: completedOrder.total,
+            currency: profile.currency.isNotEmpty ? profile.currency : 'TSh',
+          )
+          .catchError((Object _) {}));
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -309,141 +381,205 @@ class _PaymentPageState extends State<PaymentPage> {
           builder: (context) => ReceiptSuccessPage(order: completedOrder),
         ),
       );
-    } on StateError catch (error) {
+    } catch (error) {
       if (!mounted) return;
       showMarketNotice(
         context,
         title: 'Sale Could Not Complete',
-        message: error.message,
+        message: error is StateError
+            ? error.message.toString()
+            : 'The sale could not be saved. Please try again.',
         type: MarketNoticeType.warning,
       );
+    } finally {
+      if (mounted && !_saleCompleted) setState(() => _savingSale = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final config = context.watch<PosLocalStore>().businessCategoryConfig;
+    final totals = _TotalsPanel(
+      category: config.category,
+      subtotal: _amount(_subtotal),
+      tax: _amount(_tax),
+      discount: _appliedDiscount > 0 ? _amount(_appliedDiscount) : null,
+      grandTotal: _amount(_grandTotal),
+      cashReceived: _paymentMethod == 'Cash' && _cashReceived != null
+          ? _amount(_cashReceived!)
+          : null,
+      changeDue: _paymentMethod == 'Cash' && _cashReceived != null
+          ? _amount(_changeDue)
+          : null,
+      itemTypes: _itemTypes,
+      unitCount: _unitCount,
+      onEnterCash: _enterCashReceived,
+      onAddDiscount: _applyDiscount,
+      onRecordDebit: _recordDebit,
+      paymentMethod: _paymentMethod,
+      onMethodChanged: (method) => setState(() => _paymentMethod = method),
+      onExactCash: () => setState(() => _cashReceived = _grandTotal),
+      onRemoveDiscount: () => setState(() {
+        _discountAmount = 0;
+        _discountLabel = null;
+      }),
+    );
+    final charge = FilledButton.icon(
+      key: const ValueKey('complete-sale'),
+      onPressed:
+          !_hasItems || _savingSale || _saleCompleted ? null : _confirmPayment,
+      style: FilledButton.styleFrom(
+          backgroundColor: AppColors.successDeep,
+          minimumSize: const Size(double.infinity, 54)),
+      icon: _savingSale
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white))
+          : const Icon(Icons.check_circle_outline_rounded, size: 21),
+      label: Text(_savingSale
+          ? 'Saving sale…'
+          : 'Complete sale • TSh ${_amount(_grandTotal)}'),
+    );
+    final customer = WorkspacePanel(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(children: [
+        const Icon(Icons.person_outline_rounded, color: AppColors.textMuted),
+        const SizedBox(width: 12),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Customer', style: AppTypography.label),
+          const SizedBox(height: 3),
+          Text(_selectedCustomer ?? 'Walk-in customer',
+              style: AppTypography.bodyMedium
+                  .copyWith(fontWeight: FontWeight.w700)),
+        ])),
+        if (_selectedCustomer != null)
+          IconButton(
+            tooltip: 'Remove customer',
+            onPressed: _savingSale
+                ? null
+                : () => setState(() => _selectedCustomer = null),
+            icon: const Icon(Icons.close_rounded, size: 18),
+          ),
+        TextButton(
+            onPressed: _savingSale ? null : _chooseCustomer,
+            child: Text(_selectedCustomer == null ? 'Select' : 'Change')),
+      ]),
+    );
+    final cart = WorkspacePanel(
+      padding: EdgeInsets.zero,
+      child: Column(children: [
+        Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              Expanded(
+                  child:
+                      Text('Current sale', style: AppTypography.sectionHeader)),
+              Text('$_itemTypes items • $_unitCount units',
+                  style: AppTypography.label),
+            ])),
+        const Divider(height: 1),
+        if (_hasItems)
+          ..._orderLines.map((line) => _CounterLineTile(
+                line: line,
+                amountText: _amount(line.totalPrice),
+                onIncrease: () => _increaseQuantity(line),
+                onDecrease: () => _decreaseQuantity(line),
+              ))
+        else
+          const _EmptyCounterState(),
+        Padding(
+            padding: const EdgeInsets.all(12),
+            child: _CounterActionRow(onAddItem: () {
+              if (!_savingSale) Navigator.of(context).pop();
+            })),
+      ]),
+    );
+    final clear = Align(
+        alignment: Alignment.centerRight,
+        child: TextButton.icon(
+          onPressed: _hasItems && !_savingSale ? _clearCart : null,
+          style: TextButton.styleFrom(foregroundColor: AppColors.dangerDeep),
+          icon: const Icon(Icons.delete_sweep_outlined, size: 19),
+          label: Text(_clearLabel(config.category)),
+        ));
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        child: Column(
-          children: [
+      backgroundColor: AppColors.pageBackground,
+      body: PopScope(
+          canPop: !_savingSale,
+          child: SafeArea(
+              child: Column(children: [
             MarketPageHeader(
               title: _paymentTitle,
               subtitle: _paymentSubtitle,
-              onBack: () => Navigator.of(context).pop(),
+              onBack: () {
+                if (!_savingSale) Navigator.of(context).pop();
+              },
               showBackButton: true,
               centerTitle: false,
-              actions: [
-                IconButton(
-                  onPressed: _addCustomer,
-                  icon: Icon(
-                    switch (config.category) {
-                      BusinessCategory.pharmacy => Icons.badge_outlined,
-                      BusinessCategory.electronics => Icons.person_outline,
-                      BusinessCategory.retail => Icons.group_add_outlined,
-                    },
-                    color: AppColors.ink,
-                    size: 26,
-                  ),
+            ),
+            Expanded(child: LayoutBuilder(builder: (context, constraints) {
+              if (constraints.maxWidth >= 1000) {
+                return Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                            child: ListView(children: [
+                          cart,
+                          const SizedBox(height: 8),
+                          clear
+                        ])),
+                        const SizedBox(width: 24),
+                        SizedBox(
+                            width: 370,
+                            child: Column(children: [
+                              Expanded(
+                                  child: ListView(children: [
+                                customer,
+                                const SizedBox(height: 16),
+                                WorkspacePanel(
+                                    padding: const EdgeInsets.all(8),
+                                    child: AbsorbPointer(
+                                        absorbing: _savingSale, child: totals)),
+                              ])),
+                              const SizedBox(height: 16),
+                              charge,
+                            ])),
+                      ]),
+                );
+              }
+              return Column(children: [
+                Expanded(
+                    child:
+                        ListView(padding: const EdgeInsets.all(16), children: [
+                  customer,
+                  const SizedBox(height: 16),
+                  cart,
+                  const SizedBox(height: 16),
+                  WorkspacePanel(
+                      padding: const EdgeInsets.all(4),
+                      child:
+                          AbsorbPointer(absorbing: _savingSale, child: totals)),
+                  const SizedBox(height: 8),
+                  clear,
+                ])),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  decoration: const BoxDecoration(
+                      color: AppColors.surface,
+                      border: Border(top: BorderSide(color: AppColors.border))),
+                  child: charge,
                 ),
-              ],
-            ),
-            if (_selectedCustomer != null)
-              Container(
-                color: const Color(0xFFF3F4F6),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person_outline,
-                        size: 18, color: AppColors.textBody),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Customer: $_selectedCustomer',
-                        style: const TextStyle(
-                          color: AppColors.textBody,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => setState(() => _selectedCustomer = null),
-                      child: const Icon(Icons.close,
-                          size: 18, color: AppColors.textBody),
-                    ),
-                  ],
-                ),
-              ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
-                children: [
-                  if (_hasItems)
-                    ..._orderLines.map(
-                      (line) => _CounterLineTile(
-                        line: line,
-                        amountText: _amount(line.totalPrice),
-                        onIncrease: () => _increaseQuantity(line),
-                        onDecrease: () => _decreaseQuantity(line),
-                      ),
-                    )
-                  else
-                    const _EmptyCounterState(),
-                  const SizedBox(height: 6),
-                  _CounterActionRow(
-                    onAddItem: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(height: 6),
-                  _TotalsPanel(
-                    category: config.category,
-                    subtotal: _amount(_subtotal),
-                    tax: _amount(_tax),
-                    discount:
-                        _discountAmount > 0 ? _amount(_discountAmount) : null,
-                    grandTotal: _amount(_grandTotal),
-                    cashReceived:
-                        _cashReceived != null ? _amount(_cashReceived!) : null,
-                    changeDue:
-                        _cashReceived != null ? _amount(_changeDue) : null,
-                    itemTypes: _itemTypes,
-                    unitCount: _unitCount,
-                    onEnterCash: _enterCashReceived,
-                    onAddDiscount: _applyDiscount,
-                    onRecordDebit: _recordDebit,
-                  ),
-                  const SizedBox(height: 12),
-                  _FooterActionButton(
-                    label: _clearLabel(config.category),
-                    color: AppColors.textBody,
-                    onTap: _clearCart,
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-              child: _ChargeBar(
-                totalLabel: _chargeLabel(config.category, _amount(_grandTotal)),
-                onTap: _confirmPayment,
-                accentColor: config.primaryColor,
-              ),
-            ),
-          ],
-        ),
-      ),
+              ]);
+            })),
+          ]))),
     );
   }
-}
-
-String _chargeLabel(BusinessCategory category, String amount) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Charge Sale: TSh$amount',
-    BusinessCategory.electronics => 'Charge: TSh$amount',
-    BusinessCategory.retail => 'Charge: TSh$amount',
-  };
 }
 
 String _clearLabel(BusinessCategory category) {
@@ -451,38 +587,6 @@ String _clearLabel(BusinessCategory category) {
     BusinessCategory.pharmacy => 'Clear Basket',
     BusinessCategory.electronics => 'Clear',
     BusinessCategory.retail => 'Clear',
-  };
-}
-
-String _discountLabelFor(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Discount',
-    BusinessCategory.electronics => 'Discount',
-    BusinessCategory.retail => 'Discount',
-  };
-}
-
-String _cashReceivedLabelFor(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Cash / Insurance',
-    BusinessCategory.electronics => 'Cash Received',
-    BusinessCategory.retail => 'Cash Received',
-  };
-}
-
-String _secondaryPaymentAction(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Apply Discount',
-    BusinessCategory.electronics => 'Add Discount',
-    BusinessCategory.retail => 'Add Discount',
-  };
-}
-
-String _tertiaryPaymentAction(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Record Debit',
-    BusinessCategory.electronics => 'Record Debit',
-    BusinessCategory.retail => 'Record Debit',
   };
 }
 
@@ -496,22 +600,6 @@ String _totalsSummaryLabel(
     BusinessCategory.pharmacy => '$base | Pharmacy Sale',
     BusinessCategory.electronics => base,
     BusinessCategory.retail => base,
-  };
-}
-
-String _confirmLabel(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Confirm',
-    BusinessCategory.electronics => 'Done',
-    BusinessCategory.retail => 'Done',
-  };
-}
-
-String _applyLabel(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Apply',
-    BusinessCategory.electronics => 'Apply',
-    BusinessCategory.retail => 'Apply',
   };
 }
 
@@ -530,52 +618,55 @@ class _CounterLineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final identity =
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(line.product.name,
+          style:
+              AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+      const SizedBox(height: 5),
+      Text(
+          [
+            if (line.product.code?.isNotEmpty ?? false) line.product.code!,
+            line.product.size
+          ].where((part) => part.isNotEmpty).join(' • '),
+          style: AppTypography.label),
+      const SizedBox(height: 4),
+      Text('TSh ${formatCurrency(line.product.priceValue)} each',
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+    ]);
+    final stepper = _QuantityStepper(
+        quantity: line.quantity,
+        onDecrease: onDecrease,
+        onIncrease: onIncrease);
+    final total = Text('TSh $amountText',
+        style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w800));
     return Container(
-      margin: const EdgeInsets.only(bottom: 1),
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  line.product.name,
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${line.quantity} x ${line.product.price}',
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            amountText,
-            style: const TextStyle(
-              color: AppColors.ink,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 10),
-          _QuantityStepper(
-            quantity: line.quantity,
-            onDecrease: onDecrease,
-            onIncrease: onIncrease,
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: AppColors.borderLight))),
+      child: LayoutBuilder(builder: (context, constraints) {
+        if (constraints.maxWidth >= 520) {
+          return Row(children: [
+            Expanded(child: identity),
+            const SizedBox(width: 20),
+            stepper,
+            const SizedBox(width: 20),
+            SizedBox(
+                width: 140,
+                child: Align(alignment: Alignment.centerRight, child: total))
+          ]);
+        }
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          identity,
+          const SizedBox(height: 16),
+          Row(children: [
+            stepper,
+            const SizedBox(width: 12),
+            Expanded(
+                child: Align(alignment: Alignment.centerRight, child: total))
+          ]),
+        ]);
+      }),
     );
   }
 }
@@ -598,7 +689,7 @@ class _QuantityStepper extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFF3F4F6)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -606,15 +697,16 @@ class _QuantityStepper extends StatelessWidget {
           _StepperButton(
             icon: Icons.remove_rounded,
             color: AppColors.textBody,
+            backgroundColor: AppColors.surfaceSecondary,
             tooltip: 'Remove one',
             onTap: onDecrease,
           ),
           Container(
-            width: 34,
+            width: 36,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               border: Border.symmetric(
-                vertical: BorderSide(color: Color(0xFFF3F4F6)),
+                vertical: BorderSide(color: Color(0xFFE2E8F0)),
               ),
             ),
             child: Text(
@@ -629,6 +721,7 @@ class _QuantityStepper extends StatelessWidget {
           _StepperButton(
             icon: Icons.add_rounded,
             color: AppColors.textBody,
+            backgroundColor: AppColors.surfaceSecondary,
             tooltip: 'Add one',
             onTap: onIncrease,
           ),
@@ -642,12 +735,14 @@ class _StepperButton extends StatelessWidget {
   const _StepperButton({
     required this.icon,
     required this.color,
+    this.backgroundColor,
     required this.tooltip,
     required this.onTap,
   });
 
   final IconData icon;
   final Color color;
+  final Color? backgroundColor;
   final String tooltip;
   final VoidCallback onTap;
 
@@ -656,7 +751,8 @@ class _StepperButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.transparent,
+        color: backgroundColor ?? Colors.transparent,
+        borderRadius: BorderRadius.circular(9),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(9),
@@ -718,7 +814,7 @@ class _CounterActionRow extends StatelessWidget {
             child: Container(
               height: 54,
               alignment: Alignment.center,
-              color: Colors.white,
+              color: AppColors.surface,
               child: const Text(
                 'Add New Item',
                 style: TextStyle(
@@ -749,6 +845,10 @@ class _TotalsPanel extends StatelessWidget {
     required this.onEnterCash,
     required this.onAddDiscount,
     required this.onRecordDebit,
+    required this.paymentMethod,
+    required this.onMethodChanged,
+    required this.onExactCash,
+    required this.onRemoveDiscount,
   });
 
   final BusinessCategory category;
@@ -763,199 +863,121 @@ class _TotalsPanel extends StatelessWidget {
   final VoidCallback onEnterCash;
   final VoidCallback onAddDiscount;
   final VoidCallback onRecordDebit;
+  final String paymentMethod;
+  final ValueChanged<String> onMethodChanged;
+  final VoidCallback onExactCash;
+  final VoidCallback onRemoveDiscount;
 
   @override
-  Widget build(BuildContext context) {
-    const linkStyle = TextStyle(
-      color: AppColors.ink,
-      fontSize: 13,
-      fontWeight: FontWeight.w500,
-      decoration: TextDecoration.underline,
-    );
-
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Subtotal',
-                  style: TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Text(
-                subtotal,
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Tax - Not configured',
-                  style: TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-              Text(
-                tax,
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          if (discount != null) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _discountLabelFor(category),
-                    style: const TextStyle(
-                      color: AppColors.textBody,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Text(
-                  '- $discount',
-                  style: const TextStyle(
-                    color: AppColors.textBody,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const Divider(height: 22, color: Color(0xFF444444)),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Grand Total',
-                  style: TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Text(
-                'TSh$grandTotal',
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          if (cashReceived != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Cash Received',
-                    style: TextStyle(
-                      color: Color(0xFF64748B),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Text(
-                  'TSh $cashReceived',
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Change Due',
-                    style: TextStyle(
-                      color: Color(0xFF111111),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Text(
-                  'TSh $changeDue',
-                  style: const TextStyle(
-                    color: Color(0xFF111111),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: onEnterCash,
-                child: Text(_cashReceivedLabelFor(category), style: linkStyle),
-              ),
-              const Spacer(),
-              Text(
-                _totalsSummaryLabel(category, itemTypes, unitCount),
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Sale summary', style: AppTypography.sectionHeader),
+          const SizedBox(height: 4),
+          Text(_totalsSummaryLabel(category, itemTypes, unitCount),
+              style: AppTypography.label),
+          const SizedBox(height: 20),
+          _SummaryRow(
+              label: 'Subtotal',
+              value: 'TSh $subtotal',
+              valueColor: AppColors.ink),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: onAddDiscount,
-                child:
-                    Text(_secondaryPaymentAction(category), style: linkStyle),
+          _SummaryRow(
+              label: 'Tax', value: 'TSh $tax', valueColor: AppColors.textBody),
+          if (discount != null) ...[
+            const SizedBox(height: 10),
+            _SummaryRow(
+                label: 'Discount',
+                value: '− TSh $discount',
+                valueColor: AppColors.successDeep),
+          ],
+          const Divider(height: 32, color: AppColors.border),
+          Text('Total due', style: AppTypography.label),
+          const SizedBox(height: 6),
+          SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text('TSh $grandTotal',
+                      style: AppTypography.h1.copyWith(fontSize: 30)))),
+          const SizedBox(height: 20),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(
+                onPressed: onAddDiscount,
+                icon: const Icon(Icons.discount_outlined, size: 18),
+                label:
+                    Text(discount == null ? 'Add discount' : 'Edit discount')),
+            if (discount != null)
+              IconButton(
+                  tooltip: 'Remove discount',
+                  onPressed: onRemoveDiscount,
+                  icon: const Icon(Icons.close_rounded,
+                      color: AppColors.dangerDeep)),
+          ]),
+          const Divider(height: 32, color: AppColors.border),
+          Text('Payment method', style: AppTypography.sectionHeader),
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final method in ['Cash', 'Card', 'Mobile Money'])
+              ChoiceChip(
+                label: Text(method),
+                avatar: Icon(
+                    switch (method) {
+                      'Cash' => Icons.payments_outlined,
+                      'Card' => Icons.credit_card_outlined,
+                      _ => Icons.phone_android_rounded
+                    },
+                    size: 17),
+                selected: paymentMethod == method,
+                onSelected: (_) => onMethodChanged(method),
+                selectedColor: AppColors.successLight,
+                side: BorderSide(
+                    color: paymentMethod == method
+                        ? AppColors.successDeep
+                        : AppColors.border),
+                labelStyle: AppTypography.bodySmall.copyWith(
+                    color: paymentMethod == method
+                        ? AppColors.successDeep
+                        : AppColors.textBody),
               ),
-              const Spacer(),
-              GestureDetector(
-                onTap: onRecordDebit,
-                child: Text(_tertiaryPaymentAction(category), style: linkStyle),
+          ]),
+          const SizedBox(height: 16),
+          if (paymentMethod == 'Cash') ...[
+            OutlinedButton.icon(
+              onPressed: onEnterCash,
+              icon: const Icon(Icons.payments_outlined, size: 19),
+              label: Text(cashReceived == null
+                  ? 'Enter cash received'
+                  : 'Cash received: TSh $cashReceived'),
+            ),
+            TextButton(
+                onPressed: onExactCash, child: const Text('Use exact amount')),
+            if (cashReceived != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                    color: AppColors.successLight.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(8)),
+                child: _SummaryRow(
+                    label: 'Change due',
+                    value: 'TSh ${changeDue ?? '0'}',
+                    valueColor: AppColors.successDeep,
+                    isBold: true),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+          ] else
+            Text(
+              'Confirm the $paymentMethod payment on your terminal or phone before completing this sale.',
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textMuted, height: 1.5),
+            ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+              onPressed: onRecordDebit,
+              icon: const Icon(Icons.person_outline_rounded, size: 19),
+              label: const Text('Record as customer credit')),
+        ]),
+      );
 }
 
 class _CashReceivedBottomSheet extends StatefulWidget {
@@ -999,183 +1021,70 @@ class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final changeDue = (_currentInput > widget.grandTotal)
-        ? _currentInput - widget.grandTotal
-        : 0.0;
-    final isInsufficient =
-        _currentInput > 0 && _currentInput < widget.grandTotal;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    final remaining =
+        (widget.grandTotal - _currentInput).clamp(0.0, double.infinity);
+    final change =
+        (_currentInput - widget.grandTotal).clamp(0.0, double.infinity);
+    final suggestions = <double>{
+      widget.grandTotal,
+      (widget.grandTotal / 1000).ceil() * 1000.0,
+      (widget.grandTotal / 5000).ceil() * 5000.0,
+      (widget.grandTotal / 10000).ceil() * 10000.0
+    }.toList()
+      ..sort();
+    return _PaymentSheet(
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('Cash received', style: AppTypography.h2),
+      const SizedBox(height: 6),
+      Text('Enter the amount handed to you by the customer.',
+          style: AppTypography.bodySmall),
+      const SizedBox(height: 24),
+      TextField(
+        key: const ValueKey('cash-amount'),
+        controller: _controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        autofocus: true,
+        onChanged: (value) =>
+            setState(() => _currentInput = _parseAmount(value)),
+        style: AppTypography.h2,
+        decoration: const InputDecoration(
+            labelText: 'Amount received', prefixText: 'TSh ', hintText: '0'),
       ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        top: 12,
-        left: 20,
-        right: 20,
+      const SizedBox(height: 16),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        for (final amount in suggestions)
+          ActionChip(
+              label: Text(amount == widget.grandTotal
+                  ? 'Exact amount'
+                  : 'TSh ${_format(amount)}'),
+              onPressed: () => setState(() {
+                    _currentInput = amount;
+                    _controller.text = amount.toStringAsFixed(0);
+                  })),
+      ]),
+      const SizedBox(height: 24),
+      _SummaryRow(
+          label: 'Total due',
+          value: 'TSh ${_format(widget.grandTotal)}',
+          valueColor: AppColors.ink),
+      const SizedBox(height: 16),
+      _SummaryRow(
+          label: remaining > 0 ? 'Still to receive' : 'Change due',
+          value: 'TSh ${_format(remaining > 0 ? remaining : change)}',
+          valueColor:
+              remaining > 0 ? AppColors.dangerDeep : AppColors.successDeep,
+          isBold: true),
+      const SizedBox(height: 24),
+      FilledButton(
+        key: const ValueKey('confirm-cash'),
+        onPressed: _currentInput >= widget.grandTotal
+            ? () => Navigator.pop(context, _currentInput)
+            : null,
+        style: FilledButton.styleFrom(backgroundColor: AppColors.successDeep),
+        child: const Text('Confirm cash amount'),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _cashReceivedLabelFor(widget.category),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _controller,
-            keyboardType: TextInputType.number,
-            autofocus: true,
-            onChanged: (val) => setState(() {
-              _currentInput = double.tryParse(val) ?? 0;
-            }),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
-            ),
-            decoration: const InputDecoration(
-              hintText: '0',
-              prefixText: 'TSh ',
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              _SummaryRow(
-                label: 'Total',
-                value: 'TSh ${_format(widget.grandTotal)}',
-                valueColor: AppColors.ink,
-              ),
-              const Spacer(),
-              _SummaryRow(
-                label: isInsufficient ? 'Remaining' : 'Change',
-                value:
-                    'TSh ${_format(isInsufficient ? (widget.grandTotal - _currentInput) : changeDue)}',
-                valueColor: isInsufficient
-                    ? const Color(0xFFE11D48)
-                    : const Color(0xFF111111),
-                isBold: true,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _currentInput >= widget.grandTotal
-                ? () {
-                    Navigator.of(context).pop(_currentInput);
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              _confirmLabel(widget.category),
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-}
-
-class _FooterActionButton extends StatelessWidget {
-  const _FooterActionButton({
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(color: color),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ChargeBar extends StatelessWidget {
-  const _ChargeBar({
-    required this.totalLabel,
-    required this.onTap,
-    this.accentColor = AppColors.primary,
-  });
-
-  final String totalLabel;
-  final VoidCallback onTap;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          color: accentColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          totalLabel,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
+    ]));
   }
 }
 
@@ -1220,182 +1129,95 @@ class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final calculatedDiscount =
-        _isPercentage ? (widget.subtotal * _currentInput / 100) : _currentInput;
-
-    final finalDiscount = calculatedDiscount.clamp(0.0, widget.subtotal);
-    final revisedTotal =
-        (widget.subtotal - finalDiscount).clamp(0.0, double.infinity);
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        top: 12,
-        left: 20,
-        right: 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _discountLabelFor(widget.category),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    _DiscountModeTab(
-                      label: 'TSh',
-                      isSelected: !_isPercentage,
-                      onTap: () => setState(() => _isPercentage = false),
-                    ),
-                    _DiscountModeTab(
-                      label: '%',
-                      isSelected: _isPercentage,
-                      onTap: () => setState(() => _isPercentage = true),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _controller,
-            keyboardType: TextInputType.number,
-            autofocus: true,
-            onChanged: (val) => setState(() {
-              _currentInput = double.tryParse(val) ?? 0;
-            }),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
-            ),
-            decoration: InputDecoration(
-              hintText: '0',
-              prefixText: _isPercentage ? null : 'TSh ',
-              suffixText: _isPercentage ? '%' : null,
-              hintStyle: TextStyle(color: AppColors.ink.withValues(alpha: 0.1)),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              _SummaryRow(
-                label: 'Savings',
-                value: '- TSh ${_format(finalDiscount)}',
-                valueColor: AppColors.textBody,
-              ),
-              const Spacer(),
-              _SummaryRow(
-                label: 'Total',
-                value: 'TSh ${_format(revisedTotal)}',
-                valueColor: AppColors.ink,
-                isBold: true,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop({
-                'amount': finalDiscount,
-                'label': _isPercentage
-                    ? '${_currentInput.round()}% Discount'
-                    : 'Discount',
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              _applyLabel(widget.category),
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
+    final percentage = _currentInput.clamp(0.0, 100.0);
+    final discount =
+        (_isPercentage ? widget.subtotal * percentage / 100 : _currentInput)
+            .clamp(0.0, widget.subtotal);
+    return _PaymentSheet(
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('Sale discount', style: AppTypography.h2),
+      const SizedBox(height: 6),
+      Text('Apply a fixed amount or a percentage to this sale.',
+          style: AppTypography.bodySmall),
+      const SizedBox(height: 20),
+      SegmentedButton<bool>(
+        segments: const [
+          ButtonSegment(value: false, label: Text('Amount (TSh)')),
+          ButtonSegment(value: true, label: Text('Percentage'))
         ],
+        selected: {_isPercentage},
+        onSelectionChanged: (value) =>
+            setState(() => _isPercentage = value.first),
       ),
-    );
+      const SizedBox(height: 24),
+      TextField(
+        key: const ValueKey('discount-amount'),
+        controller: _controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        autofocus: true,
+        onChanged: (value) =>
+            setState(() => _currentInput = _parseAmount(value)),
+        style: AppTypography.h2,
+        decoration: InputDecoration(
+            labelText:
+                _isPercentage ? 'Discount percentage' : 'Discount amount',
+            prefixText: _isPercentage ? null : 'TSh ',
+            suffixText: _isPercentage ? '%' : null),
+      ),
+      const SizedBox(height: 24),
+      _SummaryRow(
+          label: 'Discount',
+          value: 'TSh ${_format(discount)}',
+          valueColor: AppColors.successDeep),
+      const SizedBox(height: 16),
+      _SummaryRow(
+          label: 'New total',
+          value: 'TSh ${_format(widget.subtotal - discount)}',
+          valueColor: AppColors.ink,
+          isBold: true),
+      const SizedBox(height: 24),
+      FilledButton(
+        key: const ValueKey('apply-discount'),
+        onPressed: () => Navigator.pop(context, {
+          'amount': discount,
+          'label': _isPercentage
+              ? '${percentage.toStringAsFixed(0)}% Discount'
+              : 'Discount'
+        }),
+        style: FilledButton.styleFrom(backgroundColor: AppColors.successDeep),
+        child: const Text('Apply discount'),
+      ),
+    ]));
   }
 }
 
-class _DiscountModeTab extends StatelessWidget {
-  const _DiscountModeTab({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
+class _PaymentSheet extends StatelessWidget {
+  const _PaymentSheet({required this.child});
+  final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFF3F4F6) : Colors.transparent,
-          ),
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints:
+            BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
+        child: Material(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          clipBehavior: Clip.antiAlias,
+          child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                    24, 24, 24, MediaQuery.viewInsetsOf(context).bottom + 24),
+                child: child,
+              )),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            color:
-                isSelected ? const Color(0xFF111111) : const Color(0xFF64748B),
-          ),
-        ),
-      ),
-    );
-  }
+      );
+}
+
+double _parseAmount(String value) {
+  final parsed = double.tryParse(value.replaceAll(',', '').trim());
+  return parsed != null && parsed.isFinite && parsed >= 0 ? parsed : 0;
 }
 
 class _SummaryRow extends StatelessWidget {
@@ -1416,22 +1238,26 @@ class _SummaryRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
+        Expanded(
+            child: Text(
           label,
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Color(0xFF64748B),
           ),
-        ),
-        Text(
+        )),
+        const SizedBox(width: 12),
+        Flexible(
+            child: Text(
           value,
+          textAlign: TextAlign.right,
           style: TextStyle(
             fontSize: 15,
             fontWeight: isBold ? FontWeight.w800 : FontWeight.w700,
             color: valueColor,
           ),
-        ),
+        )),
       ],
     );
   }

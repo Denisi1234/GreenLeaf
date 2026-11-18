@@ -3,17 +3,13 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
-import '../business_category_config.dart';
 import '../home/sales_page.dart';
 import '../more/more_page.dart';
-import '../products/add_product_page.dart';
 import '../products/product_management_page.dart';
 import '../reports/dashboard_page.dart';
-import '../reports/report_hub_page.dart';
 import '../widgets/market_shared_widgets.dart';
-import '../widgets/app_design.dart';
 import '../widgets/market_bottom_nav.dart';
-import '../more/duka_ai_page.dart';
+import '../more/settings_page.dart';
 import '../notifications/notifications_page.dart';
 
 class AppShell extends StatefulWidget {
@@ -41,7 +37,6 @@ class _AppShellState extends State<AppShell>
     DashboardPage(useSharedShell: true),
     ProductManagementPage(useSharedShell: true),
     SalesPage(useSharedShell: true),
-    ReportHubPage(),
     MorePage(useSharedShell: true),
   ];
 
@@ -81,13 +76,11 @@ class _AppShellState extends State<AppShell>
   String _drawerSelectedItemForTab(MarketTab tab, AppStrings strings) {
     switch (tab) {
       case MarketTab.dashboard:
-        return strings.home;
+        return strings.dashboard;
       case MarketTab.products:
         return strings.inventory;
       case MarketTab.sales:
         return strings.sales;
-      case MarketTab.reports:
-        return strings.reports;
       case MarketTab.more:
         return strings.more;
     }
@@ -98,11 +91,9 @@ class _AppShellState extends State<AppShell>
       case MarketTab.dashboard:
         return strings.dashboard;
       case MarketTab.products:
-        return strings.products;
+        return 'Items';
       case MarketTab.sales:
         return strings.sales;
-      case MarketTab.reports:
-        return strings.reports;
       case MarketTab.more:
         return strings.more;
     }
@@ -116,71 +107,9 @@ class _AppShellState extends State<AppShell>
         return strings.productsSubtitle;
       case MarketTab.sales:
         return strings.salesSubtitle;
-      case MarketTab.reports:
-        return strings.reportsSubtitle;
       case MarketTab.more:
         return strings.moreSubtitle;
     }
-  }
-
-  String _primaryActionLabel(
-    MarketTab tab,
-    BusinessCategory category,
-    AppStrings strings,
-  ) {
-    final isAddFlow = tab == MarketTab.products || tab == MarketTab.sales;
-    return switch (category) {
-      BusinessCategory.pharmacy => isAddFlow ? 'Ongeza Dawa' : 'Mauzo Mapya',
-      BusinessCategory.electronics =>
-        isAddFlow ? 'Ongeza Kifaa' : strings.sales,
-      BusinessCategory.retail => isAddFlow ? 'Ongeza Bidhaa' : strings.sales,
-    };
-  }
-
-  IconData _primaryActionIcon(
-    MarketTab tab,
-    BusinessCategory category,
-  ) {
-    final isAddFlow = tab == MarketTab.products || tab == MarketTab.sales;
-    if (isAddFlow) {
-      return switch (category) {
-        BusinessCategory.pharmacy => Icons.medication_rounded,
-        BusinessCategory.electronics => Icons.devices_other_rounded,
-        BusinessCategory.retail => Icons.inventory_2_outlined,
-      };
-    }
-
-    return switch (category) {
-      BusinessCategory.pharmacy => Icons.receipt_long_outlined,
-      BusinessCategory.electronics => Icons.shopping_bag_outlined,
-      BusinessCategory.retail => Icons.point_of_sale_outlined,
-    };
-  }
-
-  Future<void> _openPrimaryAction(
-    BuildContext context,
-    MarketTab tab,
-    PosLocalStore store,
-  ) async {
-    final isAddFlow = tab == MarketTab.products || tab == MarketTab.sales;
-    final shouldOpenProductForm = isAddFlow;
-
-    if (shouldOpenProductForm) {
-      final nextCode =
-          'P${(store.inventory.length + 1).toString().padLeft(3, '0')}';
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (context) => AddProductPage(nextCode: nextCode),
-        ),
-      );
-      return;
-    }
-
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (context) => const SalesPage(),
-      ),
-    );
   }
 
   @override
@@ -188,6 +117,8 @@ class _AppShellState extends State<AppShell>
     final store = context.watch<PosLocalStore>();
     final config = store.businessCategoryConfig;
     final strings = AppStrings.of(store.languageCode);
+    final hasActiveAlerts = store.inventory.any((p) => p.stockCount <= 5) ||
+        store.customers.any((c) => c.debitBalance > 0);
     return Scaffold(
       drawer: MarketAppDrawer(
         selectedItem: _drawerSelectedItemForTab(_currentTab, strings),
@@ -205,6 +136,7 @@ class _AppShellState extends State<AppShell>
             showBorder: true,
             actions: [
               MarketHeaderActionButtons(
+                showDukaAi: false,
                 aiBackground: config.primaryLightColor,
                 aiForeground: config.primaryColor,
                 aiBorderColor: config.primaryColor.withValues(alpha: 0.12),
@@ -212,18 +144,20 @@ class _AppShellState extends State<AppShell>
                 notificationForeground: config.primaryColor,
                 notificationBorderColor:
                     config.primaryColor.withValues(alpha: 0.12),
-                showNotificationDot: true,
-                onDukaAiTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) => const DukaAiAdvisorPage(),
-                    ),
-                  );
-                },
+                showNotificationDot: hasActiveAlerts,
+                showSettings: true,
+                onDukaAiTap: () {},
                 onNotificationTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (context) => const NotificationsPage(),
+                    ),
+                  );
+                },
+                onSettingsTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const SettingsPage(),
                     ),
                   );
                 },
@@ -296,47 +230,6 @@ class _AppShellState extends State<AppShell>
           ),
         ],
       ),
-      floatingActionButton: (_currentTab == MarketTab.dashboard ||
-              _currentTab == MarketTab.sales ||
-              _currentTab == MarketTab.reports ||
-              _currentTab == MarketTab.more)
-          ? null
-          : Material(
-              color: config.primaryColor,
-              borderRadius: BorderRadius.zero,
-              elevation: 4,
-              child: InkWell(
-                borderRadius: BorderRadius.zero,
-                splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
-                highlightColor: Colors.transparent,
-                onTap: () => _openPrimaryAction(context, _currentTab, store),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _primaryActionIcon(_currentTab, config.category),
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _primaryActionLabel(
-                            _currentTab, config.category, strings),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: MarketBottomNav(
         currentTab: _currentTab,
         onChanged: _handleTabChange,

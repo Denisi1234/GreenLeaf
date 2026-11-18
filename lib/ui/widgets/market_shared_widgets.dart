@@ -177,8 +177,11 @@ class HeaderActionButton extends StatelessWidget {
 class MarketHeaderActionButtons extends StatelessWidget {
   const MarketHeaderActionButtons({
     super.key,
-    required this.onDukaAiTap,
+    this.onDukaAiTap,
     this.onNotificationTap,
+    this.onSettingsTap,
+    this.showDukaAi = true,
+    this.showSettings = false,
     this.aiBackground = AppColors.surface,
     this.aiForeground = AppColors.textMain,
     this.aiBorderColor = AppColors.border,
@@ -189,8 +192,11 @@ class MarketHeaderActionButtons extends StatelessWidget {
     this.spacing = AppSpacing.sm,
   });
 
-  final VoidCallback onDukaAiTap;
+  final VoidCallback? onDukaAiTap;
   final VoidCallback? onNotificationTap;
+  final VoidCallback? onSettingsTap;
+  final bool showDukaAi;
+  final bool showSettings;
   final Color aiBackground;
   final Color aiForeground;
   final Color aiBorderColor;
@@ -205,14 +211,16 @@ class MarketHeaderActionButtons extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        HeaderActionButton(
-          icon: Icons.smart_toy_outlined,
-          background: aiBackground,
-          foreground: aiForeground,
-          borderColor: aiBorderColor,
-          onTap: onDukaAiTap,
-        ),
-        SizedBox(width: spacing),
+        if (showDukaAi && onDukaAiTap != null) ...[
+          HeaderActionButton(
+            icon: Icons.smart_toy_outlined,
+            background: aiBackground,
+            foreground: aiForeground,
+            borderColor: aiBorderColor,
+            onTap: onDukaAiTap,
+          ),
+          SizedBox(width: spacing),
+        ],
         HeaderActionButton(
           icon: Icons.notifications_none_rounded,
           background: notificationBackground,
@@ -221,6 +229,16 @@ class MarketHeaderActionButtons extends StatelessWidget {
           showDot: showNotificationDot,
           onTap: onNotificationTap,
         ),
+        if (showSettings || onSettingsTap != null) ...[
+          SizedBox(width: spacing),
+          HeaderActionButton(
+            icon: Icons.settings_outlined,
+            background: notificationBackground,
+            foreground: notificationForeground,
+            borderColor: notificationBorderColor,
+            onTap: onSettingsTap,
+          ),
+        ],
       ],
     );
   }
@@ -571,10 +589,10 @@ class MarketSearchField extends StatelessWidget {
     required this.onChanged,
     this.onClear,
     this.onScanTap,
-    this.height = 52,
-    this.radius = 0,
-    this.backgroundColor = AppColors.surface,
-    this.borderColor = AppColors.border,
+    this.height = 48,
+    this.radius = 0, // Sharp input per user request
+    this.backgroundColor = Colors.white,
+    this.borderColor = const Color(0xFFD6E4F0),
     this.iconColor = AppColors.textMuted,
     this.hintColor = AppColors.textLight,
     this.textColor = AppColors.textMain,
@@ -709,10 +727,10 @@ class MarketSurfaceCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = EdgeInsets.zero,
-    this.backgroundColor = AppColors.surface,
-    this.borderColor = AppColors.border,
-    this.radius = 0,
-    this.showShadow = false,
+    this.backgroundColor = Colors.white,
+    this.borderColor = const Color(0xFFD6E4F0),
+    this.radius = 10,
+    this.showShadow = true,
   });
 
   final Widget child;
@@ -730,7 +748,15 @@ class MarketSurfaceCard extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderColor),
-        boxShadow: showShadow ? AppShadows.soft : null,
+        boxShadow: showShadow
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
       ),
       child: child,
     );

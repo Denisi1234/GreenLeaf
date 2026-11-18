@@ -15,6 +15,7 @@ import '../../l10n/app_strings.dart';
 import '../../service/expense_model.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
+import '../widgets/workspace_widgets.dart';
 import '../widgets/app_image.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_expense_page.dart';
@@ -138,38 +139,56 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(strings, 'Total spent', 'Jumla'),
-                              value: _formatMoney(total, compact: true),
-                              icon: Icons.payments_outlined,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(strings, 'Records', 'Kumbukumbu'),
-                              value: '${filtered.length}',
-                              icon: Icons.receipt_long_outlined,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatCard(
-                              label: _dual(strings, 'Average', 'Wastani'),
-                              value: _formatMoney(
-                                filtered.isEmpty ? 0 : total / filtered.length,
-                                compact: true,
+                      LayoutBuilder(
+                        builder: (context, metricConstraints) {
+                          final columns = metricConstraints.maxWidth >= 760 ? 4 : 2;
+                          final width = (metricConstraints.maxWidth - (columns - 1) * 12) / columns;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Total spent', 'Jumla ya matumizi'),
+                                  value: _formatMoney(total, compact: true),
+                                  icon: Icons.payments_outlined,
+                                  color: AppColors.ink,
+                                ),
                               ),
-                              icon: Icons.trending_up_rounded,
-                              color: AppColors.warning,
-                            ),
-                          ),
-                        ],
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Total records', 'Idadi ya kumbukumbu'),
+                                  value: '${filtered.length}',
+                                  icon: Icons.receipt_long_outlined,
+                                  color: AppColors.primaryDeep,
+                                ),
+                              ),
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Average expense', 'Wastani wa matumizi'),
+                                  value: _formatMoney(
+                                    filtered.isEmpty ? 0 : total / filtered.length,
+                                    compact: true,
+                                  ),
+                                  icon: Icons.query_stats_rounded,
+                                  color: AppColors.textBody,
+                                ),
+                              ),
+                              SizedBox(
+                                width: width,
+                                child: WorkspaceMetric(
+                                  label: _dual(strings, 'Tax included', 'Kodi iliyojumuishwa'),
+                                  value: _formatMoney(taxTotal, compact: true),
+                                  icon: Icons.account_balance_outlined,
+                                  color: taxTotal > 0 ? AppColors.toneIndigo : AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       if (taxTotal > 0) ...[
                         const SizedBox(height: 10),
@@ -1290,14 +1309,14 @@ class _ExpenseCard extends StatelessWidget {
         expense.receiptPath != null && expense.receiptPath!.isNotEmpty;
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      borderColor: const Color(0xFFD6E4F0),
+      radius: 10,
+      showShadow: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+          padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
           child: Row(
             children: [
               _CategoryIcon(style: cat),

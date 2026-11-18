@@ -79,59 +79,55 @@ class _TrendPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (points.isEmpty) return;
 
-    final effectiveMax = maxValue > 0 ? maxValue : 1.0;
-    final stepX = size.width / (points.length - 1).clamp(1, double.infinity);
-
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
+    final minimum = points
+        .map((point) => point.value)
+        .fold<double>(0, (a, b) => a < b ? a : b);
+    final maximum = points
+        .map((point) => point.value)
+        .fold<double>(0, (a, b) => a > b ? a : b);
+    final extent = maximum - minimum;
+    final scale = extent > 0 ? extent : 1.0;
+    double yFor(double value) => extent == 0
+        ? size.height * 0.92
+        : size.height * 0.08 + (maximum - value) / scale * size.height * 0.84;
+    double xFor(int index) => points.length == 1
+        ? size.width / 2
+        : index * size.width / (points.length - 1);
+    final baseline = yFor(0);
+    canvas.drawLine(
+        Offset(0, baseline),
+        Offset(size.width, baseline),
+        Paint()
+          ..color = AppColors.border
+          ..strokeWidth = 1);
     final path = Path();
-    for (int i = 0; i < points.length; i++) {
-      final x = i * stepX;
-      final y =
-          size.height - (points[i].value / effectiveMax * size.height * 0.85);
-      if (i == 0) {
-        path.moveTo(x, y);
+    for (var index = 0; index < points.length; index++) {
+      final point = Offset(xFor(index), yFor(points[index].value));
+      if (index == 0) {
+        path.moveTo(point.dx, point.dy);
       } else {
-        path.lineTo(x, y);
+        path.lineTo(point.dx, point.dy);
       }
     }
-    canvas.drawPath(path, paint);
-
-    final pointPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < points.length; i++) {
-      final x = i * stepX;
-      final y =
-          size.height - (points[i].value / effectiveMax * size.height * 0.85);
-      canvas.drawCircle(Offset(x, y), 4, pointPaint);
-      canvas.drawCircle(Offset(x, y), 2, Paint()..color = Colors.white);
+    if (points.length > 1) {
+      final area = Path.from(path)
+        ..lineTo(size.width, baseline)
+        ..lineTo(0, baseline)
+        ..close();
+      canvas.drawPath(area, Paint()..color = color.withValues(alpha: 0.06));
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = color
+            ..strokeWidth = 2.5
+            ..style = PaintingStyle.stroke
+            ..strokeCap = StrokeCap.round);
     }
-
-    final gradientPath = Path.from(path);
-    gradientPath.lineTo(size.width, size.height);
-    gradientPath.lineTo(0, size.height);
-    gradientPath.close();
-
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        color.withValues(alpha: 0.15),
-        color.withValues(alpha: 0.0),
-      ],
-    );
-    canvas.drawPath(
-      gradientPath,
-      Paint()
-        ..shader =
-            gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
-    );
+    for (var index = 0; index < points.length; index++) {
+      final point = Offset(xFor(index), yFor(points[index].value));
+      canvas.drawCircle(point, 4, Paint()..color = color);
+      canvas.drawCircle(point, 2, Paint()..color = Colors.white);
+    }
   }
 
   @override
@@ -149,24 +145,28 @@ class _TrendLabels extends StatelessWidget {
   final List<TrendPoint> points;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: points.map((point) {
-        return SizedBox(
-          width: 50,
-          child: Text(
-            point.label,
-            textAlign: TextAlign.center,
-            style: AppTypography.helperText.copyWith(
-              fontSize: 9,
-              color: AppColors.textLight,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      }).toList(),
-    );
-  }
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) {
+        final limit = (constraints.maxWidth / 80).floor().clamp(2, 8);
+        final count = points.length.clamp(1, limit);
+        final labels = [
+          for (var index = 0; index < count; index++)
+            points[count == 1
+                ? 0
+                : (index * (points.length - 1) / (count - 1)).round()]
+        ];
+        return Row(children: [
+          for (final point in labels)
+            Expanded(
+                child: Tooltip(
+              message: '${point.label}: ${point.displayValue}',
+              child: Text(point.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.helperText
+                      .copyWith(fontSize: 10, color: AppColors.textMuted)),
+            ))
+        ]);
+      });
 }

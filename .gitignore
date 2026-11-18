@@ -48,6 +48,8 @@ app.*.map.json
 
 # Sensitive data
 google-services.json
+**/android/key.properties
+**/android/app/upload-keystore.jks
 services.*.tar
 
 # mocks

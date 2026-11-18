@@ -44,9 +44,16 @@ class SettingsCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFD6E4F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Padding(
         padding: padding,
@@ -108,7 +115,7 @@ class SettingsIconBox extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, color: color, size: size * 0.52),
     );
@@ -208,15 +215,15 @@ class SettingsSwitchTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Material(
-        color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
         child: SwitchListTile.adaptive(
           value: value,
           onChanged: onChanged,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-            side: BorderSide(color: AppColors.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: const BorderSide(color: Color(0xFFD6E4F0)),
           ),
           title: Text(
             title,
@@ -404,6 +411,8 @@ class SettingsSaveBar extends StatelessWidget {
                     ),
                     TextButton(
                       onPressed: busy ? null : onDiscard,
+                      style: TextButton.styleFrom(
+                          foregroundColor: AppColors.dangerDeep),
                       child: Text(discardLabel),
                     ),
                     const SizedBox(width: 8),
