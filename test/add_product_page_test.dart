@@ -18,7 +18,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify some text exists to ensure it rendered
-    expect(find.text('Product Name'), findsOneWidget);
+    // Verify the page rendered and the form is visible
+    expect(find.text('New Item Details'), findsOneWidget);
+    expect(find.text('Item Name *', findRichText: true), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

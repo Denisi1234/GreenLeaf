@@ -786,8 +786,11 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   transparentBackButton: true,
                   onBack: () => Navigator.of(context).maybePop(),
                 ),
-                const Expanded(
-                  child: Center(child: CircularProgressIndicator()),
+                Expanded(
+                  child: MarketLoadingView(
+                    message: 'Aggregating Store Analytics…',
+                    subMessage: 'Retrieving real-time data across all store branches',
+                  ),
                 ),
               ],
             ),
@@ -1151,31 +1154,33 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
           Expanded(
-              child: TextField(
+              child: MarketSearchField(
             controller: _searchController,
+            hintText: 'Search this report',
             onChanged: (value) => setState(() {
               _searchQuery = value;
               _page = 0;
             }),
-            decoration: InputDecoration(
-                hintText: 'Search this report',
-                prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: _searchQuery.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Clear search',
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => setState(() {
-                              _searchController.clear();
-                              _searchQuery = '';
-                              _page = 0;
-                            }))),
+            onClear: () => setState(() {
+              _searchController.clear();
+              _searchQuery = '';
+              _page = 0;
+            }),
           )),
-          const SizedBox(width: 12),
-          IconButton.outlined(
+          const SizedBox(width: 8),
+          Container(
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.zero,
+              border: Border.all(color: AppColors.border),
+            ),
+            child: IconButton(
               tooltip: 'Show columns',
               onPressed: () => _showColumnsSheet(table),
-              icon: const Icon(Icons.view_column_outlined, size: 22)),
+              icon: const Icon(Icons.view_column_outlined, size: 20, color: AppColors.ink),
+            ),
+          ),
         ]),
         const SizedBox(height: 12),
         Wrap(
@@ -1184,10 +1189,35 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (!widget.report.isSnapshot) ...[
-                OutlinedButton.icon(
-                    onPressed: _chooseRange,
-                    icon: const Icon(Icons.calendar_today_outlined, size: 17),
-                    label: Text(dateLabel)),
+                InkWell(
+                  onTap: _chooseRange,
+                  child: Container(
+                    height: 42,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          dateLabel,
+                          style: AppTypography.label.copyWith(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.textMuted),
+                      ],
+                    ),
+                  ),
+                ),
                 _PresetPeriodMenu(
                     selectedPreset: _selectedPreset,
                     onPresetSelected: _applyPreset),
@@ -1201,8 +1231,11 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                       key: ValueKey(selection),
                       initialValue: selection,
                       isExpanded: true,
-                      decoration:
-                          const InputDecoration(labelText: 'Filter records'),
+                      decoration: const InputDecoration(
+                        labelText: 'Filter records',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: AppColors.border)),
+                      ),
                       items: [
                         const DropdownMenuItem<String>(
                             value: null,

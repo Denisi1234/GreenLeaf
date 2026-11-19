@@ -43,6 +43,11 @@ $auth = callApi('POST', 'auth/register', [
 $token = $auth['token'];
 check($db->rows('SELECT token_hash FROM access_tokens')[0]['token_hash'] !== $token, 'Tokens must be hashed at rest.');
 check(password_verify('Testing-long-password', $db->rows('SELECT password_hash FROM users')[0]['password_hash']), 'Password hashing failed.');
+$ownerLink = $db->rows(
+    'SELECT users.role FROM users JOIN staff_accounts ON staff_accounts.user_id = users.id WHERE users.email = ?',
+    ['owner@example.test']
+);
+check(count($ownerLink) === 1 && $ownerLink[0]['role'] === 'owner', 'Owner staff must link to the existing owner account.');
 $otherToken = callApi('POST', 'auth/register', [
     'email' => 'other@example.test', 'password' => 'Testing-long-password',
     'name' => 'Other', 'store_name' => 'Second Shop',

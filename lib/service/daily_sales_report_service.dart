@@ -1,6 +1,5 @@
 import 'package:intl/intl.dart';
 
-import '../service/backend_sms_service.dart';
 import '../service/pos_local_store.dart';
 
 class DailySalesReportService {
@@ -147,11 +146,22 @@ class DailySalesReportService {
       );
     }
 
+    final api = store.cloudApi;
+    if (api == null) {
+      return const DailySmsResult(
+        success: false,
+        message:
+            'Kutuma ripoti kwa SMS kunahitaji muunganisho wa mtandao na seva.',
+      );
+    }
+
     final smsText = buildDailyReportMessage(store: store);
-    final sent = await BackendSmsService.sendNextSms(
-      recipientPhone: phone,
-      text: smsText,
-    );
+    bool sent;
+    try {
+      sent = await api.sendSms(phone: phone, text: smsText);
+    } catch (_) {
+      sent = false;
+    }
 
     if (sent) {
       return DailySmsResult(
@@ -163,7 +173,7 @@ class DailySalesReportService {
       return DailySmsResult(
         success: false,
         message:
-            'Kushindwa kutuma SMS kupitia NextSMS. Tafadhali thibitisha salio au mtandao.',
+            'Kushindwa kutuma SMS kupitia seva. Tafadhali thibitisha salio au mtandao.',
         smsText: smsText,
       );
     }

@@ -61,167 +61,225 @@ class _DebtorsPageState extends State<DebtorsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        bottom: false,
-        child: Consumer<PosLocalStore>(
-          builder: (context, store, _) {
-            final strings = AppStrings.of(store.languageCode);
-            final debtors = store.customers
-                .where((customer) => customer.debitBalance > 0)
-                .toList();
-            final outstanding = store.outstandingDebit;
-            final collected = store.debitCollectedSince(
-              DateTime(DateTime.now().year, DateTime.now().month, 1),
-            );
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            bottom: false,
+            child: Consumer<PosLocalStore>(
+              builder: (context, store, _) {
+                final strings = AppStrings.of(store.languageCode);
+                final debtors = store.customers
+                    .where((customer) => customer.debitBalance > 0)
+                    .toList();
+                final outstanding = store.outstandingDebit;
+                final collected = store.debitCollectedSince(
+                  DateTime(DateTime.now().year, DateTime.now().month, 1),
+                );
 
-            final query = _search.trim().toLowerCase();
-            final visible = debtors.where((customer) {
-              if (query.isEmpty) return true;
-              return customer.name.toLowerCase().contains(query) ||
-                  customer.phone.toLowerCase().contains(query);
-            }).toList();
-            _sortDebtors(visible, store);
+                final query = _search.trim().toLowerCase();
+                final visible = debtors.where((customer) {
+                  if (query.isEmpty) return true;
+                  return customer.name.toLowerCase().contains(query) ||
+                      customer.phone.toLowerCase().contains(query);
+                }).toList();
+                _sortDebtors(visible, store);
 
-            final entries = store.debitEntries.take(20).toList();
-            final oldestDebt = _oldestDebtDate(debtors, store);
+                final entries = store.debitEntries.take(20).toList();
+                final oldestDebt = _oldestDebtDate(debtors, store);
 
-            return Column(
-              children: [
-                MarketPageHeader(
-                  title: strings.debitLedger,
-                  subtitle: _dual(strings, 'Credit sales and repayments',
-                      'Mauzo ya mkopo na malipo'),
-                  showBorder: false,
-                ),
-                Expanded(
-                  child: ListView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 32),
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, metricConstraints) {
-                          final columns = metricConstraints.maxWidth >= 760 ? 3 : 1;
-                          final width = (metricConstraints.maxWidth - (columns - 1) * 12) / columns;
-                          return Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Total outstanding', 'Jumla ya madeni'),
-                                  value: _money(outstanding, compact: true),
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  color: outstanding > 0 ? AppColors.dangerDeep : AppColors.ink,
-                                ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Debtors count', 'Idadi ya wadaiwa'),
-                                  value: '${debtors.length}',
-                                  icon: Icons.people_alt_outlined,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Collected this month', 'Makusanyo mwezi huu'),
-                                  value: _money(collected, compact: true),
-                                  icon: Icons.savings_outlined,
-                                  color: AppColors.successDeep,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      MarketSearchField(
-                        controller: _searchController,
-                        hintText:
-                            _dual(strings, 'Search debtors', 'Tafuta wadaiwa'),
-                        radius: 0,
-                        showShadow: false,
-                        onChanged: (value) => setState(() => _search = value),
-                        onClear: () {
-                          _searchController.clear();
-                          setState(() => _search = '');
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _SortRow(
-                        sort: _sort,
-                        strings: strings,
-                        oldestDebt: oldestDebt,
-                        onPick: _pickSort,
-                      ),
-                      const SizedBox(height: 18),
-                      MarketSectionHeader(
-                        title: _dual(strings, 'Who owes you', 'Wanaokudai'),
-                        trailing: Text(
-                          _dual(
-                            strings,
-                            '${visible.length} customer${visible.length == 1 ? '' : 's'}',
-                            'wateja ${visible.length}',
+                return Column(
+                  children: [
+                    MarketPageHeader(
+                      title: strings.debitLedger,
+                      subtitle: _dual(strings, 'Credit sales and repayments',
+                          'Mauzo ya mkopo na malipo'),
+                      showBorder: false,
+                    ),
+                    Expanded(
+                      child: ListView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(18, 4, 18, 32),
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, metricConstraints) {
+                              final columns =
+                                  metricConstraints.maxWidth >= 760 ? 3 : 1;
+                              final width = (metricConstraints.maxWidth -
+                                      (columns - 1) * 12) /
+                                  columns;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Total outstanding',
+                                          'Jumla ya madeni'),
+                                      value: _money(outstanding, compact: true),
+                                      icon:
+                                          Icons.account_balance_wallet_outlined,
+                                      color: outstanding > 0
+                                          ? AppColors.dangerDeep
+                                          : AppColors.ink,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Debtors count',
+                                          'Idadi ya wadaiwa'),
+                                      value: '${debtors.length}',
+                                      icon: Icons.people_alt_outlined,
+                                      color: AppColors.primaryDeep,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(
+                                          strings,
+                                          'Collected this month',
+                                          'Makusanyo mwezi huu'),
+                                      value: _money(collected, compact: true),
+                                      icon: Icons.savings_outlined,
+                                      color: AppColors.successDeep,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                          style: AppTypography.bodySmall
-                              .copyWith(color: AppColors.textMuted),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (visible.isEmpty)
-                        _EmptyDebtors(
-                          strings: strings,
-                          filtered: query.isNotEmpty,
-                          onReset: () {
-                            _searchController.clear();
-                            setState(() => _search = '');
-                          },
-                        )
-                      else
-                        ...visible.map(
-                          (customer) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _DebtorCard(
-                              customer: customer,
-                              store: store,
-                              strings: strings,
-                              onTap: () => _openCustomer(customer),
-                              onSettle: () => _settle(customer),
+                          const SizedBox(height: 12),
+                          MarketSearchField(
+                            controller: _searchController,
+                            hintText: _dual(
+                                strings, 'Search debtors', 'Tafuta wadaiwa'),
+                            radius: AppRadius.standard,
+                            showShadow: false,
+                            onChanged: (value) =>
+                                setState(() => _search = value),
+                            onClear: () {
+                              _searchController.clear();
+                              setState(() => _search = '');
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          _SortRow(
+                            sort: _sort,
+                            strings: strings,
+                            oldestDebt: oldestDebt,
+                            onPick: _pickSort,
+                          ),
+                          const SizedBox(height: 18),
+                          MarketSectionHeader(
+                            title: _dual(strings, 'Who owes you', 'Wanaokudai'),
+                            trailing: Text(
+                              _dual(
+                                strings,
+                                '${visible.length} customer${visible.length == 1 ? '' : 's'}',
+                                'wateja ${visible.length}',
+                              ),
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.textMuted),
                             ),
                           ),
-                        ),
-                      if (entries.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        MarketSectionHeader(
-                          title: _dual(strings, 'Recent activity', 'Shughuli'),
-                          trailing: Text(
-                            _dual(strings, 'Latest 20', 'Hadi 20'),
-                            style: AppTypography.bodySmall
-                                .copyWith(color: AppColors.textMuted),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        ...entries.map(
-                          (entry) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _LedgerTile(
-                              entry: entry,
+                          const SizedBox(height: 10),
+                          if (visible.isEmpty)
+                            _EmptyDebtors(
                               strings: strings,
+                              filtered: query.isNotEmpty,
+                              onReset: () {
+                                _searchController.clear();
+                                setState(() => _search = '');
+                              },
+                            )
+                          else
+                            WorkspaceRegister(
+                                columns: [
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Customer', 'Mteja'))),
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Phone', 'Simu'))),
+                                  DataColumn(
+                                      label: Text(_dual(
+                                          strings,
+                                          'Outstanding balance',
+                                          'Deni lililobaki')),
+                                      numeric: true),
+                                  const DataColumn(label: Text('')),
+                                ],
+                                rows: visible
+                                    .map((customer) => DataRow(cells: [
+                                          DataCell(Text(customer.name),
+                                              onTap: () =>
+                                                  _openCustomer(customer)),
+                                          DataCell(Text(customer.phone)),
+                                          DataCell(Text(
+                                              _money(customer.debitBalance),
+                                              style: const TextStyle(
+                                                  color: AppColors.dangerDeep,
+                                                  fontWeight:
+                                                      FontWeight.w700))),
+                                          DataCell(OutlinedButton.icon(
+                                              onPressed: () =>
+                                                  _settle(customer),
+                                              icon: const Icon(
+                                                  Icons.payments_outlined,
+                                                  size: 18),
+                                              label: Text(_dual(
+                                                  strings,
+                                                  'Record payment',
+                                                  'Rekodi malipo')))),
+                                        ]))
+                                    .toList(),
+                                mobile: Column(children: [
+                                  ...visible.map(
+                                    (customer) => Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10),
+                                      child: _DebtorCard(
+                                        customer: customer,
+                                        store: store,
+                                        strings: strings,
+                                        onTap: () => _openCustomer(customer),
+                                        onSettle: () => _settle(customer),
+                                      ),
+                                    ),
+                                  )
+                                ])),
+                          if (entries.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            MarketSectionHeader(
+                              title:
+                                  _dual(strings, 'Recent activity', 'Shughuli'),
+                              trailing: Text(
+                                _dual(strings, 'Latest 20', 'Hadi 20'),
+                                style: AppTypography.bodySmall
+                                    .copyWith(color: AppColors.textMuted),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+                            const SizedBox(height: 10),
+                            ...entries.map(
+                              (entry) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: _LedgerTile(
+                                  entry: entry,
+                                  strings: strings,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          )),
     );
   }
 
@@ -383,7 +441,7 @@ class _SortRow extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Row(
         children: [
@@ -810,7 +868,7 @@ class _EmptyDebtors extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(28),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         children: [
@@ -864,57 +922,3 @@ class _EmptyDebtors extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.zero,
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.h3.copyWith(fontSize: 18, letterSpacing: -0.4),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.helperText.copyWith(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

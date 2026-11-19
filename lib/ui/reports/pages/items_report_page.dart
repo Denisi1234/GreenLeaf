@@ -62,7 +62,7 @@ class ItemsReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Total Revenue',
-        value: '₹${NumberFormat('#,##0.##').format(totalNetSales)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalNetSales)}',
         icon: Icons.attach_money,
         iconColor: Color(0xFF111111),
         tint: Color(0xFF111111).withValues(alpha: 0.1),
@@ -71,7 +71,7 @@ class ItemsReportPage extends StatelessWidget {
       MetricData(
         title: 'Gross Profit',
         value: totalProfit != null
-            ? '₹${NumberFormat('#,##0.##').format(totalProfit)}'
+            ? 'TSh ${NumberFormat('#,##0.##').format(totalProfit)}'
             : '—',
         icon: Icons.trending_up,
         iconColor: totalProfit != null && totalProfit < 0
@@ -107,7 +107,7 @@ class ItemsReportPage extends StatelessWidget {
               label: row[0].toString(),
               value: (row[3] as num).toDouble(),
               displayValue:
-                  '₹${NumberFormat('#,##0').format((row[3] as num).toDouble())}',
+                  'TSh ${NumberFormat('#,##0').format((row[3] as num).toDouble())}',
             ))
         .toList();
     final maxValue = trendPoints.isEmpty
@@ -116,10 +116,6 @@ class ItemsReportPage extends StatelessWidget {
 
     return SectionCard(
       title: 'Top 10 Products by Revenue',
-      trailing: TextButton(
-        onPressed: () {},
-        child: const Text('View All'),
-      ),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
@@ -145,7 +141,7 @@ class ItemsReportPage extends StatelessWidget {
     insights.add(InsightCard(
       title: 'Top Performer',
       description:
-          '"$topProductName" generates ${topProductShare.toStringAsFixed(1)}% of total revenue (₹${NumberFormat('#,##0').format(topProductRevenue)})',
+          '"$topProductName" generates ${topProductShare.toStringAsFixed(1)}% of total revenue (TSh ${NumberFormat('#,##0').format(topProductRevenue)})',
       icon: Icons.star,
       color: Color(0xFF15803D),
       severity: InsightSeverity.success,

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+  import 'package:flutter/services.dart';
+  import 'package:google_fonts/google_fonts.dart';
+  import 'package:provider/provider.dart';
 
-import '../../l10n/app_strings.dart';
-import '../../service/pos_local_store.dart';
-import '../widgets/app_design.dart';
-import 'auth_shell.dart';
+  import '../../l10n/app_strings.dart';
+  import '../../service/pos_local_store.dart';
+  import 'auth_shell.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({
@@ -68,7 +67,26 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!mounted) return;
     setState(() => _busy = false);
 
-    if (ok) return;
+    if (ok) {
+      // After successful registration, authenticate with the cloud server
+      // so the session is established and data is pulled from the backend.
+      final api = store.cloudApi;
+      if (api != null) {
+        try {
+          await api.authenticate(
+            email: _phoneController.text.trim(),
+            password: _passwordController.text,
+            register: true,
+            name: _nameController.text.trim(),
+            storeName: '',
+          );
+          await store.refreshFromServer();
+        } catch (_) {
+          // Non-fatal: local session is still active.
+        }
+      }
+      return;
+    }
 
     final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
     setState(() {

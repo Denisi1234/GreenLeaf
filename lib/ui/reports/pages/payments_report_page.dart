@@ -43,7 +43,7 @@ class PaymentsReportPage extends StatelessWidget {
     return [
       MetricData(
         title: 'Total Collected',
-        value: '₹${NumberFormat('#,##0.##').format(totalCollected)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalCollected)}',
         icon: Icons.attach_money,
         iconColor: Color(0xFF111111),
         tint: Color(0xFF111111).withValues(alpha: 0.1),
@@ -51,7 +51,7 @@ class PaymentsReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Credit Sales',
-        value: '₹${NumberFormat('#,##0.##').format(totalCredit)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalCredit)}',
         icon: Icons.credit_card,
         iconColor: AppColors.ink,
         tint: AppColors.ink.withValues(alpha: 0.1),
@@ -95,7 +95,7 @@ class PaymentsReportPage extends StatelessWidget {
               label: row[0].toString(),
               value: (row[2] as num).toDouble(),
               displayValue:
-                  '₹${NumberFormat('#,##0').format((row[2] as num).toDouble())}',
+                  'TSh ${NumberFormat('#,##0').format((row[2] as num).toDouble())}',
             ))
         .toList();
     final maxValue = trendPoints.isEmpty
@@ -188,21 +188,21 @@ class PaymentsReportPage extends StatelessWidget {
               Expanded(
                 child: _PaymentStat(
                   label: 'Collected',
-                  value: '₹${NumberFormat('#,##0').format(totalCollected)}',
+                  value: 'TSh ${NumberFormat('#,##0').format(totalCollected)}',
                   color: Color(0xFF111111),
                 ),
               ),
               Expanded(
                 child: _PaymentStat(
                   label: 'On Credit',
-                  value: '₹${NumberFormat('#,##0').format(totalCredit)}',
+                  value: 'TSh ${NumberFormat('#,##0').format(totalCredit)}',
                   color: AppColors.ink,
                 ),
               ),
               Expanded(
                 child: _PaymentStat(
                   label: 'Total Sales',
-                  value: '₹${NumberFormat('#,##0').format(totalSales)}',
+                  value: 'TSh ${NumberFormat('#,##0').format(totalSales)}',
                   color: Color(0xFF166534),
                 ),
               ),
@@ -229,7 +229,7 @@ class PaymentsReportPage extends StatelessWidget {
     insights.add(InsightCard(
       title: 'Preferred Payment Method',
       description:
-          '$topMethodName accounts for ${topMethodShare.toStringAsFixed(1)}% of collections (₹${NumberFormat('#,##0').format(topMethodCollected)})',
+          '$topMethodName accounts for ${topMethodShare.toStringAsFixed(1)}% of collections (TSh ${NumberFormat('#,##0').format(topMethodCollected)})',
       icon: Icons.payment,
       color: Color(0xFF166534),
       severity: InsightSeverity.info,
@@ -241,7 +241,7 @@ class PaymentsReportPage extends StatelessWidget {
       insights.add(InsightCard(
         title: 'Credit Exceeds Collections',
         description:
-            'Credit sales (₹${NumberFormat('#,##0').format(totalCredit)}) exceed collected payments (₹${NumberFormat('#,##0').format(totalCollected)}). Review credit policies.',
+            'Credit sales (TSh ${NumberFormat('#,##0').format(totalCredit)}) exceed collected payments (TSh ${NumberFormat('#,##0').format(totalCollected)}). Review credit policies.',
         icon: Icons.warning,
         color: Colors.red,
         severity: InsightSeverity.critical,

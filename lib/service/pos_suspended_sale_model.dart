@@ -17,24 +17,50 @@ class SuspendedSale {
   final String? comment;
 
   int get itemCount => items.length;
-  double get total => items.fold<double>(0.0, (sum, item) => sum + item.priceValue);
+  double get total =>
+      items.fold<double>(0.0, (sum, item) => sum + item.priceValue);
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'createdAt': createdAt.toIso8601String(),
         'customerName': customerName,
         'comment': comment,
-        'items': items.map((item) => item.toMap()).toList(),
+        'items': items
+            .map((item) => {
+                  'name': item.name,
+                  'size': item.size,
+                  'price': item.price,
+                  'type': item.type.name,
+                  'code': item.code,
+                  'category': item.category,
+                  'imagePath': item.imagePath,
+                })
+            .toList(),
       };
 
   factory SuspendedSale.fromJson(Map<String, dynamic> json) => SuspendedSale(
         id: json['id'] as String,
-        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+            DateTime.now(),
         customerName: json['customerName'] as String?,
         comment: json['comment'] as String?,
-        items: (json['items'] as List<dynamic>? ?? [])
-            .map((e) => ProductItem.fromMap(e as Map<String, dynamic>))
-            .toList(),
+        items: (json['items'] as List<dynamic>? ?? []).map((e) {
+          final m = e as Map<String, dynamic>;
+          final typeName = m['type'] as String? ?? '';
+          final type = ProductArtType.values.firstWhere(
+            (t) => t.name == typeName,
+            orElse: () => ProductArtType.aquafina,
+          );
+          return ProductItem(
+            m['name'] as String? ?? '',
+            m['size'] as String? ?? '',
+            m['price'] as String? ?? '0',
+            type,
+            code: m['code'] as String?,
+            category: m['category'] as String?,
+            imagePath: m['imagePath'] as String?,
+          );
+        }).toList(),
       );
 }
 
@@ -53,7 +79,8 @@ class SplitPaymentEntry {
         'amount': amount,
       };
 
-  factory SplitPaymentEntry.fromJson(Map<String, dynamic> json) => SplitPaymentEntry(
+  factory SplitPaymentEntry.fromJson(Map<String, dynamic> json) =>
+      SplitPaymentEntry(
         method: json['method'] as String? ?? 'Cash',
         amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       );

@@ -6,6 +6,7 @@ class StorePreferences {
     this.autoDailySmsReport = true,
     this.dailySmsTime = '21:00',
     this.lastDailySmsDate = '',
+    this.defaultRegisterName = 'Register 1',
   });
 
   static const dateFormatOptions = <String>[
@@ -24,6 +25,7 @@ class StorePreferences {
   final bool autoDailySmsReport;
   final String dailySmsTime;
   final String lastDailySmsDate;
+  final String defaultRegisterName;
 
   bool get uses24HourTime => timeFormat == '24h';
 
@@ -34,6 +36,7 @@ class StorePreferences {
     bool? autoDailySmsReport,
     String? dailySmsTime,
     String? lastDailySmsDate,
+    String? defaultRegisterName,
   }) {
     return StorePreferences(
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
@@ -42,6 +45,7 @@ class StorePreferences {
       autoDailySmsReport: autoDailySmsReport ?? this.autoDailySmsReport,
       dailySmsTime: dailySmsTime ?? this.dailySmsTime,
       lastDailySmsDate: lastDailySmsDate ?? this.lastDailySmsDate,
+      defaultRegisterName: defaultRegisterName ?? this.defaultRegisterName,
     );
   }
 
@@ -63,6 +67,7 @@ class StorePreferences {
               (autoSms is String && autoSms.toLowerCase() == 'true')),
       dailySmsTime: json['dailySmsTime'] as String? ?? '21:00',
       lastDailySmsDate: json['lastDailySmsDate'] as String? ?? '',
+      defaultRegisterName: json['defaultRegisterName'] as String? ?? 'Register 1',
     );
   }
 
@@ -73,5 +78,6 @@ class StorePreferences {
         'autoDailySmsReport': autoDailySmsReport,
         'dailySmsTime': dailySmsTime,
         'lastDailySmsDate': lastDailySmsDate,
+        'defaultRegisterName': defaultRegisterName,
       };
 }

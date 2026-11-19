@@ -20,10 +20,10 @@ return [
     'registration' => (getenv('ALLOW_REGISTRATION') ?: 'true') === 'true',
     'token_hours' => 12,
     'sms' => [
-        'username' => getenv('NEXTSMS_USERNAME') ?: 'dm328432.14a',
-        'password' => getenv('NEXTSMS_PASSWORD') ?: 'Mahenge2004#',
+        'username' => getenv('NEXTSMS_USERNAME') ?: '',
+        'password' => getenv('NEXTSMS_PASSWORD') ?: '',
         'sender_id' => getenv('NEXTSMS_SENDER_ID') ?: 'POS',
-        'email' => getenv('NEXTSMS_EMAIL') ?: 'dm328432@gmail.com',
+        'email' => getenv('NEXTSMS_EMAIL') ?: '',
         'endpoint' => getenv('NEXTSMS_ENDPOINT') ?: 'https://messaging-service.co.tz/api/sms/v1/text/single',
     ],
 ];

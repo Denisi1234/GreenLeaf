@@ -123,21 +123,6 @@ class ReportDataService {
     final totalOrders = ordersInRange.length;
     final averageOrderValue =
         totalOrders == 0 ? 0.0 : totalRevenue / totalOrders;
-    final expiringSoonCount = _expiringSoonCount(store.inventory);
-    final prescriptionCount = _metadataValueCount(
-      store.inventory,
-      'prescription_flag',
-      expectedValue: 'yes',
-    );
-    final warrantyTrackedCount = _metadataNonEmptyCount(
-      store.inventory,
-      ['serial_number', 'warranty_months'],
-    );
-    final topBrandLabel =
-        _topMetadataLabel(store.inventory, ['brand']) ?? 'No brand data';
-    final categoryMixLabel = _categoryMixLabel(store.inventory);
-    final highValueOrdersCount =
-        ordersInRange.where((order) => order.total >= averageOrderValue).length;
     final topProducts = productTally.values.toList()
       ..sort((left, right) {
         final quantityCompare = right.quantity.compareTo(left.quantity);
@@ -176,11 +161,6 @@ class ReportDataService {
       currentStats.averageOrderValue,
       previousStats.averageOrderValue,
     );
-    final marginDelta = _comparisonPercentLabel(
-      totalProfit,
-      previousStats.revenue - previousStats.totalExpenses,
-    );
-
     List<MetricData> withColors(List<MetricData> items) {
       return items
           .map(
@@ -203,163 +183,53 @@ class ReportDataService {
     final primaryColor = config.primaryColor;
     final secondaryColor = config.accentColor;
 
-    final metrics = switch (category) {
-      BusinessCategory.pharmacy => withColors([
-          MetricData(
-            title: 'Revenue',
-            value: _moneyLabel(totalRevenue),
-            icon: Icons.trending_up_rounded,
-            iconColor: primaryColor,
-            tint: primaryTint,
-            valueColor: primaryColor,
-            deltaText: revenueDelta,
-            deltaLabel: comparisonLabel,
-            deltaIsPositive: currentStats.revenue >= previousStats.revenue,
-          ),
-          MetricData(
-            title: 'Expiring Soon',
-            value: expiringSoonCount.toString(),
-            icon: Icons.event_busy_rounded,
-            iconColor: secondaryColor,
-            tint: config.surfaceTintColor,
-            valueColor: secondaryColor,
-            deltaText: null,
-            deltaLabel: '30-day watchlist',
-            deltaIsPositive: null,
-          ),
-          MetricData(
-            title: 'Prescription Items',
-            value: prescriptionCount.toString(),
-            icon: Icons.medication_liquid_outlined,
-            iconColor: primaryColor,
-            tint: primaryTint,
-            valueColor: primaryColor,
-            deltaText: null,
-            deltaLabel: 'Medicines flagged',
-            deltaIsPositive: null,
-          ),
-          MetricData(
-            title: 'Margin',
-            value: _moneyLabelSigned(totalProfit),
-            icon: Icons.account_balance_wallet_outlined,
-            iconColor:
-                totalProfit >= 0 ? primaryColor : const Color(0xFFDC2626),
-            tint: totalProfit >= 0 ? primaryTint : const Color(0xFFFDECEC),
-            valueColor:
-                totalProfit >= 0 ? primaryColor : const Color(0xFFDC2626),
-            deltaText: marginDelta,
-            deltaLabel: comparisonLabel,
-            deltaIsPositive: totalProfit >=
-                (previousStats.revenue - previousStats.totalExpenses),
-          ),
-        ]),
-      BusinessCategory.electronics => withColors([
-          MetricData(
-            title: 'Revenue',
-            value: _moneyLabel(totalRevenue),
-            icon: Icons.trending_up_rounded,
-            iconColor: primaryColor,
-            tint: primaryTint,
-            valueColor: primaryColor,
-            deltaText: revenueDelta,
-            deltaLabel: comparisonLabel,
-            deltaIsPositive: currentStats.revenue >= previousStats.revenue,
-          ),
-          MetricData(
-            title: 'Warranty Items',
-            value: warrantyTrackedCount.toString(),
-            icon: Icons.verified_user_outlined,
-            iconColor: secondaryColor,
-            tint: config.surfaceTintColor,
-            valueColor: secondaryColor,
-            deltaText: null,
-            deltaLabel: 'Tracked devices',
-            deltaIsPositive: null,
-          ),
-          MetricData(
-            title: 'High-Ticket Orders',
-            value: highValueOrdersCount.toString(),
-            icon: Icons.payments_outlined,
-            iconColor: primaryColor,
-            tint: primaryTint,
-            valueColor: primaryColor,
-            deltaText: orderDelta,
-            deltaLabel: comparisonLabel,
-            deltaIsPositive:
-                currentStats.orderCount >= previousStats.orderCount,
-          ),
-          MetricData(
-            title: 'Top Brand',
-            value: topBrandLabel,
-            icon: Icons.branding_watermark_outlined,
-            iconColor: secondaryColor,
-            tint: config.surfaceTintColor,
-            valueColor: primaryColor,
-            deltaText: null,
-            deltaLabel: 'Brand mix',
-            deltaIsPositive: null,
-          ),
-          MetricData(
-            title: 'Category Mix',
-            value: categoryMixLabel,
-            icon: Icons.grid_view_rounded,
-            iconColor: secondaryColor,
-            tint: config.surfaceTintColor,
-            valueColor: primaryColor,
-            deltaText: null,
-            deltaLabel: 'Shelf spread',
-            deltaIsPositive: null,
-          ),
-        ]),
-      BusinessCategory.retail => withColors([
-          MetricData(
-            title: 'Sales',
-            value: _moneyLabel(totalRevenue),
-            icon: Icons.trending_up_rounded,
-            iconColor: primaryColor,
-            tint: primaryTint,
-            valueColor: primaryColor,
-            deltaText: revenueDelta,
-            deltaLabel: comparisonLabel,
-            deltaIsPositive: currentStats.revenue >= previousStats.revenue,
-          ),
-          MetricData(
-            title: 'Transactions',
-            value: totalOrders.toString(),
-            icon: Icons.shopping_bag_rounded,
-            iconColor: secondaryColor,
-            tint: config.surfaceTintColor,
-            valueColor: secondaryColor,
-            deltaText: orderDelta,
-            deltaLabel: comparisonLabel,
-            deltaIsPositive:
-                currentStats.orderCount >= previousStats.orderCount,
-          ),
-          MetricData(
-            title: 'Average Basket',
-            value: _moneyLabel(averageOrderValue),
-            icon: Icons.receipt_long_rounded,
-            iconColor: primaryColor,
-            tint: primaryTint,
-            valueColor: primaryColor,
-            deltaText: averageDelta,
-            deltaLabel: comparisonLabel,
-            deltaIsPositive: currentStats.averageOrderValue >=
-                previousStats.averageOrderValue,
-          ),
-          MetricData(
-            title: 'Fast Mover',
-            value: topProductLabel,
-            icon: Icons.sell_outlined,
-            iconColor: secondaryColor,
-            tint: config.surfaceTintColor,
-            valueColor: primaryColor,
-            deltaText: null,
-            deltaLabel: 'Fast mover',
-            deltaIsPositive: null,
-          ),
-        ]),
-    };
+    final metrics = withColors([
+      MetricData(
+        title: 'Sales',
+        value: _moneyLabel(totalRevenue),
+        icon: Icons.trending_up_rounded,
+        iconColor: primaryColor,
+        tint: primaryTint,
+        valueColor: primaryColor,
+        deltaText: revenueDelta,
+        deltaLabel: comparisonLabel,
+        deltaIsPositive: currentStats.revenue >= previousStats.revenue,
+      ),
+      MetricData(
+        title: 'Transactions',
+        value: totalOrders.toString(),
+        icon: Icons.shopping_bag_rounded,
+        iconColor: secondaryColor,
+        tint: config.surfaceTintColor,
+        valueColor: secondaryColor,
+        deltaText: orderDelta,
+        deltaLabel: comparisonLabel,
+        deltaIsPositive: currentStats.orderCount >= previousStats.orderCount,
+      ),
+      MetricData(
+        title: 'Average Basket',
+        value: _moneyLabel(averageOrderValue),
+        icon: Icons.receipt_long_rounded,
+        iconColor: primaryColor,
+        tint: primaryTint,
+        valueColor: primaryColor,
+        deltaText: averageDelta,
+        deltaLabel: comparisonLabel,
+        deltaIsPositive: currentStats.averageOrderValue >=
+            previousStats.averageOrderValue,
+      ),
+      MetricData(
+        title: 'Fast Mover',
+        value: topProductLabel,
+        icon: Icons.sell_outlined,
+        iconColor: secondaryColor,
+        tint: config.surfaceTintColor,
+        valueColor: primaryColor,
+        deltaText: null,
+        deltaLabel: 'Fast mover',
+        deltaIsPositive: null,
+      ),
+    ]);
 
     return ReportSnapshot(
       category: category,

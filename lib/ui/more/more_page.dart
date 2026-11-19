@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
@@ -7,478 +6,390 @@ import '../../service/pos_local_store.dart';
 import '../accounting/accounts_page.dart';
 import '../accounting/bank_reconciliation_page.dart';
 import '../accounting/fixed_assets_page.dart';
-import '../notifications/notifications_page.dart';
 import '../payment/cash_register_page.dart';
+import '../reports/report_hub_page.dart';
 import '../settings/tax_settings_page.dart';
+import '../suppliers/receiving_page.dart';
 import '../suppliers/suppliers_page.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import '../widgets/workspace_widgets.dart';
+import 'about_app_page.dart';
 import 'customers_page.dart';
 import 'debtors_page.dart';
-import 'duka_ai_page.dart';
 import 'expenses_tracking_page.dart';
+import 'help_support_page.dart';
+import 'privacy_policy_page.dart';
 import 'settings_page.dart';
 import 'staff_management_page.dart';
 import 'stores_page.dart';
-import 'subscription_plan_page.dart';
 
-class MorePage extends StatelessWidget {
-  const MorePage({
-    super.key,
-    this.useSharedShell = false,
-  });
-
+class MorePage extends StatefulWidget {
+  const MorePage({super.key, this.useSharedShell = false});
   final bool useSharedShell;
+
+  @override
+  State<MorePage> createState() => _MorePageState();
+}
+
+class _MorePageState extends State<MorePage> {
+  final _searchController = TextEditingController();
+  String _query = '';
+  bool _signingOut = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signOut() async {
+    if (_signingOut) return;
+    setState(() => _signingOut = true);
+    try {
+      await showLogoutConfirmationDialog(context);
+    } finally {
+      if (mounted) setState(() => _signingOut = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
-    final profile = store.profile;
     final strings = AppStrings.of(store.languageCode);
-
+    String t(String en, String sw) => store.languageCode == 'sw' ? sw : en;
+    final sections = [
+      _ToolSection(t('Daily operations', 'Shughuli za kila siku'), [
+        _Tool(
+            'customers',
+            Icons.people_outline_rounded,
+            strings.customers,
+            t('Customer details and purchase history',
+                'Taarifa za wateja na historia ya manunuzi'),
+            () => const CustomersPage()),
+        _Tool(
+            'debtors',
+            Icons.account_balance_wallet_outlined,
+            strings.debitLedger,
+            t('Outstanding balances and repayments',
+                'Madeni na malipo ya wateja'),
+            () => const DebtorsPage()),
+        _Tool(
+            'suppliers',
+            Icons.local_shipping_outlined,
+            t('Suppliers', 'Wasambazaji'),
+            t('Supplier contacts and purchase records',
+                'Mawasiliano na rekodi za manunuzi'),
+            () => const SuppliersPage()),
+        _Tool(
+            'receiving',
+            Icons.move_to_inbox_outlined,
+            t('Goods received', 'Bidhaa zilizopokelewa'),
+            t('Record deliveries and update stock',
+                'Rekodi usambazaji na sasisha hifadhi'),
+            () => const ReceivingPage()),
+        _Tool(
+            'register',
+            Icons.point_of_sale_outlined,
+            t('Cash register', 'Kasha la pesa'),
+            t('Open shifts, cash movements and closing',
+                'Zamu, miamala na kufunga kasha'),
+            () => const CashRegisterPage()),
+        _Tool(
+            'expenses',
+            Icons.receipt_long_outlined,
+            strings.expensesTracking,
+            t('Record and review business spending',
+                'Rekodi na kagua matumizi ya biashara'),
+            () => const ExpensesTrackingPage()),
+      ]),
+      _ToolSection(t('Reports & finance', 'Ripoti na fedha'), [
+        _Tool(
+            'reports',
+            Icons.analytics_outlined,
+            strings.reports,
+            t('Sales, stock and financial reports',
+                'Ripoti za mauzo, hifadhi na fedha'),
+            () => const ReportHubPage()),
+        _Tool(
+            'accounts',
+            Icons.account_balance_outlined,
+            t('Accounts & ledger', 'Akaunti na daftari'),
+            t('Accounts, entries and balances', 'Akaunti, miamala na salio'),
+            () => const AccountsPage()),
+        _Tool(
+            'assets',
+            Icons.chair_outlined,
+            t('Fixed assets', 'Mali za kudumu'),
+            t('Business assets and depreciation',
+                'Mali za biashara na uchakavu'),
+            () => const FixedAssetsPage()),
+        _Tool(
+            'bank',
+            Icons.fact_check_outlined,
+            t('Bank reconciliation', 'Upatanishi wa benki'),
+            t('Match statements with recorded payments',
+                'Linganisha taarifa za benki na malipo'),
+            () => const BankReconciliationPage()),
+        _Tool(
+            'tax',
+            Icons.percent_rounded,
+            t('Tax settings', 'Mipangilio ya kodi'),
+            t('Tax rates and reporting preferences',
+                'Viwango vya kodi na mapendeleo ya ripoti'),
+            () => const TaxSettingsPage()),
+      ]),
+      _ToolSection(t('Business management', 'Usimamizi wa biashara'), [
+        _Tool(
+            'stores',
+            Icons.storefront_outlined,
+            t('Stores', 'Maduka'),
+            t('Manage locations and switch stores',
+                'Dhibiti maeneo na badilisha duka'),
+            () => const StoresPage()),
+        _Tool(
+            'staff',
+            Icons.badge_outlined,
+            strings.staffManagement,
+            t('Team members, roles and permissions',
+                'Wafanyakazi, majukumu na ruhusa'),
+            () => const StaffManagementPage()),
+        _Tool(
+            'settings',
+            Icons.settings_outlined,
+            strings.settings,
+            t('Business, receipt and account preferences',
+                'Mapendeleo ya biashara, risiti na akaunti'),
+            () => const SettingsPage()),
+      ]),
+      _ToolSection(t('Support & data', 'Msaada na data'), [
+        _Tool(
+            'sync',
+            Icons.cloud_sync_outlined,
+            t('Sync & backup', 'Usawazishaji na nakala'),
+            t('Cloud sync, backups and data storage',
+                'Usawazishaji wa wingu, nakala na hifadhi ya data'),
+            () => const SettingsPage(initialSection: SettingsSection.data)),
+        _Tool(
+            'help',
+            Icons.support_agent_outlined,
+            t('Help & support', 'Msaada'),
+            t('Contact support and get started',
+                'Wasiliana na msaada na ujifunze matumizi'),
+            () => const HelpSupportPage()),
+        _Tool(
+            'privacy',
+            Icons.privacy_tip_outlined,
+            t('Privacy policy', 'Sera ya faragha'),
+            t('How your information is handled',
+                'Jinsi taarifa zako zinavyotumika'),
+            () => const PrivacyPolicyPage()),
+        _Tool(
+            'about',
+            Icons.info_outline_rounded,
+            t('About the app', 'Kuhusu programu'),
+            t('App information and business tools',
+                'Taarifa za programu na zana za biashara'),
+            () => const AboutAppPage()),
+      ]),
+    ];
+    final query = _query.trim().toLowerCase();
+    final filtered = [
+      for (final section in sections)
+        _ToolSection(
+            section.title,
+            section.tools
+                .where((tool) =>
+                    query.isEmpty ||
+                    '${section.title} ${tool.title} ${tool.description}'
+                        .toLowerCase()
+                        .contains(query))
+                .toList())
+    ].where((section) => section.tools.isNotEmpty).toList();
     return Scaffold(
-      backgroundColor: const Color(0xFFEAF2F9), // Soft light-blue grey matching the screenshot
-      drawer: useSharedShell ? null : MarketAppDrawer(selectedItem: strings.more),
+      backgroundColor: AppColors.pageBackground,
+      drawer: widget.useSharedShell
+          ? null
+          : MarketAppDrawer(selectedItem: strings.more),
+      appBar: widget.useSharedShell ? null : AppBar(title: Text(strings.more)),
       body: SafeArea(
-        top: !useSharedShell,
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 28),
-          children: [
-            // 1. Top Standalone Card: Loan Accounts / Debtors
-            _MenuCard(
-              items: [
-                _MenuItemData(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: strings.debitLedger,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const DebtorsPage(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // 2. Section: Operations & Sales
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 8),
-              child: Text(
-                'Important Utilities',
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ),
-            _MenuCard(
-              items: [
-                _MenuItemData(
-                  icon: Icons.people_outline_rounded,
-                  title: strings.customers,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const CustomersPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.receipt_long_outlined,
-                  title: strings.expensesTracking,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const ExpensesTrackingPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.point_of_sale_rounded,
-                  title: store.languageCode == 'sw' ? 'Kasha la Pesa' : 'Cash Register',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const CashRegisterPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.storefront_outlined,
-                  title: store.languageCode == 'sw' ? 'Maduka' : 'Stores',
-                  trailingIcon: Icons.keyboard_arrow_down_rounded,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const StoresPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.local_shipping_outlined,
-                  title: store.languageCode == 'sw' ? 'Wasambazaji' : 'Suppliers',
-                  trailingIcon: Icons.keyboard_arrow_down_rounded,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const SuppliersPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.badge_outlined,
-                  title: strings.staffManagement,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const StaffManagementPage(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // 3. Section: Accounting & Finance
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 8),
-              child: Text(
-                store.languageCode == 'sw' ? 'Uhasibu na Fedha' : 'Accounting & Finance',
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ),
-            _MenuCard(
-              items: [
-                _MenuItemData(
-                  icon: Icons.account_balance_outlined,
-                  title: store.languageCode == 'sw' ? 'Akaunti na Daftari' : 'Accounts & Ledger',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const AccountsPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.inventory_2_outlined,
-                  title: store.languageCode == 'sw' ? 'Mali za Kudumu' : 'Fixed Assets',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const FixedAssetsPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: store.languageCode == 'sw' ? 'Upatanishi wa Benki' : 'Bank Reconciliation',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const BankReconciliationPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.percent_rounded,
-                  title: store.languageCode == 'sw' ? 'Mipangilio ya Kodi' : 'Tax Settings',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const TaxSettingsPage(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // 4. Section: Others & System
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 8),
-              child: Text(
-                'Others',
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ),
-            _MenuCard(
-              items: [
-                _MenuItemData(
-                  customIcon: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFF472B6), // Soft coral/pink triangle emblem from screenshot
+          top: !widget.useSharedShell,
+          child: LayoutBuilder(builder: (context, constraints) {
+            final padding = constraints.maxWidth >= 900 ? 24.0 : 16.0;
+            return CustomScrollView(slivers: [
+              SliverPadding(
+                  padding: EdgeInsets.all(padding),
+                  sliver: SliverList.list(children: [
+                    Row(children: [
+                      const Icon(Icons.storefront_outlined,
+                          size: 20, color: AppColors.textMuted),
+                      const SizedBox(width: 10),
+                      Expanded(
+                          child: Text(store.activeStoreName,
+                              style: AppTypography.bodyMedium
+                                  .copyWith(fontWeight: FontWeight.w700)))
+                    ]),
+                    const SizedBox(height: 16),
+                    MarketSearchField(
+                      controller: _searchController,
+                      hintText: t('Find a tool or setting', 'Tafuta zana au mpangilio'),
+                      onChanged: (value) => setState(() => _query = value),
+                      onClear: () => setState(() {
+                        _searchController.clear();
+                        _query = '';
+                      }),
                     ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.change_history_rounded, // Inverted triangle / prism logo
-                      color: Colors.white,
-                      size: 15,
-                    ),
-                  ),
-                  title: 'Plans & Pricing',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const SubscriptionPlanPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  customIcon: const Icon(Icons.sync_rounded, color: Color(0xFF0284C7), size: 22),
-                  title: 'Sync & Share',
-                  onTap: () async {
-                    await store.reloadFromLocal();
-                    if (!context.mounted) return;
-                    showMarketNotice(
-                      context,
-                      title: 'Sync Complete',
-                      message: 'All local and cloud records are up to date.',
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.settings_outlined,
-                  title: strings.settings,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const SettingsPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.support_agent_rounded,
-                  title: 'Help & Support',
-                  trailingIcon: Icons.keyboard_arrow_down_rounded,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const SettingsPage(),
-                      ),
-                    );
-                  },
-                ),
-                _MenuItemData(
-                  icon: Icons.star_border_rounded,
-                  title: 'Rate this app',
-                  onTap: () {
-                    showMarketNotice(
-                      context,
-                      title: 'Rate Us',
-                      message: 'Thank you for supporting Aza POS!',
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // 5. App Version Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Aza POS',
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textBody,
-                      letterSpacing: -0.1,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Version 1.0.0',
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 6. Privacy Policy & Logout footer
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      showMarketNotice(
-                        context,
-                        title: 'Privacy Policy',
-                        message: 'All your financial data is securely encrypted locally and synced over SSL.',
-                      );
-                    },
-                    child: Text(
-                      'Privacy Policy',
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textBody,
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () async {
-                      try {
-                        await store.logout();
-                      } catch (e) {
-                        if (!context.mounted) return;
-                        showMarketNotice(context, title: 'Sign out failed', message: e.toString());
-                      }
-                    },
-                    child: Text(
-                      'Log Out',
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFFEF4444),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+                    const SizedBox(height: 24),
+                    if (filtered.isEmpty)
+                      WorkspacePanel(
+                          child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: Column(children: [
+                                const Icon(Icons.search_off_rounded,
+                                    size: 36, color: AppColors.textMuted),
+                                const SizedBox(height: 16),
+                                Text(
+                                    t('No matching tools',
+                                        'Hakuna zana zinazolingana'),
+                                    style: AppTypography.h3),
+                                const SizedBox(height: 8),
+                                Text(
+                                    t('Try a different search.',
+                                        'Jaribu utafutaji mwingine.'),
+                                    style: AppTypography.bodySmall),
+                                const SizedBox(height: 12),
+                                TextButton(
+                                    onPressed: () => setState(() {
+                                          _searchController.clear();
+                                          _query = '';
+                                        }),
+                                    child: Text(
+                                        t('Clear search', 'Futa utafutaji'))),
+                              ])))
+                    else
+                      LayoutBuilder(builder: (context, contentConstraints) {
+                        final columns = contentConstraints.maxWidth >= 1300
+                            ? 3
+                            : contentConstraints.maxWidth >= 800
+                                ? 2
+                                : 1;
+                        final width =
+                            (contentConstraints.maxWidth - (columns - 1) * 20) /
+                                columns;
+                        final groups =
+                            List.generate(columns, (_) => <_ToolSection>[]);
+                        final weights = List.filled(columns, 0);
+                        for (final section in filtered) {
+                          var target = 0;
+                          for (var index = 1; index < columns; index++) {
+                            if (weights[index] < weights[target]) {
+                              target = index;
+                            }
+                          }
+                          groups[target].add(section);
+                          weights[target] += section.tools.length + 1;
+                        }
+                        return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (var column = 0;
+                                  column < columns;
+                                  column++) ...[
+                                if (column > 0) const SizedBox(width: 20),
+                                SizedBox(
+                                    width: width,
+                                    child: Column(children: [
+                                      for (final section in groups[column])
+                                        Padding(
+                                            padding: const EdgeInsets.only(
+                                                bottom: 20),
+                                            child:
+                                                _ToolPanel(section: section)),
+                                    ])),
+                              ]
+                            ]);
+                      }),
+                    const Divider(height: 32, color: AppColors.border),
+                    Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          key: const ValueKey('more-sign-out'),
+                          onPressed: _signingOut ? null : _signOut,
+                          style: TextButton.styleFrom(
+                              foregroundColor: AppColors.dangerDeep),
+                          icon: const Icon(Icons.logout_rounded, size: 19),
+                          label: Text(_signingOut
+                              ? t('Signing out…', 'Inaondoka…')
+                              : strings.logout),
+                        )),
+                  ]))
+            ]);
+          })),
     );
   }
 }
 
-class _MenuCard extends StatelessWidget {
-  const _MenuCard({required this.items});
+class _ToolSection {
+  const _ToolSection(this.title, this.tools);
+  final String title;
+  final List<_Tool> tools;
+}
 
-  final List<_MenuItemData> items;
+class _Tool {
+  const _Tool(this.id, this.icon, this.title, this.description, this.page);
+  final String id;
+  final IconData icon;
+  final String title;
+  final String description;
+  final Widget Function() page;
+}
+
+class _ToolPanel extends StatelessWidget {
+  const _ToolPanel({required this.section});
+  final _ToolSection section;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        children: List.generate(items.length, (index) {
-          final item = items[index];
-          final isLast = index == items.length - 1;
-
-          return Column(
-            children: [
-              InkWell(
-                onTap: item.onTap,
-                borderRadius: BorderRadius.vertical(
-                  top: index == 0 ? const Radius.circular(10) : Radius.zero,
-                  bottom: isLast ? const Radius.circular(10) : Radius.zero,
-                ),
+  Widget build(BuildContext context) => WorkspacePanel(
+      padding: EdgeInsets.zero,
+      child: Column(children: [
+        Container(
+            width: double.infinity,
+            color: AppColors.surfaceSecondary,
+            padding: const EdgeInsets.all(18),
+            child: Text(section.title, style: AppTypography.sectionHeader)),
+        for (var index = 0; index < section.tools.length; index++) ...[
+          if (index > 0) const Divider(height: 1, color: AppColors.borderLight),
+          Material(
+              color: Colors.transparent,
+              child: InkWell(
+                key: ValueKey('more-${section.tools[index].id}'),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => section.tools[index].page())),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  child: Row(
-                    children: [
-                      item.customIcon ??
-                          Icon(
-                            item.icon,
-                            color: AppColors.textSecondary,
-                            size: 21,
-                          ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          item.title,
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textMain,
-                            letterSpacing: -0.1,
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        item.trailingIcon ?? Icons.chevron_right_rounded,
-                        color: const Color(0xFF0284C7), // Exact bright blue chevron from screenshot
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (!isLast)
-                const Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Color(0xFFF1F5F9), // Subtle inner row separator
-                ),
-            ],
-          );
-        }),
-      ),
-    );
-  }
-}
-
-class _MenuItemData {
-  const _MenuItemData({
-    this.icon,
-    this.customIcon,
-    required this.title,
-    this.trailingIcon,
-    required this.onTap,
-  });
-
-  final IconData? icon;
-  final Widget? customIcon;
-  final String title;
-  final IconData? trailingIcon;
-  final VoidCallback onTap;
+                    padding: const EdgeInsets.all(18),
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(section.tools[index].icon,
+                              size: 22, color: AppColors.textBody),
+                          const SizedBox(width: 14),
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Text(section.tools[index].title,
+                                    style: AppTypography.bodyMedium
+                                        .copyWith(fontWeight: FontWeight.w700)),
+                                const SizedBox(height: 4),
+                                Text(section.tools[index].description,
+                                    style: AppTypography.label
+                                        .copyWith(height: 1.4)),
+                              ])),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.chevron_right_rounded,
+                              size: 19, color: AppColors.textMuted),
+                        ])),
+              )),
+        ],
+      ]));
 }

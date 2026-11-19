@@ -71,7 +71,7 @@ class ProfitLossReportPage extends StatelessWidget {
     return [
       MetricData(
         title: 'Revenue',
-        value: '₹${NumberFormat('#,##0.##').format(revenue)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(revenue)}',
         icon: Icons.attach_money,
         iconColor: Color(0xFF166534),
         tint: Color(0xFF166534).withValues(alpha: 0.1),
@@ -79,7 +79,7 @@ class ProfitLossReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Gross Profit',
-        value: '₹${NumberFormat('#,##0.##').format(grossProfit)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(grossProfit)}',
         icon: Icons.trending_up,
         iconColor: grossProfit >= 0 ? Color(0xFF111111) : Colors.red,
         tint: (grossProfit >= 0 ? Color(0xFF111111) : Colors.red)
@@ -88,7 +88,7 @@ class ProfitLossReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Operating Result',
-        value: '₹${NumberFormat('#,##0.##').format(operatingResult)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(operatingResult)}',
         icon: Icons.account_balance,
         iconColor: operatingResult >= 0 ? Color(0xFF111111) : Colors.red,
         tint: (operatingResult >= 0 ? Color(0xFF111111) : Colors.red)
@@ -250,7 +250,7 @@ class ProfitLossReportPage extends StatelessWidget {
               label: DateFormat('MMM d').format(e.key),
               value: e.value.fold(0.0, (sum, s) => sum + s.order.total),
               displayValue:
-                  '₹${NumberFormat('#,##0').format(e.value.fold(0.0, (sum, s) => sum + s.order.total))}',
+                  'TSh ${NumberFormat('#,##0').format(e.value.fold(0.0, (sum, s) => sum + s.order.total))}',
             ))
         .toList();
     final maxValue = trendPoints.isEmpty
@@ -282,7 +282,7 @@ class ProfitLossReportPage extends StatelessWidget {
         .map((e) => TrendPoint(
               label: e.key,
               value: e.value,
-              displayValue: '₹${NumberFormat('#,##0').format(e.value)}',
+              displayValue: 'TSh ${NumberFormat('#,##0').format(e.value)}',
             ))
         .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -318,7 +318,7 @@ class ProfitLossReportPage extends StatelessWidget {
       insights.add(InsightCard(
         title: 'Operating Loss',
         description:
-            'Business is operating at a loss of ₹${NumberFormat('#,##0').format(operatingResult.abs())}. Urgent review of pricing, costs, or sales strategy needed.',
+            'Business is operating at a loss of TSh ${NumberFormat('#,##0').format(operatingResult.abs())}. Urgent review of pricing, costs, or sales strategy needed.',
         icon: Icons.error_outline,
         color: Colors.red,
         severity: InsightSeverity.critical,
@@ -477,7 +477,7 @@ class _PnLRow extends StatelessWidget {
             ),
           ),
           Text(
-            '₹${NumberFormat('#,##0.##').format(value.abs())}',
+            'TSh ${NumberFormat('#,##0.##').format(value.abs())}',
             style: GoogleFonts.manrope(
               fontSize: 14,
               fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,

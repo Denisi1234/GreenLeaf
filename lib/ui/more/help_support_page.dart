@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -33,87 +34,91 @@ class HelpSupportPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const MarketPageHeader(title: 'Help & Support'),
-            Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                    children: [
-                      Container(
-                        decoration: AppDecorations.tile(),
-                        clipBehavior: Clip.antiAlias,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Column(
-                            children: [
-                              for (var index = 0;
-                                  index < supportItems.length;
-                                  index++) ...[
-                                _SupportTile(item: supportItems[index]),
-                                if (index != supportItems.length - 1)
-                                  const Divider(
-                                    height: 1,
-                                    indent: 66,
-                                    color: AppColors.divider,
-                                  ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceSecondary,
-                          borderRadius: BorderRadius.circular(AppRadius.tile),
-                          border: Border.all(color: AppColors.primarySoft),
-                        ),
-                        child: Row(
-                          children: [
-                            const SettingsIconBox(
-                              icon: Icons.shield_outlined,
-                              color: AppColors.primaryDeep,
-                              background: AppColors.surface,
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                const MarketPageHeader(title: 'Help & Support'),
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+                        children: [
+                          Container(
+                            decoration: AppDecorations.tile(),
+                            clipBehavior: Clip.antiAlias,
+                            child: Material(
+                              color: Colors.transparent,
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'We are here to help',
-                                    style: AppTypography.bodyMain.copyWith(
-                                      color: AppColors.primaryDeep,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Support is available Monday – Saturday, 08:00 – 20:00 EAT.',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: AppColors.primaryDeep,
-                                    ),
-                                  ),
+                                  for (var index = 0;
+                                      index < supportItems.length;
+                                      index++) ...[
+                                    _SupportTile(item: supportItems[index]),
+                                    if (index != supportItems.length - 1)
+                                      const Divider(
+                                        height: 1,
+                                        indent: 66,
+                                        color: AppColors.divider,
+                                      ),
+                                  ],
                                 ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceSecondary,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.tile),
+                              border: Border.all(color: AppColors.primarySoft),
+                            ),
+                            child: Row(
+                              children: [
+                                const SettingsIconBox(
+                                  icon: Icons.shield_outlined,
+                                  color: AppColors.primaryDeep,
+                                  background: AppColors.surface,
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'We are here to help',
+                                        style: AppTypography.bodyMain.copyWith(
+                                          color: AppColors.primaryDeep,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Support is available Monday – Saturday, 08:00 – 20:00 EAT.',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: AppColors.primaryDeep,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 }

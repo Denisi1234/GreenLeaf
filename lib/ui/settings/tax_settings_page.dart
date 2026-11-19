@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -45,183 +46,190 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: _t('Tax settings', 'Mipangilio ya kodi'),
-              subtitle: tax.enabled
-                  ? '${tax.taxLabel} ${tax.ratePercent.toStringAsFixed(1)}%'
-                  : _t('Tax disabled', 'Kodi imezimwa'),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                children: [
-                  MarketSurfaceCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Expanded(
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: _t('Tax settings', 'Mipangilio ya kodi'),
+                  subtitle: tax.enabled
+                      ? '${tax.taxLabel} ${tax.ratePercent.toStringAsFixed(1)}%'
+                      : _t('Tax disabled', 'Kodi imezimwa'),
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    children: [
+                      MarketSurfaceCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _t('Charge tax on sales',
+                                        'Toza kodi kwenye mauzo'),
+                                    style: AppTypography.bodySmall
+                                        .copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _t(
+                                      'Required for tax reports and tax compliance.',
+                                      'Inahitajika kwa ripoti za kodi.',
+                                    ),
+                                    style: AppTypography.helperText
+                                        .copyWith(color: AppColors.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: _draft.enabled,
+                              onChanged: (value) => setState(() =>
+                                  _draft = _draft.copyWith(enabled: value)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      if (_draft.enabled) ...[
+                        MarketSurfaceCard(
+                          padding: const EdgeInsets.all(18),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                _t('Charge tax on sales',
-                                    'Toza kodi kwenye mauzo'),
-                                style: AppTypography.bodySmall
-                                    .copyWith(fontWeight: FontWeight.w700),
+                              MarketFormField(
+                                label: _t('Tax name', 'Jina la kodi'),
+                                hintText: 'VAT',
+                                initialValue: _draft.taxLabel,
+                                onChanged: (value) => _draft =
+                                    _draft.copyWith(taxLabel: value.trim()),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _t(
-                                  'Required for tax reports and tax compliance.',
-                                  'Inahitajika kwa ripoti za kodi.',
+                              const SizedBox(height: AppSpacing.md),
+                              MarketFormField(
+                                label:
+                                    _t('Tax rate (%)', 'Kiwango cha kodi (%)'),
+                                hintText: '18',
+                                initialValue: _draft.ratePercent == 0
+                                    ? ''
+                                    : _draft.ratePercent.toStringAsFixed(2),
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                onChanged: (value) => _draft = _draft.copyWith(
+                                  ratePercent: double.tryParse(value) ?? 0,
                                 ),
-                                style: AppTypography.helperText
-                                    .copyWith(color: AppColors.textMuted),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              MarketFormField(
+                                label: _t('Tax identification number',
+                                    'Namba ya usajili wa kodi'),
+                                hintText:
+                                    _t('e.g. 123-456-789', 'mf. 123-456-789'),
+                                initialValue: _draft.taxId,
+                                onChanged: (value) => _draft =
+                                    _draft.copyWith(taxId: value.trim()),
                               ),
                             ],
                           ),
                         ),
-                        Switch(
-                          value: _draft.enabled,
-                          onChanged: (value) => setState(
-                              () => _draft = _draft.copyWith(enabled: value)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  if (_draft.enabled) ...[
-                    MarketSurfaceCard(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          MarketFormField(
-                            label: _t('Tax name', 'Jina la kodi'),
-                            hintText: 'VAT',
-                            initialValue: _draft.taxLabel,
-                            onChanged: (value) => _draft =
-                                _draft.copyWith(taxLabel: value.trim()),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          MarketFormField(
-                            label: _t('Tax rate (%)', 'Kiwango cha kodi (%)'),
-                            hintText: '18',
-                            initialValue: _draft.ratePercent == 0
-                                ? ''
-                                : _draft.ratePercent.toStringAsFixed(2),
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            onChanged: (value) => _draft = _draft.copyWith(
-                              ratePercent: double.tryParse(value) ?? 0,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          MarketFormField(
-                            label: _t('Tax identification number',
-                                'Namba ya usajili wa kodi'),
-                            hintText: _t('e.g. 123-456-789', 'mf. 123-456-789'),
-                            initialValue: _draft.taxId,
-                            onChanged: (value) =>
-                                _draft = _draft.copyWith(taxId: value.trim()),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    MarketSurfaceCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            value: _draft.pricesIncludeTax,
-                            onChanged: (value) => setState(() => _draft =
-                                _draft.copyWith(pricesIncludeTax: value)),
-                            title: Text(
-                              _t('Prices include tax', 'Bei zinajumuisha kodi'),
-                              style: AppTypography.bodySmall
-                                  .copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            subtitle: Text(
-                              _draft.pricesIncludeTax
-                                  ? _t(
-                                      'Tax is extracted from the selling price.',
-                                      'Kodi inatolewa kutoka kwenye bei ya kuuza.',
-                                    )
-                                  : _t(
-                                      'Tax is added on top of the selling price.',
-                                      'Kodi inaongezwa juu ya bei ya kuuza.',
-                                    ),
-                              style: AppTypography.helperText
-                                  .copyWith(color: AppColors.textMuted),
-                            ),
-                          ),
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            value: _draft.trackExpenseTax,
-                            onChanged: (value) => setState(() => _draft =
-                                _draft.copyWith(trackExpenseTax: value)),
-                            title: Text(
-                              _t('Include tax paid on expenses',
-                                  'Jumuisha kodi ya matumizi'),
-                              style: AppTypography.bodySmall
-                                  .copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            subtitle: Text(
-                              _t(
-                                'Counts expense tax towards tax compliance.',
-                                'Huahesabu kodi ya matumizi kwenye uzingatiaji wa kodi.',
+                        const SizedBox(height: AppSpacing.md),
+                        MarketSurfaceCard(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              SwitchListTile(
+                                contentPadding: EdgeInsets.zero,
+                                value: _draft.pricesIncludeTax,
+                                onChanged: (value) => setState(() => _draft =
+                                    _draft.copyWith(pricesIncludeTax: value)),
+                                title: Text(
+                                  _t('Prices include tax',
+                                      'Bei zinajumuisha kodi'),
+                                  style: AppTypography.bodySmall
+                                      .copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                subtitle: Text(
+                                  _draft.pricesIncludeTax
+                                      ? _t(
+                                          'Tax is extracted from the selling price.',
+                                          'Kodi inatolewa kutoka kwenye bei ya kuuza.',
+                                        )
+                                      : _t(
+                                          'Tax is added on top of the selling price.',
+                                          'Kodi inaongezwa juu ya bei ya kuuza.',
+                                        ),
+                                  style: AppTypography.helperText
+                                      .copyWith(color: AppColors.textMuted),
+                                ),
                               ),
-                              style: AppTypography.helperText
-                                  .copyWith(color: AppColors.textMuted),
-                            ),
+                              SwitchListTile(
+                                contentPadding: EdgeInsets.zero,
+                                value: _draft.trackExpenseTax,
+                                onChanged: (value) => setState(() => _draft =
+                                    _draft.copyWith(trackExpenseTax: value)),
+                                title: Text(
+                                  _t('Include tax paid on expenses',
+                                      'Jumuisha kodi ya matumizi'),
+                                  style: AppTypography.bodySmall
+                                      .copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                subtitle: Text(
+                                  _t(
+                                    'Counts expense tax towards tax compliance.',
+                                    'Huahesabu kodi ya matumizi kwenye uzingatiaji wa kodi.',
+                                  ),
+                                  style: AppTypography.helperText
+                                      .copyWith(color: AppColors.textMuted),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.lg),
-                  MarketSurfaceCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _t('Tax snapshot', 'Muhtasari wa kodi'),
-                          style: AppTypography.label,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        _TaxRow(
-                          label: _t('Taxable sales', 'Mauzo yenye kodi'),
-                          value: 'TZS ${taxableSales.toStringAsFixed(0)}',
-                        ),
-                        _TaxRow(
-                          label: _t('Tax collected', 'Kodi iliyokusanywa'),
-                          value: 'TZS ${taxCollected.toStringAsFixed(0)}',
                         ),
                       ],
-                    ),
+                      const SizedBox(height: AppSpacing.lg),
+                      MarketSurfaceCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _t('Tax snapshot', 'Muhtasari wa kodi'),
+                              style: AppTypography.label,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            _TaxRow(
+                              label: _t('Taxable sales', 'Mauzo yenye kodi'),
+                              value: 'TZS ${taxableSales.toStringAsFixed(0)}',
+                            ),
+                            _TaxRow(
+                              label: _t('Tax collected', 'Kodi iliyokusanywa'),
+                              value: 'TZS ${taxCollected.toStringAsFixed(0)}',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      MarketButton(
+                        label: _saving
+                            ? _t('Saving...', 'Inahifadhi...')
+                            : _t('Save tax settings',
+                                'Hifadhi mipangilio ya kodi'),
+                        icon: Icons.check_rounded,
+                        onTap: _saving ? null : _save,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  MarketButton(
-                    label: _saving
-                        ? _t('Saving...', 'Inahifadhi...')
-                        : _t('Save tax settings', 'Hifadhi mipangilio ya kodi'),
-                    icon: Icons.check_rounded,
-                    onTap: _saving ? null : _save,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 
@@ -237,9 +245,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
       showMarketNotice(
         context,
         title: sw ? 'Mipangilio ya kodi' : 'Tax settings',
-        message: sw
-            ? 'Mipangilio ya kodi imehifadhiwa'
-            : 'Tax settings saved',
+        message: sw ? 'Mipangilio ya kodi imehifadhiwa' : 'Tax settings saved',
         type: MarketNoticeType.success,
       );
       navigator.pop();

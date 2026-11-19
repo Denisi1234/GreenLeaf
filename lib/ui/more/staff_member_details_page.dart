@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
@@ -43,26 +44,28 @@ class StaffMemberDetailsPage extends StatelessWidget {
         data: manropeTheme,
         child: Scaffold(
           backgroundColor: AppColors.pageBackground,
-          body: SafeArea(
-            child: Column(
-              children: [
-                MarketPageHeader(
-                  title:
-                      _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
-                  centerTitle: false,
-                  showBorder: false,
+          body: ManagementViewport(
+              maxWidth: 1280,
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    MarketPageHeader(
+                      title: _dual(
+                          strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
+                      centerTitle: false,
+                      showBorder: false,
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Text(_dual(
+                            strings,
+                            'This staff member no longer exists.',
+                            'Mfanyakazi huyu hayupo tena.')),
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: Center(
-                    child: Text(_dual(
-                        strings,
-                        'This staff member no longer exists.',
-                        'Mfanyakazi huyu hayupo tena.')),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              )),
         ),
       );
     }
@@ -75,313 +78,322 @@ class StaffMemberDetailsPage extends StatelessWidget {
       data: manropeTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              MarketPageHeader(
-                title: _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
-                subtitle: member.name,
-                centerTitle: false,
-                showBorder: false,
-                actions: [
-                  IconButton(
-                    tooltip: _dual(strings, 'Edit staff', 'Hariri mfanyakazi'),
-                    onPressed: () async {
-                      final saved =
-                          await Navigator.of(context).push<StaffMemberData>(
-                        MaterialPageRoute<StaffMemberData>(
-                          builder: (context) => AddEditStaffPage(
-                            member: member,
-                            roles: store.staffRoles,
-                          ),
-                        ),
-                      );
-                      if (saved == null || !context.mounted) return;
-                      showMarketNotice(
-                        context,
-                        title: 'Staff Updated',
-                        message: '${saved.name} was updated successfully.',
-                      );
-                    },
-                    icon: const Icon(Icons.edit_outlined, color: AppColors.ink),
-                  ),
-                  PopupMenuButton<String>(
-                    tooltip: 'More actions',
-                    onSelected: (value) async {
-                      if (value == 'delete') {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (dialogContext) => AlertDialog(
-                            title: const Text('Remove staff member'),
-                            content: Text(
-                              'Remove ${member.name} from this store? This cannot be undone.',
+        body: ManagementViewport(
+            maxWidth: 1280,
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  MarketPageHeader(
+                    title:
+                        _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
+                    subtitle: member.name,
+                    centerTitle: false,
+                    showBorder: false,
+                    actions: [
+                      IconButton(
+                        tooltip:
+                            _dual(strings, 'Edit staff', 'Hariri mfanyakazi'),
+                        onPressed: () async {
+                          final saved =
+                              await Navigator.of(context).push<StaffMemberData>(
+                            MaterialPageRoute<StaffMemberData>(
+                              builder: (context) => AddEditStaffPage(
+                                member: member,
+                                roles: store.staffRoles,
+                              ),
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(false),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(dialogContext).pop(true),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.danger,
+                          );
+                          if (saved == null || !context.mounted) return;
+                          showMarketNotice(
+                            context,
+                            title: 'Staff Updated',
+                            message: '${saved.name} was updated successfully.',
+                          );
+                        },
+                        icon: const Icon(Icons.edit_outlined,
+                            color: AppColors.ink),
+                      ),
+                      PopupMenuButton<String>(
+                        tooltip: 'More actions',
+                        onSelected: (value) async {
+                          if (value == 'delete') {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                title: const Text('Remove staff member'),
+                                content: Text(
+                                  'Remove ${member.name} from this store? This cannot be undone.',
                                 ),
-                                child: const Text('Remove'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(true),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: AppColors.danger,
+                                    ),
+                                    child: const Text('Remove'),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        );
-                        if (confirmed != true || !context.mounted) return;
-                        await store.deleteStaffMember(member.id);
-                        if (!context.mounted) return;
-                        Navigator.of(context).pop();
-                        return;
-                      }
-                      final status = StaffStatus.values.firstWhere(
-                        (item) => item.value == value,
-                      );
-                      await store.setStaffStatus(member.id, status);
-                      if (!context.mounted) return;
-                      showMarketNotice(
-                        context,
-                        title: 'Status Updated',
-                        message:
-                            '${member.name} is now ${status.label.toLowerCase()}.',
-                      );
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem<String>(
-                        enabled: false,
-                        child: Text(
-                          'SET STATUS',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.6,
-                            color: AppColors.textLight,
-                          ),
-                        ),
-                      ),
-                      ...StaffStatus.values.map(
-                        (status) => PopupMenuItem<String>(
-                          value: status.value,
-                          child: Row(
-                            children: [
-                              Icon(
-                                member.status == status
-                                    ? Icons.radio_button_checked_rounded
-                                    : Icons.radio_button_unchecked_rounded,
-                                size: 18,
-                                color: member.status == status
-                                    ? AppColors.primary
-                                    : AppColors.textLight,
+                            );
+                            if (confirmed != true || !context.mounted) return;
+                            await store.deleteStaffMember(member.id);
+                            if (!context.mounted) return;
+                            Navigator.of(context).pop();
+                            return;
+                          }
+                          final status = StaffStatus.values.firstWhere(
+                            (item) => item.value == value,
+                          );
+                          await store.setStaffStatus(member.id, status);
+                          if (!context.mounted) return;
+                          showMarketNotice(
+                            context,
+                            title: 'Status Updated',
+                            message:
+                                '${member.name} is now ${status.label.toLowerCase()}.',
+                          );
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem<String>(
+                            enabled: false,
+                            child: Text(
+                              'SET STATUS',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                                color: AppColors.textLight,
                               ),
-                              const SizedBox(width: 8),
-                              Text(status.label),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                      const PopupMenuDivider(),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Text(
-                          'Remove staff member',
-                          style: TextStyle(color: AppColors.danger),
-                        ),
+                          ...StaffStatus.values.map(
+                            (status) => PopupMenuItem<String>(
+                              value: status.value,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    member.status == status
+                                        ? Icons.radio_button_checked_rounded
+                                        : Icons.radio_button_unchecked_rounded,
+                                    size: 18,
+                                    color: member.status == status
+                                        ? AppColors.primary
+                                        : AppColors.textLight,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(status.label),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const PopupMenuDivider(),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text(
+                              'Remove staff member',
+                              style: TextStyle(color: AppColors.danger),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
+                  ),
+                  Expanded(
+                    child: ListView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
+                      children: [
+                        _ProfileHero(
+                            member: member,
+                            role: role,
+                            strings: AppStrings.of(store.languageCode)),
+                        const SizedBox(height: 16),
+                        _InfoSection(
+                          title: _dual(strings, 'Contact Information',
+                              'Taarifa za Mawasiliano'),
+                          icon: Icons.contact_phone_outlined,
+                          rows: [
+                            _InfoRowData(
+                              label: _dual(strings, 'Phone', 'Simu'),
+                              value: member.phone,
+                              icon: Icons.call_outlined,
+                            ),
+                            _InfoRowData(
+                              label: _dual(strings, 'Email', 'Baruapepe'),
+                              value: member.email.isEmpty
+                                  ? _dual(
+                                      strings, 'Not provided', 'Haijatolewa')
+                                  : member.email,
+                              icon: Icons.mail_outline_rounded,
+                            ),
+                            _InfoRowData(
+                              label: _dual(strings, 'Address', 'Anwani'),
+                              value: member.address.isEmpty
+                                  ? _dual(
+                                      strings, 'Not provided', 'Haijatolewa')
+                                  : member.address,
+                              icon: Icons.location_on_outlined,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _InfoSection(
+                          title: _dual(strings, 'Employment', 'Ajira'),
+                          icon: Icons.work_outline_rounded,
+                          rows: [
+                            _InfoRowData(
+                              label: 'Employee number',
+                              value: member.employeeNumber.isEmpty
+                                  ? 'Not assigned'
+                                  : member.employeeNumber,
+                              icon: Icons.badge_outlined,
+                            ),
+                            _InfoRowData(
+                              label: 'Job title',
+                              value: member.jobTitle.isEmpty
+                                  ? 'Not set'
+                                  : member.jobTitle,
+                              icon: Icons.workspace_premium_outlined,
+                            ),
+                            _InfoRowData(
+                              label: 'Department',
+                              value: member.department.isEmpty
+                                  ? 'Not set'
+                                  : member.department,
+                              icon: Icons.apartment_outlined,
+                            ),
+                            _InfoRowData(
+                              label: 'Employment type',
+                              value: EmploymentType.fromValue(
+                                          member.employmentType)
+                                      ?.label ??
+                                  'Not set',
+                              icon: Icons.assignment_ind_outlined,
+                            ),
+                            _InfoRowData(
+                              label: 'Hire date',
+                              value: member.hireDate.isEmpty
+                                  ? 'Not set'
+                                  : _formatDate(member.hireDate),
+                              icon: Icons.calendar_today_outlined,
+                            ),
+                            _InfoRowData(
+                              label: 'Hourly rate',
+                              value: member.hourlyRate <= 0
+                                  ? 'Not set'
+                                  : 'TSh ${member.hourlyRate.toStringAsFixed(0)}',
+                              icon: Icons.payments_outlined,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _AccessSection(
+                          member: member,
+                          role: role,
+                          permissions: permissions,
+                          onOpenRole: role == null
+                              ? null
+                              : () => Navigator.of(context).push<void>(
+                                    MaterialPageRoute<void>(
+                                      builder: (context) =>
+                                          RoleDetailsPage(roleId: role.id),
+                                    ),
+                                  ),
+                        ),
+                        const SizedBox(height: 12),
+                        _InfoSection(
+                          title: _dual(strings, 'Emergency Contact',
+                              'Mawasiliano ya Dharura'),
+                          icon: Icons.emergency_outlined,
+                          rows: [
+                            _InfoRowData(
+                              label: 'Name',
+                              value: member.emergencyContactName.isEmpty
+                                  ? 'Not provided'
+                                  : member.emergencyContactName,
+                              icon: Icons.person_outline_rounded,
+                            ),
+                            _InfoRowData(
+                              label: 'Phone',
+                              value: member.emergencyContactPhone.isEmpty
+                                  ? 'Not provided'
+                                  : member.emergencyContactPhone,
+                              icon: Icons.phone_in_talk_outlined,
+                            ),
+                            _InfoRowData(
+                              label: 'Relationship',
+                              value: member.emergencyContactRelation.isEmpty
+                                  ? 'Not provided'
+                                  : member.emergencyContactRelation,
+                              icon: Icons.people_outline_rounded,
+                            ),
+                          ],
+                        ),
+                        if (member.notes.trim().isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          _NotesSection(notes: member.notes),
+                        ],
+                        const SizedBox(height: 12),
+                        _InfoSection(
+                          title: _dual(strings, 'Record', 'Kumbukumbu'),
+                          icon: Icons.history_rounded,
+                          rows: [
+                            _InfoRowData(
+                              label: 'Joined',
+                              value: _formatDate(member.createdAt),
+                              icon: Icons.login_rounded,
+                            ),
+                            _InfoRowData(
+                              label: 'Last updated',
+                              value: member.updatedAt.isEmpty
+                                  ? _formatDate(member.createdAt)
+                                  : _formatDate(member.updatedAt),
+                              icon: Icons.update_rounded,
+                            ),
+                            _InfoRowData(
+                              label: 'Staff ID',
+                              value: member.id,
+                              icon: Icons.fingerprint_rounded,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        MarketButton(
+                          label: _dual(strings, 'Edit Staff Profile',
+                              'Hariri Wasifu wa Mfanyakazi'),
+                          icon: Icons.edit_outlined,
+                          onTap: () async {
+                            final saved = await Navigator.of(context)
+                                .push<StaffMemberData>(
+                              MaterialPageRoute<StaffMemberData>(
+                                builder: (context) => AddEditStaffPage(
+                                  member: member,
+                                  roles: store.staffRoles,
+                                ),
+                              ),
+                            );
+                            if (saved == null || !context.mounted) return;
+                            showMarketNotice(
+                              context,
+                              title: 'Staff Updated',
+                              message:
+                                  '${saved.name} was updated successfully.',
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
-                  children: [
-                    _ProfileHero(
-                        member: member,
-                        role: role,
-                        strings: AppStrings.of(store.languageCode)),
-                    const SizedBox(height: 16),
-                    _InfoSection(
-                      title: _dual(strings, 'Contact Information',
-                          'Taarifa za Mawasiliano'),
-                      icon: Icons.contact_phone_outlined,
-                      rows: [
-                        _InfoRowData(
-                          label: _dual(strings, 'Phone', 'Simu'),
-                          value: member.phone,
-                          icon: Icons.call_outlined,
-                        ),
-                        _InfoRowData(
-                          label: _dual(strings, 'Email', 'Baruapepe'),
-                          value: member.email.isEmpty
-                              ? _dual(strings, 'Not provided', 'Haijatolewa')
-                              : member.email,
-                          icon: Icons.mail_outline_rounded,
-                        ),
-                        _InfoRowData(
-                          label: _dual(strings, 'Address', 'Anwani'),
-                          value: member.address.isEmpty
-                              ? _dual(strings, 'Not provided', 'Haijatolewa')
-                              : member.address,
-                          icon: Icons.location_on_outlined,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoSection(
-                      title: _dual(strings, 'Employment', 'Ajira'),
-                      icon: Icons.work_outline_rounded,
-                      rows: [
-                        _InfoRowData(
-                          label: 'Employee number',
-                          value: member.employeeNumber.isEmpty
-                              ? 'Not assigned'
-                              : member.employeeNumber,
-                          icon: Icons.badge_outlined,
-                        ),
-                        _InfoRowData(
-                          label: 'Job title',
-                          value: member.jobTitle.isEmpty
-                              ? 'Not set'
-                              : member.jobTitle,
-                          icon: Icons.workspace_premium_outlined,
-                        ),
-                        _InfoRowData(
-                          label: 'Department',
-                          value: member.department.isEmpty
-                              ? 'Not set'
-                              : member.department,
-                          icon: Icons.apartment_outlined,
-                        ),
-                        _InfoRowData(
-                          label: 'Employment type',
-                          value: EmploymentType.fromValue(member.employmentType)
-                                  ?.label ??
-                              'Not set',
-                          icon: Icons.assignment_ind_outlined,
-                        ),
-                        _InfoRowData(
-                          label: 'Hire date',
-                          value: member.hireDate.isEmpty
-                              ? 'Not set'
-                              : _formatDate(member.hireDate),
-                          icon: Icons.calendar_today_outlined,
-                        ),
-                        _InfoRowData(
-                          label: 'Hourly rate',
-                          value: member.hourlyRate <= 0
-                              ? 'Not set'
-                              : 'TSh ${member.hourlyRate.toStringAsFixed(0)}',
-                          icon: Icons.payments_outlined,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _AccessSection(
-                      member: member,
-                      role: role,
-                      permissions: permissions,
-                      onOpenRole: role == null
-                          ? null
-                          : () => Navigator.of(context).push<void>(
-                                MaterialPageRoute<void>(
-                                  builder: (context) =>
-                                      RoleDetailsPage(roleId: role.id),
-                                ),
-                              ),
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoSection(
-                      title: _dual(strings, 'Emergency Contact',
-                          'Mawasiliano ya Dharura'),
-                      icon: Icons.emergency_outlined,
-                      rows: [
-                        _InfoRowData(
-                          label: 'Name',
-                          value: member.emergencyContactName.isEmpty
-                              ? 'Not provided'
-                              : member.emergencyContactName,
-                          icon: Icons.person_outline_rounded,
-                        ),
-                        _InfoRowData(
-                          label: 'Phone',
-                          value: member.emergencyContactPhone.isEmpty
-                              ? 'Not provided'
-                              : member.emergencyContactPhone,
-                          icon: Icons.phone_in_talk_outlined,
-                        ),
-                        _InfoRowData(
-                          label: 'Relationship',
-                          value: member.emergencyContactRelation.isEmpty
-                              ? 'Not provided'
-                              : member.emergencyContactRelation,
-                          icon: Icons.people_outline_rounded,
-                        ),
-                      ],
-                    ),
-                    if (member.notes.trim().isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      _NotesSection(notes: member.notes),
-                    ],
-                    const SizedBox(height: 12),
-                    _InfoSection(
-                      title: _dual(strings, 'Record', 'Kumbukumbu'),
-                      icon: Icons.history_rounded,
-                      rows: [
-                        _InfoRowData(
-                          label: 'Joined',
-                          value: _formatDate(member.createdAt),
-                          icon: Icons.login_rounded,
-                        ),
-                        _InfoRowData(
-                          label: 'Last updated',
-                          value: member.updatedAt.isEmpty
-                              ? _formatDate(member.createdAt)
-                              : _formatDate(member.updatedAt),
-                          icon: Icons.update_rounded,
-                        ),
-                        _InfoRowData(
-                          label: 'Staff ID',
-                          value: member.id,
-                          icon: Icons.fingerprint_rounded,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    MarketButton(
-                      label: _dual(strings, 'Edit Staff Profile',
-                          'Hariri Wasifu wa Mfanyakazi'),
-                      icon: Icons.edit_outlined,
-                      onTap: () async {
-                        final saved =
-                            await Navigator.of(context).push<StaffMemberData>(
-                          MaterialPageRoute<StaffMemberData>(
-                            builder: (context) => AddEditStaffPage(
-                              member: member,
-                              roles: store.staffRoles,
-                            ),
-                          ),
-                        );
-                        if (saved == null || !context.mounted) return;
-                        showMarketNotice(
-                          context,
-                          title: 'Staff Updated',
-                          message: '${saved.name} was updated successfully.',
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+            )),
       ),
     );
   }
@@ -401,7 +413,7 @@ class _ProfileHero extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         children: [
@@ -559,7 +571,7 @@ class _InfoSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -649,7 +661,7 @@ class _AccessSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -808,7 +820,7 @@ class _NotesSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -5,8 +5,6 @@ import 'package:sqflite/sqflite.dart';
 
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
-import 'daftari_recovery_models.dart';
-import 'duka_ai_service.dart';
 import 'php_api_client.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
@@ -337,14 +335,6 @@ class PosHybridDatabase extends PosLocalDatabase {
       await _clearExpensesLocal();
     }
 
-    if (api.can('View Reports')) {
-      await _pullDaftari();
-      await _pullAi();
-    } else {
-      await _clearDaftariLocal();
-      await _clearAiLocal();
-    }
-
     final profile = await api.rows('profile');
     if (profile.isNotEmpty) {
       await super.saveAppProfile(profile.first);
@@ -465,90 +455,6 @@ class PosHybridDatabase extends PosLocalDatabase {
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
-      }
-    });
-  }
-
-  Future<void> _clearDaftariLocal() async {
-    final db = await database;
-    await db.transaction((txn) async {
-      await txn.delete(
-        'daftari_recovery_sessions',
-        where: 'store_id = ?',
-        whereArgs: [storeId],
-      );
-      await txn.delete(
-        'daftari_learning_rules',
-        where: 'store_id = ?',
-        whereArgs: [storeId],
-      );
-    });
-  }
-
-  Future<void> _pullDaftari() async {
-    final sessions = await api.rows('recovery-sessions');
-    final rules = await api.rows('learning-rules');
-    await _clearDaftariLocal();
-    for (final row in sessions) {
-      await super.upsertDaftariSession(
-        DaftariRecoverySession.fromMap(row),
-        storeId,
-      );
-    }
-    for (final row in rules) {
-      await super.upsertDaftariLearningRule(
-        DaftariLearningRule.fromMap(row),
-        storeId,
-      );
-    }
-  }
-
-  Future<void> _clearAiLocal() async {
-    final db = await database;
-    await db.transaction((txn) async {
-      await txn.delete(
-        'myduka_ai_threads',
-        where: 'store_id = ?',
-        whereArgs: [storeId],
-      );
-      await txn.delete(
-        'myduka_ai_messages',
-        where: 'store_id = ?',
-        whereArgs: [storeId],
-      );
-    });
-  }
-
-  Future<void> _pullAi() async {
-    final db = await database;
-    final threads = await api.rows('ai-threads');
-    final messages = await api.rows('ai-messages');
-    await _clearAiLocal();
-    await db.transaction((txn) async {
-      for (final thread in threads) {
-        await txn.insert(
-          'myduka_ai_threads',
-          {
-            'id': thread['id'],
-            'store_id': storeId,
-            'title': thread['title'] ?? '',
-            'preview': thread['preview'] ?? '',
-            'created_at': thread['created_at'] ?? '',
-            'updated_at': thread['updated_at'] ?? '',
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-      }
-      for (final message in messages) {
-        await txn.insert('myduka_ai_messages', {
-          'store_id': storeId,
-          'thread_id': message['thread_id'],
-          'role': message['role'],
-          'content': message['content'],
-          'image_path': message['image_path'],
-          'created_at':
-              message['created_at'] ?? DateTime.now().toIso8601String(),
-        });
       }
     });
   }
@@ -773,98 +679,6 @@ class PosHybridDatabase extends PosLocalDatabase {
       recordId: '1',
       payload: {'languageCode': languageCode},
     );
-  }
-
-  @override
-  Future<void> upsertDaftariSession(
-    DaftariRecoverySession session,
-    String storeId,
-  ) async {
-    await super.upsertDaftariSession(session, storeId);
-    await _enqueue(
-      kind: 'put',
-      resource: 'recovery-sessions',
-      recordId: session.id,
-      payload: session.toMap(),
-    );
-  }
-
-  @override
-  Future<void> upsertDaftariLearningRule(
-    DaftariLearningRule rule,
-    String storeId,
-  ) async {
-    await super.upsertDaftariLearningRule(rule, storeId);
-    await _enqueue(
-      kind: 'put',
-      resource: 'learning-rules',
-      recordId: rule.id,
-      payload: rule.toMap(),
-    );
-  }
-
-  @override
-  Future<void> upsertDukaAiThread(
-    DukaAiThread thread,
-    String storeId,
-  ) async {
-    await super.upsertDukaAiThread(thread, storeId);
-    await _enqueue(
-      kind: 'put',
-      resource: 'ai-threads',
-      recordId: thread.id,
-      payload: {
-        'id': thread.id,
-        'title': thread.title,
-        'preview': thread.preview,
-        'created_at': thread.createdAt,
-        'updated_at': thread.updatedAt,
-      },
-    );
-  }
-
-  @override
-  Future<void> deleteDukaAiThread(String threadId) async {
-    await super.deleteDukaAiThread(threadId);
-    await _enqueue(kind: 'delete', resource: 'ai-threads', recordId: threadId);
-    await _enqueueAiMessages();
-  }
-
-  @override
-  Future<void> replaceDukaAiMessages(
-    String threadId,
-    List<DukaAiMessage> messages,
-    String storeId,
-  ) async {
-    await super.replaceDukaAiMessages(threadId, messages, storeId);
-    await _enqueueAiMessages();
-  }
-
-  Future<void> _enqueueAiMessages() async {
-    final db = await database;
-    final rows = await db.query(
-      'myduka_ai_messages',
-      orderBy: 'thread_id ASC, id ASC',
-    );
-    final counters = <String, int>{};
-    final items = <Map<String, Object?>>[];
-    for (final row in rows) {
-      final threadId = row['thread_id'] as String;
-      final index = counters.update(
-        threadId,
-        (value) => value + 1,
-        ifAbsent: () => 0,
-      );
-      items.add({
-        'id': '$threadId:$index',
-        'thread_id': threadId,
-        'role': row['role'],
-        'content': row['content'],
-        'image_path': row['image_path'],
-        'created_at': row['created_at'] ?? DateTime.now().toIso8601String(),
-      });
-    }
-    await _enqueue(kind: 'replace', resource: 'ai-messages', payload: items);
   }
 
   Map<String, Object?> _orderToMap(CompletedOrder order) => {

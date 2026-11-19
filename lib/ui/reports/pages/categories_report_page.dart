@@ -62,7 +62,7 @@ class CategoriesReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Category Revenue',
-        value: '₹${NumberFormat('#,##0.##').format(totalNetSales)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalNetSales)}',
         icon: Icons.attach_money,
         iconColor: Color(0xFF111111),
         tint: Color(0xFF111111).withValues(alpha: 0.1),
@@ -71,7 +71,7 @@ class CategoriesReportPage extends StatelessWidget {
       MetricData(
         title: 'Gross Profit',
         value: totalProfit != null
-            ? '₹${NumberFormat('#,##0.##').format(totalProfit)}'
+            ? 'TSh ${NumberFormat('#,##0.##').format(totalProfit)}'
             : '—',
         icon: Icons.trending_up,
         iconColor: totalProfit != null && totalProfit < 0
@@ -107,7 +107,7 @@ class CategoriesReportPage extends StatelessWidget {
               label: row[0].toString(),
               value: (row[3] as num).toDouble(),
               displayValue:
-                  '₹${NumberFormat('#,##0').format((row[3] as num).toDouble())}',
+                  'TSh ${NumberFormat('#,##0').format((row[3] as num).toDouble())}',
             ))
         .toList();
     final maxValue = trendPoints.isEmpty
@@ -141,7 +141,7 @@ class CategoriesReportPage extends StatelessWidget {
     insights.add(InsightCard(
       title: 'Leading Category',
       description:
-          '"$topCategoryName" contributes ${topCategoryShare.toStringAsFixed(1)}% of total revenue (₹${NumberFormat('#,##0').format(topCategoryRevenue)})',
+          '"$topCategoryName" contributes ${topCategoryShare.toStringAsFixed(1)}% of total revenue (TSh ${NumberFormat('#,##0').format(topCategoryRevenue)})',
       icon: Icons.category,
       color: Color(0xFF166534),
       severity: InsightSeverity.success,

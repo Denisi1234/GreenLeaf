@@ -164,6 +164,17 @@ class PhpApiClient {
     return (res['data'] as Map)['success'] == true;
   }
 
+  Future<bool> sendSms({
+    required String phone,
+    required String text,
+  }) async {
+    final res = await request('POST', 'sms/send', body: {
+      'phone': phone,
+      'text': text,
+    });
+    return (res['data'] as Map)['sent'] == true;
+  }
+
   Map<String, String> imageHeaders(String url) =>
       url.startsWith('$baseUrl/uploads/') && _token != null
           ? {'Authorization': 'Bearer $_token'}

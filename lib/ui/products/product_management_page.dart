@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../service/pos_local_store.dart';
 import '../../utils/currency_formatter.dart';
@@ -8,6 +11,7 @@ import '../widgets/app_design.dart';
 import '../widgets/workspace_widgets.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'add_product_page.dart';
+import '../models/product_item.dart';
 import '../notifications/notifications_page.dart';
 import 'inventory_product_item.dart';
 
@@ -207,6 +211,116 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     );
   }
 
+  Future<void> _exportInventoryCsv(List<InventoryProductItem> items) async {
+    final buffer = StringBuffer();
+    buffer.writeln('Code,Name,Category,CostPrice,SalePrice,Quantity,Unit');
+    for (final item in items) {
+      buffer.writeln(
+        '"${item.code}","${item.name.replaceAll('"', '""')}","${item.category}",${item.purchasePrice},${item.sellingPrice},${item.stockCount},"${item.unit}"',
+      );
+    }
+    final fileName =
+        'inventory_export_${DateTime.now().toIso8601String().substring(0, 10)}.csv';
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          XFile.fromData(
+            Uint8List.fromList(utf8.encode(buffer.toString())),
+            mimeType: 'text/csv',
+          ),
+        ],
+        fileNameOverrides: [fileName],
+      ),
+    );
+  }
+
+  Future<void> _showImportCsvDialog() async {
+    final textController = TextEditingController();
+    final imported = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Import CSV Items'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Format: Name, Category, Cost, Price, Stock\n(One item per line)',
+              style: AppTypography.label,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: textController,
+              maxLines: 7,
+              decoration: const InputDecoration(
+                hintText: 'Milk 1L, Dairy, 2000, 2500, 30\nBread, Bakery, 1500, 1800, 20',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, textController.text.trim()),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.successDeep),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+
+    if (imported == null || imported.isEmpty || !mounted) return;
+
+    final store = context.read<PosLocalStore>();
+    final lines = imported.split('\n');
+    int addedCount = 0;
+
+    for (final raw in lines) {
+      final line = raw.trim();
+      if (line.isEmpty) continue;
+      final parts = line.split(',').map((e) => e.trim()).toList();
+      if (parts.length >= 4) {
+        final name = parts[0];
+        final category = parts[1];
+        final cost = double.tryParse(parts[2]) ?? 0.0;
+        final price = double.tryParse(parts[3]) ?? (cost * 1.25);
+        final stock = parts.length >= 5 ? (int.tryParse(parts[4]) ?? 0) : 0;
+        final nextCode = 'P${(store.inventory.length + addedCount + 1).toString().padLeft(3, '0')}';
+
+        try {
+          await store.addProduct(
+            InventoryProductItem(
+              code: nextCode,
+              name: name,
+              category: category.isNotEmpty ? category : 'General',
+              purchasePrice: cost,
+              sellingPrice: price,
+              stockCount: stock,
+              stockState: stock <= 0
+                  ? InventoryStockState.outOfStock
+                  : stock <= 5
+                      ? InventoryStockState.lowStock
+                      : InventoryStockState.inStock,
+              artType: ProductArtType.aquafina,
+              unit: 'Pcs',
+            ),
+          );
+          addedCount++;
+        } catch (_) {}
+      }
+    }
+
+    if (mounted) {
+      showMarketNotice(
+        context,
+        title: 'Import Completed',
+        message: 'Successfully added $addedCount products into inventory.',
+        type: MarketNoticeType.success,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final inventory = context.watch<PosLocalStore>().inventory;
@@ -327,27 +441,18 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TextField(
+                          MarketSearchField(
                             controller: _searchController,
+                            hintText: 'Search by name, code or barcode',
                             onChanged: (value) => setState(() {
                               _searchQuery = value;
                               _page = 0;
                             }),
-                            decoration: InputDecoration(
-                              hintText: 'Search by name, code or barcode',
-                              prefixIcon: const Icon(Icons.search_rounded),
-                              suffixIcon: query.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      tooltip: 'Clear search',
-                                      icon: const Icon(Icons.close_rounded),
-                                      onPressed: () => setState(() {
-                                        _searchController.clear();
-                                        _searchQuery = '';
-                                        _page = 0;
-                                      }),
-                                    ),
-                            ),
+                            onClear: () => setState(() {
+                              _searchController.clear();
+                              _searchQuery = '';
+                              _page = 0;
+                            }),
                           ),
                           const SizedBox(height: 12),
                           Wrap(
@@ -916,13 +1021,9 @@ class _ProductsHeader extends StatelessWidget {
       titleWeight: FontWeight.w800,
       actions: [
         MarketHeaderActionButtons(
-          showDukaAi: false,
-          aiBackground: const Color(0xFFF8FAFC),
           notificationBackground: const Color(0xFFF8FAFC),
-          aiBorderColor: const Color(0xFFE5EAF0),
           notificationBorderColor: const Color(0xFFE5EAF0),
           showNotificationDot: true,
-          onDukaAiTap: () {},
           onNotificationTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(

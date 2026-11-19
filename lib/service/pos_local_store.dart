@@ -12,9 +12,7 @@ import '../ui/business_category_config.dart';
 import '../ui/models/product_item.dart';
 import '../ui/models/customer_data.dart';
 import '../ui/products/inventory_product_item.dart';
-import 'daftari_recovery_models.dart';
 import 'debit_entry_model.dart';
-import 'duka_ai_service.dart';
 import 'pos_hybrid_database.dart';
 import 'pos_local_database.dart';
 import 'pos_cloud_database.dart';
@@ -30,11 +28,8 @@ import 'accounting_engine.dart';
 import 'accounting_model.dart';
 import 'tax_settings.dart';
 import 'daily_sales_report_service.dart';
-import 'subscription_models.dart';
 import 'pos_suspended_sale_model.dart';
 import 'package:track_mauzo/ui/models/capability.dart';
-
-
 
 const _staffPermissionCatalog = <String>[
   'View Sales',
@@ -346,11 +341,11 @@ class PosLocalStore extends ChangeNotifier {
   static const _defaultStoreId = 'store-default';
   String _activeStoreId = _defaultStoreId;
   final List<Store> _stores = <Store>[];
-  String get _defaultThreadId => 'thread-$_activeStoreId';
   bool _savingCheckout = false;
   bool _disposed = false;
 
   final PosLocalDatabase _database;
+  PosHybridDatabase? _cloudApi;
   static const Duration _eastAfricaOffset = Duration(hours: 3);
 
   final List<ProductItem> _products = <ProductItem>[];
@@ -359,12 +354,6 @@ class PosLocalStore extends ChangeNotifier {
   final List<InventoryProductItem> _allInventory = <InventoryProductItem>[];
   final List<StaffRoleData> _staffRoles = <StaffRoleData>[];
   final List<StaffMemberData> _staffMembers = <StaffMemberData>[];
-  final List<DaftariRecoverySession> _daftariSessions =
-      <DaftariRecoverySession>[];
-  final List<DaftariLearningRule> _daftariLearningRules =
-      <DaftariLearningRule>[];
-  final List<DukaAiThread> _dukaAiThreads = <DukaAiThread>[];
-  final List<DukaAiMessage> _dukaAiMessages = <DukaAiMessage>[];
   final List<Expense> _expenses = <Expense>[];
   final List<RegisterShift> _registerShifts = <RegisterShift>[];
   final List<CashMovement> _cashMovements = <CashMovement>[];
@@ -380,19 +369,11 @@ class PosLocalStore extends ChangeNotifier {
   final List<FixedAsset> _fixedAssets = <FixedAsset>[];
   final List<BankTransaction> _bankTransactions = <BankTransaction>[];
   bool _accountsSeeded = false;
-  String? _activeDukaAiThreadId;
   Timer? _midnightRefreshTimer;
   Timer? _dailySmsTimer;
 
-  static const String _defaultGeminiApiKey = '';
-  static const String _defaultGroqApiKey = '';
-  static const String _defaultGroqModel = 'llama-3.1-8b-instant';
   static const String _defaultLanguageCode = 'sw';
-  String _geminiApiKey = _defaultGeminiApiKey;
-  String _groqApiKey = _defaultGroqApiKey;
-  String _groqModel = _defaultGroqModel;
   String _languageCode = _defaultLanguageCode;
-  bool _useLiveGeminiOcr = true;
   bool _isLoggedIn = false;
   String? _currentUserId;
   String? _lastAuthError;
@@ -400,14 +381,11 @@ class PosLocalStore extends ChangeNotifier {
   /// Machine-readable reason for the most recent failed sign-in or sign-up.
   String? get lastAuthError => _lastAuthError;
 
-  String get geminiApiKey => _geminiApiKey;
-  String get groqApiKey => _groqApiKey;
-  String get groqModel => _groqModel;
   String get languageCode => _languageCode;
   ReceiptSettings get receiptSettings => _receiptSettings;
   StorePreferences get storePreferences => _storePreferences;
   PhpApiClient? get cloudApi {
-    final database = _database;
+    final database = _cloudApi ?? _database;
     if (database is PosCloudDatabase) return database.api;
     if (database is PosHybridDatabase) return database.api;
     return null;
@@ -430,7 +408,7 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<void> refreshFromServer() async {
-    final database = _database;
+    final database = _cloudApi ?? _database;
     if (database is PosHybridDatabase) {
       await database.retryFailed();
       await database.syncNow(pull: true);
@@ -439,7 +417,7 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<({int pending, int failed})> syncHealth() async {
-    final database = _database;
+    final database = _cloudApi ?? _database;
     if (database is PosHybridDatabase) {
       return (
         pending: await database.pendingCount(),
@@ -450,7 +428,7 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<void> retryFailedSync() async {
-    final database = _database;
+    final database = _cloudApi ?? _database;
     if (database is PosHybridDatabase) {
       await database.retryFailed();
       await database.syncNow();
@@ -458,7 +436,6 @@ class PosLocalStore extends ChangeNotifier {
     await reloadFromLocal();
   }
 
-  bool get useLiveGeminiOcr => _useLiveGeminiOcr;
   bool get isLoggedIn => cloudApi != null || _isLoggedIn;
   String? get currentUserId =>
       cloudApi?.user['id'] as String? ?? _currentUserId;
@@ -472,36 +449,6 @@ class PosLocalStore extends ChangeNotifier {
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
-
-  StoreSubscription _subscription = StoreSubscription.free();
-  StoreSubscription get subscription => _subscription;
-  int get maxAllowedStores => _subscription.maxStores;
-  bool get canAddMoreStores => _stores.length < maxAllowedStores;
-
-  Future<void> activateSubscription({
-    required String planId,
-    required String planName,
-    required int maxStores,
-    required double priceTzs,
-    required String orderId,
-    required String phoneNumber,
-    int durationDays = 30,
-  }) async {
-    final now = DateTime.now();
-    _subscription = StoreSubscription(
-      planId: planId,
-      planName: planName,
-      maxStores: maxStores,
-      priceTzs: priceTzs,
-      orderId: orderId,
-      phoneNumber: phoneNumber,
-      subscribedAt: now,
-      expiresAt: now.add(Duration(days: durationDays)),
-      isActive: true,
-    );
-    await _saveUiConfig();
-    notifyListeners();
-  }
 
   @override
   void dispose() {
@@ -520,9 +467,33 @@ class PosLocalStore extends ChangeNotifier {
 
     await _loadUiConfig();
     await _ensureStoresLoaded();
-    final db = _database;
+
+    // If a saved cloud session exists, restore the cloud API so the app
+    // can sync with the shared backend automatically — no user action needed.
+    final session = await _database.loadSyncSession();
+    if (session != null) {
+      final endpoint = session['endpoint'] as String?;
+      final token = session['token'] as String?;
+      if (endpoint != null && token != null && endpoint.isNotEmpty) {
+        final api = PhpApiClient(endpoint);
+        api.restoreSession(
+          token: token,
+          user: jsonDecode(session['user_json'] as String? ?? '{}')
+              as Map<String, dynamic>,
+        );
+        _cloudApi = PosHybridDatabase(api);
+      }
+    }
+
+    final db = _cloudApi ?? _database;
     if (db is PosHybridDatabase) {
       db.storeId = _activeStoreId;
+      db.onSynced = () {
+        if (!_disposed && _isInitialized) {
+          reloadFromLocal();
+        }
+      };
+      db.startAutoSync();
     }
 
     _accountsSeeded = false;
@@ -535,10 +506,6 @@ class PosLocalStore extends ChangeNotifier {
     _debitEntries.clear();
     _staffRoles.clear();
     _staffMembers.clear();
-    _daftariSessions.clear();
-    _daftariLearningRules.clear();
-    _dukaAiThreads.clear();
-    _dukaAiMessages.clear();
     _registerShifts.clear();
     _cashMovements.clear();
     _suppliers.clear();
@@ -595,16 +562,6 @@ class PosLocalStore extends ChangeNotifier {
             logoPath: storedProfile['logo_path'] as String?,
           );
 
-    _daftariSessions
-      ..clear()
-      ..addAll(await _database.loadDaftariSessions(_activeStoreId));
-    _daftariLearningRules
-      ..clear()
-      ..addAll(await _database.loadDaftariLearningRules(_activeStoreId));
-    _dukaAiThreads
-      ..clear()
-      ..addAll(await _database.loadDukaAiThreads(_activeStoreId));
-
     final storedExpenses = await _database.loadExpenses(_activeStoreId);
     _expenses
       ..clear()
@@ -623,72 +580,6 @@ class PosLocalStore extends ChangeNotifier {
 
     await _reloadRegister();
     await _reloadSuppliers();
-
-    if (cloudApi == null || cloudApi!.can('View Reports')) {
-      if (_dukaAiThreads.isEmpty) {
-        final now = DateTime.now().toIso8601String();
-        final defaultThread = DukaAiThread(
-          id: _defaultThreadId,
-          title: 'MyDuka AI',
-          preview: '',
-          createdAt: now,
-          updatedAt: now,
-        );
-        _dukaAiThreads.add(defaultThread);
-        await _database.upsertDukaAiThread(defaultThread, _activeStoreId);
-      }
-
-      _activeDukaAiThreadId = _dukaAiThreads.first.id;
-      _dukaAiMessages
-        ..clear()
-        ..addAll(await _database.loadDukaAiMessages(_activeDukaAiThreadId!));
-      if (_dukaAiMessages.isEmpty) {
-        _dukaAiMessages.add(
-          DukaAiMessage(
-            role: 'assistant',
-            content:
-                'Hi, I am DUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
-            createdAt: DateTime.now().toIso8601String(),
-          ),
-        );
-        await _database.replaceDukaAiMessages(
-          _activeDukaAiThreadId!,
-          _dukaAiMessages,
-          _activeStoreId,
-        );
-      }
-
-      _dukaAiMessages.sort(_compareMessagesByTime);
-    }
-
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/daftari_gemini_config.json');
-      if (await file.exists()) {
-        final jsonStr = await file.readAsString();
-        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-        _geminiApiKey = map['apiKey'] as String? ?? _defaultGeminiApiKey;
-        _groqApiKey = map['groqApiKey'] as String? ?? _defaultGroqApiKey;
-        _groqModel = map['groqModel'] as String? ?? _defaultGroqModel;
-        final useLive = map['useLiveOcr'];
-        _useLiveGeminiOcr = useLive == null
-            ? true
-            : (useLive == true ||
-                useLive == 1 ||
-                useLive == '1' ||
-                (useLive is String && useLive.toLowerCase() == 'true'));
-      } else {
-        // Write default config so it persists
-        await file.writeAsString(jsonEncode({
-          'apiKey': _defaultGeminiApiKey,
-          'groqApiKey': _defaultGroqApiKey,
-          'groqModel': _defaultGroqModel,
-          'useLiveOcr': true,
-        }));
-      }
-    } catch (e) {
-      // Ignore
-    }
 
     _receiptSettings = await _database.loadReceiptSettings();
     _taxSettings = await _database.loadTaxSettings();
@@ -875,7 +766,8 @@ class PosLocalStore extends ChangeNotifier {
       openedAt: DateTime.now(),
       openingFloat: openingFloat,
     );
-    final id = await _database.insertRegisterShift(shift.toMap(), _activeStoreId);
+    final id =
+        await _database.insertRegisterShift(shift.toMap(), _activeStoreId);
     await _reloadRegister();
 
     notifyListeners();
@@ -965,7 +857,8 @@ class PosLocalStore extends ChangeNotifier {
       ));
     if (_accounts.isEmpty && !_accountsSeeded) {
       for (final account in Account.defaults()) {
-        final id = await _database.insertAccount(account.toMap(), _activeStoreId);
+        final id =
+            await _database.insertAccount(account.toMap(), _activeStoreId);
         _accounts.add(Account(
           id: id,
           code: account.code,
@@ -1036,7 +929,8 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<void> saveJournalEntry(JournalEntry entry) async {
-    final id = await _database.insertJournalEntry(entry.toMap(), _activeStoreId);
+    final id =
+        await _database.insertJournalEntry(entry.toMap(), _activeStoreId);
     if (entry.lines.isNotEmpty) {
       await _database.insertJournalLines(
         [
@@ -1180,7 +1074,8 @@ class PosLocalStore extends ChangeNotifier {
 
   Future<Supplier> saveSupplier(Supplier supplier) async {
     if (supplier.id == null) {
-      final id = await _database.insertSupplier(supplier.toMap(), _activeStoreId);
+      final id =
+          await _database.insertSupplier(supplier.toMap(), _activeStoreId);
       await _reloadSuppliers();
       notifyListeners();
       return supplier.id == id
@@ -1202,7 +1097,8 @@ class PosLocalStore extends ChangeNotifier {
 
   /// Records goods received and adds the quantities to matching stock items.
   Future<Receiving> saveReceiving(Receiving receiving) async {
-    final id = await _database.insertReceiving(receiving.toMap(), _activeStoreId);
+    final id =
+        await _database.insertReceiving(receiving.toMap(), _activeStoreId);
     if (receiving.lines.isNotEmpty) {
       await _database.insertReceivingLines(
         [
@@ -1243,8 +1139,20 @@ class PosLocalStore extends ChangeNotifier {
     if (name.isEmpty || line.quantity <= 0) return;
     for (final item in _allInventory) {
       if (item.name.trim().toLowerCase() != name) continue;
+      // Weighted average cost calculation (OSPOS inventory valuation)
+      final existingCount = item.stockCount > 0 ? item.stockCount : 0;
+      final existingCost = item.purchasePrice > 0 ? item.purchasePrice : 0.0;
+      final newQty = line.quantity;
+      final newUnitCost = line.unitCost > 0 ? line.unitCost : existingCost;
+      final totalUnits = existingCount + newQty;
+      final weightedAvgCost = totalUnits > 0
+          ? ((existingCount * existingCost) + (newQty * newUnitCost)) /
+              totalUnits
+          : newUnitCost;
+
       final updated = item.copyWith(
-        purchasePrice: line.unitCost > 0 ? line.unitCost : item.purchasePrice,
+        purchasePrice:
+            weightedAvgCost > 0 ? weightedAvgCost : item.purchasePrice,
         stockCount: item.stockCount + line.quantity,
         sellingPrice:
             line.sellingPrice > 0 ? line.sellingPrice : item.sellingPrice,
@@ -1252,6 +1160,22 @@ class PosLocalStore extends ChangeNotifier {
       await updateProduct(updated);
       return;
     }
+
+    // If product doesn't exist in catalog yet, auto-create it (OSPOS quick-add receiving)
+    final nextCode =
+        'P${(_allInventory.length + 1).toString().padLeft(3, '0')}';
+    final newItem = InventoryProductItem(
+      code: nextCode,
+      name: line.productName.trim(),
+      category: 'General',
+      purchasePrice: line.unitCost > 0 ? line.unitCost : 0.0,
+      sellingPrice:
+          line.sellingPrice > 0 ? line.sellingPrice : (line.unitCost * 1.25),
+      stockCount: line.quantity,
+      stockState: InventoryStockState.inStock,
+      artType: ProductArtType.aquafina,
+    );
+    await addProduct(newItem);
   }
 
   Future<void> deleteReceiving(int id) async {
@@ -1305,32 +1229,6 @@ class PosLocalStore extends ChangeNotifier {
     );
   }
 
-  Future<void> updateGeminiSettings({
-    required String apiKey,
-    required bool useLiveOcr,
-    String? groqApiKey,
-    String? groqModel,
-  }) async {
-    _geminiApiKey = apiKey;
-    _useLiveGeminiOcr = useLiveOcr;
-    if (groqApiKey != null) _groqApiKey = groqApiKey;
-    if (groqModel != null) _groqModel = groqModel;
-    notifyListeners();
-
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/daftari_gemini_config.json');
-      await file.writeAsString(jsonEncode({
-        'apiKey': _geminiApiKey,
-        'groqApiKey': _groqApiKey,
-        'groqModel': _groqModel,
-        'useLiveOcr': _useLiveGeminiOcr,
-      }));
-    } catch (e) {
-      // Ignore
-    }
-  }
-
   Future<void> updateReceiptSettings(ReceiptSettings settings) async {
     await _database.saveReceiptSettings(settings);
     _receiptSettings = settings;
@@ -1348,7 +1246,8 @@ class PosLocalStore extends ChangeNotifier {
   Future<void> setLanguageCode(String code) async {
     final nextCode = AppStrings.normalize(code);
     if (_languageCode == nextCode) return;
-    if (_database is PosCloudDatabase) {
+    final db = _cloudApi ?? _database;
+    if (db is PosCloudDatabase) {
       await cloudApi!.put('preferences', '1', <String, Object?>{
         'languageCode': nextCode,
         ..._storePreferences.toJson(),
@@ -1356,8 +1255,8 @@ class PosLocalStore extends ChangeNotifier {
     }
     _languageCode = nextCode;
     await _writeUiConfig();
-    if (_database is PosHybridDatabase) {
-      await _database.saveLanguagePreference(nextCode);
+    if (db is PosHybridDatabase) {
+      await db.saveLanguagePreference(nextCode);
     }
     notifyListeners();
   }
@@ -1370,7 +1269,8 @@ class PosLocalStore extends ChangeNotifier {
       await _recalculateStockStates();
     }
     await _writeUiConfig();
-    if (_database is PosCloudDatabase) {
+    final db = _cloudApi ?? _database;
+    if (db is PosCloudDatabase) {
       try {
         await cloudApi!.put('preferences', '1', <String, Object?>{
           'languageCode': _languageCode,
@@ -1390,6 +1290,7 @@ class PosLocalStore extends ChangeNotifier {
         final defaults = <String, dynamic>{
           'languageCode': _defaultLanguageCode,
           'activeStoreId': _activeStoreId,
+          'hasCompletedOnboarding': 0,
           ..._storePreferences.toJson(),
         };
         await file.writeAsString(jsonEncode(defaults));
@@ -1399,16 +1300,13 @@ class PosLocalStore extends ChangeNotifier {
         _languageCode = AppStrings.normalize(
           map['languageCode'] as String? ?? _defaultLanguageCode,
         );
+        _hasCompletedOnboarding =
+            (map['hasCompletedOnboarding'] as int? ?? 0) == 1;
         final savedStoreId = (map['activeStoreId'] as String?)?.trim();
         if (savedStoreId != null && savedStoreId.isNotEmpty) {
           _activeStoreId = savedStoreId;
         }
         _storePreferences = StorePreferences.fromJson(map);
-        if (map['subscription'] is Map<String, dynamic>) {
-          _subscription = StoreSubscription.fromJson(
-            Map<String, dynamic>.from(map['subscription'] as Map),
-          );
-        }
       }
     } catch (_) {
       _languageCode = _defaultLanguageCode;
@@ -1446,13 +1344,22 @@ class PosLocalStore extends ChangeNotifier {
       }
       existing['languageCode'] = _languageCode;
       existing['activeStoreId'] = _activeStoreId;
-      existing['subscription'] = _subscription.toJson();
+      existing['hasCompletedOnboarding'] = _hasCompletedOnboarding ? 1 : 0;
       existing.addAll(_storePreferences.toJson());
       await file.writeAsString(jsonEncode(existing), flush: true);
     } catch (_) {}
   }
 
   Future<void> _writeUiConfig() => _saveUiConfig();
+
+  bool _hasCompletedOnboarding = false;
+  bool get hasCompletedOnboarding => _hasCompletedOnboarding;
+
+  Future<void> markOnboardingComplete() async {
+    _hasCompletedOnboarding = true;
+    await _saveUiConfig();
+    notifyListeners();
+  }
 
   List<ProductItem> get products => List.unmodifiable(_products);
   List<ProductItem> get cartItems => List.unmodifiable(_cartItems);
@@ -1471,6 +1378,7 @@ class PosLocalStore extends ChangeNotifier {
       contact: '',
     );
   }
+
   String get activeStoreName {
     final name = activeStore.name.trim();
     return name.isEmpty ? profile.storeName : name;
@@ -1481,7 +1389,8 @@ class PosLocalStore extends ChangeNotifier {
       final rows = await _database.loadStores();
       _stores
         ..clear()
-        ..addAll(rows.map((row) => Store.fromMap(Map<String, dynamic>.from(row))));
+        ..addAll(
+            rows.map((row) => Store.fromMap(Map<String, dynamic>.from(row))));
     } catch (_) {
       _stores.clear();
     }
@@ -1502,6 +1411,12 @@ class PosLocalStore extends ChangeNotifier {
     final db = _database;
     if (db is PosHybridDatabase) {
       db.storeId = _activeStoreId;
+      db.onSynced = () {
+        if (!_disposed && _isInitialized) {
+          reloadFromLocal();
+        }
+      };
+      db.startAutoSync();
     }
   }
 
@@ -1520,7 +1435,11 @@ class PosLocalStore extends ChangeNotifier {
     String contact = '',
   }) async {
     final id = 'store-${DateTime.now().millisecondsSinceEpoch}';
-    final store = Store(id: id, name: name.trim(), address: address.trim(), contact: contact.trim());
+    final store = Store(
+        id: id,
+        name: name.trim(),
+        address: address.trim(),
+        contact: contact.trim());
     await saveStore(store);
   }
 
@@ -1544,6 +1463,12 @@ class PosLocalStore extends ChangeNotifier {
     final db = _database;
     if (db is PosHybridDatabase) {
       db.storeId = _activeStoreId;
+      db.onSynced = () {
+        if (!_disposed && _isInitialized) {
+          reloadFromLocal();
+        }
+      };
+      db.startAutoSync();
     }
     await _saveUiConfig();
     await _reloadActiveStoreData();
@@ -1661,30 +1586,12 @@ class PosLocalStore extends ChangeNotifier {
       bankTransactions: bankTransactions,
     );
   }
+
   List<InventoryProductItem> get inventory => List.unmodifiable(_allInventory);
   List<StaffRoleData> get staffRoles => List.unmodifiable(_staffRoles);
   List<StaffMemberData> get staffMembers => List.unmodifiable(_staffMembers);
   List<String> get staffPermissionCatalog =>
       List.unmodifiable(_staffPermissionCatalog);
-  List<DaftariRecoverySession> get daftariSessions =>
-      List.unmodifiable(_daftariSessions);
-  List<DaftariLearningRule> get daftariLearningRules =>
-      List.unmodifiable(_daftariLearningRules);
-  List<DukaAiThread> get dukaAiThreads => List.unmodifiable(_dukaAiThreads);
-  List<DukaAiMessage> get dukaAiMessages => List.unmodifiable(_dukaAiMessages);
-  String get activeDukaAiThreadId =>
-      _activeDukaAiThreadId ?? _dukaAiThreads.first.id;
-  DukaAiThread? get activeDukaAiThread {
-    final activeId = _activeDukaAiThreadId;
-    if (activeId == null) {
-      return _dukaAiThreads.isEmpty ? null : _dukaAiThreads.first;
-    }
-    for (final thread in _dukaAiThreads) {
-      if (thread.id == activeId) return thread;
-    }
-    return _dukaAiThreads.isEmpty ? null : _dukaAiThreads.first;
-  }
-
   AppProfileData get profile => _profile;
   BusinessCategory get businessCategory => BusinessCategory.retail;
 
@@ -1692,34 +1599,6 @@ class PosLocalStore extends ChangeNotifier {
       BusinessCategoryConfig.forCategory(businessCategory);
 
   Set<Capability> get activeCapabilities => businessCategoryConfig.capabilities;
-
-  int _compareMessagesByTime(DukaAiMessage a, DukaAiMessage b) {
-    final aTime = DateTime.tryParse(a.createdAt ?? '');
-    final bTime = DateTime.tryParse(b.createdAt ?? '');
-    if (aTime == null && bTime == null) return 0;
-    if (aTime == null) return 1;
-    if (bTime == null) return -1;
-    return aTime.compareTo(bTime);
-  }
-
-  DaftariRecoverySession? get latestDaftariSession =>
-      _daftariSessions.isEmpty ? null : _daftariSessions.first;
-
-  DaftariRecoverySession? daftariSessionById(String id) {
-    for (final session in _daftariSessions) {
-      if (session.id == id) return session;
-    }
-    return null;
-  }
-
-  Map<String, List<String>> get daftariLearningAliases {
-    final aliases = <String, List<String>>{};
-    for (final rule in _daftariLearningRules) {
-      aliases.putIfAbsent(rule.targetProductCode, () => <String>[]);
-      aliases[rule.targetProductCode]!.add(rule.sourceText);
-    }
-    return aliases;
-  }
 
   int _cartCount = 0;
   int get cartCount => _cartCount;
@@ -1769,198 +1648,6 @@ class PosLocalStore extends ChangeNotifier {
     return true;
   }
 
-  Future<void> saveDaftariSession(DaftariRecoverySession session) async {
-    final index = _daftariSessions.indexWhere((item) => item.id == session.id);
-    if (index == -1) {
-      _daftariSessions.insert(0, session);
-    } else {
-      _daftariSessions[index] = session;
-      _daftariSessions
-          .sort((left, right) => right.createdAt.compareTo(left.createdAt));
-    }
-    notifyListeners();
-    await _database.upsertDaftariSession(session, _activeStoreId);
-  }
-
-  Future<void> rememberDaftariCorrection({
-    required String sourceText,
-    required ProductItem product,
-  }) async {
-    final normalizedSource = sourceText.trim();
-    if (normalizedSource.isEmpty) return;
-
-    final targetCode = product.code ?? product.name;
-    final now = DateTime.now().toIso8601String();
-    final existingIndex = _daftariLearningRules.indexWhere(
-      (rule) =>
-          rule.sourceText.toLowerCase() == normalizedSource.toLowerCase() &&
-          rule.targetProductCode == targetCode,
-    );
-
-    final updated = existingIndex == -1
-        ? DaftariLearningRule(
-            id: 'learn-${DateTime.now().microsecondsSinceEpoch}',
-            sourceText: normalizedSource,
-            targetProductCode: targetCode,
-            targetProductName: product.name,
-            createdAt: now,
-            hitCount: 1,
-            lastUsedAt: now,
-          )
-        : DaftariLearningRule(
-            id: _daftariLearningRules[existingIndex].id,
-            sourceText: normalizedSource,
-            targetProductCode: targetCode,
-            targetProductName: product.name,
-            createdAt: _daftariLearningRules[existingIndex].createdAt,
-            hitCount: _daftariLearningRules[existingIndex].hitCount + 1,
-            lastUsedAt: now,
-          );
-
-    if (existingIndex == -1) {
-      _daftariLearningRules.insert(0, updated);
-    } else {
-      _daftariLearningRules[existingIndex] = updated;
-    }
-    _daftariLearningRules.sort((left, right) {
-      final lastUsed = right.lastUsedAt.compareTo(left.lastUsedAt);
-      if (lastUsed != 0) return lastUsed;
-      return right.hitCount.compareTo(left.hitCount);
-    });
-    notifyListeners();
-    await _database.upsertDaftariLearningRule(updated, _activeStoreId);
-  }
-
-  Future<void> replaceDukaAiMessages(List<DukaAiMessage> messages) async {
-    await replaceDukaAiMessagesForThread(activeDukaAiThreadId, messages);
-  }
-
-  Future<void> replaceDukaAiMessagesForThread(
-    String threadId,
-    List<DukaAiMessage> messages,
-  ) async {
-    _dukaAiMessages
-      ..clear()
-      ..addAll(messages);
-    notifyListeners();
-    await _database.replaceDukaAiMessages(threadId, _dukaAiMessages, _activeStoreId);
-  }
-
-  Future<DukaAiThread> createDukaAiThread({
-    String? title,
-    List<DukaAiMessage>? seedMessages,
-  }) async {
-    final now = DateTime.now().toIso8601String();
-    final thread = DukaAiThread(
-      id: 'thread-${DateTime.now().millisecondsSinceEpoch}',
-      title: title?.trim().isNotEmpty == true ? title!.trim() : 'New chat',
-      preview: seedMessages == null || seedMessages.isEmpty
-          ? ''
-          : seedMessages.last.content,
-      createdAt: now,
-      updatedAt: now,
-    );
-    _dukaAiThreads.insert(0, thread);
-    _activeDukaAiThreadId = thread.id;
-    _dukaAiMessages
-      ..clear()
-      ..addAll(seedMessages ?? const <DukaAiMessage>[]);
-    notifyListeners();
-    await _database.upsertDukaAiThread(thread, _activeStoreId);
-    await _database.replaceDukaAiMessages(thread.id, _dukaAiMessages, _activeStoreId);
-    return thread;
-  }
-
-  Future<void> setActiveDukaAiThread(String threadId) async {
-    final thread = _dukaAiThreads.firstWhere(
-      (item) => item.id == threadId,
-      orElse: () => _dukaAiThreads.first,
-    );
-    _activeDukaAiThreadId = thread.id;
-    _dukaAiMessages
-      ..clear()
-      ..addAll(await _database.loadDukaAiMessages(thread.id));
-    notifyListeners();
-  }
-
-  Future<void> updateDukaAiThreadTitle(
-    String threadId,
-    String title,
-  ) async {
-    final index = _dukaAiThreads.indexWhere((thread) => thread.id == threadId);
-    if (index == -1) return;
-    final current = _dukaAiThreads[index];
-    final updated = current.copyWith(
-      title: title.trim().isEmpty ? current.title : title.trim(),
-      updatedAt: DateTime.now().toIso8601String(),
-    );
-    _dukaAiThreads[index] = updated;
-    _dukaAiThreads
-        .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
-    notifyListeners();
-    await _database.upsertDukaAiThread(updated, _activeStoreId);
-  }
-
-  Future<void> updateDukaAiThreadPreview(
-    String threadId,
-    String preview,
-  ) async {
-    final index = _dukaAiThreads.indexWhere((thread) => thread.id == threadId);
-    if (index == -1) return;
-    final current = _dukaAiThreads[index];
-    final updated = current.copyWith(
-      preview: preview.trim(),
-      updatedAt: DateTime.now().toIso8601String(),
-    );
-    _dukaAiThreads[index] = updated;
-    _dukaAiThreads
-        .sort((left, right) => right.updatedAt.compareTo(left.updatedAt));
-    notifyListeners();
-    await _database.upsertDukaAiThread(updated, _activeStoreId);
-  }
-
-  Future<void> deleteDukaAiThread(String threadId) async {
-    final index = _dukaAiThreads.indexWhere((thread) => thread.id == threadId);
-    if (index == -1) return;
-
-    final wasActive = _activeDukaAiThreadId == threadId;
-    _dukaAiThreads.removeAt(index);
-    await _database.deleteDukaAiThread(threadId);
-
-    if (_dukaAiThreads.isEmpty) {
-      final now = DateTime.now().toIso8601String();
-      final defaultThread = DukaAiThread(
-        id: _defaultThreadId,
-        title: 'MyDuka AI',
-        preview: '',
-        createdAt: now,
-        updatedAt: now,
-      );
-      _dukaAiThreads.add(defaultThread);
-      _activeDukaAiThreadId = defaultThread.id;
-      _dukaAiMessages
-        ..clear()
-        ..add(
-          DukaAiMessage(
-            role: 'assistant',
-            content:
-                'Hi, I am DUKA AI. Ask me anything about sales, stock, pricing, expenses, or what to do next.',
-            createdAt: DateTime.now().toIso8601String(),
-          ),
-        );
-      await _database.upsertDukaAiThread(defaultThread, _activeStoreId);
-      await _database.replaceDukaAiMessages(
-          defaultThread.id, _dukaAiMessages, _activeStoreId);
-    } else if (wasActive) {
-      _activeDukaAiThreadId = _dukaAiThreads.first.id;
-      _dukaAiMessages
-        ..clear()
-        ..addAll(await _database.loadDukaAiMessages(_activeDukaAiThreadId!));
-    }
-
-    notifyListeners();
-  }
-
   void removeFromCart(int index) {
     if (index < 0 || index >= _cartItems.length) return;
     _cartItems.removeAt(index);
@@ -1996,7 +1683,8 @@ class PosLocalStore extends ChangeNotifier {
   List<SuspendedSale> get suspendedSales => List.unmodifiable(_suspendedSales);
 
   /// Holds / parks current cart (OSPOS Suspended Sale pattern)
-  Future<SuspendedSale?> suspendCurrentSale({String? customerName, String? comment}) async {
+  Future<SuspendedSale?> suspendCurrentSale(
+      {String? customerName, String? comment}) async {
     if (_cartItems.isEmpty) return null;
     final sale = SuspendedSale(
       id: 'HOLD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
@@ -2042,7 +1730,8 @@ class PosLocalStore extends ChangeNotifier {
       throw StateError(
           'A product with this code already exists. Refresh and try again.');
     }
-    await _database.replaceInventory([product, ..._allInventory], _activeStoreId);
+    await _database
+        .replaceInventory([product, ..._allInventory], _activeStoreId);
     _allInventory.insert(0, product);
     _syncProductsFromInventory();
     notifyListeners();
@@ -2255,8 +1944,9 @@ class PosLocalStore extends ChangeNotifier {
           ),
         );
       }
-      if (_database is PosCloudDatabase) {
-        final cloud = _database;
+      final db = _cloudApi ?? _database;
+      if (db is PosCloudDatabase) {
+        final cloud = db;
         order = cloud.savedCheckout!;
         _allInventory
           ..clear()
@@ -2280,8 +1970,9 @@ class PosLocalStore extends ChangeNotifier {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index == -1) return;
 
-    if (_database is PosCloudDatabase) {
-      await _database.deleteOrder(orderId);
+    final db = _cloudApi ?? _database;
+    if (db is PosCloudDatabase) {
+      await db.deleteOrder(orderId);
       await refreshFromServer();
       return;
     }
@@ -3114,6 +2805,45 @@ class PosLocalStore extends ChangeNotifier {
 
     _isLoggedIn = true;
     _currentUserId = member.id;
+
+    // When a cloud API is available, authenticate with the server so the
+    // session token is refreshed and data is pulled from the shared backend.
+    // This is what makes the same credentials work across different devices.
+    final api = cloudApi;
+    if (api != null) {
+      final loginIdentifier = member.username.trim().isNotEmpty
+          ? member.username.trim()
+          : member.phone.trim().replaceAll(RegExp(r'\s+'), '');
+      try {
+        await api.authenticate(
+          email: loginIdentifier,
+          password: password,
+          register: false,
+        );
+        // Persist the session so the next app launch restores cloud mode
+        // and syncs automatically without requiring the user to log in again.
+        await _database.saveSyncSession(
+          endpoint: api.baseUrl,
+          token: api.token ?? '',
+          user: api.user,
+        );
+        // Pull the latest data from the shared server so a different device
+        // that made changes shows up immediately after login.
+        await refreshFromServer();
+      } on ApiException catch (error) {
+        if (error.status == 401) {
+          _isLoggedIn = false;
+          _currentUserId = null;
+          _lastAuthError = 'invalid_password';
+          notifyListeners();
+          return false;
+        }
+        // Network or server errors: keep the local session so the till
+        // still works, but surface the problem for retry.
+        _lastAuthError = error.message;
+      }
+    }
+
     notifyListeners();
     return true;
   }
@@ -3286,17 +3016,19 @@ class PosLocalStore extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    if (cloudApi != null) {
+    final api = cloudApi;
+    if (api != null) {
       try {
-        await cloudApi!.logout();
+        await api.logout();
       } catch (_) {
         // Signing out must also work while the device is offline.
       }
-      await _database.clearSyncSession();
-      return;
     }
+    await _database.clearSyncSession();
+    _cloudApi = null;
     _isLoggedIn = false;
     _currentUserId = null;
+    _lastAuthError = null;
     notifyListeners();
   }
 }

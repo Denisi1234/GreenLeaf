@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -250,286 +251,304 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: widget.isEditing
-                  ? _dual(strings, 'Edit Expense', 'Hariri Matumizi')
-                  : _dual(strings, 'Add Expense', 'Ongeza Matumizi'),
-              subtitle: widget.isEditing
-                  ? _dual(strings, 'Update this expense record',
-                      'Sasisha rekodi hii ya matumizi')
-                  : _dual(strings, 'Record a business expense',
-                      'Rekodi matumizi ya biashara'),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      MarketSurfaceCard(
-                        radius: 0,
-                        borderColor: AppColors.border,
-                        showShadow: false,
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _Label(_dual(strings, 'Expense title',
-                                'Kichwa cha matumizi')),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: _titleController,
-                              textCapitalization: TextCapitalization.sentences,
-                              style: AppTypography.bodyMedium,
-                              decoration: _inputDecoration(
-                                hint: _dual(
-                                    strings,
-                                    'e.g. Store rent, electricity bill',
-                                    'mf. Kodi ya duka, bili ya umeme'),
-                                icon: Icons.receipt_long_outlined,
-                              ),
-                              validator: (v) => (v == null || v.trim().isEmpty)
-                                  ? _dual(strings, 'Expense title is required',
-                                      'Kichwa cha matumizi kinahitajika')
-                                  : null,
-                            ),
-                            const SizedBox(height: 16),
-                            _Label(
-                                _dual(strings, 'Amount (TSH)', 'Kiasi (TSH)')),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: _amountController,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              style: AppTypography.bodyMedium,
-                              decoration: _inputDecoration(
-                                hint: '0.00',
-                                icon: Icons.payments_outlined,
-                              ),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) {
-                                  return _dual(strings, 'Amount is required',
-                                      'Kiasi kinahitajika');
-                                }
-                                final parsed = double.tryParse(
-                                    v.trim().replaceAll(',', ''));
-                                if (parsed == null || parsed <= 0) {
-                                  return _dual(strings, 'Enter a valid amount',
-                                      'Weka kiasi sahihi');
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _Label(_dual(strings, 'Tax / VAT (optional)',
-                                'Kodi / VAT (hiari)')),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: _taxController,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              style: AppTypography.bodyMedium,
-                              decoration: _inputDecoration(
-                                hint: '0.00',
-                                icon: Icons.percent_rounded,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _Label(_dual(
-                                strings,
-                                'Vendor / supplier (optional)',
-                                'Muuzaji / msambazaji (hiari)')),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: _vendorController,
-                              textCapitalization: TextCapitalization.words,
-                              style: AppTypography.bodyMedium,
-                              decoration: _inputDecoration(
-                                hint: _dual(
-                                    strings, 'Who was paid', 'Nani alilipwa'),
-                                icon: Icons.storefront_outlined,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
+      body: ManagementViewport(
+          maxWidth: 860,
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: widget.isEditing
+                      ? _dual(strings, 'Edit Expense', 'Hariri Matumizi')
+                      : _dual(strings, 'Add Expense', 'Ongeza Matumizi'),
+                  subtitle: widget.isEditing
+                      ? _dual(strings, 'Update this expense record',
+                          'Sasisha rekodi hii ya matumizi')
+                      : _dual(strings, 'Record a business expense',
+                          'Rekodi matumizi ya biashara'),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          MarketSurfaceCard(
+                            radius: AppRadius.standard,
+                            borderColor: AppColors.border,
+                            showShadow: false,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _Label(_dual(
-                                          strings, 'Category', 'Kategoria')),
-                                      const SizedBox(height: 6),
-                                      _Dropdown(
-                                        value: _category,
-                                        items: _categories,
-                                        icon: Icons.category_outlined,
-                                        onChanged: (v) =>
-                                            setState(() => _category = v),
-                                        strings: strings,
-                                      ),
-                                    ],
+                                _Label(_dual(strings, 'Expense title',
+                                    'Kichwa cha matumizi')),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: _titleController,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  style: AppTypography.bodyMedium,
+                                  decoration: _inputDecoration(
+                                    hint: _dual(
+                                        strings,
+                                        'e.g. Store rent, electricity bill',
+                                        'mf. Kodi ya duka, bili ya umeme'),
+                                    icon: Icons.receipt_long_outlined,
+                                  ),
+                                  validator: (v) => (v == null ||
+                                          v.trim().isEmpty)
+                                      ? _dual(
+                                          strings,
+                                          'Expense title is required',
+                                          'Kichwa cha matumizi kinahitajika')
+                                      : null,
+                                ),
+                                const SizedBox(height: 16),
+                                _Label(_dual(
+                                    strings, 'Amount (TSH)', 'Kiasi (TSH)')),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: _amountController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  style: AppTypography.bodyMedium,
+                                  decoration: _inputDecoration(
+                                    hint: '0.00',
+                                    icon: Icons.payments_outlined,
+                                  ),
+                                  validator: (v) {
+                                    if (v == null || v.trim().isEmpty) {
+                                      return _dual(
+                                          strings,
+                                          'Amount is required',
+                                          'Kiasi kinahitajika');
+                                    }
+                                    final parsed = double.tryParse(
+                                        v.trim().replaceAll(',', ''));
+                                    if (parsed == null || parsed <= 0) {
+                                      return _dual(
+                                          strings,
+                                          'Enter a valid amount',
+                                          'Weka kiasi sahihi');
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                _Label(_dual(strings, 'Tax / VAT (optional)',
+                                    'Kodi / VAT (hiari)')),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: _taxController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  style: AppTypography.bodyMedium,
+                                  decoration: _inputDecoration(
+                                    hint: '0.00',
+                                    icon: Icons.percent_rounded,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _Label(
-                                          _dual(strings, 'Payment', 'Malipo')),
-                                      const SizedBox(height: 6),
-                                      _Dropdown(
-                                        value: _paymentMethod,
-                                        items: _paymentMethods,
-                                        icon: Icons
-                                            .account_balance_wallet_outlined,
-                                        onChanged: (v) =>
-                                            setState(() => _paymentMethod = v),
-                                        strings: strings,
+                                const SizedBox(height: 16),
+                                _Label(_dual(
+                                    strings,
+                                    'Vendor / supplier (optional)',
+                                    'Muuzaji / msambazaji (hiari)')),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: _vendorController,
+                                  textCapitalization: TextCapitalization.words,
+                                  style: AppTypography.bodyMedium,
+                                  decoration: _inputDecoration(
+                                    hint: _dual(strings, 'Who was paid',
+                                        'Nani alilipwa'),
+                                    icon: Icons.storefront_outlined,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          _Label(_dual(strings, 'Category',
+                                              'Kategoria')),
+                                          const SizedBox(height: 6),
+                                          _Dropdown(
+                                            value: _category,
+                                            items: _categories,
+                                            icon: Icons.category_outlined,
+                                            onChanged: (v) =>
+                                                setState(() => _category = v),
+                                            strings: strings,
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          _Label(_dual(
+                                              strings, 'Payment', 'Malipo')),
+                                          const SizedBox(height: 6),
+                                          _Dropdown(
+                                            value: _paymentMethod,
+                                            items: _paymentMethods,
+                                            icon: Icons
+                                                .account_balance_wallet_outlined,
+                                            onChanged: (v) => setState(
+                                                () => _paymentMethod = v),
+                                            strings: strings,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                _Label(_dual(strings, 'Date', 'Tarehe')),
+                                const SizedBox(height: 6),
+                                InkWell(
+                                  onTap: _pickDate,
+                                  borderRadius: BorderRadius.zero,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 14),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceSecondary,
+                                      borderRadius: BorderRadius.zero,
+                                      border:
+                                          Border.all(color: AppColors.border),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                            Icons.calendar_month_outlined,
+                                            size: 20,
+                                            color: AppColors.textMuted),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(dateLabel,
+                                              style: AppTypography.bodyMedium),
+                                        ),
+                                        const Icon(
+                                            Icons.keyboard_arrow_down_rounded,
+                                            color: AppColors.textLight),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _Label(_dual(strings, 'Approval status',
+                                    'Hali ya idhini')),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: ExpenseStatus.values.map((status) {
+                                    final selected = status == _status;
+                                    return _ChoicePill(
+                                      label:
+                                          status.localized(strings.isSwahili),
+                                      selected: selected,
+                                      onTap: () =>
+                                          setState(() => _status = status),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _ReceiptCard(
+                            path: _receiptPath,
+                            strings: strings,
+                            onPick: _pickReceipt,
+                            onRemove: _removeReceipt,
+                          ),
+                          const SizedBox(height: 12),
+                          MarketSurfaceCard(
+                            radius: AppRadius.standard,
+                            borderColor: AppColors.border,
+                            showShadow: false,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _Label(_dual(strings, 'Notes (optional)',
+                                    'Maelezo (hiari)')),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: _notesController,
+                                  maxLines: 3,
+                                  style: AppTypography.bodyMedium,
+                                  decoration: _inputDecoration(
+                                    hint: _dual(
+                                        strings,
+                                        'Add a short description',
+                                        'Ongeza maelezo mafupi'),
+                                    icon: Icons.notes_outlined,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
-                            _Label(_dual(strings, 'Date', 'Tarehe')),
-                            const SizedBox(height: 6),
-                            InkWell(
-                              onTap: _pickDate,
-                              borderRadius: BorderRadius.zero,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 14),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surfaceSecondary,
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton.icon(
+                              onPressed: _isSaving ? null : _saveExpense,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor:
+                                    AppColors.primary.withValues(alpha: 0.6),
+                                elevation: 0,
+                                shape: const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.zero,
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.calendar_month_outlined,
-                                        size: 20, color: AppColors.textMuted),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(dateLabel,
-                                          style: AppTypography.bodyMedium),
-                                    ),
-                                    const Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        color: AppColors.textLight),
-                                  ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            _Label(_dual(
-                                strings, 'Approval status', 'Hali ya idhini')),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: ExpenseStatus.values.map((status) {
-                                final selected = status == _status;
-                                return _ChoicePill(
-                                  label: status.localized(strings.isSwahili),
-                                  selected: selected,
-                                  onTap: () => setState(() => _status = status),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _ReceiptCard(
-                        path: _receiptPath,
-                        strings: strings,
-                        onPick: _pickReceipt,
-                        onRemove: _removeReceipt,
-                      ),
-                      const SizedBox(height: 12),
-                      MarketSurfaceCard(
-                        radius: 0,
-                        borderColor: AppColors.border,
-                        showShadow: false,
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _Label(_dual(strings, 'Notes (optional)',
-                                'Maelezo (hiari)')),
-                            const SizedBox(height: 6),
-                            TextFormField(
-                              controller: _notesController,
-                              maxLines: 3,
-                              style: AppTypography.bodyMedium,
-                              decoration: _inputDecoration(
-                                hint: _dual(strings, 'Add a short description',
-                                    'Ongeza maelezo mafupi'),
-                                icon: Icons.notes_outlined,
+                              icon: _isSaving
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Icon(Icons.check_rounded, size: 20),
+                              label: Text(
+                                _isSaving
+                                    ? _dual(
+                                        strings, 'Saving...', 'Inahifadhi...')
+                                    : widget.isEditing
+                                        ? _dual(strings, 'Save Changes',
+                                            'Hifadhi Mabadiliko')
+                                        : _dual(strings, 'Save Expense',
+                                            'Hifadhi Matumizi'),
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w700),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          onPressed: _isSaving ? null : _saveExpense,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                AppColors.primary.withValues(alpha: 0.6),
-                            elevation: 0,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
-                            ),
                           ),
-                          icon: _isSaving
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
-                                )
-                              : const Icon(Icons.check_rounded, size: 20),
-                          label: Text(
-                            _isSaving
-                                ? _dual(strings, 'Saving...', 'Inahifadhi...')
-                                : widget.isEditing
-                                    ? _dual(strings, 'Save Changes',
-                                        'Hifadhi Mabadiliko')
-                                    : _dual(strings, 'Save Expense',
-                                        'Hifadhi Matumizi'),
-                            style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w700),
-                          ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 

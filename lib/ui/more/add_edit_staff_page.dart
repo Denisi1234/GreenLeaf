@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
@@ -360,47 +361,49 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       data: manropeTheme,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              MarketPageHeader(
-                title: widget.isEditing ? 'Edit Staff' : 'Add Staff',
-                subtitle: widget.isEditing
-                    ? 'Update profile, employment, and access'
-                    : 'Create a professional staff profile',
-                centerTitle: false,
-                showBorder: false,
-              ),
-              _TabSelector(
-                tabs: _tabs,
-                selectedIndex: _selectedTab,
-                onSelected: (index) => setState(() => _selectedTab = index),
-              ),
-              Expanded(
-                child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      child: KeyedSubtree(
-                        key: ValueKey<int>(_selectedTab),
-                        child: _buildTab(_selectedTab),
+        body: ManagementViewport(
+            maxWidth: 860,
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  MarketPageHeader(
+                    title: widget.isEditing ? 'Edit Staff' : 'Add Staff',
+                    subtitle: widget.isEditing
+                        ? 'Update profile, employment, and access'
+                        : 'Create a professional staff profile',
+                    centerTitle: false,
+                    showBorder: false,
+                  ),
+                  _TabSelector(
+                    tabs: _tabs,
+                    selectedIndex: _selectedTab,
+                    onSelected: (index) => setState(() => _selectedTab = index),
+                  ),
+                  Expanded(
+                    child: Form(
+                      key: _formKey,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          child: KeyedSubtree(
+                            key: ValueKey<int>(_selectedTab),
+                            child: _buildTab(_selectedTab),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  _SaveBar(
+                    isSaving: _isSaving,
+                    isEditing: widget.isEditing,
+                    onSave: _isSaving ? null : _save,
+                  ),
+                ],
               ),
-              _SaveBar(
-                isSaving: _isSaving,
-                isEditing: widget.isEditing,
-                onSave: _isSaving ? null : _save,
-              ),
-            ],
-          ),
-        ),
+            )),
       ),
     );
   }
@@ -855,7 +858,7 @@ class _FormSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -922,55 +925,21 @@ class _AppTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _FieldLabel(label),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: controller,
-            keyboardType: keyboardType,
-            obscureText: obscureText,
-            maxLines: obscureText ? 1 : maxLines,
-            textCapitalization: textCapitalization,
-            onChanged: onChanged,
-            style: AppTypography.bodyMain.copyWith(
-              color: AppColors.textMain,
-              fontWeight: FontWeight.w600,
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textLight,
-                fontWeight: FontWeight.w500,
-              ),
-              prefixIcon: Icon(icon, color: AppColors.textMuted, size: 21),
-              suffixIcon: suffix,
-              filled: true,
-              fillColor: AppColors.surfaceSecondary,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              errorText: errorText,
-              errorStyle: AppTypography.helperText.copyWith(
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-              border: _border(AppColors.border),
-              enabledBorder: _border(AppColors.border),
-              focusedBorder: _border(AppColors.primary),
-              errorBorder: _border(AppColors.danger),
-              focusedErrorBorder: _border(AppColors.danger),
-            ),
-          ),
-        ],
+      child: MarketFormField(
+        label: label,
+        hintText: hint,
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscureText,
+        maxLines: maxLines,
+        textCapitalization: textCapitalization,
+        onChanged: onChanged,
+        prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
+        suffixIcon: suffix,
+        validator: errorText != null && errorText!.isNotEmpty
+            ? (_) => errorText
+            : null,
       ),
-    );
-  }
-
-  OutlineInputBorder _border(Color color) {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.zero,
-      borderSide: BorderSide(color: color),
     );
   }
 }
@@ -1213,7 +1182,7 @@ class _InfoCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       backgroundColor: AppColors.surfaceSecondary,
       borderColor: AppColors.primary.withValues(alpha: 0.16),
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

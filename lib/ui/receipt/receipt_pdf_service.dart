@@ -1,563 +1,263 @@
 import 'dart:io';
 import 'dart:typed_data';
-
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-
+import '../../service/pos_order_models.dart';
+import '../../service/receipt_settings.dart';
 import '../models/product_item.dart';
+import 'receipt_document.dart';
 
 class ReceiptPdfService {
-  static Future<File> createReceiptPdf({
-    required List<OrderLineItem> items,
-    required double total,
-    required double cashTendered,
-    required double changeDue,
-    required String receiptNumber,
-    required String cashier,
-    required String register,
-    required String date,
-    required String time,
-    required String storeName,
-    required String storeAddress,
-    required String storePhone,
-    required String paymentMethod,
-    String storeTaxId = '',
-    String? storeLogoPath,
-    String header = '',
-    String footer = '',
-    String? customerName,
-    double? discountAmount,
-    String? discountLabel,
-    bool showTaxId = true,
-    bool showOrderNumber = true,
-    bool showDateTime = true,
-    bool showCashier = true,
-    bool showCustomer = true,
-    bool showPaymentMethod = true,
-    bool showItemCount = true,
-    bool showDiscount = true,
-  }) async {
-    final pdf = pw.Document();
-    final baseFont = await PdfGoogleFonts.notoSansRegular();
-    final boldFont = await PdfGoogleFonts.notoSansBold();
-
-    pw.ImageProvider? logoImage;
-    if (storeLogoPath != null && storeLogoPath.trim().isNotEmpty) {
+  /// Bundled fonts keep receipt generation available without an internet connection.
+  static Future<Uint8List> buildReceiptBytes(ReceiptDocument receipt) async {
+    final regular =
+        pw.Font.ttf(await rootBundle.load('assets/fonts/Roboto-Regular.ttf'));
+    final bold =
+        pw.Font.ttf(await rootBundle.load('assets/fonts/Roboto-Bold.ttf'));
+    final ink = PdfColor.fromHex('#111827');
+    final muted = PdfColor.fromHex('#64748B');
+    final border = PdfColor.fromHex('#E2E8F0');
+    pw.MemoryImage? logo;
+    final logoPath = receipt.storeLogoPath;
+    if (logoPath != null &&
+        logoPath.isNotEmpty &&
+        !logoPath.startsWith('http')) {
       try {
-        final logoFile = File(storeLogoPath.trim());
-        if (await logoFile.exists()) {
-          final logoBytes = await logoFile.readAsBytes();
-          logoImage = pw.MemoryImage(logoBytes);
-        }
-      } catch (_) {}
+        final file = File(logoPath);
+        if (await file.exists())
+          logo = pw.MemoryImage(await file.readAsBytes());
+      } catch (_) {/* The business name remains available without a logo. */}
     }
-
-    final subtotal =
-        items.fold<double>(0, (sum, line) => sum + line.totalPrice);
-    final discount = discountAmount ?? 0;
-    final itemCount = items.fold<int>(0, (sum, line) => sum + line.quantity);
-    final cleanStoreName = _cleanValue(storeName, 'Store receipt');
-    final cleanStoreAddress = storeAddress.trim();
-    final cleanStorePhone = storePhone.trim();
-    final safeCustomer = customerName == null || customerName.trim().isEmpty
-        ? 'Walk-in customer'
-        : customerName.trim();
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageTheme: pw.PageTheme(
+    final pdf = pw.Document(
+        title: 'Receipt ${receipt.order.receiptNo}',
+        author: receipt.businessName,
+        creator: 'TrackMauzo');
+    pdf.addPage(pw.MultiPage(
+      pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-          theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
-        ),
-        header: (context) => _receiptHeader(
-          storeName: cleanStoreName,
-          storeAddress: cleanStoreAddress,
-          storePhone: cleanStorePhone,
-          storeTaxId: storeTaxId.trim(),
-          logoImage: logoImage,
-          header: header.trim(),
-          receiptNumber: receiptNumber,
-          date: date,
-          time: time,
-          cashier: cashier,
-          paymentMethod: paymentMethod,
-          customerName: safeCustomer,
-          showTaxId: showTaxId,
-          showOrderNumber: showOrderNumber,
-          showDateTime: showDateTime,
-          showCashier: showCashier,
-          showCustomer: showCustomer,
-          showPaymentMethod: showPaymentMethod,
-        ),
-        build: (context) => [
-          pw.SizedBox(height: 16),
-          _receiptIntro(
-            itemCount: itemCount,
-            total: total,
-            cashTendered: cashTendered,
-            changeDue: changeDue,
-            showItemCount: showItemCount,
-          ),
-          pw.SizedBox(height: 20),
-          _sectionTitle('Transaction Details'),
-          pw.SizedBox(height: 8),
-          _itemsTable(items),
-          pw.SizedBox(height: 20),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Expanded(
-                flex: 1,
-                child: pw.Column(
+          margin: const pw.EdgeInsets.all(32),
+          theme: pw.ThemeData.withFont(base: regular, bold: bold)),
+      header: (_) => pw.Container(
+        padding: const pw.EdgeInsets.only(bottom: 16),
+        decoration: pw.BoxDecoration(
+            border: pw.Border(bottom: pw.BorderSide(color: border))),
+        child:
+            pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          if (logo != null) ...[
+            pw.Image(logo, width: 48, height: 48, fit: pw.BoxFit.contain),
+            pw.SizedBox(width: 14)
+          ],
+          pw.Expanded(
+              child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    _sectionTitle('Notes'),
-                    pw.SizedBox(height: 4),
-                    pw.Text(
-                      'This is an official receipt for your purchase. Please keep it for your records.',
-                      style: const pw.TextStyle(
-                          fontSize: 8, color: PdfColors.grey600),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(width: 40),
-              pw.Expanded(
-                flex: 1,
-                child: _paymentSummary(
-                  subtotal: subtotal,
-                  discount: discount,
-                  discountLabel: discountLabel,
-                  total: total,
-                  cashTendered: cashTendered,
-                  changeDue: changeDue,
-                  showDiscount: showDiscount,
-                ),
-              ),
-            ],
-          ),
-        ],
-        footer: (context) => pw.Container(
-          padding: const pw.EdgeInsets.only(top: 12),
-          decoration: const pw.BoxDecoration(
-            border: pw.Border(
-                top: pw.BorderSide(color: PdfColors.grey300, width: 0.5)),
-          ),
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  _cleanValue(
-                    footer,
-                    'Thank you for shopping at $cleanStoreName',
-                  ),
-                  style: pw.TextStyle(
-                    fontSize: 8,
-                    color: PdfColors.grey500,
-                    fontStyle: pw.FontStyle.italic,
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 12),
-              pw.Text(
-                'Page ${context.pageNumber} of ${context.pagesCount}',
-                style:
-                    const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
-              ),
-            ],
-          ),
-        ),
+                pw.Text(receipt.businessName,
+                    style: pw.TextStyle(
+                        fontSize: 20,
+                        fontWeight: pw.FontWeight.bold,
+                        color: ink)),
+                if (receipt.settings.showStoreContact &&
+                    receipt.storeAddress.trim().isNotEmpty)
+                  pw.Text(receipt.storeAddress,
+                      style: pw.TextStyle(fontSize: 10, color: muted)),
+                if (receipt.settings.showStoreContact &&
+                    receipt.storePhone.trim().isNotEmpty)
+                  pw.Text(receipt.storePhone,
+                      style: pw.TextStyle(fontSize: 10, color: muted)),
+                if (receipt.settings.showTaxId &&
+                    receipt.storeTaxId.trim().isNotEmpty)
+                  pw.Text('TIN: ${receipt.storeTaxId}',
+                      style: pw.TextStyle(fontSize: 10, color: muted)),
+              ])),
+          pw.SizedBox(width: 12),
+          pw.Text(receipt.isVoided ? 'VOID' : 'RECEIPT',
+              style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                  color: receipt.isVoided ? PdfColors.red800 : ink)),
+        ]),
       ),
-    );
-
-    final bytes = await pdf.save();
-    return _writePdfFile(bytes, receiptNumber);
+      footer: (context) => pw.Container(
+          padding: const pw.EdgeInsets.only(top: 12),
+          child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Expanded(
+                    child: pw.Text(receipt.footer,
+                        style: pw.TextStyle(fontSize: 9, color: muted))),
+                pw.Text('${context.pageNumber} / ${context.pagesCount}',
+                    style: pw.TextStyle(fontSize: 9, color: muted)),
+              ])),
+      build: (_) => [
+        pw.SizedBox(height: 16),
+        if (receipt.settings.header.trim().isNotEmpty) ...[
+          pw.Text(receipt.settings.header),
+          pw.SizedBox(height: 12)
+        ],
+        pw.Wrap(spacing: 24, runSpacing: 8, children: [
+          for (final item in receipt.metadata)
+            pw.SizedBox(
+                width: 220,
+                child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(item.key,
+                          style: pw.TextStyle(fontSize: 9, color: muted)),
+                      pw.SizedBox(height: 2),
+                      pw.Text(item.value,
+                          style: pw.TextStyle(fontSize: 10, color: ink)),
+                    ])),
+        ]),
+        pw.SizedBox(height: 24),
+        pw.TableHelper.fromTextArray(
+          headers: const ['Item', 'Quantity', 'Unit price', 'Amount'],
+          data: [
+            for (final line in receipt.order.lines)
+              [
+                line.itemName,
+                '${line.quantity}',
+                receipt.money(line.unitPriceValue),
+                receipt.money(line.lineTotal)
+              ]
+          ],
+          border: pw.TableBorder(
+              horizontalInside: pw.BorderSide(color: border, width: 0.5)),
+          columnWidths: {
+            0: const pw.FlexColumnWidth(4),
+            1: const pw.FlexColumnWidth(1),
+            2: const pw.FlexColumnWidth(2),
+            3: const pw.FlexColumnWidth(2)
+          },
+          cellAlignments: {
+            0: pw.Alignment.centerLeft,
+            1: pw.Alignment.centerRight,
+            2: pw.Alignment.centerRight,
+            3: pw.Alignment.centerRight
+          },
+          cellPadding:
+              const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          headerDecoration:
+              pw.BoxDecoration(color: PdfColor.fromHex('#F1F5F9')),
+          headerStyle: pw.TextStyle(font: bold, fontSize: 10, color: ink),
+          cellStyle: pw.TextStyle(font: regular, fontSize: 10, color: ink),
+        ),
+        pw.SizedBox(height: 20),
+        for (final total in receipt.totals)
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(vertical: 6),
+            child: pw.Row(children: [
+              pw.Spacer(),
+              pw.SizedBox(
+                  width: 260,
+                  child: pw.Row(children: [
+                    pw.Expanded(
+                        child: pw.Text(total.key,
+                            style: pw.TextStyle(fontSize: 11, color: muted))),
+                    pw.Text(total.value,
+                        style: pw.TextStyle(
+                            fontSize: total.key == 'Total' ? 16 : 11,
+                            fontWeight: total.key == 'Total'
+                                ? pw.FontWeight.bold
+                                : pw.FontWeight.normal,
+                            color: ink)),
+                  ]))
+            ]),
+          ),
+      ],
+    ));
+    return pdf.save();
   }
 
-  static String _money(double value) {
-    final whole = value.toStringAsFixed(0);
-    final buffer = StringBuffer();
-    for (var i = 0; i < whole.length; i++) {
-      final remaining = whole.length - i;
-      buffer.write(whole[i]);
-      if (remaining > 1 && remaining % 3 == 1) {
-        buffer.write(',');
-      }
-    }
-    return 'TSh ${buffer.toString()}';
-  }
-
-  static String _cleanValue(String value, String fallback) {
-    final trimmed = value.trim();
-    return trimmed.isEmpty ? fallback : trimmed;
-  }
-
-  static Future<File> _writePdfFile(
-      Uint8List bytes, String receiptNumber) async {
+  static Future<File> writeReceiptPdf(ReceiptDocument receipt) async {
+    final bytes = await buildReceiptBytes(receipt);
     final directory = await getTemporaryDirectory();
-    final receiptsDir = Directory('${directory.path}/shared_receipts');
-    if (!receiptsDir.existsSync()) {
-      receiptsDir.createSync(recursive: true);
-    }
-
-    final safeName = receiptNumber.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
-    final file = File('${receiptsDir.path}/$safeName.pdf');
+    final safe =
+        receipt.order.receiptNo.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+    final file =
+        File('${directory.path}${Platform.pathSeparator}receipt_$safe.pdf');
     await file.writeAsBytes(bytes, flush: true);
     return file;
   }
 
-  static pw.Widget _receiptHeader({
-    required String storeName,
-    required String storeAddress,
-    required String storePhone,
-    required String storeTaxId,
-    pw.ImageProvider? logoImage,
-    required String header,
-    required String receiptNumber,
-    required String date,
-    required String time,
-    required String cashier,
-    required String paymentMethod,
-    required String customerName,
-    required bool showTaxId,
-    required bool showOrderNumber,
-    required bool showDateTime,
-    required bool showCashier,
-    required bool showCustomer,
-    required bool showPaymentMethod,
-  }) {
-    final meta = <pw.Widget>[
-      if (showDateTime) _metaLine('Date', '$date · $time'),
-      if (showPaymentMethod && paymentMethod.trim().isNotEmpty)
-        _metaLine('Payment', paymentMethod),
-      if (showCashier && cashier.trim().isNotEmpty)
-        _metaLine('Cashier', cashier),
-      if (showCustomer && customerName != 'Walk-in customer')
-        _metaLine('Customer', customerName),
-    ];
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: pw.CrossAxisAlignment.end,
-          children: [
-            pw.Expanded(
-              child: pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.center,
-                children: [
-                  if (logoImage != null) ...[
-                    pw.Container(
-                      width: 48,
-                      height: 48,
-                      margin: const pw.EdgeInsets.only(right: 12),
-                      child: pw.Image(logoImage, fit: pw.BoxFit.contain),
-                    ),
-                  ],
-                  pw.Expanded(
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        if (header.isNotEmpty) ...[
-                          pw.Text(
-                            header,
-                            style: pw.TextStyle(
-                              fontSize: 9,
-                              fontStyle: pw.FontStyle.italic,
-                              color: PdfColor.fromHex('#64748B'),
-                            ),
-                          ),
-                          pw.SizedBox(height: 4),
-                        ],
-                        pw.Text(
-                          storeName.toUpperCase(),
-                          style: pw.TextStyle(
-                            fontSize: 18,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColor.fromHex('#1E293B'),
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        pw.SizedBox(height: 4),
-                        if (storeAddress.isNotEmpty)
-                          pw.Text(
-                            storeAddress,
-                            style: const pw.TextStyle(
-                                fontSize: 9, color: PdfColors.grey600),
-                          ),
-                        if (storePhone.isNotEmpty)
-                          pw.Text(
-                            'Tel: $storePhone',
-                            style: const pw.TextStyle(
-                                fontSize: 9, color: PdfColors.grey600),
-                          ),
-                        if (showTaxId && storeTaxId.isNotEmpty)
-                          pw.Text(
-                            'TIN: $storeTaxId',
-                            style: const pw.TextStyle(
-                                fontSize: 9, color: PdfColors.grey600),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            pw.SizedBox(width: 16),
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.end,
-              children: [
-                pw.Text(
-                  'RECEIPT',
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromHex('#E2E8F0'),
-                  ),
-                ),
-                if (showOrderNumber)
-                  pw.Text(
-                    '#$receiptNumber',
-                    style: pw.TextStyle(
-                      fontSize: 10,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColor.fromHex('#64748B'),
-                    ),
-                  ),
-              ],
-            ),
+  /// Compatibility entry point for callers that supply cart lines.
+  static Future<File> createReceiptPdf(
+          {required List<OrderLineItem> items,
+          required double total,
+          required double cashTendered,
+          required double changeDue,
+          required String receiptNumber,
+          required String cashier,
+          required String register,
+          required String date,
+          required String time,
+          required String storeName,
+          required String storeAddress,
+          required String storePhone,
+          required String paymentMethod,
+          String storeTaxId = '',
+          String? storeLogoPath,
+          String header = '',
+          String footer = '',
+          String? customerName,
+          double? discountAmount,
+          String? discountLabel,
+          bool showTaxId = true,
+          bool showOrderNumber = true,
+          bool showDateTime = true,
+          bool showCashier = true,
+          bool showCustomer = true,
+          bool showPaymentMethod = true,
+          bool showItemCount = true,
+          bool showDiscount = true,
+          String currency = 'TSh'}) =>
+      writeReceiptPdf(ReceiptDocument(
+        order: CompletedOrder(
+          id: receiptNumber,
+          dateTime: '$date $time',
+          date: date,
+          time: time,
+          total: total,
+          status: 'Completed',
+          cashierName: cashier,
+          register: register,
+          paymentMethod: paymentMethod,
+          cashTendered: cashTendered,
+          changeDue: changeDue,
+          customerName: customerName,
+          discountAmount: discountAmount,
+          discountLabel: discountLabel,
+          lines: [
+            for (final line in items)
+              OrderLine(
+                  itemCode: line.product.code,
+                  itemCategory: line.product.category,
+                  itemName: line.product.name,
+                  itemSize: line.product.size,
+                  quantity: line.quantity,
+                  unitPrice: line.product.price,
+                  unitPriceValue: line.product.priceValue,
+                  artType: line.product.type,
+                  imagePath: line.product.imagePath)
           ],
         ),
-        pw.SizedBox(height: 12),
-        pw.Container(
-          height: 2,
-          color: PdfColor.fromHex('#334155'),
-        ),
-        if (meta.isNotEmpty) ...[
-          pw.SizedBox(height: 8),
-          pw.Wrap(
-            spacing: 24,
-            runSpacing: 4,
-            children: meta,
-          ),
-        ],
-      ],
-    );
-  }
-
-  static pw.Widget _receiptIntro({
-    required int itemCount,
-    required double total,
-    required double cashTendered,
-    required double changeDue,
-    required bool showItemCount,
-  }) {
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: pw.BoxDecoration(
-        color: PdfColor.fromHex('#F8FAFC'),
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          if (showItemCount) _miniMeta('TOTAL ITEMS', itemCount.toString()),
-          _miniMeta('GRAND TOTAL', _money(total), highlight: true),
-          _miniMeta('CHANGE DUE', _money(changeDue)),
-        ],
-      ),
-    );
-  }
-
-  static pw.Widget _miniMeta(String label, String value,
-      {bool highlight = false}) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          label,
-          style: pw.TextStyle(
-            fontSize: 7,
-            fontWeight: pw.FontWeight.bold,
-            color: PdfColor.fromHex('#94A3B8'),
-            letterSpacing: 0.5,
-          ),
-        ),
-        pw.SizedBox(height: 2),
-        pw.Text(
-          value,
-          style: pw.TextStyle(
-            fontSize: highlight ? 12 : 10,
-            fontWeight: pw.FontWeight.bold,
-            color: highlight
-                ? PdfColor.fromHex('#0F172A')
-                : PdfColor.fromHex('#475569'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static pw.Widget _sectionTitle(String title) {
-    return pw.Text(
-      title.toUpperCase(),
-      style: pw.TextStyle(
-        fontSize: 9,
-        fontWeight: pw.FontWeight.bold,
-        color: PdfColor.fromHex('#475569'),
-        letterSpacing: 0.8,
-      ),
-    );
-  }
-
-  static pw.Widget _metaLine(String label, String value) {
-    return pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
-      children: [
-        pw.Text(
-          '$label: ',
-          style: pw.TextStyle(
-            fontSize: 9,
-            color: PdfColor.fromHex('#64748B'),
-          ),
-        ),
-        pw.Text(
-          value,
-          style: pw.TextStyle(
-            fontSize: 9,
-            fontWeight: pw.FontWeight.bold,
-            color: PdfColor.fromHex('#1E293B'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static pw.Widget _itemsTable(List<OrderLineItem> items) {
-    return pw.Table(
-      columnWidths: const {
-        0: pw.FlexColumnWidth(6),
-        1: pw.FlexColumnWidth(2),
-        2: pw.FlexColumnWidth(3),
-        3: pw.FlexColumnWidth(4),
-      },
-      children: [
-        pw.TableRow(
-          decoration: pw.BoxDecoration(
-            color: PdfColor.fromHex('#F1F5F9'),
-          ),
-          children: [
-            _tableCell('ITEM DESCRIPTION', bold: true, fontSize: 8),
-            _tableCell('QTY',
-                bold: true, fontSize: 8, align: pw.TextAlign.center),
-            _tableCell('PRICE',
-                bold: true, fontSize: 8, align: pw.TextAlign.right),
-            _tableCell('TOTAL',
-                bold: true, fontSize: 8, align: pw.TextAlign.right),
-          ],
-        ),
-        ...items.map(
-          (line) => pw.TableRow(
-            children: [
-              _tableCell(line.product.name),
-              _tableCell('${line.quantity}', align: pw.TextAlign.center),
-              _tableCell(_money(line.product.priceValue),
-                  align: pw.TextAlign.right),
-              _tableCell(_money(line.totalPrice),
-                  bold: true, align: pw.TextAlign.right),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  static pw.Widget _paymentSummary({
-    required double subtotal,
-    required double discount,
-    required String? discountLabel,
-    required double total,
-    required double cashTendered,
-    required double changeDue,
-    required bool showDiscount,
-  }) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-      children: [
-        _summaryLine('Subtotal', _money(subtotal)),
-        if (showDiscount && discount > 0)
-          _summaryLine(
-            discountLabel ?? 'Discount',
-            '- ${_money(discount)}',
-            color: PdfColor.fromHex('#E11D48'),
-          ),
-        pw.SizedBox(height: 4),
-        pw.Container(height: 1, color: PdfColor.fromHex('#E2E8F0')),
-        pw.SizedBox(height: 4),
-        _summaryLine('Total Amount', _money(total), isBold: true, fontSize: 11),
-        pw.SizedBox(height: 8),
-        _summaryLine('Cash Tendered', _money(cashTendered), fontSize: 9),
-        _summaryLine('Change Due', _money(changeDue),
-            color: PdfColor.fromHex('#059669'), isBold: true, fontSize: 10),
-      ],
-    );
-  }
-
-  static pw.Widget _tableCell(
-    String value, {
-    bool bold = false,
-    double fontSize = 8.5,
-    pw.TextAlign align = pw.TextAlign.left,
-  }) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: pw.Text(
-        value,
-        textAlign: align,
-        style: pw.TextStyle(
-          fontSize: fontSize,
-          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: PdfColor.fromHex('#1E293B'),
-        ),
-      ),
-    );
-  }
-
-  static pw.Widget _summaryLine(
-    String label,
-    String value, {
-    bool isBold = false,
-    double fontSize = 9,
-    PdfColor? color,
-  }) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 2),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(
-            label,
-            style: pw.TextStyle(
-              fontSize: fontSize,
-              fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-              color: PdfColor.fromHex('#475569'),
-            ),
-          ),
-          pw.Text(
-            value,
-            style: pw.TextStyle(
-              fontSize: fontSize,
-              fontWeight: pw.FontWeight.bold,
-              color: color ?? PdfColor.fromHex('#0F172A'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        storeName: storeName,
+        storeAddress: storeAddress,
+        storePhone: storePhone,
+        storeTaxId: storeTaxId,
+        storeLogoPath: storeLogoPath,
+        currency: currency,
+        settings: ReceiptSettings(
+            header: header,
+            footer: footer,
+            showTaxId: showTaxId,
+            showOrderNumber: showOrderNumber,
+            showDateTime: showDateTime,
+            showCashier: showCashier,
+            showCustomer: showCustomer,
+            showPaymentMethod: showPaymentMethod,
+            showItemCount: showItemCount,
+            showDiscount: showDiscount),
+      ));
 }

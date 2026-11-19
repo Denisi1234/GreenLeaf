@@ -12,6 +12,10 @@ import 'package:track_mauzo/service/pos_order_models.dart';
 import 'package:track_mauzo/ui/models/product_item.dart';
 import 'package:track_mauzo/ui/home/sales_page.dart';
 import 'package:track_mauzo/ui/more/settings_page.dart';
+import 'package:track_mauzo/ui/more/more_page.dart';
+import 'package:track_mauzo/ui/more/help_support_page.dart';
+import 'package:track_mauzo/ui/more/privacy_policy_page.dart';
+import 'package:track_mauzo/ui/reports/reports_catalog_page.dart';
 import 'package:track_mauzo/ui/payment/payment_page.dart';
 import 'package:track_mauzo/ui/products/inventory_product_item.dart';
 import 'package:track_mauzo/ui/products/product_management_page.dart';
@@ -19,6 +23,12 @@ import 'package:track_mauzo/ui/suppliers/receiving_page.dart';
 import 'package:track_mauzo/ui/widgets/app_theme.dart';
 
 class _ReviewStore extends PosLocalStore {
+  int logoutCalls = 0;
+  @override
+  Future<void> logout() async {
+    logoutCalls++;
+  }
+
   int saves = 0;
   int clears = 0;
   final _cart = <ProductItem>[];
@@ -154,6 +164,7 @@ void main() {
       ]),
       'receiving': const NewReceivingPage(),
       'settings': const SettingsPage(),
+      'more': const MorePage(useSharedShell: true),
     }.entries) {
       testWidgets('${entry.key} fits ${width.toInt()}px', (tester) async {
         await _mount(tester, entry.value, Size(width, 900));
@@ -338,6 +349,80 @@ void main() {
     await tester.tap(find.text('Review & checkout'));
     await tester.pumpAndSettle();
     expect(find.byType(PaymentPage), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('More keeps useful tools and removes placeholder content',
+      (tester) async {
+    await _mount(
+        tester, const MorePage(useSharedShell: true), const Size(1440, 1000));
+    for (final id in [
+      'customers',
+      'debtors',
+      'suppliers',
+      'receiving',
+      'register',
+      'expenses',
+      'reports',
+      'accounts',
+      'assets',
+      'bank',
+      'tax',
+      'stores',
+      'staff',
+      'settings',
+      'sync',
+      'help',
+      'privacy',
+      'about'
+    ]) {
+      expect(find.byKey(ValueKey('more-$id')), findsOneWidget);
+    }
+    expect(find.text('Aza POS'), findsNothing);
+    expect(find.text('Version 1.0.0'), findsNothing);
+    expect(find.text('Rate this app'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'Help & support');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('more-help')));
+    await tester.pumpAndSettle();
+    expect(find.byType(HelpSupportPage), findsOneWidget);
+    await tester.tap(find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.label == 'Back'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Privacy policy');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('more-privacy')));
+    await tester.pumpAndSettle();
+    expect(find.byType(PrivacyPolicyPage), findsOneWidget);
+    await tester.tap(find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.label == 'Back'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Reports');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('more-reports')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ReportsCatalogPage), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('More handles unmatched searches and confirms sign out',
+      (tester) async {
+    final store = await _mount(
+        tester, const MorePage(useSharedShell: true), const Size(390, 900));
+    await tester.enterText(find.byType(TextField), 'no-match-123');
+    await tester.pumpAndSettle();
+    expect(find.text('No matching tools'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('more-sign-out')));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Are you sure you want to end your session?'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(store.logoutCalls, 0);
+    await tester.tap(find.byTooltip('Clear search'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('more-customers')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -42,7 +42,7 @@ class DiscountsReportPage extends StatelessWidget {
     return [
       MetricData(
         title: 'Total Discounts Given',
-        value: '₹${NumberFormat('#,##0.##').format(totalDiscounts)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalDiscounts)}',
         icon: Icons.local_offer,
         iconColor: AppColors.ink,
         tint: AppColors.ink.withValues(alpha: 0.1),
@@ -95,7 +95,7 @@ class DiscountsReportPage extends StatelessWidget {
               label: row[0].toString(),
               value: (row[2] as num).toDouble(),
               displayValue:
-                  '₹${NumberFormat('#,##0').format((row[2] as num).toDouble())}',
+                  'TSh ${NumberFormat('#,##0').format((row[2] as num).toDouble())}',
             ))
         .toList();
     final maxValue = trendPoints.isEmpty
@@ -132,7 +132,7 @@ class DiscountsReportPage extends StatelessWidget {
               Expanded(
                 child: _DiscountStat(
                   label: 'Total Discount Value',
-                  value: '₹${NumberFormat('#,##0').format(totalDiscounts)}',
+                  value: 'TSh ${NumberFormat('#,##0').format(totalDiscounts)}',
                   color: AppColors.ink,
                 ),
               ),
@@ -151,7 +151,7 @@ class DiscountsReportPage extends StatelessWidget {
                 child: _DiscountStat(
                   label: 'Avg Discount/Sale',
                   value:
-                      '₹${NumberFormat('#,##0.##').format(avgDiscountPerSale)}',
+                      'TSh ${NumberFormat('#,##0.##').format(avgDiscountPerSale)}',
                   color: Color(0xFF15803D),
                 ),
               ),
@@ -204,7 +204,7 @@ class DiscountsReportPage extends StatelessWidget {
     insights.add(InsightCard(
       title: 'Most Used Discount',
       description:
-          '"$topDiscountName" represents ${topDiscountShare.toStringAsFixed(1)}% of all discounts (₹${NumberFormat('#,##0').format(topDiscountAmount)})',
+          '"$topDiscountName" represents ${topDiscountShare.toStringAsFixed(1)}% of all discounts (TSh ${NumberFormat('#,##0').format(topDiscountAmount)})',
       icon: Icons.local_offer,
       color: AppColors.ink,
       severity: InsightSeverity.info,

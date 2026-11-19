@@ -951,14 +951,7 @@ class PdfReportService {
   }
 
   static String _categoryFocusSentence(BusinessCategory category) {
-    return switch (category) {
-      BusinessCategory.pharmacy =>
-        'This report emphasizes expiry control, prescription demand, and margin protection for medicine sales.',
-      BusinessCategory.electronics =>
-        'This report emphasizes high-value devices, warranty readiness, and brand performance across the catalog.',
-      BusinessCategory.retail =>
-        'This report emphasizes basket size, fast-moving stock, markdown pressure, and reorder timing for store-floor decisions.',
-    };
+    return 'This report emphasizes basket size, fast-moving stock, markdown pressure, and reorder timing for store-floor decisions.';
   }
 
   static String _buildPdfConclusion(
@@ -1083,14 +1076,7 @@ class PdfReportService {
   }
 
   static String _forecastCategoryHint(BusinessCategory category) {
-    return switch (category) {
-      BusinessCategory.pharmacy =>
-        'Expiry and prescription demand are the main near-term forecast risks.',
-      BusinessCategory.electronics =>
-        'Warranty registration and premium device mix drive the forecast band.',
-      BusinessCategory.retail =>
-        'Demand should stay anchored around basket size, fast movers, and markdown activity.',
-    };
+    return 'Demand should stay anchored around basket size, fast movers, and markdown activity.';
   }
 
   static List<CompletedOrder> _ordersWithinRange(

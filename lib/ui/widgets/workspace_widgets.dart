@@ -107,3 +107,98 @@ class WorkspaceStatus extends StatelessWidget {
         child: Text(label, style: AppTypography.label.copyWith(color: color)),
       );
 }
+
+/// Keeps operational pages and their forms at a comfortable reading width.
+class ManagementViewport extends StatelessWidget {
+  const ManagementViewport(
+      {super.key, required this.child, this.maxWidth = 1280});
+  final Widget child;
+  final double maxWidth;
+  @override
+  Widget build(BuildContext context) => Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth), child: child),
+      );
+}
+
+/// Shared desktop register; compact screens keep their task-specific cards.
+class WorkspaceRegister extends StatefulWidget {
+  const WorkspaceRegister(
+      {super.key,
+      required this.columns,
+      required this.rows,
+      required this.mobile});
+  final List<DataColumn> columns;
+  final List<DataRow> rows;
+  final Widget mobile;
+  @override
+  State<WorkspaceRegister> createState() => _WorkspaceRegisterState();
+}
+
+class _WorkspaceRegisterState extends State<WorkspaceRegister> {
+  int _page = 0;
+  static const _pageSize = 25;
+  @override
+  void didUpdateWidget(covariant WorkspaceRegister oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.rows.length != widget.rows.length) _page = 0;
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) {
+        if (constraints.maxWidth < 800) return widget.mobile;
+        final last =
+            widget.rows.isEmpty ? 0 : (widget.rows.length - 1) ~/ _pageSize;
+        final page = _page.clamp(0, last);
+        final rows =
+            widget.rows.skip(page * _pageSize).take(_pageSize).toList();
+        return WorkspacePanel(
+            padding: EdgeInsets.zero,
+            child: Column(children: [
+              SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minWidth: constraints.maxWidth),
+                      child: DataTable(
+                        columns: widget.columns,
+                        rows: rows,
+                        showCheckboxColumn: false,
+                        headingRowColor: const WidgetStatePropertyAll(
+                            AppColors.surfaceSecondary),
+                        headingTextStyle: AppTypography.tableHeader,
+                        dataTextStyle: AppTypography.bodySmall,
+                        horizontalMargin: 20,
+                        columnSpacing: 24,
+                        dataRowMinHeight: 60,
+                        dataRowMaxHeight: 80,
+                      ))),
+              if (widget.rows.length > _pageSize)
+                Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(children: [
+                      Expanded(
+                          child: Text(
+                              '${page * _pageSize + 1}–${page * _pageSize + rows.length} / ${widget.rows.length}',
+                              style: AppTypography.label)),
+                      IconButton(
+                          tooltip: MaterialLocalizations.of(context)
+                              .previousPageTooltip,
+                          onPressed: page == 0
+                              ? null
+                              : () => setState(() => _page = page - 1),
+                          icon: const Icon(Icons.chevron_left_rounded)),
+                      IconButton(
+                          tooltip:
+                              MaterialLocalizations.of(context).nextPageTooltip,
+                          onPressed: page == last
+                              ? null
+                              : () => setState(() => _page = page + 1),
+                          icon: const Icon(Icons.chevron_right_rounded)),
+                    ])),
+            ]));
+      });
+}

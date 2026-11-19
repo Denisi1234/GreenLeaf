@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'daftari_recovery_models.dart';
-import 'duka_ai_service.dart';
 import 'php_api_client.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
@@ -165,89 +163,6 @@ class PosCloudDatabase extends PosLocalDatabase {
 
   @override
   Future<void> deleteExpense(int id) => api.delete('expenses', '$id');
-
-  @override
-  Future<List<DaftariRecoverySession>> loadDaftariSessions(
-          String storeId) async =>
-      (await _readAllowedRows('recovery-sessions'))
-          .map(DaftariRecoverySession.fromMap)
-          .toList();
-
-  @override
-  Future<void> upsertDaftariSession(
-          DaftariRecoverySession session, String storeId) async =>
-      api.put('recovery-sessions', session.id, await _images(session.toMap()));
-
-  @override
-  Future<List<DaftariLearningRule>> loadDaftariLearningRules(
-          String storeId) async =>
-      (await _readAllowedRows('learning-rules'))
-          .map(DaftariLearningRule.fromMap)
-          .toList();
-
-  @override
-  Future<void> upsertDaftariLearningRule(
-          DaftariLearningRule rule, String storeId) =>
-      api.put('learning-rules', rule.id, rule.toMap());
-
-  @override
-  Future<List<DukaAiThread>> loadDukaAiThreads(String storeId) async =>
-      (await _readAllowedRows('ai-threads'))
-          .map((row) => DukaAiThread(
-                id: row['id'] as String,
-                title: row['title'] as String,
-                preview: row['preview'] as String? ?? '',
-                createdAt: row['created_at'] as String,
-                updatedAt: row['updated_at'] as String,
-              ))
-          .toList();
-
-  @override
-  Future<void> upsertDukaAiThread(DukaAiThread thread, String storeId) =>
-      api.put('ai-threads', thread.id, {
-        'id': thread.id,
-        'title': thread.title,
-        'preview': thread.preview,
-        'created_at': thread.createdAt,
-        'updated_at': thread.updatedAt,
-      });
-
-  @override
-  Future<void> deleteDukaAiThread(String threadId) =>
-      api.delete('ai-threads', threadId);
-
-  @override
-  Future<List<DukaAiMessage>> loadDukaAiMessages(String threadId) async =>
-      (await _readAllowedRows('ai-messages'))
-          .where((row) => row['thread_id'] == threadId)
-          .map((row) => DukaAiMessage(
-                role: row['role'] as String,
-                content: row['content'] as String,
-                imagePath: row['image_path'] as String?,
-                createdAt: row['created_at'] as String?,
-              ))
-          .toList();
-
-  @override
-  Future<void> replaceDukaAiMessages(
-      String threadId, List<DukaAiMessage> messages, String storeId) async {
-    final others = (await _readAllowedRows('ai-messages'))
-        .where((row) => row['thread_id'] != threadId)
-        .toList();
-    await api.replace('ai-messages', [
-      ...others,
-      for (var index = 0; index < messages.length; index++)
-        {
-          'id': '$threadId:$index',
-          'thread_id': threadId,
-          'role': messages[index].role,
-          'content': messages[index].content,
-          'image_path': messages[index].imagePath,
-          'created_at':
-              messages[index].createdAt ?? DateTime.now().toIso8601String(),
-        },
-    ]);
-  }
 
   Map<String, Object?> _orderToMap(CompletedOrder order) => {
         'id': order.id,

@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -43,27 +44,29 @@ class CustomerDetailsPage extends StatelessWidget {
         if (customer == null) {
           return Scaffold(
             backgroundColor: AppColors.pageBackground,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  MarketPageHeader(
-                    title:
-                        _dual(strings, 'Customer details', 'Maelezo ya mteja'),
-                    showBorder: false,
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        _dual(strings, 'Customer no longer exists',
-                            'Mteja haipo tena'),
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textMuted),
+            body: ManagementViewport(
+                maxWidth: 1280,
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      MarketPageHeader(
+                        title: _dual(
+                            strings, 'Customer details', 'Maelezo ya mteja'),
+                        showBorder: false,
                       ),
-                    ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            _dual(strings, 'Customer no longer exists',
+                                'Mteja haipo tena'),
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textMuted),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                )),
           );
         }
 
@@ -93,80 +96,84 @@ class _CustomerDetailsView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: _dual(strings, 'Customer details', 'Maelezo ya mteja'),
-              subtitle: _dual(strings, 'Profile, credit and order history',
-                  'Wasifu, mkopo na historia ya oda'),
-              showBorder: false,
-              actions: [
-                IconButton(
-                  tooltip: _dual(strings, 'Edit', 'Hariri'),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => CreateCustomerPage(existing: customer),
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: _dual(strings, 'Customer details', 'Maelezo ya mteja'),
+                  subtitle: _dual(strings, 'Profile, credit and order history',
+                      'Wasifu, mkopo na historia ya oda'),
+                  showBorder: false,
+                  actions: [
+                    IconButton(
+                      tooltip: _dual(strings, 'Edit', 'Hariri'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              CreateCustomerPage(existing: customer),
+                        ),
+                      ),
+                      icon:
+                          const Icon(Icons.edit_outlined, color: AppColors.ink),
                     ),
-                  ),
-                  icon: const Icon(Icons.edit_outlined, color: AppColors.ink),
+                    IconButton(
+                      tooltip: _dual(strings, 'Delete', 'Futa'),
+                      onPressed: () => _confirmDelete(context, customer, store),
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: _dual(strings, 'Delete', 'Futa'),
-                  onPressed: () => _confirmDelete(context, customer, store),
-                  icon: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.danger,
+                Expanded(
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 32),
+                    children: [
+                      _HeroCard(
+                        customer: customer,
+                        tier: tier,
+                        points: points,
+                        strings: strings,
+                      ),
+                      if (customer.debitBalance > 0 || ledger.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _DebitSection(
+                          customer: customer,
+                          entries: ledger,
+                          strings: strings,
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      _ContactActions(customer: customer, strings: strings),
+                      const SizedBox(height: 16),
+                      _StatsGrid(
+                        totalSpent: totalSpent,
+                        orderCount: orders.length,
+                        averageOrder: averageOrder,
+                        lastOrder: lastOrder,
+                        strings: strings,
+                      ),
+                      if (customer.address.trim().isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _InfoBlock(
+                          icon: Icons.location_on_outlined,
+                          label: _dual(strings, 'Address', 'Anwani'),
+                          value: customer.address.trim(),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      _OrdersSection(orders: orders, strings: strings),
+                    ],
                   ),
                 ),
               ],
             ),
-            Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(18, 4, 18, 32),
-                children: [
-                  _HeroCard(
-                    customer: customer,
-                    tier: tier,
-                    points: points,
-                    strings: strings,
-                  ),
-                  if (customer.debitBalance > 0 || ledger.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _DebitSection(
-                      customer: customer,
-                      entries: ledger,
-                      strings: strings,
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  _ContactActions(customer: customer, strings: strings),
-                  const SizedBox(height: 16),
-                  _StatsGrid(
-                    totalSpent: totalSpent,
-                    orderCount: orders.length,
-                    averageOrder: averageOrder,
-                    lastOrder: lastOrder,
-                    strings: strings,
-                  ),
-                  if (customer.address.trim().isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    _InfoBlock(
-                      icon: Icons.location_on_outlined,
-                      label: _dual(strings, 'Address', 'Anwani'),
-                      value: customer.address.trim(),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  _OrdersSection(orders: orders, strings: strings),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 
@@ -278,7 +285,7 @@ class _HeroCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -952,7 +959,7 @@ class _StatCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1001,7 +1008,7 @@ class _InfoBlock extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1066,7 +1073,7 @@ class _OrdersSection extends StatelessWidget {
           MarketSurfaceCard(
             padding: const EdgeInsets.all(24),
             borderColor: AppColors.border,
-            radius: 0,
+            radius: AppRadius.standard,
             showShadow: false,
             child: Column(
               children: [
@@ -1125,7 +1132,7 @@ class _OrderTile extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Row(
         children: [

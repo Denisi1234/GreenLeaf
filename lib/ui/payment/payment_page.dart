@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../../service/pos_suspended_sale_model.dart';
 import '../business_category_config.dart';
 import '../models/product_item.dart';
 import '../widgets/app_design.dart';
@@ -15,6 +16,11 @@ import '../more/customers_page.dart';
 import 'record_debit_bottom_sheet.dart';
 import '../../utils/currency_formatter.dart';
 import '../../service/app_notification_service.dart';
+import 'widgets/line_discount_dialog.dart';
+import 'widgets/order_lines_list.dart';
+import 'widgets/payment_cash_received_sheet.dart';
+import 'widgets/payment_discount_sheet.dart';
+import 'widgets/payment_totals_summary_panel.dart';
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({
@@ -35,6 +41,7 @@ class _PaymentPageState extends State<PaymentPage> {
   String? _discountLabel;
   double? _cashReceived;
   String _paymentMethod = 'Cash';
+  final List<SplitPaymentEntry> _splitPayments = [];
   bool _savingSale = false;
   bool _saleCompleted = false;
 
@@ -60,6 +67,10 @@ class _PaymentPageState extends State<PaymentPage> {
   double get _appliedDiscount => _discountAmount.clamp(0, _subtotal);
   double get _grandTotal =>
       (_subtotal + _tax - _appliedDiscount).clamp(0, double.infinity);
+  double get _totalSplitPaid =>
+      _splitPayments.fold<double>(0.0, (sum, p) => sum + p.amount);
+  double get _remainingDue =>
+      (_grandTotal - _totalSplitPaid).clamp(0, double.infinity);
   double get _changeDue =>
       (_cashReceived != null && _cashReceived! > _grandTotal)
           ? _cashReceived! - _grandTotal
@@ -69,19 +80,9 @@ class _PaymentPageState extends State<PaymentPage> {
   bool get _hasItems => _orderLines.isNotEmpty;
   BusinessCategoryConfig get _config =>
       context.read<PosLocalStore>().businessCategoryConfig;
-  String get _paymentTitle => switch (_config.category) {
-        BusinessCategory.pharmacy => 'Dispense Sale',
-        BusinessCategory.electronics => 'Counter',
-        BusinessCategory.retail => 'Counter',
-      };
-  String get _paymentSubtitle => switch (_config.category) {
-        BusinessCategory.pharmacy =>
-          'Keep insurance and prescription context close to the sale.',
-        BusinessCategory.electronics =>
-          'Manage the cart, discounts, and payment with ease.',
-        BusinessCategory.retail =>
-          'Manage the cart, discounts, and payment with ease.',
-      };
+  String get _paymentTitle => 'Counter';
+  String get _paymentSubtitle =>
+      'Manage the cart, discounts, and payment with ease.';
 
   String _amount(double value) => formatCurrency(value);
 
@@ -113,6 +114,14 @@ class _PaymentPageState extends State<PaymentPage> {
         _orderLines.remove(line);
       }
     });
+  }
+
+  Future<void> _editLineDiscount(OrderLineItem line) async {
+    if (_savingSale) return;
+    final updated = await LineDiscountDialog.show(context, line);
+    if (updated == true && mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _clearCart() async {
@@ -206,15 +215,11 @@ class _PaymentPageState extends State<PaymentPage> {
   Future<void> _applyDiscount() async {
     final category =
         context.read<PosLocalStore>().businessCategoryConfig.category;
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _DiscountBottomSheet(
-        subtotal: _subtotal,
-        currentAmount: _discountAmount,
-        category: category,
-      ),
+    final result = await PaymentDiscountSheet.show(
+      context,
+      subtotal: _subtotal,
+      currentAmount: _discountAmount,
+      category: category,
     );
 
     if (result != null && mounted) {
@@ -229,15 +234,11 @@ class _PaymentPageState extends State<PaymentPage> {
     if (!_validateStockBeforeCheckout()) return;
     final category =
         context.read<PosLocalStore>().businessCategoryConfig.category;
-    final result = await showModalBottomSheet<double>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _CashReceivedBottomSheet(
-        grandTotal: _grandTotal,
-        currentAmount: _cashReceived,
-        category: category,
-      ),
+    final result = await PaymentCashReceivedSheet.show(
+      context,
+      grandTotal: _grandTotal,
+      currentAmount: _cashReceived,
+      category: category,
     );
 
     if (result != null && mounted) {
@@ -273,8 +274,35 @@ class _PaymentPageState extends State<PaymentPage> {
     }
   }
 
+  Future<void> _addSplitPayment(String method, double amount) async {
+    if (amount <= 0) return;
+    setState(() {
+      _splitPayments.add(SplitPaymentEntry(method: method, amount: amount));
+    });
+  }
+
+  void _removeSplitPayment(int index) {
+    setState(() {
+      _splitPayments.removeAt(index);
+    });
+  }
+
   Future<void> _confirmPayment() async {
     if (_savingSale || !_hasItems) return;
+    if (_splitPayments.isNotEmpty) {
+      if (_remainingDue > 0) {
+        showMarketNotice(
+          context,
+          title: 'Remaining Balance',
+          message: 'Please add payment for remaining TSh${_amount(_remainingDue)}',
+          type: MarketNoticeType.warning,
+        );
+        return;
+      }
+      final methodsSummary = _splitPayments.map((p) => '${p.method} (${_amount(p.amount)})').join(' + ');
+      await _completeSale(paymentMethod: 'Split: $methodsSummary');
+      return;
+    }
     if (_paymentMethod == 'Cash' && _cashReceived == null) {
       await _enterCashReceived();
       if (!mounted || _cashReceived == null) return;
@@ -399,7 +427,7 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
     final config = context.watch<PosLocalStore>().businessCategoryConfig;
-    final totals = _TotalsPanel(
+    final totals = PaymentTotalsSummaryPanel(
       category: config.category,
       subtotal: _amount(_subtotal),
       tax: _amount(_tax),
@@ -423,6 +451,10 @@ class _PaymentPageState extends State<PaymentPage> {
         _discountAmount = 0;
         _discountLabel = null;
       }),
+      splitPayments: _splitPayments,
+      remainingDue: _remainingDue,
+      onAddSplit: (method, amount) => _addSplitPayment(method, amount),
+      onRemoveSplit: (index) => _removeSplitPayment(index),
     );
     final charge = FilledButton.icon(
       key: const ValueKey('complete-sale'),
@@ -482,15 +514,13 @@ class _PaymentPageState extends State<PaymentPage> {
                   style: AppTypography.label),
             ])),
         const Divider(height: 1),
-        if (_hasItems)
-          ..._orderLines.map((line) => _CounterLineTile(
-                line: line,
-                amountText: _amount(line.totalPrice),
-                onIncrease: () => _increaseQuantity(line),
-                onDecrease: () => _decreaseQuantity(line),
-              ))
-        else
-          const _EmptyCounterState(),
+        OrderLinesList(
+          orderLines: _orderLines,
+          hasItems: _hasItems,
+          onIncrease: _increaseQuantity,
+          onDecrease: _decreaseQuantity,
+          onEditDiscount: _editLineDiscount,
+        ),
         Padding(
             padding: const EdgeInsets.all(12),
             child: _CounterActionRow(onAddItem: () {
@@ -510,292 +540,92 @@ class _PaymentPageState extends State<PaymentPage> {
       backgroundColor: AppColors.pageBackground,
       body: PopScope(
           canPop: !_savingSale,
-          child: SafeArea(
-              child: Column(children: [
-            MarketPageHeader(
-              title: _paymentTitle,
-              subtitle: _paymentSubtitle,
-              onBack: () {
-                if (!_savingSale) Navigator.of(context).pop();
-              },
-              showBackButton: true,
-              centerTitle: false,
-            ),
-            Expanded(child: LayoutBuilder(builder: (context, constraints) {
-              if (constraints.maxWidth >= 1000) {
-                return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                            child: ListView(children: [
-                          cart,
-                          const SizedBox(height: 8),
-                          clear
-                        ])),
-                        const SizedBox(width: 24),
-                        SizedBox(
-                            width: 370,
-                            child: Column(children: [
-                              Expanded(
-                                  child: ListView(children: [
-                                customer,
-                                const SizedBox(height: 16),
-                                WorkspacePanel(
-                                    padding: const EdgeInsets.all(8),
-                                    child: AbsorbPointer(
-                                        absorbing: _savingSale, child: totals)),
-                              ])),
-                              const SizedBox(height: 16),
-                              charge,
-                            ])),
-                      ]),
-                );
-              }
-              return Column(children: [
-                Expanded(
-                    child:
-                        ListView(padding: const EdgeInsets.all(16), children: [
-                  customer,
-                  const SizedBox(height: 16),
-                  cart,
-                  const SizedBox(height: 16),
-                  WorkspacePanel(
-                      padding: const EdgeInsets.all(4),
-                      child:
-                          AbsorbPointer(absorbing: _savingSale, child: totals)),
-                  const SizedBox(height: 8),
-                  clear,
-                ])),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  decoration: const BoxDecoration(
-                      color: AppColors.surface,
-                      border: Border(top: BorderSide(color: AppColors.border))),
-                  child: charge,
+          child: Stack(
+            children: [
+              SafeArea(
+                  child: Column(children: [
+                MarketPageHeader(
+                  title: _paymentTitle,
+                  subtitle: _paymentSubtitle,
+                  onBack: () {
+                    if (!_savingSale) Navigator.of(context).pop();
+                  },
+                  showBackButton: true,
+                  centerTitle: false,
                 ),
-              ]);
-            })),
-          ]))),
+                Expanded(child: LayoutBuilder(builder: (context, constraints) {
+                  if (constraints.maxWidth >= 1000) {
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                                child: ListView(children: [
+                              cart,
+                              const SizedBox(height: 8),
+                              clear
+                            ])),
+                            const SizedBox(width: 24),
+                            SizedBox(
+                                width: 370,
+                                child: Column(children: [
+                                  Expanded(
+                                      child: ListView(children: [
+                                    customer,
+                                    const SizedBox(height: 16),
+                                    WorkspacePanel(
+                                        padding: const EdgeInsets.all(8),
+                                        child: AbsorbPointer(
+                                            absorbing: _savingSale, child: totals)),
+                                  ])),
+                                  const SizedBox(height: 16),
+                                  charge,
+                                ])),
+                          ]),
+                    );
+                  }
+                  return Column(children: [
+                    Expanded(
+                        child:
+                            ListView(padding: const EdgeInsets.all(16), children: [
+                      customer,
+                      const SizedBox(height: 16),
+                      cart,
+                      const SizedBox(height: 16),
+                      WorkspacePanel(
+                          padding: const EdgeInsets.all(4),
+                          child:
+                              AbsorbPointer(absorbing: _savingSale, child: totals)),
+                      const SizedBox(height: 8),
+                      clear,
+                    ])),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      decoration: const BoxDecoration(
+                          color: AppColors.surface,
+                          border: Border(top: BorderSide(color: AppColors.border))),
+                      child: charge,
+                    ),
+                  ]);
+                })),
+              ])),
+              if (_savingSale)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  child: const MarketLoadingView(
+                    message: 'Processing Transaction…',
+                    subMessage: 'Finalizing invoice, adjusting stock, and logging payment',
+                    color: AppColors.successDeep,
+                  ),
+                ),
+            ],
+          )),
     );
   }
 }
 
-String _clearLabel(BusinessCategory category) {
-  return switch (category) {
-    BusinessCategory.pharmacy => 'Clear Basket',
-    BusinessCategory.electronics => 'Clear',
-    BusinessCategory.retail => 'Clear',
-  };
-}
-
-String _totalsSummaryLabel(
-  BusinessCategory category,
-  int itemTypes,
-  int unitCount,
-) {
-  final base = '$itemTypes Items | $unitCount Units';
-  return switch (category) {
-    BusinessCategory.pharmacy => '$base | Pharmacy Sale',
-    BusinessCategory.electronics => base,
-    BusinessCategory.retail => base,
-  };
-}
-
-class _CounterLineTile extends StatelessWidget {
-  const _CounterLineTile({
-    required this.line,
-    required this.amountText,
-    required this.onIncrease,
-    required this.onDecrease,
-  });
-
-  final OrderLineItem line;
-  final String amountText;
-  final VoidCallback onIncrease;
-  final VoidCallback onDecrease;
-
-  @override
-  Widget build(BuildContext context) {
-    final identity =
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(line.product.name,
-          style:
-              AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
-      const SizedBox(height: 5),
-      Text(
-          [
-            if (line.product.code?.isNotEmpty ?? false) line.product.code!,
-            line.product.size
-          ].where((part) => part.isNotEmpty).join(' • '),
-          style: AppTypography.label),
-      const SizedBox(height: 4),
-      Text('TSh ${formatCurrency(line.product.priceValue)} each',
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
-    ]);
-    final stepper = _QuantityStepper(
-        quantity: line.quantity,
-        onDecrease: onDecrease,
-        onIncrease: onIncrease);
-    final total = Text('TSh $amountText',
-        style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w800));
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.borderLight))),
-      child: LayoutBuilder(builder: (context, constraints) {
-        if (constraints.maxWidth >= 520) {
-          return Row(children: [
-            Expanded(child: identity),
-            const SizedBox(width: 20),
-            stepper,
-            const SizedBox(width: 20),
-            SizedBox(
-                width: 140,
-                child: Align(alignment: Alignment.centerRight, child: total))
-          ]);
-        }
-        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          identity,
-          const SizedBox(height: 16),
-          Row(children: [
-            stepper,
-            const SizedBox(width: 12),
-            Expanded(
-                child: Align(alignment: Alignment.centerRight, child: total))
-          ]),
-        ]);
-      }),
-    );
-  }
-}
-
-class _QuantityStepper extends StatelessWidget {
-  const _QuantityStepper({
-    required this.quantity,
-    required this.onDecrease,
-    required this.onIncrease,
-  });
-
-  final int quantity;
-  final VoidCallback onDecrease;
-  final VoidCallback onIncrease;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _StepperButton(
-            icon: Icons.remove_rounded,
-            color: AppColors.textBody,
-            backgroundColor: AppColors.surfaceSecondary,
-            tooltip: 'Remove one',
-            onTap: onDecrease,
-          ),
-          Container(
-            width: 36,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              border: Border.symmetric(
-                vertical: BorderSide(color: Color(0xFFE2E8F0)),
-              ),
-            ),
-            child: Text(
-              '$quantity',
-              style: const TextStyle(
-                color: AppColors.ink,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          _StepperButton(
-            icon: Icons.add_rounded,
-            color: AppColors.textBody,
-            backgroundColor: AppColors.surfaceSecondary,
-            tooltip: 'Add one',
-            onTap: onIncrease,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StepperButton extends StatelessWidget {
-  const _StepperButton({
-    required this.icon,
-    required this.color,
-    this.backgroundColor,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color color;
-  final Color? backgroundColor;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: backgroundColor ?? Colors.transparent,
-        borderRadius: BorderRadius.circular(9),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(9),
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(icon, color: color, size: 24),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyCounterState extends StatelessWidget {
-  const _EmptyCounterState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const MarketSurfaceCard(
-      padding: EdgeInsets.all(24),
-      child: SizedBox(
-        height: 92,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.remove_shopping_cart_outlined,
-                size: 36, color: Color(0xFF9CA3AF)),
-            SizedBox(height: 10),
-            Text(
-              'No items in this counter yet',
-              style: TextStyle(
-                color: AppColors.ink,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+String _clearLabel(BusinessCategory category) => 'Clear';
 
 class _CounterActionRow extends StatelessWidget {
   const _CounterActionRow({
@@ -831,434 +661,13 @@ class _CounterActionRow extends StatelessWidget {
   }
 }
 
-class _TotalsPanel extends StatelessWidget {
-  const _TotalsPanel({
-    required this.category,
-    required this.subtotal,
-    required this.tax,
-    this.discount,
-    required this.grandTotal,
-    this.cashReceived,
-    this.changeDue,
-    required this.itemTypes,
-    required this.unitCount,
-    required this.onEnterCash,
-    required this.onAddDiscount,
-    required this.onRecordDebit,
-    required this.paymentMethod,
-    required this.onMethodChanged,
-    required this.onExactCash,
-    required this.onRemoveDiscount,
-  });
 
-  final BusinessCategory category;
-  final String subtotal;
-  final String tax;
-  final String? discount;
-  final String grandTotal;
-  final String? cashReceived;
-  final String? changeDue;
-  final int itemTypes;
-  final int unitCount;
-  final VoidCallback onEnterCash;
-  final VoidCallback onAddDiscount;
-  final VoidCallback onRecordDebit;
-  final String paymentMethod;
-  final ValueChanged<String> onMethodChanged;
-  final VoidCallback onExactCash;
-  final VoidCallback onRemoveDiscount;
 
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Sale summary', style: AppTypography.sectionHeader),
-          const SizedBox(height: 4),
-          Text(_totalsSummaryLabel(category, itemTypes, unitCount),
-              style: AppTypography.label),
-          const SizedBox(height: 20),
-          _SummaryRow(
-              label: 'Subtotal',
-              value: 'TSh $subtotal',
-              valueColor: AppColors.ink),
-          const SizedBox(height: 10),
-          _SummaryRow(
-              label: 'Tax', value: 'TSh $tax', valueColor: AppColors.textBody),
-          if (discount != null) ...[
-            const SizedBox(height: 10),
-            _SummaryRow(
-                label: 'Discount',
-                value: '− TSh $discount',
-                valueColor: AppColors.successDeep),
-          ],
-          const Divider(height: 32, color: AppColors.border),
-          Text('Total due', style: AppTypography.label),
-          const SizedBox(height: 6),
-          SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text('TSh $grandTotal',
-                      style: AppTypography.h1.copyWith(fontSize: 30)))),
-          const SizedBox(height: 20),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            OutlinedButton.icon(
-                onPressed: onAddDiscount,
-                icon: const Icon(Icons.discount_outlined, size: 18),
-                label:
-                    Text(discount == null ? 'Add discount' : 'Edit discount')),
-            if (discount != null)
-              IconButton(
-                  tooltip: 'Remove discount',
-                  onPressed: onRemoveDiscount,
-                  icon: const Icon(Icons.close_rounded,
-                      color: AppColors.dangerDeep)),
-          ]),
-          const Divider(height: 32, color: AppColors.border),
-          Text('Payment method', style: AppTypography.sectionHeader),
-          const SizedBox(height: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final method in ['Cash', 'Card', 'Mobile Money'])
-              ChoiceChip(
-                label: Text(method),
-                avatar: Icon(
-                    switch (method) {
-                      'Cash' => Icons.payments_outlined,
-                      'Card' => Icons.credit_card_outlined,
-                      _ => Icons.phone_android_rounded
-                    },
-                    size: 17),
-                selected: paymentMethod == method,
-                onSelected: (_) => onMethodChanged(method),
-                selectedColor: AppColors.successLight,
-                side: BorderSide(
-                    color: paymentMethod == method
-                        ? AppColors.successDeep
-                        : AppColors.border),
-                labelStyle: AppTypography.bodySmall.copyWith(
-                    color: paymentMethod == method
-                        ? AppColors.successDeep
-                        : AppColors.textBody),
-              ),
-          ]),
-          const SizedBox(height: 16),
-          if (paymentMethod == 'Cash') ...[
-            OutlinedButton.icon(
-              onPressed: onEnterCash,
-              icon: const Icon(Icons.payments_outlined, size: 19),
-              label: Text(cashReceived == null
-                  ? 'Enter cash received'
-                  : 'Cash received: TSh $cashReceived'),
-            ),
-            TextButton(
-                onPressed: onExactCash, child: const Text('Use exact amount')),
-            if (cashReceived != null)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                    color: AppColors.successLight.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(8)),
-                child: _SummaryRow(
-                    label: 'Change due',
-                    value: 'TSh ${changeDue ?? '0'}',
-                    valueColor: AppColors.successDeep,
-                    isBold: true),
-              ),
-          ] else
-            Text(
-              'Confirm the $paymentMethod payment on your terminal or phone before completing this sale.',
-              style: AppTypography.bodySmall
-                  .copyWith(color: AppColors.textMuted, height: 1.5),
-            ),
-          const SizedBox(height: 16),
-          TextButton.icon(
-              onPressed: onRecordDebit,
-              icon: const Icon(Icons.person_outline_rounded, size: 19),
-              label: const Text('Record as customer credit')),
-        ]),
-      );
-}
 
-class _CashReceivedBottomSheet extends StatefulWidget {
-  const _CashReceivedBottomSheet({
-    required this.grandTotal,
-    required this.category,
-    this.currentAmount,
-  });
 
-  final double grandTotal;
-  final BusinessCategory category;
-  final double? currentAmount;
 
-  @override
-  State<_CashReceivedBottomSheet> createState() =>
-      _CashReceivedBottomSheetState();
-}
 
-class _CashReceivedBottomSheetState extends State<_CashReceivedBottomSheet> {
-  late final TextEditingController _controller;
-  double _currentInput = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(
-      text: widget.currentAmount != null
-          ? widget.currentAmount!.round().toString()
-          : '',
-    );
-    _currentInput = widget.currentAmount ?? 0;
-  }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
-  String _format(double value) => formatCurrency(value);
 
-  @override
-  Widget build(BuildContext context) {
-    final remaining =
-        (widget.grandTotal - _currentInput).clamp(0.0, double.infinity);
-    final change =
-        (_currentInput - widget.grandTotal).clamp(0.0, double.infinity);
-    final suggestions = <double>{
-      widget.grandTotal,
-      (widget.grandTotal / 1000).ceil() * 1000.0,
-      (widget.grandTotal / 5000).ceil() * 5000.0,
-      (widget.grandTotal / 10000).ceil() * 10000.0
-    }.toList()
-      ..sort();
-    return _PaymentSheet(
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Cash received', style: AppTypography.h2),
-      const SizedBox(height: 6),
-      Text('Enter the amount handed to you by the customer.',
-          style: AppTypography.bodySmall),
-      const SizedBox(height: 24),
-      TextField(
-        key: const ValueKey('cash-amount'),
-        controller: _controller,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        autofocus: true,
-        onChanged: (value) =>
-            setState(() => _currentInput = _parseAmount(value)),
-        style: AppTypography.h2,
-        decoration: const InputDecoration(
-            labelText: 'Amount received', prefixText: 'TSh ', hintText: '0'),
-      ),
-      const SizedBox(height: 16),
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        for (final amount in suggestions)
-          ActionChip(
-              label: Text(amount == widget.grandTotal
-                  ? 'Exact amount'
-                  : 'TSh ${_format(amount)}'),
-              onPressed: () => setState(() {
-                    _currentInput = amount;
-                    _controller.text = amount.toStringAsFixed(0);
-                  })),
-      ]),
-      const SizedBox(height: 24),
-      _SummaryRow(
-          label: 'Total due',
-          value: 'TSh ${_format(widget.grandTotal)}',
-          valueColor: AppColors.ink),
-      const SizedBox(height: 16),
-      _SummaryRow(
-          label: remaining > 0 ? 'Still to receive' : 'Change due',
-          value: 'TSh ${_format(remaining > 0 ? remaining : change)}',
-          valueColor:
-              remaining > 0 ? AppColors.dangerDeep : AppColors.successDeep,
-          isBold: true),
-      const SizedBox(height: 24),
-      FilledButton(
-        key: const ValueKey('confirm-cash'),
-        onPressed: _currentInput >= widget.grandTotal
-            ? () => Navigator.pop(context, _currentInput)
-            : null,
-        style: FilledButton.styleFrom(backgroundColor: AppColors.successDeep),
-        child: const Text('Confirm cash amount'),
-      ),
-    ]));
-  }
-}
-
-class _DiscountBottomSheet extends StatefulWidget {
-  const _DiscountBottomSheet({
-    required this.subtotal,
-    required this.currentAmount,
-    required this.category,
-  });
-
-  final double subtotal;
-  final double currentAmount;
-  final BusinessCategory category;
-
-  @override
-  State<_DiscountBottomSheet> createState() => _DiscountBottomSheetState();
-}
-
-class _DiscountBottomSheetState extends State<_DiscountBottomSheet> {
-  late final TextEditingController _controller;
-  bool _isPercentage = false;
-  double _currentInput = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(
-      text: widget.currentAmount > 0
-          ? widget.currentAmount.round().toString()
-          : '',
-    );
-    _currentInput = widget.currentAmount;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  String _format(double value) => formatCurrency(value);
-
-  @override
-  Widget build(BuildContext context) {
-    final percentage = _currentInput.clamp(0.0, 100.0);
-    final discount =
-        (_isPercentage ? widget.subtotal * percentage / 100 : _currentInput)
-            .clamp(0.0, widget.subtotal);
-    return _PaymentSheet(
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Sale discount', style: AppTypography.h2),
-      const SizedBox(height: 6),
-      Text('Apply a fixed amount or a percentage to this sale.',
-          style: AppTypography.bodySmall),
-      const SizedBox(height: 20),
-      SegmentedButton<bool>(
-        segments: const [
-          ButtonSegment(value: false, label: Text('Amount (TSh)')),
-          ButtonSegment(value: true, label: Text('Percentage'))
-        ],
-        selected: {_isPercentage},
-        onSelectionChanged: (value) =>
-            setState(() => _isPercentage = value.first),
-      ),
-      const SizedBox(height: 24),
-      TextField(
-        key: const ValueKey('discount-amount'),
-        controller: _controller,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        autofocus: true,
-        onChanged: (value) =>
-            setState(() => _currentInput = _parseAmount(value)),
-        style: AppTypography.h2,
-        decoration: InputDecoration(
-            labelText:
-                _isPercentage ? 'Discount percentage' : 'Discount amount',
-            prefixText: _isPercentage ? null : 'TSh ',
-            suffixText: _isPercentage ? '%' : null),
-      ),
-      const SizedBox(height: 24),
-      _SummaryRow(
-          label: 'Discount',
-          value: 'TSh ${_format(discount)}',
-          valueColor: AppColors.successDeep),
-      const SizedBox(height: 16),
-      _SummaryRow(
-          label: 'New total',
-          value: 'TSh ${_format(widget.subtotal - discount)}',
-          valueColor: AppColors.ink,
-          isBold: true),
-      const SizedBox(height: 24),
-      FilledButton(
-        key: const ValueKey('apply-discount'),
-        onPressed: () => Navigator.pop(context, {
-          'amount': discount,
-          'label': _isPercentage
-              ? '${percentage.toStringAsFixed(0)}% Discount'
-              : 'Discount'
-        }),
-        style: FilledButton.styleFrom(backgroundColor: AppColors.successDeep),
-        child: const Text('Apply discount'),
-      ),
-    ]));
-  }
-}
-
-class _PaymentSheet extends StatelessWidget {
-  const _PaymentSheet({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => ConstrainedBox(
-        constraints:
-            BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
-        child: Material(
-          color: AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          clipBehavior: Clip.antiAlias,
-          child: SafeArea(
-              top: false,
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                    24, 24, 24, MediaQuery.viewInsetsOf(context).bottom + 24),
-                child: child,
-              )),
-        ),
-      );
-}
-
-double _parseAmount(String value) {
-  final parsed = double.tryParse(value.replaceAll(',', '').trim());
-  return parsed != null && parsed.isFinite && parsed >= 0 ? parsed : 0;
-}
-
-class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-    this.isBold = false,
-  });
-
-  final String label;
-  final String value;
-  final Color valueColor;
-  final bool isBold;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-            child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF64748B),
-          ),
-        )),
-        const SizedBox(width: 12),
-        Flexible(
-            child: Text(
-          value,
-          textAlign: TextAlign.right,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: isBold ? FontWeight.w800 : FontWeight.w700,
-            color: valueColor,
-          ),
-        )),
-      ],
-    );
-  }
-}

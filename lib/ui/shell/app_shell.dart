@@ -136,17 +136,12 @@ class _AppShellState extends State<AppShell>
             showBorder: true,
             actions: [
               MarketHeaderActionButtons(
-                showDukaAi: false,
-                aiBackground: config.primaryLightColor,
-                aiForeground: config.primaryColor,
-                aiBorderColor: config.primaryColor.withValues(alpha: 0.12),
                 notificationBackground: config.primaryLightColor,
                 notificationForeground: config.primaryColor,
                 notificationBorderColor:
                     config.primaryColor.withValues(alpha: 0.12),
                 showNotificationDot: hasActiveAlerts,
                 showSettings: true,
-                onDukaAiTap: () {},
                 onNotificationTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(

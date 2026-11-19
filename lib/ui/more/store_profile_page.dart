@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
+import '../widgets/common/market_loading_view.dart';
 import 'settings_layout.dart';
 
 /// Business profile form shared by the Settings page.
@@ -137,7 +138,13 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     if (!store.isInitialized) {
-      return const Center(child: CircularProgressIndicator());
+      return Scaffold(
+        backgroundColor: AppColors.pageBackground,
+        body: const MarketLoadingView(
+          message: 'Loading Store Profile…',
+          subMessage: 'Retrieving business configuration and assets',
+        ),
+      );
     }
 
     final profile = store.profile;

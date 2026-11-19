@@ -1,119 +1,49 @@
 import 'package:flutter/material.dart';
-
 import '../models/report_models.dart';
-import '../../../ui/widgets/app_design.dart';
+import '../../widgets/app_design.dart';
+import '../../widgets/workspace_widgets.dart';
 
 class MetricGrid extends StatelessWidget {
   const MetricGrid({super.key, required this.metrics});
-
   final List<MetricData> metrics;
-
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: constraints.maxWidth > 600 ? 1.45 : 1.15,
-          ),
-          itemCount: metrics.length,
-          itemBuilder: (context, index) {
-            final metric = metrics[index];
-            return _MetricCard(metric: metric);
-          },
-        );
-      },
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.metric});
-
-  final MetricData metric;
-
-  @override
-  Widget build(BuildContext context) {
-    final deltaColor = metric.deltaIsPositive == false
-        ? AppColors.textMuted
-        : AppColors.success;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: metric.tint,
-        borderRadius: BorderRadius.circular(AppRadius.rounded),
-        border: Border.all(color: AppColors.borderLight),
-        boxShadow: AppShadows.soft,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: metric.iconColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(AppRadius.standard),
-            ),
-            child: Icon(
-              metric.icon,
-              color: metric.iconColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            metric.title,
-            style: AppTypography.label.copyWith(
-              color: AppColors.textMuted,
-              fontSize: 11,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            metric.value,
-            style: AppTypography.cardHeader.copyWith(
-              color: metric.valueColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (metric.deltaText != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  metric.deltaIsPositive == true
-                      ? Icons.trending_up_rounded
-                      : Icons.trending_down_rounded,
-                  size: 12,
-                  color: deltaColor,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${metric.deltaText} ${metric.deltaLabel}',
-                  style: AppTypography.helperText.copyWith(
-                    color: deltaColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) {
+        final columns = (constraints.maxWidth / 220).floor().clamp(1, 4);
+        final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
+        return Wrap(spacing: 12, runSpacing: 12, children: [
+          for (final metric in metrics)
+            SizedBox(
+                width: width,
+                child: WorkspacePanel(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Expanded(
+                                child: Text(metric.title,
+                                    style: AppTypography.label)),
+                            const SizedBox(width: 8),
+                            Icon(metric.icon,
+                                size: 20, color: AppColors.textMuted)
+                          ]),
+                          const SizedBox(height: 12),
+                          FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(metric.value,
+                                  style: AppTypography.h3.copyWith(
+                                      color: AppColors.ink, fontSize: 22))),
+                          if (metric.deltaText != null) ...[
+                            const SizedBox(height: 8),
+                            Text('${metric.deltaText} ${metric.deltaLabel}',
+                                style: AppTypography.bodySmall.copyWith(
+                                    color: metric.deltaIsPositive == false
+                                        ? AppColors.dangerDeep
+                                        : AppColors.successDeep))
+                          ],
+                        ]))),
+        ]);
+      });
 }

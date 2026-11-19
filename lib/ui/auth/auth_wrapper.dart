@@ -20,12 +20,15 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  int _step = 0; // 0: onboarding, 1: login, 2: register, 3: reset_password
+  // 0: login (onboarding is handled separately), 1: login, 2: register,
+  // 3: reset password.
+  int _step = 1;
+  bool _wasLoggedIn = false;
 
   VoidCallback? get _onBack {
     switch (_step) {
       case 1:
-        return () => setState(() => _step = 0);
+        return null;
       case 2:
       case 3:
         return () => setState(() => _step = 1);
@@ -36,11 +39,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Widget _buildStep() {
     switch (_step) {
-      case 0:
-        return OnboardingPage(
-          onGetStarted: () => setState(() => _step = 2),
-          onSignIn: () => setState(() => _step = 1),
-        );
       case 1:
         return LoginPage(
           onRegisterTap: () => setState(() => _step = 2),
@@ -51,9 +49,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
           onSignInTap: () => setState(() => _step = 1),
         );
       case 3:
-      default:
         return ResetPasswordPage(
           onBackToSignIn: () => setState(() => _step = 1),
+        );
+      default:
+        return LoginPage(
+          onRegisterTap: () => setState(() => _step = 2),
+          onForgotPasswordTap: () => setState(() => _step = 3),
         );
     }
   }
@@ -63,14 +65,29 @@ class _AuthWrapperState extends State<AuthWrapper> {
     final store = context.watch<PosLocalStore>();
     final strings = AppStrings.of(store.languageCode);
 
-    if (!store.isLoggedIn) {
-      if (_step == 0) {
-        return OnboardingPage(
-          onGetStarted: () => setState(() => _step = 2),
-          onSignIn: () => setState(() => _step = 1),
-        );
-      }
+    // Always land on the sign-in screen after a logout, even if the user was
+    // last on the register or reset-password step.
+    if (_wasLoggedIn && !store.isLoggedIn) {
+      _step = 1;
+    }
+    _wasLoggedIn = store.isLoggedIn;
 
+    // Show onboarding only on first launch. After that, skip straight to
+    // login/register regardless of auth state.
+    if (!store.hasCompletedOnboarding) {
+      return OnboardingPage(
+        onGetStarted: () {
+          store.markOnboardingComplete();
+          setState(() => _step = 2);
+        },
+        onSignIn: () {
+          store.markOnboardingComplete();
+          setState(() => _step = 1);
+        },
+      );
+    }
+
+    if (!store.isLoggedIn) {
       return AuthShell(
         strings: strings,
         onBack: _onBack,

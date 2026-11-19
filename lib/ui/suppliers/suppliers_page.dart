@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -49,9 +50,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
       0,
       (sum, s) => sum + store.supplierBalance(s.id ?? 0),
     );
-    final owingCount = suppliers
-        .where((s) => store.supplierBalance(s.id ?? 0) > 0)
-        .length;
+    final owingCount =
+        suppliers.where((s) => store.supplierBalance(s.id ?? 0) > 0).length;
     final totalReceived = store.receivings.fold<double>(
       0,
       (sum, r) => sum + r.total,
@@ -66,8 +66,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
             children: [
               Text(
                 t('Total payable', 'Jumla ya deni'),
-                style:
-                    AppTypography.label.copyWith(color: AppColors.textMuted),
+                style: AppTypography.label.copyWith(color: AppColors.textMuted),
               ),
               const SizedBox(height: 4),
               Text(
@@ -88,9 +87,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     : t('All supplier balances are clear',
                         'Madeni yote ya wasambazaji yamesafishwa'),
                 style: AppTypography.bodySmall.copyWith(
-                  color: totalPayable > 0
-                      ? AppColors.danger
-                      : AppColors.success,
+                  color:
+                      totalPayable > 0 ? AppColors.danger : AppColors.success,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -184,8 +182,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     'Add suppliers to record purchases, track payables, and receive goods into stock.',
                     'Ongeza wasambazaji kurekodi manunuzi, kufuatilia madeni, na kupokea bidhaa kwenye hifadhi.',
                   ),
-                  style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textMuted, height: 1.45),
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textMuted, height: 1.45),
                 ),
               ],
             ),
@@ -195,29 +193,59 @@ class _SuppliersPageState extends State<SuppliersPage> {
             child: Text(
               t('No suppliers match your search.',
                   'Hakuna msambazaji anayelingana na utafutaji.'),
-              style: AppTypography.bodySmall
-                  .copyWith(color: AppColors.textMuted),
+              style:
+                  AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
             ),
           )
         else
-          _sharpCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (var i = 0; i < filtered.length; i++) ...[
-                  _SupplierRow(
-                    supplier: filtered[i],
-                    balance: store.supplierBalance(filtered[i].id ?? 0),
-                    isSwahili: sw,
-                    onTap: () => _openDetail(context, filtered[i]),
-                    onReceive: () => _receiveFor(context, filtered[i]),
-                  ),
-                  if (i != filtered.length - 1)
-                    const Divider(height: 1, color: AppColors.divider),
-                ],
+          WorkspaceRegister(
+              columns: [
+                DataColumn(label: Text(t('Supplier', 'Msambazaji'))),
+                DataColumn(label: Text(t('Phone', 'Simu'))),
+                DataColumn(label: Text(t('Email', 'Barua pepe'))),
+                DataColumn(
+                    label: Text(t('Balance payable', 'Deni')), numeric: true),
+                const DataColumn(label: Text(''))
               ],
-            ),
-          ),
+              rows: filtered
+                  .map((supplier) => DataRow(cells: [
+                        DataCell(Text(supplier.name),
+                            onTap: () => _openDetail(context, supplier)),
+                        DataCell(Text(supplier.phone)),
+                        DataCell(Text(supplier.email)),
+                        DataCell(Text(
+                            _money(store.supplierBalance(supplier.id ?? 0)))),
+                        DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
+                          IconButton(
+                              tooltip: t('Receive goods', 'Pokea bidhaa'),
+                              onPressed: () => _receiveFor(context, supplier),
+                              icon: const Icon(Icons.move_to_inbox_outlined,
+                                  size: 20)),
+                          IconButton(
+                              tooltip: t('Open supplier', 'Fungua msambazaji'),
+                              onPressed: () => _openDetail(context, supplier),
+                              icon: const Icon(Icons.chevron_right_rounded)),
+                        ])),
+                      ]))
+                  .toList(),
+              mobile: _sharpCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (var i = 0; i < filtered.length; i++) ...[
+                      _SupplierRow(
+                        supplier: filtered[i],
+                        balance: store.supplierBalance(filtered[i].id ?? 0),
+                        isSwahili: sw,
+                        onTap: () => _openDetail(context, filtered[i]),
+                        onReceive: () => _receiveFor(context, filtered[i]),
+                      ),
+                      if (i != filtered.length - 1)
+                        const Divider(height: 1, color: AppColors.divider),
+                    ],
+                  ],
+                ),
+              )),
       ],
     );
 
@@ -225,21 +253,22 @@ class _SuppliersPageState extends State<SuppliersPage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: t('Suppliers', 'Wasambazaji'),
-              subtitle:
-                  t('Purchases, payables, and goods received',
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: t('Suppliers', 'Wasambazaji'),
+                  subtitle: t('Purchases, payables, and goods received',
                       'Manunuzi, madeni, na bidhaa zilizopokelewa'),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(child: body),
+              ],
             ),
-            Expanded(child: body),
-          ],
-        ),
-      ),
+          )),
     );
   }
 
@@ -282,7 +311,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
       padding: padding,
       showShadow: false,
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       child: child,
     );
   }
@@ -455,205 +484,211 @@ class SupplierDetailPage extends StatelessWidget {
     if (supplier == null) {
       return Scaffold(
         backgroundColor: AppColors.pageBackground,
-        body: SafeArea(
-          child: Column(
-            children: [
-              MarketPageHeader(
-                title: t('Supplier', 'Msambazaji'),
-                transparentBackButton: true,
-                onBack: () => Navigator.of(context).maybePop(),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _SuppliersPageState._sharpCard(
-                      child: Text(
-                        t('Supplier not found.', 'Msambazaji hajapatikana.'),
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textMuted),
-                      ),
+        body: ManagementViewport(
+            maxWidth: 1280,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  MarketPageHeader(
+                    title: t('Supplier', 'Msambazaji'),
+                    transparentBackButton: true,
+                    onBack: () => Navigator.of(context).maybePop(),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        _SuppliersPageState._sharpCard(
+                          child: Text(
+                            t('Supplier not found.',
+                                'Msambazaji hajapatikana.'),
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textMuted),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            )),
       );
     }
 
     final s = supplier;
     final balance = store.supplierBalance(s.id ?? 0);
-    final history = store.receivings
-        .where((r) => r.supplierId == s.id)
-        .toList()
+    final history = store.receivings.where((r) => r.supplierId == s.id).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
-    final receivedTotal =
-        history.fold<double>(0, (sum, r) => sum + r.total);
+    final receivedTotal = history.fold<double>(0, (sum, r) => sum + r.total);
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: s.name,
-              subtitle: t('Supplier details', 'Taarifa za msambazaji'),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                children: [
-                  _SuppliersPageState._sharpCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(t('Current payable', 'Deni la sasa'),
-                            style: AppTypography.label
-                                .copyWith(color: AppColors.textMuted)),
-                        const SizedBox(height: 4),
-                        Text(
-                          _SuppliersPageState._money(balance),
-                          style: AppTypography.h1.copyWith(
-                            fontSize: 28,
-                            color: balance > 0
-                                ? AppColors.danger
-                                : AppColors.success,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: s.name,
+                  subtitle: t('Supplier details', 'Taarifa za msambazaji'),
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                    children: [
+                      _SuppliersPageState._sharpCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: _kv(
-                                t('Opening balance', 'Deni la kuanzia'),
-                                _SuppliersPageState._money(
-                                    s.openingBalance),
-                                s.openingBalance > 0
+                            Text(t('Current payable', 'Deni la sasa'),
+                                style: AppTypography.label
+                                    .copyWith(color: AppColors.textMuted)),
+                            const SizedBox(height: 4),
+                            Text(
+                              _SuppliersPageState._money(balance),
+                              style: AppTypography.h1.copyWith(
+                                fontSize: 28,
+                                color: balance > 0
                                     ? AppColors.danger
                                     : AppColors.success,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _kv(
-                                t('Goods received', 'Zilizopokelewa'),
-                                _SuppliersPageState._money(receivedTotal),
-                                receivedTotal > 0
-                                    ? AppColors.success
-                                    : AppColors.textMuted,
-                              ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _kv(
+                                    t('Opening balance', 'Deni la kuanzia'),
+                                    _SuppliersPageState._money(
+                                        s.openingBalance),
+                                    s.openingBalance > 0
+                                        ? AppColors.danger
+                                        : AppColors.success,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _kv(
+                                    t('Goods received', 'Zilizopokelewa'),
+                                    _SuppliersPageState._money(receivedTotal),
+                                    receivedTotal > 0
+                                        ? AppColors.success
+                                        : AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _kv(
+                              t('Receiving records', 'Rekodi za upokeaji'),
+                              '${history.length}',
+                              AppColors.ink,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        _kv(
-                          t('Receiving records', 'Rekodi za upokeaji'),
-                          '${history.length}',
-                          AppColors.ink,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _SuppliersPageState._sharpCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _info(t('Phone', 'Simu'),
-                            s.phone.trim().isEmpty ? '—' : s.phone.trim()),
-                        _info(t('Email', 'Barua pepe'),
-                            s.email.trim().isEmpty ? '—' : s.email.trim()),
-                        _info(t('Address', 'Anwani'),
-                            s.address.trim().isEmpty ? '—' : s.address.trim()),
-                        if (s.notes.trim().isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          const Divider(height: 1, color: AppColors.divider),
-                          const SizedBox(height: 8),
-                          Text(t('Notes', 'Maelezo'),
-                              style: AppTypography.label
-                                  .copyWith(color: AppColors.textMuted)),
-                          const SizedBox(height: 4),
-                          Text(
-                            s.notes.trim(),
-                            style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textBody, height: 1.45),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: MarketButton(
-                          label: t('Edit', 'Hariri'),
-                          icon: Icons.edit_outlined,
-                          isPrimary: false,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) =>
-                                  SupplierFormPage(supplier: s),
-                            ),
-                          ),
-                        ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: MarketButton(
-                          label: t('Receive goods', 'Pokea bidhaa'),
-                          icon: Icons.move_to_inbox_rounded,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) =>
-                                  ReceivingPage(presetSupplier: s),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    t('Receiving history', 'Historia ya upokeaji'),
-                    style: AppTypography.sectionHeader
-                        .copyWith(color: AppColors.ink),
-                  ),
-                  const SizedBox(height: 8),
-                  if (history.isEmpty)
-                    _SuppliersPageState._sharpCard(
-                      child: Text(
-                        t('No goods received from this supplier yet.',
-                            'Hakuna bidhaa zilizopokelewa kutoka kwa msambazaji huyu bado.'),
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textMuted),
-                      ),
-                    )
-                  else
-                    _SuppliersPageState._sharpCard(
-                      padding: EdgeInsets.zero,
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < history.length; i++) ...[
-                            _HistoryRow(
-                                receiving: history[i], isSwahili: sw),
-                            if (i != history.length - 1)
+                      const SizedBox(height: 12),
+                      _SuppliersPageState._sharpCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _info(t('Phone', 'Simu'),
+                                s.phone.trim().isEmpty ? '—' : s.phone.trim()),
+                            _info(t('Email', 'Barua pepe'),
+                                s.email.trim().isEmpty ? '—' : s.email.trim()),
+                            _info(
+                                t('Address', 'Anwani'),
+                                s.address.trim().isEmpty
+                                    ? '—'
+                                    : s.address.trim()),
+                            if (s.notes.trim().isNotEmpty) ...[
+                              const SizedBox(height: 8),
                               const Divider(
                                   height: 1, color: AppColors.divider),
+                              const SizedBox(height: 8),
+                              Text(t('Notes', 'Maelezo'),
+                                  style: AppTypography.label
+                                      .copyWith(color: AppColors.textMuted)),
+                              const SizedBox(height: 4),
+                              Text(
+                                s.notes.trim(),
+                                style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.textBody, height: 1.45),
+                              ),
+                            ],
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: MarketButton(
+                              label: t('Edit', 'Hariri'),
+                              icon: Icons.edit_outlined,
+                              isPrimary: false,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (context) =>
+                                      SupplierFormPage(supplier: s),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: MarketButton(
+                              label: t('Receive goods', 'Pokea bidhaa'),
+                              icon: Icons.move_to_inbox_rounded,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (context) =>
+                                      ReceivingPage(presetSupplier: s),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                ],
-              ),
+                      const SizedBox(height: 20),
+                      Text(
+                        t('Receiving history', 'Historia ya upokeaji'),
+                        style: AppTypography.sectionHeader
+                            .copyWith(color: AppColors.ink),
+                      ),
+                      const SizedBox(height: 8),
+                      if (history.isEmpty)
+                        _SuppliersPageState._sharpCard(
+                          child: Text(
+                            t('No goods received from this supplier yet.',
+                                'Hakuna bidhaa zilizopokelewa kutoka kwa msambazaji huyu bado.'),
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textMuted),
+                          ),
+                        )
+                      else
+                        _SuppliersPageState._sharpCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < history.length; i++) ...[
+                                _HistoryRow(
+                                    receiving: history[i], isSwahili: sw),
+                                if (i != history.length - 1)
+                                  const Divider(
+                                      height: 1, color: AppColors.divider),
+                              ],
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 
@@ -662,13 +697,13 @@ class SupplierDetailPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: AppTypography.helperText
-                .copyWith(color: AppColors.textMuted)),
+            style:
+                AppTypography.helperText.copyWith(color: AppColors.textMuted)),
         const SizedBox(height: 2),
         Text(
           value,
-          style: AppTypography.bodySmall.copyWith(
-              fontWeight: FontWeight.w800, color: color),
+          style: AppTypography.bodySmall
+              .copyWith(fontWeight: FontWeight.w800, color: color),
         ),
       ],
     );
@@ -800,108 +835,112 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: _isEdit
-                  ? _t('Edit supplier', 'Hariri msambazaji')
-                  : _t('Add supplier', 'Ongeza msambazaji'),
-              subtitle: _t('Supplier details and payable balance',
-                  'Taarifa za msambazaji na deni'),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                  children: [
-                    MarketSurfaceCard(
-                      padding: const EdgeInsets.all(16),
-                      showShadow: false,
-                      borderColor: AppColors.border,
-                      radius: 0,
-                      child: Column(
-                        children: [
-                          MarketFormField(
-                            label: _t('Supplier name', 'Jina la msambazaji'),
-                            hintText:
-                                _t('e.g. Coca Cola Tanzania', 'mf. Coca Cola'),
-                            controller: _name,
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                    ? _t('Enter a name', 'Weka jina')
-                                    : null,
+      body: ManagementViewport(
+          maxWidth: 860,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: _isEdit
+                      ? _t('Edit supplier', 'Hariri msambazaji')
+                      : _t('Add supplier', 'Ongeza msambazaji'),
+                  subtitle: _t('Supplier details and payable balance',
+                      'Taarifa za msambazaji na deni'),
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: Form(
+                    key: _formKey,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      children: [
+                        MarketSurfaceCard(
+                          padding: const EdgeInsets.all(16),
+                          showShadow: false,
+                          borderColor: AppColors.border,
+                          radius: AppRadius.standard,
+                          child: Column(
+                            children: [
+                              MarketFormField(
+                                label:
+                                    _t('Supplier name', 'Jina la msambazaji'),
+                                hintText: _t(
+                                    'e.g. Coca Cola Tanzania', 'mf. Coca Cola'),
+                                controller: _name,
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? _t('Enter a name', 'Weka jina')
+                                        : null,
+                              ),
+                              const SizedBox(height: 14),
+                              MarketFormField(
+                                label: _t('Phone', 'Simu'),
+                                hintText: '0700 000 000',
+                                controller: _phone,
+                                keyboardType: TextInputType.phone,
+                              ),
+                              const SizedBox(height: 14),
+                              MarketFormField(
+                                label: _t('Email', 'Barua pepe'),
+                                hintText: 'supplier@example.com',
+                                controller: _email,
+                                keyboardType: TextInputType.emailAddress,
+                              ),
+                              const SizedBox(height: 14),
+                              MarketFormField(
+                                label: _t('Address', 'Anwani'),
+                                hintText: _t('City, area', 'Mji, eneo'),
+                                controller: _address,
+                              ),
+                              const SizedBox(height: 14),
+                              MarketFormField(
+                                label: _t('Opening balance payable (TSh)',
+                                    'Deni la kuanzia (TSh)'),
+                                hintText: '0',
+                                controller: _balance,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                              ),
+                              const SizedBox(height: 14),
+                              MarketFormField(
+                                label: _t('Notes', 'Maelezo'),
+                                hintText: _t('Payment terms, contact person...',
+                                    'Masharti ya malipo, mtu wa mawasiliano...'),
+                                controller: _notes,
+                                maxLines: 2,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 14),
-                          MarketFormField(
-                            label: _t('Phone', 'Simu'),
-                            hintText: '0700 000 000',
-                            controller: _phone,
-                            keyboardType: TextInputType.phone,
-                          ),
-                          const SizedBox(height: 14),
-                          MarketFormField(
-                            label: _t('Email', 'Barua pepe'),
-                            hintText: 'supplier@example.com',
-                            controller: _email,
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 14),
-                          MarketFormField(
-                            label: _t('Address', 'Anwani'),
-                            hintText: _t('City, area', 'Mji, eneo'),
-                            controller: _address,
-                          ),
-                          const SizedBox(height: 14),
-                          MarketFormField(
-                            label: _t('Opening balance payable (TSh)',
-                                'Deni la kuanzia (TSh)'),
-                            hintText: '0',
-                            controller: _balance,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                          ),
-                          const SizedBox(height: 14),
-                          MarketFormField(
-                            label: _t('Notes', 'Maelezo'),
-                            hintText: _t('Payment terms, contact person...',
-                                'Masharti ya malipo, mtu wa mawasiliano...'),
-                            controller: _notes,
-                            maxLines: 2,
+                        ),
+                        const SizedBox(height: 20),
+                        MarketButton(
+                          label: _isEdit
+                              ? _t('Save changes', 'Hifadhi mabadiliko')
+                              : _t('Save supplier', 'Hifadhi msambazaji'),
+                          icon: Icons.check_rounded,
+                          onTap: _save,
+                        ),
+                        if (_isEdit) ...[
+                          const SizedBox(height: 12),
+                          MarketButton(
+                            label: _t('Delete supplier', 'Futa msambazaji'),
+                            icon: Icons.delete_outline_rounded,
+                            isPrimary: false,
+                            foregroundColor: AppColors.danger,
+                            borderColor: AppColors.border,
+                            color: AppColors.surface,
+                            onTap: _confirmDelete,
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 20),
-                    MarketButton(
-                      label: _isEdit
-                          ? _t('Save changes', 'Hifadhi mabadiliko')
-                          : _t('Save supplier', 'Hifadhi msambazaji'),
-                      icon: Icons.check_rounded,
-                      onTap: _save,
-                    ),
-                    if (_isEdit) ...[
-                      const SizedBox(height: 12),
-                      MarketButton(
-                        label: _t('Delete supplier', 'Futa msambazaji'),
-                        icon: Icons.delete_outline_rounded,
-                        isPrimary: false,
-                        foregroundColor: AppColors.danger,
-                        borderColor: AppColors.border,
-                        color: AppColors.surface,
-                        onTap: _confirmDelete,
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 

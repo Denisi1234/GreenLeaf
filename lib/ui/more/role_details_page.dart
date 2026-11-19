@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -123,21 +124,23 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
     if (role == null) {
       return Scaffold(
         backgroundColor: AppColors.pageBackground,
-        body: SafeArea(
-          child: Column(
-            children: [
-              MarketPageHeader(
-                title: 'Role Not Found',
-                onBack: () => Navigator.of(context).pop(),
+        body: ManagementViewport(
+            maxWidth: 1280,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  MarketPageHeader(
+                    title: 'Role Not Found',
+                    onBack: () => Navigator.of(context).pop(),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text('The selected role does not exist.'),
+                    ),
+                  ),
+                ],
               ),
-              const Expanded(
-                child: Center(
-                  child: Text('The selected role does not exist.'),
-                ),
-              ),
-            ],
-          ),
-        ),
+            )),
       );
     }
 
@@ -147,150 +150,152 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: role.title,
-              subtitle: role.subtitle,
-              showBorder: false,
-              actions: [
-                PopupMenuButton<String>(
-                  tooltip: 'Role actions',
-                  onSelected: (value) {
-                    if (value == 'rename') _renameRole(role);
-                    if (value == 'delete') _deleteRole(role);
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem<String>(
-                      value: 'rename',
-                      child: Text('Edit role details'),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Text(
-                        'Delete role',
-                        style: TextStyle(color: AppColors.danger),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        'Permissions',
-                        style: TextStyle(
-                          color: Color(0xFF111111),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: permissionCatalog.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisExtent: 38,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemBuilder: (context, index) {
-                        final permission = permissionCatalog[index];
-                        return _PermissionTile(
-                          data: _permissionData(permission),
-                          checked: checkedPermissions.contains(permission),
-                          onChanged: (value) {
-                            final current = role.permissions.toSet();
-                            if (value ?? false) {
-                              current.add(permission);
-                            } else {
-                              current.remove(permission);
-                            }
-                            context
-                                .read<PosLocalStore>()
-                                .updateStaffRolePermissions(
-                                  role.id,
-                                  current.toList(),
-                                );
-                          },
-                        );
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: role.title,
+                  subtitle: role.subtitle,
+                  showBorder: false,
+                  actions: [
+                    PopupMenuButton<String>(
+                      tooltip: 'Role actions',
+                      onSelected: (value) {
+                        if (value == 'rename') _renameRole(role);
+                        if (value == 'delete') _deleteRole(role);
                       },
-                    ),
-                    const SizedBox(height: 18),
-                    Container(height: 1, color: const Color(0xFFE7EAF0)),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Assigned Staff (${assignedStaff.length})',
-                            style: const TextStyle(
-                              color: Color(0xFF111111),
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                      itemBuilder: (context) => const [
+                        PopupMenuItem<String>(
+                          value: 'rename',
+                          child: Text('Edit role details'),
                         ),
-                        GestureDetector(
-                          onTap: () => _showManageStaff(role),
-                          child: const Text(
-                            'Manage',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Text(
+                            'Delete role',
+                            style: TextStyle(color: AppColors.danger),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    if (assignedStaff.isEmpty)
-                      const MarketSurfaceCard(
-                        padding: EdgeInsets.all(14),
-                        backgroundColor: Color(0xFFF7FAFF),
-                        borderColor: Color(0xFFF3F4F6),
-                        radius: 8,
-                        child: Text(
-                          'No staff assigned to this role yet.',
-                          style: TextStyle(
-                            color: Color(0xFF5C667A),
-                            fontSize: 13.5,
-                            height: 1.35,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      )
-                    else
-                      ...assignedStaff.map(
-                        (staff) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _AssignedStaffTile(data: staff),
-                        ),
-                      ),
-                    const SizedBox(height: 2),
-                    const _PermissionNote(),
                   ],
                 ),
-              ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            'Permissions',
+                            style: TextStyle(
+                              color: Color(0xFF111111),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: permissionCatalog.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisExtent: 38,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemBuilder: (context, index) {
+                            final permission = permissionCatalog[index];
+                            return _PermissionTile(
+                              data: _permissionData(permission),
+                              checked: checkedPermissions.contains(permission),
+                              onChanged: (value) {
+                                final current = role.permissions.toSet();
+                                if (value ?? false) {
+                                  current.add(permission);
+                                } else {
+                                  current.remove(permission);
+                                }
+                                context
+                                    .read<PosLocalStore>()
+                                    .updateStaffRolePermissions(
+                                      role.id,
+                                      current.toList(),
+                                    );
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        Container(height: 1, color: const Color(0xFFE7EAF0)),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Assigned Staff (${assignedStaff.length})',
+                                style: const TextStyle(
+                                  color: Color(0xFF111111),
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => _showManageStaff(role),
+                              child: const Text(
+                                'Manage',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (assignedStaff.isEmpty)
+                          const MarketSurfaceCard(
+                            padding: EdgeInsets.all(14),
+                            backgroundColor: Color(0xFFF7FAFF),
+                            borderColor: Color(0xFFF3F4F6),
+                            radius: 8,
+                            child: Text(
+                              'No staff assigned to this role yet.',
+                              style: TextStyle(
+                                color: Color(0xFF5C667A),
+                                fontSize: 13.5,
+                                height: 1.35,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          )
+                        else
+                          ...assignedStaff.map(
+                            (staff) => Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _AssignedStaffTile(data: staff),
+                            ),
+                          ),
+                        const SizedBox(height: 2),
+                        const _PermissionNote(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 

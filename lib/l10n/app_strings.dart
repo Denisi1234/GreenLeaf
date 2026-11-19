@@ -31,9 +31,6 @@ class AppStrings {
   String get storeProfile => _pick('Store Profile', 'Wasifu wa Duka');
   String get staffManagement =>
       _pick('Staff Management', 'Usimamizi wa Wafanyakazi');
-  String get dukaAi => _pick('DUKA AI', 'DUKA AI');
-  String get subscriptionPlan =>
-      _pick('Subscription Plan', 'Mpango wa Usajili');
   String get logout => _pick('Logout', 'Ondoka');
 
   String get storeName => _pick('Store Name', 'Jina la Duka');
@@ -469,14 +466,6 @@ class AppStrings {
   String get starter => _pick('Starter', 'Mwanzo');
   String get starterDescription => _pick('For getting started with your store.',
       'Kwa kuanza kusimamia duka lako.');
-  String get subscriptionPlansSubtitle => _pick(
-      'Choose a plan for your business.',
-      'Chagua mpango unaofaa biashara yako.');
-  String get subscriptionPlansSubtitleTwo => _pick(
-      'Find the features you need to run your store.',
-      'Pata vipengele unavyohitaji kuendesha duka lako.');
-  String get subscriptionPlansTitle =>
-      _pick('Subscription plans', 'Mipango ya usajili');
   String get todayOperations => _pick('Operations today', 'Shughuli za leo');
   String get todayPerformance => _pick('Performance today', 'Utendaji wa leo');
   String get todayRevenue => _pick('Revenue today', 'Mapato ya leo');

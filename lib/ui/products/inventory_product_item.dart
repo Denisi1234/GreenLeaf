@@ -11,6 +11,7 @@ class InventoryProductItem {
     required this.stockState,
     required this.artType,
     this.imagePath,
+    this.unit = 'Pcs',
     this.categoryData = const <String, Object?>{},
   });
 
@@ -23,6 +24,7 @@ class InventoryProductItem {
   final InventoryStockState stockState;
   final ProductArtType artType;
   final String? imagePath;
+  final String unit;
   final Map<String, Object?> categoryData;
 
   String get sellingPriceLabel => 'TSH ${sellingPrice.toStringAsFixed(0)}';
@@ -37,6 +39,7 @@ class InventoryProductItem {
     InventoryStockState? stockState,
     ProductArtType? artType,
     String? imagePath,
+    String? unit,
     Map<String, Object?>? categoryData,
   }) {
     return InventoryProductItem(
@@ -49,6 +52,7 @@ class InventoryProductItem {
       stockState: stockState ?? this.stockState,
       artType: artType ?? this.artType,
       imagePath: imagePath ?? this.imagePath,
+      unit: unit ?? this.unit,
       categoryData: categoryData ?? this.categoryData,
     );
   }

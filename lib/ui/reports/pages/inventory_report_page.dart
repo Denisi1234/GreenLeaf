@@ -64,7 +64,7 @@ class InventoryReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Inventory Cost Value',
-        value: '₹${NumberFormat('#,##0.##').format(totalCostValue)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalCostValue)}',
         icon: Icons.attach_money,
         iconColor: Color(0xFF111111),
         tint: Color(0xFF111111).withValues(alpha: 0.1),
@@ -123,21 +123,21 @@ class InventoryReportPage extends StatelessWidget {
               Expanded(
                 child: _ValuationStat(
                   label: 'Cost Value',
-                  value: '₹${NumberFormat('#,##0').format(totalCostValue)}',
+                  value: 'TSh ${NumberFormat('#,##0').format(totalCostValue)}',
                   color: Color(0xFF15803D),
                 ),
               ),
               Expanded(
                 child: _ValuationStat(
                   label: 'Retail Value',
-                  value: '₹${NumberFormat('#,##0').format(totalRetailValue)}',
+                  value: 'TSh ${NumberFormat('#,##0').format(totalRetailValue)}',
                   color: Color(0xFF111111),
                 ),
               ),
               Expanded(
                 child: _ValuationStat(
                   label: 'Potential Profit',
-                  value: '₹${NumberFormat('#,##0').format(potentialProfit)}',
+                  value: 'TSh ${NumberFormat('#,##0').format(potentialProfit)}',
                   color: Color(0xFF15803D),
                 ),
               ),
@@ -184,7 +184,7 @@ class InventoryReportPage extends StatelessWidget {
               label: e.key,
               value: (e.value['retail'] as double),
               displayValue:
-                  '₹${NumberFormat('#,##0').format(e.value['retail'] as double)}',
+                  'TSh ${NumberFormat('#,##0').format(e.value['retail'] as double)}',
             ))
         .toList();
     final maxValue = trendPoints.isEmpty

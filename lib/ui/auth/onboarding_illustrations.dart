@@ -55,7 +55,7 @@ class _OnboardingArtPainter extends CustomPainter {
     );
 
     final softGlowPaint = Paint()
-      ..color = const Color(0xFF111111).withValues(alpha: 0.08)
+      ..color = AppColors.primary.withValues(alpha: 0.09)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(w * 0.5, h * 0.46), w * 0.42, softGlowPaint);
 
@@ -83,7 +83,7 @@ class _OnboardingArtPainter extends CustomPainter {
     );
     final cardPaint = Paint()..color = const Color(0xFFF1F5F9);
     final cardStroke = Paint()
-      ..color = const Color(0xFFF4B8B8)
+      ..color = AppColors.border
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
     canvas.drawRRect(cardRect, cardPaint);
@@ -101,10 +101,10 @@ class _OnboardingArtPainter extends CustomPainter {
 
     // Sales bar charts inside screen
     final chartColors = [
-      const Color(0xFF111111),
-      const Color(0xFF111111),
-      const Color(0xFF111111),
-      const Color(0xFF111111),
+      AppColors.primaryLight,
+      AppColors.primaryBright,
+      AppColors.primary,
+      AppColors.primaryDeep,
     ];
     final barWidth = w * 0.055;
     final heights = [h * 0.14, h * 0.20, h * 0.16, h * 0.24];
@@ -143,11 +143,11 @@ class _OnboardingArtPainter extends CustomPainter {
 
   void _drawStockManager(Canvas canvas, double w, double h) {
     // Inventory boxes / shelves
-    final boxPaint1 = Paint()..color = const Color(0xFFF0FDF4);
-    final boxPaint2 = Paint()..color = const Color(0xFF111111);
-    final boxPaint3 = Paint()..color = const Color(0xFF111111);
+    final boxPaint1 = Paint()..color = AppColors.primarySoft;
+    final boxPaint2 = Paint()..color = AppColors.primaryDeep;
+    final boxPaint3 = Paint()..color = AppColors.primary;
     final linePaint = Paint()
-      ..color = const Color(0xFFF4B8B8)
+      ..color = AppColors.border
       ..strokeWidth = 2.0;
 
     // Large storage crates
@@ -205,7 +205,7 @@ class _OnboardingArtPainter extends CustomPainter {
     canvas.drawRRect(
       rect,
       Paint()
-        ..color = const Color(0xFFF0FDF4)
+        ..color = AppColors.border
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );
@@ -217,7 +217,7 @@ class _OnboardingArtPainter extends CustomPainter {
       ..cubicTo(w * 0.58, h * 0.42, w * 0.64, h * 0.28, w * 0.78, h * 0.26);
 
     final trendPaint = Paint()
-      ..color = const Color(0xFF111111)
+      ..color = AppColors.primaryDeep
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -231,12 +231,12 @@ class _OnboardingArtPainter extends CustomPainter {
     canvas.drawPath(
       fillPath,
       Paint()
-        ..color = const Color(0xFF111111).withValues(alpha: 0.12)
+        ..color = AppColors.primary.withValues(alpha: 0.12)
         ..style = PaintingStyle.fill,
     );
 
     // Data points
-    final dotPaint = Paint()..color = const Color(0xFF111111);
+    final dotPaint = Paint()..color = AppColors.primaryDeep;
     final dotWhite = Paint()..color = Colors.white;
     for (final point in [
       Offset(w * 0.22, h * 0.50),
@@ -258,12 +258,11 @@ class _OnboardingArtPainter extends CustomPainter {
     canvas.translate(cx, cy);
     canvas.scale(scale);
 
-    final skinPaint = Paint()..color = const Color(0xFFEB8686);
-    final hairPaint = Paint()..color = const Color(0xFF111111);
-    final shirtPaint = Paint()..color = const Color(0xFF111111); // Brand green
-    final pantsPaint = Paint()
-      ..color = const Color(0xFF111111); // Dark navy trousers
-    final backpackPaint = Paint()..color = const Color(0xFF111111);
+    final skinPaint = Paint()..color = const Color(0xFFC9D9E2);
+    final hairPaint = Paint()..color = AppColors.ink;
+    final shirtPaint = Paint()..color = AppColors.primaryDeep;
+    final pantsPaint = Paint()..color = AppColors.ink;
+    final backpackPaint = Paint()..color = AppColors.primary;
     final shoesPaint = Paint()..color = AppColors.ink; // Shoes
 
     // Backpack
@@ -317,7 +316,7 @@ class _OnboardingArtPainter extends CustomPainter {
 
     // Arm holding clipboard or pointing
     final armPaint = Paint()
-      ..color = const Color(0xFF111111)
+      ..color = AppColors.primaryDeep
       ..strokeWidth = 9
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -333,17 +332,15 @@ class _OnboardingArtPainter extends CustomPainter {
     canvas.translate(cx, cy);
     canvas.scale(scale);
 
-    final skinPaint = Paint()..color = const Color(0xFFF3B5B5);
-    final hairPaint = Paint()..color = AppColors.ink; // Ponytail
-    final shirtPaint = Paint()
-      ..color = const Color(0xFF111111); // Dark navy top
-    final skirtPaint = Paint()
-      ..color = const Color(0xFF111111); // Bright green skirt
-    final shoesPaint = Paint()..color = const Color(0xFF111111);
+    final skinPaint = Paint()..color = const Color(0xFFD8E5EC);
+    final hairPaint = Paint()..color = AppColors.ink;
+    final shirtPaint = Paint()..color = AppColors.primary;
+    final skirtPaint = Paint()..color = AppColors.primaryDeep;
+    final shoesPaint = Paint()..color = AppColors.ink;
 
     // Legs
     final legPaint = Paint()
-      ..color = const Color(0xFFF3B5B5)
+      ..color = const Color(0xFFD8E5EC)
       ..strokeWidth = 7
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(const Offset(-8, 38), const Offset(-8, 80), legPaint);
@@ -389,7 +386,7 @@ class _OnboardingArtPainter extends CustomPainter {
 
     // Arm interacting with screen
     final armPaint = Paint()
-      ..color = const Color(0xFF111111)
+      ..color = AppColors.primary
       ..strokeWidth = 7
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;

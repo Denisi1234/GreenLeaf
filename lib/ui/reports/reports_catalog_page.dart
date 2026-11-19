@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/app_design.dart';
+import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
 import 'enhanced_report_page.dart';
 import 'pos_report_catalog.dart';
@@ -50,22 +51,14 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
               SliverPadding(
                   padding: EdgeInsets.all(padding),
                   sliver: SliverList.list(children: [
-                    TextField(
+                    MarketSearchField(
                       controller: _searchController,
+                      hintText: 'Find a report',
                       onChanged: (value) => setState(() => _query = value),
-                      decoration: InputDecoration(
-                        hintText: 'Find a report',
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        suffixIcon: query.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: 'Clear search',
-                                icon: const Icon(Icons.close_rounded),
-                                onPressed: () => setState(() {
-                                      _searchController.clear();
-                                      _query = '';
-                                    })),
-                      ),
+                      onClear: () => setState(() {
+                        _searchController.clear();
+                        _query = '';
+                      }),
                     ),
                     const SizedBox(height: 16),
                     SingleChildScrollView(

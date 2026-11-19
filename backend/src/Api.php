@@ -13,7 +13,7 @@ final class Api
 {
     private const RESOURCES = [
         'profile', 'receipt-settings', 'roles', 'staff', 'customers', 'expenses',
-        'recovery-sessions', 'learning-rules', 'ai-threads', 'ai-messages', 'cart', 'preferences',
+        'recovery-sessions', 'learning-rules', 'cart', 'preferences',
     ];
     private array $user = [];
     private string $cartResource = '';
@@ -56,6 +56,19 @@ final class Api
             return $this->resetPasswordWithOtp($body);
         }
         $this->authenticate($token);
+        if ($parts === ['sms', 'send'] && $method === 'POST') {
+            $this->throttle('sms_send:' . $ip);
+            $this->requirePermission('View Reports');
+            $phone = $this->formatTanzanianPhone((string) ($body['phone'] ?? ''));
+            $text = trim((string) ($body['text'] ?? ''));
+            if ($text === '' || strlen($text) > 500) {
+                throw new ApiError(422, 'Provide a message of up to 500 characters.');
+            }
+            if (!$this->sendNextSms($phone, $text)) {
+                throw new ApiError(502, 'Failed to send SMS.');
+            }
+            return ['data' => ['sent' => true, 'phone' => $phone]];
+        }
         if (($parts[0] ?? '') === 'uploads') {
             if ($method === 'POST' && count($parts) === 1) {
                 $this->requireAny(['Manage Inventory', 'Manage Staff', 'System Settings', 'View Reports']);
@@ -315,8 +328,13 @@ final class Api
                 'created_at' => $created,
                 'updated_at' => $created,
                 'status' => 'active',
+                'password_hash' => 'server-managed',
+                'password_salt' => '',
             ]);
-            $this->staffAccount($staffId, ['role_id' => 'owner'], $password);
+            $this->db->execute(
+                'INSERT INTO staff_accounts (store_id, staff_id, user_id) VALUES (?, ?, ?)',
+                [$storeId, $staffId, $userId]
+            );
 
             return $this->issueToken($this->user);
         });
@@ -410,10 +428,14 @@ final class Api
     private function sendNextSms(string $phone, string $message): bool
     {
         $smsConfig = $this->config['sms'] ?? [];
-        $username = (string) ($smsConfig['username'] ?? 'dm328432.14a');
-        $password = (string) ($smsConfig['password'] ?? 'Mahenge2004#');
+        $username = (string) ($smsConfig['username'] ?? '');
+        $password = (string) ($smsConfig['password'] ?? '');
         $senderId = (string) ($smsConfig['sender_id'] ?? 'POS');
         $endpoint = (string) ($smsConfig['endpoint'] ?? 'https://messaging-service.co.tz/api/sms/v1/text/single');
+
+        if ($username === '' || $password === '') {
+            return false;
+        }
 
         $payload = json_encode([
             'from' => $senderId,
@@ -750,14 +772,6 @@ final class Api
             return;
         }
         $this->db->execute('DELETE FROM records WHERE store_id = ? AND resource = ? AND record_id = ?', [$this->user['store_id'], $resource, $id]);
-        if ($resource === 'ai-threads') {
-            foreach ($this->resourceRows('ai-messages') as $message) {
-                if (($message['thread_id'] ?? '') === $id) {
-                    $this->delete('ai-messages', (string) $message['id']);
-                }
-            }
-            $this->bump('ai-messages');
-        }
     }
 
     private function staffAccount(string $id, array &$staff, ?string $password = null): void

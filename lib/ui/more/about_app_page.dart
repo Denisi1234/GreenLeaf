@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/app_design.dart';
@@ -19,70 +20,72 @@ class AboutAppPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const MarketPageHeader(title: 'App Info'),
-            Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
-                    children: [
-                      const SettingsCard(
-                        icon: Icons.storefront_rounded,
-                        title: 'TrackMauzo',
-                        description:
-                            'Point of sale for small shops — the B2C edition of Open Source POS.',
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                const MarketPageHeader(title: 'App Info'),
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
                         children: [
-                          SettingsInfoRow(
-                            label: 'Version',
-                            value: '1.0.0 (1)',
+                          const SettingsCard(
+                            icon: Icons.storefront_rounded,
+                            title: 'TrackMauzo',
+                            description:
+                                'Point of sale for small shops — the B2C edition of Open Source POS.',
+                            children: [
+                              SettingsInfoRow(
+                                label: 'Version',
+                                value: '1.0.0 (1)',
+                              ),
+                              Divider(height: 1),
+                              SettingsInfoRow(
+                                label: 'Edition',
+                                value: 'B2C · Mini',
+                              ),
+                            ],
                           ),
-                          Divider(height: 1),
-                          SettingsInfoRow(
-                            label: 'Edition',
-                            value: 'B2C · Mini',
+                          Container(
+                            decoration: AppDecorations.tile(),
+                            clipBehavior: Clip.antiAlias,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: Column(
+                                children: [
+                                  for (var index = 0;
+                                      index < items.length;
+                                      index++) ...[
+                                    _AboutTile(item: items[index]),
+                                    if (index != items.length - 1)
+                                      const Divider(
+                                        height: 1,
+                                        indent: 66,
+                                        color: AppColors.divider,
+                                      ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            '© 2026 TrackMauzo. All rights reserved.',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.caption,
                           ),
                         ],
                       ),
-                      Container(
-                        decoration: AppDecorations.tile(),
-                        clipBehavior: Clip.antiAlias,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Column(
-                            children: [
-                              for (var index = 0;
-                                  index < items.length;
-                                  index++) ...[
-                                _AboutTile(item: items[index]),
-                                if (index != items.length - 1)
-                                  const Divider(
-                                    height: 1,
-                                    indent: 66,
-                                    color: AppColors.divider,
-                                  ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        '© 2026 TrackMauzo. All rights reserved.',
-                        textAlign: TextAlign.center,
-                        style: AppTypography.caption,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 }

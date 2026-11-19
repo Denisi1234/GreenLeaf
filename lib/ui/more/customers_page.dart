@@ -60,194 +60,279 @@ class _CustomersPageState extends State<CustomersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        bottom: false,
-        child: Consumer<PosLocalStore>(
-          builder: (context, store, _) {
-            final strings = AppStrings.of(store.languageCode);
-            final stats = _buildStats(store);
-            final all = List<CustomerData>.from(store.customers);
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            bottom: false,
+            child: Consumer<PosLocalStore>(
+              builder: (context, store, _) {
+                final strings = AppStrings.of(store.languageCode);
+                final stats = _buildStats(store);
+                final all = List<CustomerData>.from(store.customers);
 
-            final filtered = all.where((customer) {
-              final info = stats[customer.name] ?? _CustomerStats.empty;
-              final q = _searchQuery.trim().toLowerCase();
-              final matchesSearch = q.isEmpty ||
-                  customer.name.toLowerCase().contains(q) ||
-                  customer.phone.toLowerCase().contains(q) ||
-                  customer.email.toLowerCase().contains(q) ||
-                  customer.address.toLowerCase().contains(q);
-              final matchesFilter = _matchesFilter(customer, info);
-              return matchesSearch && matchesFilter;
-            }).toList();
-            _sortList(filtered, stats);
+                final filtered = all.where((customer) {
+                  final info = stats[customer.name] ?? _CustomerStats.empty;
+                  final q = _searchQuery.trim().toLowerCase();
+                  final matchesSearch = q.isEmpty ||
+                      customer.name.toLowerCase().contains(q) ||
+                      customer.phone.toLowerCase().contains(q) ||
+                      customer.email.toLowerCase().contains(q) ||
+                      customer.address.toLowerCase().contains(q);
+                  final matchesFilter = _matchesFilter(customer, info);
+                  return matchesSearch && matchesFilter;
+                }).toList();
+                _sortList(filtered, stats);
 
-            final outstanding = all.fold<double>(
-                0, (sum, c) => sum + (c.debitBalance > 0 ? c.debitBalance : 0));
-            final withOrders = all
-                .where((c) =>
-                    (stats[c.name]?.orders ?? 0) > 0 || c.totalOrders > 0)
-                .length;
-            final lifetime = all.fold<double>(
-              0,
-              (sum, c) =>
-                  sum +
-                  (stats[c.name]?.spent ?? 0) +
-                  (c.totalSpent > 0 ? c.totalSpent : 0),
-            );
+                final outstanding = all.fold<double>(
+                    0,
+                    (sum, c) =>
+                        sum + (c.debitBalance > 0 ? c.debitBalance : 0));
+                final withOrders = all
+                    .where((c) =>
+                        (stats[c.name]?.orders ?? 0) > 0 || c.totalOrders > 0)
+                    .length;
+                final lifetime = all.fold<double>(
+                  0,
+                  (sum, c) =>
+                      sum +
+                      (stats[c.name]?.spent ?? 0) +
+                      (c.totalSpent > 0 ? c.totalSpent : 0),
+                );
 
-            return Column(
-              children: [
-                MarketPageHeader(
-                  title: _dual(strings, 'Customers', 'Wateja'),
-                  subtitle: _dual(strings, 'Contacts, credit and loyalty',
-                      'Mawasiliano, mkopo na uaminifu'),
-                  showBorder: false,
-                  actions: widget.isSelectionMode
-                      ? null
-                      : [
-                          IconButton(
-                            tooltip: _dual(strings, 'Export', 'Hamisha'),
-                            onPressed: filtered.isEmpty || _exporting
-                                ? null
-                                : _showExportMenu,
-                            icon: const Icon(Icons.ios_share_rounded,
-                                color: AppColors.ink),
-                          ),
-                        ],
-                ),
-                Expanded(
-                  child: ListView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, metricConstraints) {
-                          final columns = metricConstraints.maxWidth >= 760 ? 4 : 2;
-                          final width = (metricConstraints.maxWidth - (columns - 1) * 12) / columns;
-                          return Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Total customers', 'Wateja wote'),
-                                  value: '${all.length}',
-                                  icon: Icons.people_alt_outlined,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Active buyers', 'Wanunuzi hai'),
-                                  value: '${all.isEmpty ? 0 : withOrders}',
-                                  icon: Icons.shopping_bag_outlined,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Lifetime sales', 'Jumla ya mauzo'),
-                                  value: _formatMoney(lifetime, compact: true),
-                                  icon: Icons.trending_up_rounded,
-                                  color: AppColors.successDeep,
-                                ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Outstanding debt', 'Madeni yote'),
-                                  value: _formatMoney(outstanding, compact: true),
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  color: outstanding > 0 ? AppColors.dangerDeep : AppColors.textMuted,
-                                ),
+                return Column(
+                  children: [
+                    MarketPageHeader(
+                      title: _dual(strings, 'Customers', 'Wateja'),
+                      subtitle: _dual(strings, 'Contacts, credit and loyalty',
+                          'Mawasiliano, mkopo na uaminifu'),
+                      showBorder: false,
+                      actions: widget.isSelectionMode
+                          ? null
+                          : [
+                              IconButton(
+                                tooltip: _dual(strings, 'Export', 'Hamisha'),
+                                onPressed: filtered.isEmpty || _exporting
+                                    ? null
+                                    : _showExportMenu,
+                                icon: const Icon(Icons.ios_share_rounded,
+                                    color: AppColors.ink),
                               ),
                             ],
-                          );
-                        },
-                      ),
-                      if (outstanding > 0) ...[
-                        const SizedBox(height: 10),
-                        _CreditBanner(
-                          amount: outstanding,
-                          count: store.debtorCount,
-                          strings: strings,
-                          onTap: _openDebtors,
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      MarketSearchField(
-                        controller: _searchController,
-                        hintText:
-                            _dual(strings, 'Search customers', 'Tafuta wateja'),
-                        radius: 0,
-                        showShadow: false,
-                        onChanged: (value) =>
-                            setState(() => _searchQuery = value),
-                        onClear: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _FilterRow(
-                        value: _filter,
-                        strings: strings,
-                        onChanged: (value) => setState(() => _filter = value),
-                      ),
-                      const SizedBox(height: 10),
-                      _SortCard(
-                        sort: _sort,
-                        strings: strings,
-                        onPick: _pickSort,
-                        activeFilters: _hasActiveFilter,
-                        onClear: _clearFilters,
-                      ),
-                      const SizedBox(height: 18),
-                      MarketSectionHeader(
-                        title: _dual(
-                            strings, 'Customer Directory', 'Orodha ya Wateja'),
-                        trailing: Text(
-                          _dual(
-                            strings,
-                            '${filtered.length} of ${all.length}',
-                            '${filtered.length} kati ya ${all.length}',
+                    ),
+                    Expanded(
+                      child: ListView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, metricConstraints) {
+                              final columns =
+                                  metricConstraints.maxWidth >= 760 ? 4 : 2;
+                              final width = (metricConstraints.maxWidth -
+                                      (columns - 1) * 12) /
+                                  columns;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Total customers',
+                                          'Wateja wote'),
+                                      value: '${all.length}',
+                                      icon: Icons.people_alt_outlined,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Active buyers',
+                                          'Wanunuzi hai'),
+                                      value: '${all.isEmpty ? 0 : withOrders}',
+                                      icon: Icons.shopping_bag_outlined,
+                                      color: AppColors.primaryDeep,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Lifetime sales',
+                                          'Jumla ya mauzo'),
+                                      value:
+                                          _formatMoney(lifetime, compact: true),
+                                      icon: Icons.trending_up_rounded,
+                                      color: AppColors.successDeep,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Outstanding debt',
+                                          'Madeni yote'),
+                                      value: _formatMoney(outstanding,
+                                          compact: true),
+                                      icon:
+                                          Icons.account_balance_wallet_outlined,
+                                      color: outstanding > 0
+                                          ? AppColors.dangerDeep
+                                          : AppColors.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                          style: AppTypography.bodySmall
-                              .copyWith(color: AppColors.textMuted),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (filtered.isEmpty)
-                        _EmptyState(
-                          strings: strings,
-                          filtered: _hasActiveFilter,
-                          onAdd: _openCreate,
-                          onReset: _clearFilters,
-                        )
-                      else
-                        ...filtered.map(
-                          (customer) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _CustomerCard(
-                              customer: customer,
-                              stats:
-                                  stats[customer.name] ?? _CustomerStats.empty,
+                          if (outstanding > 0) ...[
+                            const SizedBox(height: 10),
+                            _CreditBanner(
+                              amount: outstanding,
+                              count: store.debtorCount,
                               strings: strings,
-                              onTap: () => _openCustomer(customer),
+                              onTap: _openDebtors,
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          MarketSearchField(
+                            controller: _searchController,
+                            hintText: _dual(
+                                strings, 'Search customers', 'Tafuta wateja'),
+                            radius: AppRadius.standard,
+                            showShadow: false,
+                            onChanged: (value) =>
+                                setState(() => _searchQuery = value),
+                            onClear: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          _FilterRow(
+                            value: _filter,
+                            strings: strings,
+                            onChanged: (value) =>
+                                setState(() => _filter = value),
+                          ),
+                          const SizedBox(height: 10),
+                          _SortCard(
+                            sort: _sort,
+                            strings: strings,
+                            onPick: _pickSort,
+                            activeFilters: _hasActiveFilter,
+                            onClear: _clearFilters,
+                          ),
+                          const SizedBox(height: 18),
+                          MarketSectionHeader(
+                            title: _dual(strings, 'Customer Directory',
+                                'Orodha ya Wateja'),
+                            trailing: Text(
+                              _dual(
+                                strings,
+                                '${filtered.length} of ${all.length}',
+                                '${filtered.length} kati ya ${all.length}',
+                              ),
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.textMuted),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+                          const SizedBox(height: 10),
+                          if (filtered.isEmpty)
+                            _EmptyState(
+                              strings: strings,
+                              filtered: _hasActiveFilter,
+                              onAdd: _openCreate,
+                              onReset: _clearFilters,
+                            )
+                          else
+                            WorkspaceRegister(
+                                columns: [
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Customer', 'Mteja'))),
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Phone', 'Simu'))),
+                                  DataColumn(
+                                      label: Text(_dual(
+                                          strings, 'Email', 'Barua pepe'))),
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Orders', 'Manunuzi')),
+                                      numeric: true),
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Sales', 'Mauzo')),
+                                      numeric: true),
+                                  DataColumn(
+                                      label: Text(_dual(strings,
+                                          'Credit balance', 'Salio la mkopo')),
+                                      numeric: true),
+                                  const DataColumn(label: Text('')),
+                                ],
+                                rows: filtered
+                                    .map((customer) => DataRow(cells: [
+                                          DataCell(
+                                              ConstrainedBox(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          maxWidth: 220),
+                                                  child: Text(customer.name,
+                                                      overflow: TextOverflow
+                                                          .ellipsis)),
+                                              onTap: () =>
+                                                  _openCustomer(customer)),
+                                          DataCell(Text(customer.phone)),
+                                          DataCell(Text(customer.email.isEmpty
+                                              ? '—'
+                                              : customer.email)),
+                                          DataCell(Text(
+                                              '${stats[customer.name]?.orders ?? customer.totalOrders}')),
+                                          DataCell(Text(_formatMoney(
+                                              stats[customer.name]?.spent ??
+                                                  customer.totalSpent))),
+                                          DataCell(Text(
+                                              _formatMoney(
+                                                  customer.debitBalance),
+                                              style: TextStyle(
+                                                  color: customer.debitBalance >
+                                                          0
+                                                      ? AppColors.dangerDeep
+                                                      : AppColors.textBody))),
+                                          DataCell(IconButton(
+                                              tooltip: _dual(
+                                                  strings,
+                                                  'Open customer',
+                                                  'Fungua mteja'),
+                                              onPressed: () =>
+                                                  _openCustomer(customer),
+                                              icon: const Icon(Icons
+                                                  .chevron_right_rounded))),
+                                        ]))
+                                    .toList(),
+                                mobile: Column(children: [
+                                  ...filtered.map(
+                                    (customer) => Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10),
+                                      child: _CustomerCard(
+                                        customer: customer,
+                                        stats: stats[customer.name] ??
+                                            _CustomerStats.empty,
+                                        strings: strings,
+                                        onTap: () => _openCustomer(customer),
+                                      ),
+                                    ),
+                                  )
+                                ])),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          )),
       floatingActionButton: widget.isSelectionMode
           ? null
           : Builder(
@@ -706,60 +791,6 @@ extension on _LoyaltyTier {
       };
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.zero,
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.h3.copyWith(fontSize: 18, letterSpacing: -0.4),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.helperText.copyWith(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _CreditBanner extends StatelessWidget {
   const _CreditBanner({
@@ -913,7 +944,7 @@ class _SortCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Row(
         children: [
@@ -1198,7 +1229,7 @@ class _EmptyState extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(28),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         children: [

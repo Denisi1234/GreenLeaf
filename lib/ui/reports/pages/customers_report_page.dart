@@ -51,7 +51,7 @@ class CustomersReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Total Customer Sales',
-        value: '₹${NumberFormat('#,##0.##').format(totalSales)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalSales)}',
         icon: Icons.attach_money,
         iconColor: Color(0xFF111111),
         tint: Color(0xFF111111).withValues(alpha: 0.1),
@@ -59,7 +59,7 @@ class CustomersReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Avg per Customer',
-        value: '₹${NumberFormat('#,##0.##').format(avgPerCustomer)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(avgPerCustomer)}',
         icon: Icons.analytics,
         iconColor: Color(0xFF15803D),
         tint: Color(0xFF15803D).withValues(alpha: 0.1),
@@ -67,7 +67,7 @@ class CustomersReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Top Customer',
-        value: '₹${NumberFormat('#,##0.##').format(topCustomerSales)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(topCustomerSales)}',
         icon: Icons.star,
         iconColor: Color(0xFF15803D),
         tint: Color(0xFF15803D).withValues(alpha: 0.1),
@@ -132,7 +132,7 @@ class CustomersReportPage extends StatelessWidget {
           Expanded(
             child: _SegmentStat(
               label: 'Outstanding Credit',
-              value: '₹${NumberFormat('#,##0').format(totalCreditBalance)}',
+              value: 'TSh ${NumberFormat('#,##0').format(totalCreditBalance)}',
               percentage: 0,
               color: AppColors.ink,
               icon: Icons.account_balance_wallet,
@@ -165,7 +165,7 @@ class CustomersReportPage extends StatelessWidget {
     insights.add(InsightCard(
       title: 'Top Customer',
       description:
-          '$topCustomerName contributes ${topCustomerShare.toStringAsFixed(1)}% of customer sales (₹${NumberFormat('#,##0').format(topCustomerSales)})',
+          '$topCustomerName contributes ${topCustomerShare.toStringAsFixed(1)}% of customer sales (TSh ${NumberFormat('#,##0').format(topCustomerSales)})',
       icon: Icons.person,
       color: Color(0xFF166534),
       severity: InsightSeverity.success,
@@ -175,7 +175,7 @@ class CustomersReportPage extends StatelessWidget {
       insights.add(InsightCard(
         title: 'Outstanding Receivables',
         description:
-            '$creditCustomers customers owe ₹${NumberFormat('#,##0').format(totalCreditBalance)}. Regular follow-up recommended.',
+            '$creditCustomers customers owe TSh ${NumberFormat('#,##0').format(totalCreditBalance)}. Regular follow-up recommended.',
         icon: Icons.money_off,
         color: Colors.red,
         severity: totalCreditBalance > 10000

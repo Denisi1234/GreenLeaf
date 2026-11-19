@@ -29,17 +29,19 @@ import 'terms_of_service_page.dart';
 /// Six sections in a searchable sidebar on desktop and a section list on mobile.
 /// Section state is preserved while switching tabs, including unsaved edits.
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.initialSection});
+
+  final SettingsSection? initialSection;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-enum _Section { business, receipt, language, data, account, about }
+enum SettingsSection { business, receipt, language, data, account, about }
 
 class _SectionInfo {
   const _SectionInfo(this.section, this.icon, this.label);
-  final _Section section;
+  final SettingsSection section;
   final IconData icon;
   final String label;
 }
@@ -48,32 +50,32 @@ List<_SectionInfo> _tabs(String lang) {
   String t(String en, String sw) => settingsText(lang, en, sw);
   return [
     _SectionInfo(
-      _Section.business,
+      SettingsSection.business,
       Icons.storefront_outlined,
       t('Business', 'Biashara'),
     ),
     _SectionInfo(
-      _Section.receipt,
+      SettingsSection.receipt,
       Icons.receipt_long_outlined,
       t('Receipts', 'Risiti'),
     ),
     _SectionInfo(
-      _Section.language,
+      SettingsSection.language,
       Icons.translate_rounded,
       t('Language', 'Lugha'),
     ),
     _SectionInfo(
-      _Section.data,
+      SettingsSection.data,
       Icons.cloud_sync_outlined,
       t('Data', 'Data'),
     ),
     _SectionInfo(
-      _Section.account,
+      SettingsSection.account,
       Icons.manage_accounts_outlined,
       t('Account', 'Akaunti'),
     ),
     _SectionInfo(
-      _Section.about,
+      SettingsSection.about,
       Icons.info_outline_rounded,
       t('About', 'Kuhusu'),
     ),
@@ -81,10 +83,17 @@ List<_SectionInfo> _tabs(String lang) {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  _Section? _selectedSection;
+  SettingsSection? _selectedSection;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  final Set<_Section> _visited = {_Section.business};
+  final Set<SettingsSection> _visited = {SettingsSection.business};
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSection = widget.initialSection;
+    if (widget.initialSection != null) _visited.add(widget.initialSection!);
+  }
 
   @override
   void dispose() {
@@ -92,53 +101,53 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  void _openDetail(_Section section) {
+  void _openDetail(SettingsSection section) {
     setState(() {
       _selectedSection = section;
       _visited.add(section);
     });
   }
 
-  Widget _buildPane(_Section section) {
+  Widget _buildPane(SettingsSection section) {
     switch (section) {
-      case _Section.business:
+      case SettingsSection.business:
         return const _BusinessPane();
-      case _Section.receipt:
+      case SettingsSection.receipt:
         return const _ReceiptForm();
-      case _Section.language:
+      case SettingsSection.language:
         return const _LanguagePane();
-      case _Section.data:
+      case SettingsSection.data:
         return const _DataSyncPane();
-      case _Section.account:
+      case SettingsSection.account:
         return const _AccountPane();
-      case _Section.about:
+      case SettingsSection.about:
         return const _AboutPane();
     }
   }
 
-  String _description(_Section section, String lang) {
+  String _description(SettingsSection section, String lang) {
     final (en, sw) = switch (section) {
-      _Section.business => (
+      SettingsSection.business => (
           'Business details, currency and daily reports',
           'Taarifa za biashara, sarafu na ripoti za kila siku'
         ),
-      _Section.receipt => (
+      SettingsSection.receipt => (
           'Receipt layout, branding and printing',
           'Mpangilio wa risiti, nembo na uchapishaji'
         ),
-      _Section.language => (
+      SettingsSection.language => (
           'Language and regional preferences',
           'Lugha na mapendeleo ya eneo'
         ),
-      _Section.data => (
+      SettingsSection.data => (
           'Cloud connection, sync and backups',
           'Muunganisho wa wingu, usawazishaji na nakala'
         ),
-      _Section.account => (
+      SettingsSection.account => (
           'Profile, password and security',
           'Wasifu, nenosiri na usalama'
         ),
-      _Section.about => (
+      SettingsSection.about => (
           'App information, support and policies',
           'Taarifa za programu, msaada na sera'
         ),
@@ -155,7 +164,7 @@ class _SettingsPageState extends State<SettingsPage> {
             .toLowerCase()
             .contains(_searchQuery.trim().toLowerCase()))
         .toList();
-    final selected = _selectedSection ?? _Section.business;
+    final selected = _selectedSection ?? SettingsSection.business;
     final current = tabs.firstWhere((tab) => tab.section == selected);
     final panes = IndexedStack(
       index: selected.index,
@@ -170,23 +179,14 @@ class _SettingsPageState extends State<SettingsPage> {
               : const SizedBox.shrink()
       ],
     );
-    final search = TextField(
+    final search = MarketSearchField(
       controller: _searchController,
+      hintText: settingsText(lang, 'Search settings', 'Tafuta mipangilio'),
       onChanged: (value) => setState(() => _searchQuery = value),
-      decoration: InputDecoration(
-        hintText: settingsText(lang, 'Search settings', 'Tafuta mipangilio'),
-        prefixIcon: const Icon(Icons.search_rounded),
-        suffixIcon: _searchQuery.isEmpty
-            ? null
-            : IconButton(
-                tooltip: settingsText(lang, 'Clear search', 'Futa utafutaji'),
-                onPressed: () => setState(() {
-                  _searchController.clear();
-                  _searchQuery = '';
-                }),
-                icon: const Icon(Icons.close_rounded),
-              ),
-      ),
+      onClear: () => setState(() {
+        _searchController.clear();
+        _searchQuery = '';
+      }),
     );
     Widget menu(bool wide) =>
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -260,48 +260,53 @@ class _SettingsPageState extends State<SettingsPage> {
     ]);
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(child: LayoutBuilder(builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 900;
-        return PopScope(
-          canPop: wide || _selectedSection == null,
-          onPopInvokedWithResult: (didPop, result) {
-            if (!didPop && !wide) setState(() => _selectedSection = null);
-          },
-          child: Column(children: [
-            MarketPageHeader(
-              title: settingsText(lang, 'Settings', 'Mipangilio'),
-              subtitle: settingsText(lang, 'Manage your business preferences',
-                  'Dhibiti mapendeleo ya biashara yako'),
-              onBack: () {
-                if (!wide && _selectedSection != null) {
-                  setState(() => _selectedSection = null);
-                } else {
-                  Navigator.of(context).maybePop();
-                }
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(child: LayoutBuilder(builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 900;
+            return PopScope(
+              canPop: wide || _selectedSection == null,
+              onPopInvokedWithResult: (didPop, result) {
+                if (!didPop && !wide) setState(() => _selectedSection = null);
               },
-            ),
-            Expanded(
-                child: Padding(
-              padding: EdgeInsets.all(wide ? 24 : 16),
-              child: wide
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                          SizedBox(width: 270, child: menu(true)),
-                          const SizedBox(width: 24),
-                          Expanded(child: detail),
-                        ])
-                  : IndexedStack(
-                      index: _selectedSection == null ? 0 : 1,
-                      children: [
-                          menu(false),
-                          TickerMode(
-                              enabled: _selectedSection != null, child: detail)
-                        ]),
-            )),
-          ]),
-        );
-      })),
+              child: Column(children: [
+                MarketPageHeader(
+                  title: settingsText(lang, 'Settings', 'Mipangilio'),
+                  subtitle: settingsText(
+                      lang,
+                      'Manage your business preferences',
+                      'Dhibiti mapendeleo ya biashara yako'),
+                  onBack: () {
+                    if (!wide && _selectedSection != null) {
+                      setState(() => _selectedSection = null);
+                    } else {
+                      Navigator.of(context).maybePop();
+                    }
+                  },
+                ),
+                Expanded(
+                    child: Padding(
+                  padding: EdgeInsets.all(wide ? 24 : 16),
+                  child: wide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                              SizedBox(width: 270, child: menu(true)),
+                              const SizedBox(width: 24),
+                              Expanded(child: detail),
+                            ])
+                      : IndexedStack(
+                          index: _selectedSection == null ? 0 : 1,
+                          children: [
+                              menu(false),
+                              TickerMode(
+                                  enabled: _selectedSection != null,
+                                  child: detail)
+                            ]),
+                )),
+              ]),
+            );
+          }))),
     );
   }
 }
@@ -1494,46 +1499,12 @@ class _AccountPaneState extends State<_AccountPane> {
   bool _busy = false;
 
   Future<void> _confirmSignOut(PosLocalStore store) async {
-    final lang = store.languageCode;
-    String t(String en, String sw) => settingsText(lang, en, sw);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text(t('Sign out?', 'Ondoka?')),
-        content: Text(t(
-          'You will need your username and password to sign in again.',
-          'Utahitaji jina la mtumiaji na nenosiri kuingia tena.',
-        )),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(t('Cancel', 'Ghairi')),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-              ),
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(t('Sign out', 'Ondoka')),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
     setState(() => _busy = true);
     try {
-      await store.logout();
-      if (!mounted) return;
-      showSettingsResult(context, t('Signed out', 'Umeondoka'));
-      Navigator.of(context).popUntil((r) => r.isFirst);
-    } catch (error) {
-      if (!mounted) return;
-      showSettingsResult(context, error.toString(), error: true);
+      final success = await showLogoutConfirmationDialog(context);
+      if (success && mounted) {
+        Navigator.of(context).popUntil((r) => r.isFirst);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }

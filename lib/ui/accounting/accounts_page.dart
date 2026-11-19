@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -42,42 +43,47 @@ class _AccountsPageState extends State<AccountsPage>
     final store = context.watch<PosLocalStore>();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: _t('Accounts & ledger', 'Akaunti na daftari'),
-              subtitle: _t('Trial balance and journal entries',
-                  'Mizania na kumbukumbu za daftari'),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-              actions: [
-                IconButton(
-                  tooltip: _t('New journal entry', 'Kumbukumbu mpya'),
-                  onPressed: () => _openJournalForm(context),
-                  icon: const Icon(Icons.add_rounded, color: AppColors.ink),
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: _t('Accounts & ledger', 'Akaunti na daftari'),
+                  subtitle: _t('Trial balance and journal entries',
+                      'Mizania na kumbukumbu za daftari'),
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                  actions: [
+                    IconButton(
+                      tooltip: _t('New journal entry', 'Kumbukumbu mpya'),
+                      onPressed: () => _openJournalForm(context),
+                      icon: const Icon(Icons.add_rounded, color: AppColors.ink),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: _SegmentedTabs(
+                    controller: _tabs,
+                    labels: [
+                      _t('Accounts', 'Akaunti'),
+                      _t('Journal', 'Daftari')
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabs,
+                    children: [
+                      _buildAccounts(store),
+                      _buildJournal(store),
+                    ],
+                  ),
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: _SegmentedTabs(
-                controller: _tabs,
-                labels: [_t('Accounts', 'Akaunti'), _t('Journal', 'Daftari')],
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabs,
-                children: [
-                  _buildAccounts(store),
-                  _buildJournal(store),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 
@@ -124,9 +130,8 @@ class _AccountsPageState extends State<AccountsPage>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: balanced
-                      ? AppColors.successLight
-                      : AppColors.dangerLight,
+                  color:
+                      balanced ? AppColors.successLight : AppColors.dangerLight,
                   borderRadius: BorderRadius.zero,
                   border: Border.all(
                     color: balanced
@@ -155,13 +160,14 @@ class _AccountsPageState extends State<AccountsPage>
             Expanded(
               child: Text(
                 _t('Accounts', 'Akaunti'),
-                style: AppTypography.sectionHeader.copyWith(color: AppColors.ink),
+                style:
+                    AppTypography.sectionHeader.copyWith(color: AppColors.ink),
               ),
             ),
             Text(
               '${rows.length}',
-              style: AppTypography.helperText
-                  .copyWith(color: AppColors.textMuted, fontWeight: FontWeight.w700),
+              style: AppTypography.helperText.copyWith(
+                  color: AppColors.textMuted, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -241,7 +247,8 @@ class _AccountsPageState extends State<AccountsPage>
             Expanded(
               child: Text(
                 _t('Journal entries', 'Kumbukumbu za daftari'),
-                style: AppTypography.sectionHeader.copyWith(color: AppColors.ink),
+                style:
+                    AppTypography.sectionHeader.copyWith(color: AppColors.ink),
               ),
             ),
             MarketButton(
@@ -313,7 +320,10 @@ class _AccountsPageState extends State<AccountsPage>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                entry.date.toLocal().toString().substring(0, 10),
+                                entry.date
+                                    .toLocal()
+                                    .toString()
+                                    .substring(0, 10),
                                 style: AppTypography.helperText
                                     .copyWith(color: AppColors.textMuted),
                               ),
@@ -537,7 +547,7 @@ class _LedgerCard extends StatelessWidget {
       padding: padding,
       showShadow: false,
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       child: child,
     );
   }
@@ -623,128 +633,132 @@ class _AccountFormPageState extends State<AccountFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: widget.account == null
-                  ? _t('Add account', 'Ongeza akaunti')
-                  : _t('Edit account', 'Badilisha akaunti'),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  children: [
-                    _LedgerCard(
-                      child: Column(
-                        children: [
-                          MarketFormField(
-                            label: _t('Code', 'Msimbo'),
-                            hintText: '1000',
-                            controller: _code,
-                            keyboardType: TextInputType.number,
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                    ? _t('Enter a code', 'Weka msimbo')
-                                    : null,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          MarketFormField(
-                            label: _t('Name', 'Jina'),
-                            hintText: _t('Cash on hand', 'Pesa taslimu'),
-                            controller: _name,
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                    ? _t('Enter a name', 'Weka jina')
-                                    : null,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          DropdownButtonFormField<AccountType>(
-                            initialValue: _type,
-                            decoration: InputDecoration(
-                              labelText: _t('Type', 'Aina'),
-                              border: const OutlineInputBorder(
-                                borderRadius: BorderRadius.zero,
+      body: ManagementViewport(
+          maxWidth: 860,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: widget.account == null
+                      ? _t('Add account', 'Ongeza akaunti')
+                      : _t('Edit account', 'Badilisha akaunti'),
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: Form(
+                    key: _formKey,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      children: [
+                        _LedgerCard(
+                          child: Column(
+                            children: [
+                              MarketFormField(
+                                label: _t('Code', 'Msimbo'),
+                                hintText: '1000',
+                                controller: _code,
+                                keyboardType: TextInputType.number,
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? _t('Enter a code', 'Weka msimbo')
+                                        : null,
                               ),
-                              enabledBorder: const OutlineInputBorder(
-                                borderRadius: BorderRadius.zero,
-                                borderSide: BorderSide(color: AppColors.border),
+                              const SizedBox(height: AppSpacing.md),
+                              MarketFormField(
+                                label: _t('Name', 'Jina'),
+                                hintText: _t('Cash on hand', 'Pesa taslimu'),
+                                controller: _name,
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? _t('Enter a name', 'Weka jina')
+                                        : null,
                               ),
-                              focusedBorder: const OutlineInputBorder(
-                                borderRadius: BorderRadius.zero,
-                                borderSide: BorderSide(
-                                    color: AppColors.primary, width: 1.4),
-                              ),
-                            ),
-                            items: [
-                              for (final type in AccountType.values)
-                                DropdownMenuItem(
-                                  value: type,
-                                  child: Text(type.localized(_isSwahili)),
+                              const SizedBox(height: AppSpacing.md),
+                              DropdownButtonFormField<AccountType>(
+                                initialValue: _type,
+                                decoration: InputDecoration(
+                                  labelText: _t('Type', 'Aina'),
+                                  border: const OutlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                  enabledBorder: const OutlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide:
+                                        BorderSide(color: AppColors.border),
+                                  ),
+                                  focusedBorder: const OutlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                        color: AppColors.primary, width: 1.4),
+                                  ),
                                 ),
+                                items: [
+                                  for (final type in AccountType.values)
+                                    DropdownMenuItem(
+                                      value: type,
+                                      child: Text(type.localized(_isSwahili)),
+                                    ),
+                                ],
+                                onChanged: (value) => setState(
+                                    () => _type = value ?? AccountType.asset),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              MarketFormField(
+                                label: _t('Opening balance (TZS)',
+                                    'Mizania ya kuanzia (TZS)'),
+                                hintText: '0',
+                                controller: _balance,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                              ),
                             ],
-                            onChanged: (value) => setState(
-                                () => _type = value ?? AccountType.asset),
                           ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        MarketButton(
+                          label: _t('Save account', 'Hifadhi akaunti'),
+                          icon: Icons.check_rounded,
+                          onTap: () {
+                            if (!_formKey.currentState!.validate()) return;
+                            Navigator.of(context).pop(
+                              Account(
+                                id: widget.account?.id,
+                                code: _code.text.trim(),
+                                name: _name.text.trim(),
+                                type: _type,
+                                openingBalance:
+                                    double.tryParse(_balance.text.trim()) ?? 0,
+                              ),
+                            );
+                          },
+                        ),
+                        if (widget.account != null) ...[
                           const SizedBox(height: AppSpacing.md),
-                          MarketFormField(
-                            label: _t('Opening balance (TZS)',
-                                'Mizania ya kuanzia (TZS)'),
-                            hintText: '0',
-                            controller: _balance,
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
+                          MarketButton(
+                            label: _t('Delete account', 'Futa akaunti'),
+                            icon: Icons.delete_outline_rounded,
+                            isPrimary: false,
+                            color: AppColors.dangerLight,
+                            foregroundColor: AppColors.danger,
+                            borderColor: AppColors.dangerLight,
+                            onTap: () async {
+                              final store = context.read<PosLocalStore>();
+                              final navigator = Navigator.of(context);
+                              await store.deleteAccount(widget.account!.id!);
+                              if (!mounted) return;
+                              navigator.maybePop();
+                            },
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    MarketButton(
-                      label: _t('Save account', 'Hifadhi akaunti'),
-                      icon: Icons.check_rounded,
-                      onTap: () {
-                        if (!_formKey.currentState!.validate()) return;
-                        Navigator.of(context).pop(
-                          Account(
-                            id: widget.account?.id,
-                            code: _code.text.trim(),
-                            name: _name.text.trim(),
-                            type: _type,
-                            openingBalance:
-                                double.tryParse(_balance.text.trim()) ?? 0,
-                          ),
-                        );
-                      },
-                    ),
-                    if (widget.account != null) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      MarketButton(
-                        label: _t('Delete account', 'Futa akaunti'),
-                        icon: Icons.delete_outline_rounded,
-                        isPrimary: false,
-                        color: AppColors.dangerLight,
-                        foregroundColor: AppColors.danger,
-                        borderColor: AppColors.dangerLight,
-                        onTap: () async {
-                          final store = context.read<PosLocalStore>();
-                          final navigator = Navigator.of(context);
-                          await store.deleteAccount(widget.account!.id!);
-                          if (!mounted) return;
-                          navigator.maybePop();
-                        },
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 }
@@ -782,108 +796,121 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
     final balanced = (debit - credit).abs() < 0.01;
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: _t('New journal entry', 'Kumbukumbu mpya'),
-              subtitle:
-                  _t('Debit must equal credit', 'Deni liwe sawa na mkopo'),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                children: [
-                  _LedgerCard(
-                    child: MarketFormField(
-                      label: _t('Memo', 'Maelezo'),
-                      hintText: _t('Opening balance, correction...',
-                          'Mizania, marekebisho...'),
-                      controller: _memoController,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  for (var index = 0; index < _lines.length; index++)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _JournalLineCard(
-                        index: index + 1,
-                        draft: _lines[index],
-                        accounts: store.accounts,
-                        isSwahili: _isSwahili,
-                        onChanged: () => setState(() {}),
-                        onRemove: _lines.length <= 2
-                            ? null
-                            : () => setState(() => _lines.removeAt(index)),
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: _t('New journal entry', 'Kumbukumbu mpya'),
+                  subtitle:
+                      _t('Debit must equal credit', 'Deni liwe sawa na mkopo'),
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    children: [
+                      _LedgerCard(
+                        child: MarketFormField(
+                          label: _t('Memo', 'Maelezo'),
+                          hintText: _t('Opening balance, correction...',
+                              'Mizania, marekebisho...'),
+                          controller: _memoController,
+                        ),
                       ),
-                    ),
-                  MarketButton(
-                    label: _t('Add line', 'Ongeza mstari'),
-                    icon: Icons.add_rounded,
-                    isPrimary: false,
-                    onTap: () => setState(() => _lines.add(_JournalDraft())),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  _LedgerCard(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${_t('Debit', 'Deni')} ${_AccountsPageState._money(debit)}   •   ${_t('Credit', 'Mkopo')} ${_AccountsPageState._money(credit)}',
-                                style: AppTypography.bodySmall.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: balanced ? AppColors.ink : AppColors.danger,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                balanced
-                                    ? _t('Balanced', 'Imelingana')
-                                    : '${_t('Difference', 'Tofauti')} ${_AccountsPageState._money((debit - credit).abs())}',
-                                style: AppTypography.helperText.copyWith(
-                                  color: balanced
-                                      ? AppColors.successDeep
-                                      : AppColors.danger,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                      const SizedBox(height: AppSpacing.md),
+                      for (var index = 0; index < _lines.length; index++)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _JournalLineCard(
+                            index: index + 1,
+                            draft: _lines[index],
+                            accounts: store.accounts,
+                            isSwahili: _isSwahili,
+                            onChanged: () => setState(() {}),
+                            onRemove: _lines.length <= 2
+                                ? null
+                                : () => setState(() => _lines.removeAt(index)),
                           ),
                         ),
-                      ],
-                    ),
+                      MarketButton(
+                        label: _t('Add line', 'Ongeza mstari'),
+                        icon: Icons.add_rounded,
+                        isPrimary: false,
+                        onTap: () =>
+                            setState(() => _lines.add(_JournalDraft())),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _LedgerCard(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${_t('Debit', 'Deni')} ${_AccountsPageState._money(debit)}   •   ${_t('Credit', 'Mkopo')} ${_AccountsPageState._money(credit)}',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: balanced
+                                          ? AppColors.ink
+                                          : AppColors.danger,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    balanced
+                                        ? _t('Balanced', 'Imelingana')
+                                        : '${_t('Difference', 'Tofauti')} ${_AccountsPageState._money((debit - credit).abs())}',
+                                    style: AppTypography.helperText.copyWith(
+                                      color: balanced
+                                          ? AppColors.successDeep
+                                          : AppColors.danger,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      MarketButton(
+                        label: _t('Save entry', 'Hifadhi kumbukumbu'),
+                        icon: Icons.check_rounded,
+                        onTap: () => _save(store),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  MarketButton(
-                    label: _t('Save entry', 'Hifadhi kumbukumbu'),
-                    icon: Icons.check_rounded,
-                    onTap: () => _save(store),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 
   Future<void> _save(PosLocalStore store) async {
-    final valid = _lines.where((line) =>
-        line.accountId != null && (line.debit > 0 || line.credit > 0));
-    if (valid.isEmpty) {
-      showMarketNotice(
-        context,
-        title: _t('Nothing to save', 'Hakuna cha kuhifadhi'),
-        message: _t('Add at least one debit or credit line',
-            'Ongeza mstari wa deni au mkopo'),
-        type: MarketNoticeType.error,
-      );
+    final valid = _lines
+        .where((line) =>
+            line.accountId != null || line.debit != 0 || line.credit != 0)
+        .toList();
+    if (valid.length < 2 ||
+        valid.any((line) =>
+            line.accountId == null ||
+            !line.debit.isFinite ||
+            !line.credit.isFinite ||
+            line.debit < 0 ||
+            line.credit < 0 ||
+            (line.debit > 0) == (line.credit > 0))) {
+      showMarketNotice(context,
+          title: _t('Check journal lines', 'Kagua mistari ya daftari'),
+          message: _t(
+              'Use at least two lines. Each line needs an account and either a debit or a credit.',
+              'Tumia angalau mistari miwili. Kila mstari unahitaji akaunti na deni au mkopo.'),
+          type: MarketNoticeType.warning);
       return;
     }
     final debit = valid.fold<double>(0, (s, l) => s + l.debit);
@@ -989,8 +1016,7 @@ class _JournalLineCard extends StatelessWidget {
               ),
               focusedBorder: const OutlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide:
-                    BorderSide(color: AppColors.primary, width: 1.4),
+                borderSide: BorderSide(color: AppColors.primary, width: 1.4),
               ),
             ),
             items: [

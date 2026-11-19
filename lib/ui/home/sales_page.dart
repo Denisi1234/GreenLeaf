@@ -15,6 +15,7 @@ import '../../service/pos_local_store.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/workspace_widgets.dart';
+import 'suspended_sales_sheet.dart';
 
 class SalesPage extends StatelessWidget {
   const SalesPage({
@@ -240,10 +241,76 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
             final wide = constraints.maxWidth >= 1100;
             final browser =
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const WorkspaceHeading(
+              WorkspaceHeading(
                   title: 'Make a sale',
                   subtitle:
-                      'Choose products, review the cart and continue to payment.'),
+                      'Choose products, review the cart and continue to payment.',
+                  action: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (store.cartItems.isNotEmpty)
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final sale = await store.suspendCurrentSale();
+                            if (sale != null && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Sale ${sale.id} parked/held successfully.'),
+                                  backgroundColor: const Color(0xFF0F172A),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.border),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: const Icon(Icons.pause_circle_outline_rounded, size: 18),
+                          label: const Text('Hold Sale'),
+                        ),
+                      const SizedBox(width: 8),
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () => SuspendedSalesSheet.show(context),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            icon: const Icon(Icons.history_toggle_off_rounded, size: 18),
+                            label: const Text('Held Sales'),
+                          ),
+                          if (store.suspendedSales.isNotEmpty)
+                            Positioned(
+                              top: -4,
+                              right: -4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white, width: 1.5),
+                                ),
+                                child: Text(
+                                  '${store.suspendedSales.length}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  )),
               const SizedBox(height: 16),
               TextField(
                 controller: _searchController,

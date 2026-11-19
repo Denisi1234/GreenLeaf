@@ -74,207 +74,308 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        bottom: false,
-        child: Consumer<PosLocalStore>(
-          builder: (context, store, _) {
-            final strings = AppStrings.of(store.languageCode);
-            final all = List<Expense>.from(store.expenses);
-            final inRange = _applyRange(all);
-            final payments = <String>{
-              'All',
-              ...all
-                  .map((e) => e.paymentMethod)
-                  .where((e) => e.trim().isNotEmpty),
-            }.toList()
-              ..sort();
-            final filtered = inRange.where((e) {
-              final q = _search.trim().toLowerCase();
-              final matchesSearch = q.isEmpty ||
-                  e.title.toLowerCase().contains(q) ||
-                  e.category.toLowerCase().contains(q) ||
-                  e.paymentMethod.toLowerCase().contains(q) ||
-                  e.vendor.toLowerCase().contains(q) ||
-                  (e.notes ?? '').toLowerCase().contains(q);
-              final matchesPayment =
-                  _paymentFilter == 'All' || e.paymentMethod == _paymentFilter;
-              return matchesSearch && matchesPayment;
-            }).toList();
-            _sortList(filtered);
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            bottom: false,
+            child: Consumer<PosLocalStore>(
+              builder: (context, store, _) {
+                final strings = AppStrings.of(store.languageCode);
+                final all = List<Expense>.from(store.expenses);
+                final inRange = _applyRange(all);
+                final payments = <String>{
+                  'All',
+                  ...all
+                      .map((e) => e.paymentMethod)
+                      .where((e) => e.trim().isNotEmpty),
+                }.toList()
+                  ..sort();
+                final filtered = inRange.where((e) {
+                  final q = _search.trim().toLowerCase();
+                  final matchesSearch = q.isEmpty ||
+                      e.title.toLowerCase().contains(q) ||
+                      e.category.toLowerCase().contains(q) ||
+                      e.paymentMethod.toLowerCase().contains(q) ||
+                      e.vendor.toLowerCase().contains(q) ||
+                      (e.notes ?? '').toLowerCase().contains(q);
+                  final matchesPayment = _paymentFilter == 'All' ||
+                      e.paymentMethod == _paymentFilter;
+                  return matchesSearch && matchesPayment;
+                }).toList();
+                _sortList(filtered);
 
-            final total =
-                filtered.fold<double>(0, (s, e) => s + e.totalWithTax);
-            final taxTotal =
-                filtered.fold<double>(0, (s, e) => s + e.taxAmount);
-            final byPayment = <String, double>{};
-            for (final e in filtered) {
-              final k = e.paymentMethod.trim().isEmpty
-                  ? _dual(strings, 'Unspecified', 'Haijabainishwa')
-                  : e.paymentMethod;
-              byPayment[k] = (byPayment[k] ?? 0) + e.totalWithTax;
-            }
-            final paymentSummary = byPayment.entries.toList()
-              ..sort((a, b) => b.value.compareTo(a.value));
+                final total =
+                    filtered.fold<double>(0, (s, e) => s + e.totalWithTax);
+                final taxTotal =
+                    filtered.fold<double>(0, (s, e) => s + e.taxAmount);
+                final byPayment = <String, double>{};
+                for (final e in filtered) {
+                  final k = e.paymentMethod.trim().isEmpty
+                      ? _dual(strings, 'Unspecified', 'Haijabainishwa')
+                      : e.paymentMethod;
+                  byPayment[k] = (byPayment[k] ?? 0) + e.totalWithTax;
+                }
+                final paymentSummary = byPayment.entries.toList()
+                  ..sort((a, b) => b.value.compareTo(a.value));
 
-            return Column(
-              children: [
-                MarketPageHeader(
-                  title: _dual(strings, 'Expenses', 'Matumizi'),
-                  subtitle: _dual(strings, 'Track and review recorded expenses',
-                      'Fuatilia na pitia matumizi yaliyorekodiwa'),
-                  showBorder: false,
-                  actions: [
-                    IconButton(
-                      tooltip: _dual(strings, 'Export', 'Hamisha'),
-                      onPressed: filtered.isEmpty || _exporting
-                          ? null
-                          : _showExportMenu,
-                      icon: const Icon(Icons.ios_share_rounded,
-                          color: AppColors.ink),
+                return Column(
+                  children: [
+                    MarketPageHeader(
+                      title: _dual(strings, 'Expenses', 'Matumizi'),
+                      subtitle: _dual(
+                          strings,
+                          'Track and review recorded expenses',
+                          'Fuatilia na pitia matumizi yaliyorekodiwa'),
+                      showBorder: false,
+                      actions: [
+                        IconButton(
+                          tooltip: _dual(strings, 'Export', 'Hamisha'),
+                          onPressed: filtered.isEmpty || _exporting
+                              ? null
+                              : _showExportMenu,
+                          icon: const Icon(Icons.ios_share_rounded,
+                              color: AppColors.ink),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                Expanded(
-                  child: ListView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, metricConstraints) {
-                          final columns = metricConstraints.maxWidth >= 760 ? 4 : 2;
-                          final width = (metricConstraints.maxWidth - (columns - 1) * 12) / columns;
-                          return Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Total spent', 'Jumla ya matumizi'),
-                                  value: _formatMoney(total, compact: true),
-                                  icon: Icons.payments_outlined,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Total records', 'Idadi ya kumbukumbu'),
-                                  value: '${filtered.length}',
-                                  icon: Icons.receipt_long_outlined,
-                                  color: AppColors.primaryDeep,
-                                ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Average expense', 'Wastani wa matumizi'),
-                                  value: _formatMoney(
-                                    filtered.isEmpty ? 0 : total / filtered.length,
-                                    compact: true,
+                    Expanded(
+                      child: ListView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
+                        children: [
+                          LayoutBuilder(
+                            builder: (context, metricConstraints) {
+                              final columns =
+                                  metricConstraints.maxWidth >= 760 ? 4 : 2;
+                              final width = (metricConstraints.maxWidth -
+                                      (columns - 1) * 12) /
+                                  columns;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Total spent',
+                                          'Jumla ya matumizi'),
+                                      value: _formatMoney(total, compact: true),
+                                      icon: Icons.payments_outlined,
+                                      color: AppColors.ink,
+                                    ),
                                   ),
-                                  icon: Icons.query_stats_rounded,
-                                  color: AppColors.textBody,
-                                ),
-                              ),
-                              SizedBox(
-                                width: width,
-                                child: WorkspaceMetric(
-                                  label: _dual(strings, 'Tax included', 'Kodi iliyojumuishwa'),
-                                  value: _formatMoney(taxTotal, compact: true),
-                                  icon: Icons.account_balance_outlined,
-                                  color: taxTotal > 0 ? AppColors.toneIndigo : AppColors.textMuted,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      if (taxTotal > 0) ...[
-                        const SizedBox(height: 10),
-                        _TaxBanner(
-                          amount: taxTotal,
-                          strings: strings,
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      _RangeCard(
-                        label: _rangeLabel(strings),
-                        sortLabel: _sort.label(strings),
-                        sortIcon: _sort.icon,
-                        onPickRange: _pickRange,
-                        onCustomRange: _pickCustomRange,
-                        onPickSort: _pickSort,
-                        strings: strings,
-                      ),
-                      const SizedBox(height: 12),
-                      MarketSearchField(
-                        controller: _searchController,
-                        hintText: _dual(
-                            strings, 'Search expenses', 'Tafuta matumizi'),
-                        radius: 0,
-                        showShadow: false,
-                        onChanged: (v) => setState(() => _search = v),
-                        onClear: () {
-                          _searchController.clear();
-                          setState(() => _search = '');
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _PaymentFilterRow(
-                        payments: payments,
-                        value: _paymentFilter,
-                        strings: strings,
-                        onChanged: (v) => setState(() => _paymentFilter = v),
-                      ),
-                      if (paymentSummary.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _PaymentSummaryCard(
-                            items: paymentSummary, strings: strings),
-                      ],
-                      const SizedBox(height: 18),
-                      MarketSectionHeader(
-                        title: _dual(strings, 'Expense Records',
-                            'Kumbukumbu za Matumizi'),
-                        trailing: Text(
-                          _dual(
-                              strings,
-                              '${filtered.length} entr${filtered.length == 1 ? 'y' : 'ies'}',
-                              '${filtered.length} rekodi'),
-                          style: AppTypography.bodySmall
-                              .copyWith(color: AppColors.textMuted),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (filtered.isEmpty)
-                        _EmptyState(
-                          strings: strings,
-                          onAdd: _openAddExpense,
-                        )
-                      else
-                        ...filtered.map(
-                          (expense) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _ExpenseCard(
-                              expense: expense,
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Total records',
+                                          'Idadi ya kumbukumbu'),
+                                      value: '${filtered.length}',
+                                      icon: Icons.receipt_long_outlined,
+                                      color: AppColors.primaryDeep,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Average expense',
+                                          'Wastani wa matumizi'),
+                                      value: _formatMoney(
+                                        filtered.isEmpty
+                                            ? 0
+                                            : total / filtered.length,
+                                        compact: true,
+                                      ),
+                                      icon: Icons.query_stats_rounded,
+                                      color: AppColors.textBody,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: width,
+                                    child: WorkspaceMetric(
+                                      label: _dual(strings, 'Tax included',
+                                          'Kodi iliyojumuishwa'),
+                                      value:
+                                          _formatMoney(taxTotal, compact: true),
+                                      icon: Icons.account_balance_outlined,
+                                      color: taxTotal > 0
+                                          ? AppColors.toneIndigo
+                                          : AppColors.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          if (taxTotal > 0) ...[
+                            const SizedBox(height: 10),
+                            _TaxBanner(
+                              amount: taxTotal,
                               strings: strings,
-                              onTap: () => _showExpense(context, expense),
-                              onEdit: () => _openEditExpense(expense),
-                              onDelete: expense.id == null
-                                  ? null
-                                  : () =>
-                                      _confirmDelete(context, store, expense),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          _RangeCard(
+                            label: _rangeLabel(strings),
+                            sortLabel: _sort.label(strings),
+                            sortIcon: _sort.icon,
+                            onPickRange: _pickRange,
+                            onCustomRange: _pickCustomRange,
+                            onPickSort: _pickSort,
+                            strings: strings,
+                          ),
+                          const SizedBox(height: 12),
+                          MarketSearchField(
+                            controller: _searchController,
+                            hintText: _dual(
+                                strings, 'Search expenses', 'Tafuta matumizi'),
+                            radius: AppRadius.standard,
+                            showShadow: false,
+                            onChanged: (v) => setState(() => _search = v),
+                            onClear: () {
+                              _searchController.clear();
+                              setState(() => _search = '');
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          _PaymentFilterRow(
+                            payments: payments,
+                            value: _paymentFilter,
+                            strings: strings,
+                            onChanged: (v) =>
+                                setState(() => _paymentFilter = v),
+                          ),
+                          if (paymentSummary.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _PaymentSummaryCard(
+                                items: paymentSummary, strings: strings),
+                          ],
+                          const SizedBox(height: 18),
+                          MarketSectionHeader(
+                            title: _dual(strings, 'Expense Records',
+                                'Kumbukumbu za Matumizi'),
+                            trailing: Text(
+                              _dual(
+                                  strings,
+                                  '${filtered.length} entr${filtered.length == 1 ? 'y' : 'ies'}',
+                                  '${filtered.length} rekodi'),
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.textMuted),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+                          const SizedBox(height: 10),
+                          if (filtered.isEmpty)
+                            _EmptyState(
+                              strings: strings,
+                              onAdd: _openAddExpense,
+                            )
+                          else
+                            WorkspaceRegister(
+                                columns: [
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Date', 'Tarehe'))),
+                                  DataColumn(
+                                      label: Text(_dual(
+                                          strings, 'Expense', 'Matumizi'))),
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Category', 'Kundi'))),
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Payment', 'Malipo'))),
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Status', 'Hali'))),
+                                  DataColumn(
+                                      label: Text(
+                                          _dual(strings, 'Total', 'Jumla')),
+                                      numeric: true),
+                                  const DataColumn(label: Text('')),
+                                ],
+                                rows: filtered
+                                    .map((expense) => DataRow(cells: [
+                                          DataCell(Text(DateFormat.yMMMd()
+                                              .format(expense.date))),
+                                          DataCell(
+                                              ConstrainedBox(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          maxWidth: 220),
+                                                  child: Text(expense.title,
+                                                      overflow: TextOverflow
+                                                          .ellipsis)),
+                                              onTap: () => _showExpense(
+                                                  context, expense)),
+                                          DataCell(Text(expense.category)),
+                                          DataCell(Text(expense.paymentMethod)),
+                                          DataCell(WorkspaceStatus(
+                                              label: expense.status
+                                                  .localized(strings.isSwahili),
+                                              color: AppColors.textBody)),
+                                          DataCell(Text(_formatMoney(
+                                              expense.totalWithTax))),
+                                          DataCell(Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                IconButton(
+                                                    tooltip: _dual(
+                                                        strings,
+                                                        'Edit expense',
+                                                        'Badili matumizi'),
+                                                    onPressed: () =>
+                                                        _openEditExpense(
+                                                            expense),
+                                                    icon: const Icon(
+                                                        Icons.edit_outlined,
+                                                        size: 19)),
+                                                IconButton(
+                                                    tooltip: _dual(
+                                                        strings,
+                                                        'Delete expense',
+                                                        'Futa matumizi'),
+                                                    onPressed: expense.id ==
+                                                            null
+                                                        ? null
+                                                        : () => _confirmDelete(
+                                                            context,
+                                                            store,
+                                                            expense),
+                                                    icon: const Icon(
+                                                        Icons
+                                                            .delete_outline_rounded,
+                                                        size: 19,
+                                                        color: AppColors
+                                                            .dangerDeep)),
+                                              ])),
+                                        ]))
+                                    .toList(),
+                                mobile: Column(children: [
+                                  ...filtered.map(
+                                    (expense) => Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10),
+                                      child: _ExpenseCard(
+                                        expense: expense,
+                                        strings: strings,
+                                        onTap: () =>
+                                            _showExpense(context, expense),
+                                        onEdit: () => _openEditExpense(expense),
+                                        onDelete: expense.id == null
+                                            ? null
+                                            : () => _confirmDelete(
+                                                context, store, expense),
+                                      ),
+                                    ),
+                                  )
+                                ])),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          )),
       floatingActionButton: Builder(
         builder: (context) {
           final strings =
@@ -959,60 +1060,6 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.zero,
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.h3.copyWith(fontSize: 18, letterSpacing: -0.4),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.helperText.copyWith(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _TaxBanner extends StatelessWidget {
   const _TaxBanner({required this.amount, required this.strings});
@@ -1079,7 +1126,7 @@ class _RangeCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Row(
         children: [
@@ -1220,7 +1267,7 @@ class _PaymentSummaryCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1527,7 +1574,7 @@ class _EmptyState extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(28),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Column(
         children: [

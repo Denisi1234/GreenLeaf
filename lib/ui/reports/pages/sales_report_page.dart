@@ -53,7 +53,7 @@ class SalesReportPage extends StatelessWidget {
     return [
       MetricData(
         title: 'Total Sales',
-        value: '₹${NumberFormat('#,##0.##').format(totalSales)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalSales)}',
         icon: Icons.attach_money,
         iconColor: Color(0xFF166534),
         tint: Color(0xFF166534).withValues(alpha: 0.1),
@@ -69,7 +69,7 @@ class SalesReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Avg Order Value',
-        value: '₹${NumberFormat('#,##0.##').format(avgOrderValue)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(avgOrderValue)}',
         icon: Icons.shopping_cart,
         iconColor: Color(0xFF15803D),
         tint: Color(0xFF15803D).withValues(alpha: 0.1),
@@ -119,7 +119,7 @@ class SalesReportPage extends StatelessWidget {
               label: DateFormat('MMM d').format(e.key),
               value: e.value.fold(0.0, (sum, s) => sum + s.order.total),
               displayValue:
-                  '₹${NumberFormat('#,##0').format(e.value.fold(0.0, (sum, s) => sum + s.order.total))}',
+                  'TSh ${NumberFormat('#,##0').format(e.value.fold(0.0, (sum, s) => sum + s.order.total))}',
             ))
         .toList();
     final maxValue = trendPoints.isEmpty
@@ -161,7 +161,7 @@ class SalesReportPage extends StatelessWidget {
     insights.add(InsightCard(
       title: 'Peak Sales Day',
       description:
-          'Highest sales on ${DateFormat('EEEE, MMM d').format(topDay.key)} with ₹${NumberFormat('#,##0').format(topDay.value.fold(0.0, (sum, s) => sum + s.order.total))}',
+          'Highest sales on ${DateFormat('EEEE, MMM d').format(topDay.key)} with TSh ${NumberFormat('#,##0').format(topDay.value.fold(0.0, (sum, s) => sum + s.order.total))}',
       icon: Icons.calendar_today,
       color: Color(0xFF166534),
       severity: InsightSeverity.info,
@@ -184,7 +184,7 @@ class SalesReportPage extends StatelessWidget {
       insights.add(InsightCard(
         title: 'Low Average Order Value',
         description:
-            'Average order is ₹${NumberFormat('#,##0').format(avgOrder)}. Consider upselling or bundle offers.',
+            'Average order is TSh ${NumberFormat('#,##0').format(avgOrder)}. Consider upselling or bundle offers.',
         icon: Icons.shopping_bag,
         color: Color(0xFF15803D),
         severity: InsightSeverity.info,

@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
@@ -566,149 +567,208 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
             ),
           ),
         ),
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              MarketPageHeader(
-                title: strings.staffManagementTitle,
-                subtitle: _dual(
-                    strings,
-                    '$activeCount active · ${allStaff.length} total · ${store.staffRoles.length} roles',
-                    '$activeCount hai · ${allStaff.length} jumla · ${store.staffRoles.length} nafasi'),
-                centerTitle: false,
-                showBorder: false,
-                actions: [
-                  IconButton(
-                    tooltip:
-                        _dual(strings, 'Roles and access', 'Nafasi na ruhusa'),
-                    onPressed: () => _showRolesSheet(store),
-                    icon: const Icon(
-                      Icons.admin_panel_settings_outlined,
-                      color: AppColors.ink,
-                    ),
+        body: ManagementViewport(
+            maxWidth: 1280,
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  MarketPageHeader(
+                    title: strings.staffManagementTitle,
+                    subtitle: _dual(
+                        strings,
+                        '$activeCount active · ${allStaff.length} total · ${store.staffRoles.length} roles',
+                        '$activeCount hai · ${allStaff.length} jumla · ${store.staffRoles.length} nafasi'),
+                    centerTitle: false,
+                    showBorder: false,
+                    actions: [
+                      IconButton(
+                        tooltip: _dual(
+                            strings, 'Roles and access', 'Nafasi na ruhusa'),
+                        onPressed: () => _showRolesSheet(store),
+                        icon: const Icon(
+                          Icons.admin_panel_settings_outlined,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                ],
-              ),
-              Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
-                  children: [
-                    Row(
+                  Expanded(
+                    child: ListView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
                       children: [
-                        Expanded(
-                          child: _StatCard(
-                            label: _dual(strings, 'Total', 'Jumla'),
-                            value: '${allStaff.length}',
-                            icon: Icons.groups_2_outlined,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _StatCard(
-                            label: _dual(strings, 'Active', 'Hai'),
-                            value: '$activeCount',
-                            icon: Icons.check_circle_outline_rounded,
-                            color: AppColors.success,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _StatCard(
-                            label: _dual(strings, 'On leave', 'Likizo'),
-                            value: '$onLeaveCount',
-                            icon: Icons.event_busy_outlined,
-                            color: AppColors.warning,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    MarketSearchField(
-                      controller: _searchController,
-                      hintText: _dual(strings, 'Search name, role, phone, ID',
-                          'Tafuta jina, nafasi, simu, kitambulisho'),
-                      onChanged: (value) =>
-                          setState(() => _searchQuery = value),
-                      onClear: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          ..._StatusFilter.values.map(
-                            (filter) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: _ChoicePill(
-                                label: filter.localized(strings),
-                                selected: _statusFilter == filter,
-                                onTap: () =>
-                                    setState(() => _statusFilter = filter),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatCard(
+                                label: _dual(strings, 'Total', 'Jumla'),
+                                value: '${allStaff.length}',
+                                icon: Icons.groups_2_outlined,
+                                color: AppColors.primary,
                               ),
                             ),
-                          ),
-                          _RoleFilterChip(
-                            store: store,
-                            selectedRole: selectedRole,
-                            onSelected: (roleId) =>
-                                setState(() => _roleFilterId = roleId),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Text(
-                          _dual(strings, 'Staff Directory',
-                              'Orodha ya Wafanyakazi'),
-                          style: AppTypography.sectionHeader,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _StatCard(
+                                label: _dual(strings, 'Active', 'Hai'),
+                                value: '$activeCount',
+                                icon: Icons.check_circle_outline_rounded,
+                                color: AppColors.success,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _StatCard(
+                                label: _dual(strings, 'On leave', 'Likizo'),
+                                value: '$onLeaveCount',
+                                icon: Icons.event_busy_outlined,
+                                color: AppColors.warning,
+                              ),
+                            ),
+                          ],
                         ),
-                        const Spacer(),
-                        Text(
-                          _dual(strings, '${staff.length} shown',
-                              '${staff.length} wanaonyeshwa'),
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.textMuted,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(height: 16),
+                        MarketSearchField(
+                          controller: _searchController,
+                          hintText: _dual(
+                              strings,
+                              'Search name, role, phone, ID',
+                              'Tafuta jina, nafasi, simu, kitambulisho'),
+                          onChanged: (value) =>
+                              setState(() => _searchQuery = value),
+                          onClear: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              ..._StatusFilter.values.map(
+                                (filter) => Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: _ChoicePill(
+                                    label: filter.localized(strings),
+                                    selected: _statusFilter == filter,
+                                    onTap: () =>
+                                        setState(() => _statusFilter = filter),
+                                  ),
+                                ),
+                              ),
+                              _RoleFilterChip(
+                                store: store,
+                                selectedRole: selectedRole,
+                                onSelected: (roleId) =>
+                                    setState(() => _roleFilterId = roleId),
+                              ),
+                            ],
                           ),
                         ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Text(
+                              _dual(strings, 'Staff Directory',
+                                  'Orodha ya Wafanyakazi'),
+                              style: AppTypography.sectionHeader,
+                            ),
+                            const Spacer(),
+                            Text(
+                              _dual(strings, '${staff.length} shown',
+                                  '${staff.length} wanaonyeshwa'),
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (staff.isEmpty)
+                          _EmptyState(
+                            strings: strings,
+                            hasFilters: _hasFilters,
+                            onReset: _resetFilters,
+                            onAdd: () => _openAddStaff(store),
+                          )
+                        else
+                          WorkspaceRegister(
+                              columns: [
+                                DataColumn(
+                                    label: Text(_dual(strings, 'Staff member',
+                                        'Mfanyakazi'))),
+                                DataColumn(
+                                    label:
+                                        Text(_dual(strings, 'Role', 'Jukumu'))),
+                                DataColumn(
+                                    label:
+                                        Text(_dual(strings, 'Phone', 'Simu'))),
+                                DataColumn(
+                                    label: Text(
+                                        _dual(strings, 'Email', 'Barua pepe'))),
+                                DataColumn(
+                                    label:
+                                        Text(_dual(strings, 'Status', 'Hali'))),
+                                const DataColumn(label: Text('')),
+                              ],
+                              rows: staff
+                                  .map((member) => DataRow(cells: [
+                                        DataCell(
+                                            ConstrainedBox(
+                                                constraints:
+                                                    const BoxConstraints(
+                                                        maxWidth: 220),
+                                                child: Text(member.name,
+                                                    overflow:
+                                                        TextOverflow.ellipsis)),
+                                            onTap: () => _openDetails(member)),
+                                        DataCell(Text(store
+                                                .staffRoleById(member.roleId)
+                                                ?.title ??
+                                            '—')),
+                                        DataCell(Text(member.phone)),
+                                        DataCell(Text(member.email)),
+                                        DataCell(WorkspaceStatus(
+                                            label: member.status
+                                                .localized(strings.isSwahili),
+                                            color: member.isActive
+                                                ? AppColors.successDeep
+                                                : AppColors.textMuted)),
+                                        DataCell(IconButton(
+                                            tooltip: _dual(
+                                                strings,
+                                                'Staff actions',
+                                                'Vitendo vya mfanyakazi'),
+                                            onPressed: () =>
+                                                _showActions(store, member),
+                                            icon: const Icon(
+                                                Icons.more_horiz_rounded))),
+                                      ]))
+                                  .toList(),
+                              mobile: Column(children: [
+                                ...staff.map(
+                                  (member) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: _StaffTile(
+                                      strings: strings,
+                                      member: member,
+                                      role: store.staffRoleById(member.roleId),
+                                      onTap: () => _openDetails(member),
+                                      onMenu: () => _showActions(store, member),
+                                    ),
+                                  ),
+                                )
+                              ])),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    if (staff.isEmpty)
-                      _EmptyState(
-                        strings: strings,
-                        hasFilters: _hasFilters,
-                        onReset: _resetFilters,
-                        onAdd: () => _openAddStaff(store),
-                      )
-                    else
-                      ...staff.map(
-                        (member) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _StaffTile(
-                            strings: strings,
-                            member: member,
-                            role: store.staffRoleById(member.roleId),
-                            onTap: () => _openDetails(member),
-                            onMenu: () => _showActions(store, member),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            )),
       ),
     );
   }

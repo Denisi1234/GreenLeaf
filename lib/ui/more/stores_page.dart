@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,7 +6,6 @@ import '../../service/pos_local_store.dart';
 import '../../service/store_models.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
-import 'subscription_plan_page.dart';
 
 class StoresPage extends StatelessWidget {
   const StoresPage({super.key});
@@ -20,160 +20,125 @@ class StoresPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: t('Stores', 'Maduka'),
-              subtitle: t(
-                'Manage outlets and switch active store',
-                'Dhibiti matawi na badili duka linalotumika',
-              ),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-              actions: [
-                IconButton(
-                  tooltip: t('Add store', 'Ongeza duka'),
-                  onPressed: () => _openStoreForm(context),
-                  icon: const Icon(Icons.add_rounded, color: AppColors.ink),
-                ),
-              ],
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                children: [
-                  _flatCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t('Active store', 'Duka linalotumika'),
-                          style: AppTypography.label
-                              .copyWith(color: AppColors.textMuted),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          store.activeStoreName,
-                          style: AppTypography.h1.copyWith(
-                            fontSize: 24,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          t(
-                            'Sales, stock, customers and accounting are tracked per store. Reports can compare all stores.',
-                            'Mauzo, hifadhi, wateja na uhasibu vinafuatiliwa kwa kila duka. Ripoti zinaweza kulinganisha maduka yote.',
-                          ),
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.textMuted,
-                            height: 1.45,
-                          ),
-                        ),
-                      ],
-                    ),
+      body: ManagementViewport(
+          maxWidth: 1280,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: t('Stores', 'Maduka'),
+                  subtitle: t(
+                    'Manage outlets and switch active store',
+                    'Dhibiti matawi na badili duka linalotumika',
                   ),
-                  const SizedBox(height: 12),
-                  Row(
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                  actions: [
+                    IconButton(
+                      tooltip: t('Add store', 'Ongeza duka'),
+                      onPressed: () => _openStoreForm(context),
+                      icon: const Icon(Icons.add_rounded, color: AppColors.ink),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                     children: [
-                      Expanded(
-                        child: _metricCard(
-                          label: t('Total stores', 'Jumla ya maduka'),
-                          value: '${stores.length}',
-                          valueColor: AppColors.ink,
+                      _flatCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t('Active store', 'Duka linalotumika'),
+                              style: AppTypography.label
+                                  .copyWith(color: AppColors.textMuted),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              store.activeStoreName,
+                              style: AppTypography.h1.copyWith(
+                                fontSize: 24,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              t(
+                                'Sales, stock, customers and accounting are tracked per store. Reports can compare all stores.',
+                                'Mauzo, hifadhi, wateja na uhasibu vinafuatiliwa kwa kila duka. Ripoti zinaweza kulinganisha maduka yote.',
+                              ),
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textMuted,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _metricCard(
-                          label: t('Multi-store reports', 'Ripoti za maduka'),
-                          value: '23+',
-                          valueColor: AppColors.primaryDeep,
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _metricCard(
+                              label: t('Total stores', 'Jumla ya maduka'),
+                              value: '${stores.length}',
+                              valueColor: AppColors.ink,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _metricCard(
+                              label:
+                                  t('Multi-store reports', 'Ripoti za maduka'),
+                              value: '23+',
+                              valueColor: AppColors.primaryDeep,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      MarketButton(
+                        label: t('Add store', 'Ongeza duka'),
+                        icon: Icons.add_business_outlined,
+                        onTap: () => _openStoreForm(context),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        t('All stores', 'Maduka yote'),
+                        style: AppTypography.sectionHeader
+                            .copyWith(color: AppColors.ink),
+                      ),
+                      const SizedBox(height: 8),
+                      _flatCard(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            for (var i = 0; i < stores.length; i++) ...[
+                              _StoreRow(
+                                store: stores[i],
+                                active: stores[i].id == activeId,
+                                canDelete: stores[i].id != 'store-default' &&
+                                    stores.length > 1,
+                                isSwahili: sw,
+                              ),
+                              if (i != stores.length - 1)
+                                const Divider(
+                                    height: 1, color: AppColors.divider),
+                            ],
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  MarketButton(
-                    label: t('Add store', 'Ongeza duka'),
-                    icon: Icons.add_business_outlined,
-                    onTap: () => _openStoreForm(context),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    t('All stores', 'Maduka yote'),
-                    style: AppTypography.sectionHeader
-                        .copyWith(color: AppColors.ink),
-                  ),
-                  const SizedBox(height: 8),
-                  _flatCard(
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      children: [
-                        for (var i = 0; i < stores.length; i++) ...[
-                          _StoreRow(
-                            store: stores[i],
-                            active: stores[i].id == activeId,
-                            canDelete:
-                                stores[i].id != 'store-default' && stores.length > 1,
-                            isSwahili: sw,
-                          ),
-                          if (i != stores.length - 1)
-                            const Divider(height: 1, color: AppColors.divider),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 
   static void _openStoreForm(BuildContext context, [Store? existing]) {
-    final pos = context.read<PosLocalStore>();
-    if (existing == null && !pos.canAddMoreStores) {
-      final sw = pos.languageCode.trim().toLowerCase() == 'sw';
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            sw ? 'Kikomo cha Maduka Kimefikiwa' : 'Store Limit Reached',
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-          ),
-          content: Text(
-            sw
-                ? 'Mpango wako wa sasa unaruhusu maduka ${pos.maxAllowedStores}. Boresha kifurushi chako ili kuongeza maduka zaidi (Maduka 2: Tsh 10,000 au Maduka 5: Tsh 15,000).'
-                : 'Your current plan allows up to ${pos.maxAllowedStores} stores. Upgrade your subscription to add more stores (2 Stores: Tsh 10,000 or 5 Stores: Tsh 15,000).',
-            style: const TextStyle(fontSize: 14, height: 1.4),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(sw ? 'Baadaye' : 'Later'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F172A)),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const SubscriptionPlanPage()),
-                );
-              },
-              child: Text(sw ? 'Boresha Sasa' : 'Upgrade Plan'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => StoreFormPage(store: existing),
@@ -276,7 +241,8 @@ class _StoreRow extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: AppColors.successLight,
                               border: Border.all(
-                                  color: AppColors.success.withValues(alpha: 0.3)),
+                                  color:
+                                      AppColors.success.withValues(alpha: 0.3)),
                             ),
                             child: Text(
                               _t('Active', 'Inatumika'),
@@ -291,8 +257,10 @@ class _StoreRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       [
-                        if (store.address.trim().isNotEmpty) store.address.trim(),
-                        if (store.contact.trim().isNotEmpty) store.contact.trim(),
+                        if (store.address.trim().isNotEmpty)
+                          store.address.trim(),
+                        if (store.contact.trim().isNotEmpty)
+                          store.contact.trim(),
                         if (store.address.trim().isEmpty &&
                             store.contact.trim().isEmpty)
                           store.id,
@@ -445,67 +413,77 @@ class _StoreFormPageState extends State<StoreFormPage> {
     final isEdit = widget.store != null;
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: isEdit ? _t('Edit store', 'Hariri duka') : _t('Add store', 'Ongeza duka'),
-              subtitle: _t('Store name and details', 'Jina na taarifa za duka'),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                  children: [
-                    MarketSurfaceCard(
-                      padding: const EdgeInsets.all(16),
-                      showShadow: false,
-                      borderColor: AppColors.border,
-                      radius: 0,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          MarketFormField(
-                            label: _t('Store name', 'Jina la duka'),
-                            hintText: _t('e.g. Main branch', 'mf. Tawi kuu'),
-                            controller: _name,
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? _t('Enter store name', 'Weka jina la duka')
-                                : null,
-                          ),
-                          const SizedBox(height: 14),
-                          MarketFormField(
-                            label: _t('Address / location', 'Anwani / eneo'),
-                            hintText: _t('Optional', 'Hiari'),
-                            controller: _address,
-                          ),
-                          const SizedBox(height: 14),
-                          MarketFormField(
-                            label: _t('Contact', 'Mawasiliano'),
-                            hintText: _t('Phone or email (optional)', 'Simu au barua pepe (hiari)'),
-                            controller: _contact,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    MarketButton(
-                      label: _saving
-                          ? _t('Saving...', 'Inahifadhi...')
-                          : _t('Save store', 'Hifadhi duka'),
-                      icon: Icons.check_rounded,
-                      onTap: _saving ? null : _save,
-                    ),
-                  ],
+      body: ManagementViewport(
+          maxWidth: 860,
+          child: SafeArea(
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: isEdit
+                      ? _t('Edit store', 'Hariri duka')
+                      : _t('Add store', 'Ongeza duka'),
+                  subtitle:
+                      _t('Store name and details', 'Jina na taarifa za duka'),
+                  transparentBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
                 ),
-              ),
+                Expanded(
+                  child: Form(
+                    key: _formKey,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                      children: [
+                        MarketSurfaceCard(
+                          padding: const EdgeInsets.all(16),
+                          showShadow: false,
+                          borderColor: AppColors.border,
+                          radius: AppRadius.standard,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              MarketFormField(
+                                label: _t('Store name', 'Jina la duka'),
+                                hintText:
+                                    _t('e.g. Main branch', 'mf. Tawi kuu'),
+                                controller: _name,
+                                validator: (v) => (v == null ||
+                                        v.trim().isEmpty)
+                                    ? _t(
+                                        'Enter store name', 'Weka jina la duka')
+                                    : null,
+                              ),
+                              const SizedBox(height: 14),
+                              MarketFormField(
+                                label:
+                                    _t('Address / location', 'Anwani / eneo'),
+                                hintText: _t('Optional', 'Hiari'),
+                                controller: _address,
+                              ),
+                              const SizedBox(height: 14),
+                              MarketFormField(
+                                label: _t('Contact', 'Mawasiliano'),
+                                hintText: _t('Phone or email (optional)',
+                                    'Simu au barua pepe (hiari)'),
+                                controller: _contact,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        MarketButton(
+                          label: _saving
+                              ? _t('Saving...', 'Inahifadhi...')
+                              : _t('Save store', 'Hifadhi duka'),
+                          icon: Icons.check_rounded,
+                          onTap: _saving ? null : _save,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 

@@ -78,187 +78,218 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
-                children: [
-                  // 1. Top Bar: Brand Logo & Language Switcher Pill
-                  _TopBar(
-                    isSwahili: isSwahili,
-                    onToggleLanguage: () {
-                      final newLang = isSwahili ? 'en' : 'sw';
-                      store.setLanguageCode(newLang);
-                    },
-                  ),
-
-                  // 2. Center Slider (Illustration + Title + Subtitle)
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: _slides.length,
-                      onPageChanged: (index) {
-                        setState(() => _currentPage = index);
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, AppColors.pageBackground],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Column(
+                  children: [
+                    // 1. Top Bar: Brand Logo & Language Switcher Pill
+                    _TopBar(
+                      isSwahili: isSwahili,
+                      onToggleLanguage: () {
+                        final newLang = isSwahili ? 'en' : 'sw';
+                        store.setLanguageCode(newLang);
                       },
-                      itemBuilder: (context, index) {
-                        final slide = _slides[index];
-                        final title = isSwahili ? slide.titleSw : slide.titleEn;
-                        final subtitle =
-                            isSwahili ? slide.subtitleSw : slide.subtitleEn;
+                    ),
 
-                        return LayoutBuilder(
-                          builder: (context, constraints) {
-                            final artSize = (constraints.maxHeight * 0.44)
-                                .clamp(200.0, 310.0);
+                    // 2. Center Slider (Illustration + Title + Subtitle)
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _slides.length,
+                        onPageChanged: (index) {
+                          setState(() => _currentPage = index);
+                        },
+                        itemBuilder: (context, index) {
+                          final slide = _slides[index];
+                          final title =
+                              isSwahili ? slide.titleSw : slide.titleEn;
+                          final subtitle =
+                              isSwahili ? slide.subtitleSw : slide.subtitleEn;
 
-                            return SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: IntrinsicHeight(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Spacer(flex: 1),
-                                      // Clean Custom Vector Illustration
-                                      OnboardingIllustration(
-                                        art: slide.art,
-                                        size: artSize,
-                                      ),
-                                      const SizedBox(height: 24),
-                                      // Bold clean headline
-                                      Text(
-                                        title,
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.w800,
-                                          color: const Color(0xFF111111),
-                                          letterSpacing: -0.6,
-                                          height: 1.25,
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              final artSize = (constraints.maxHeight * 0.44)
+                                  .clamp(200.0, 310.0);
+
+                              return SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: IntrinsicHeight(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Spacer(flex: 1),
+                                        // Clean Custom Vector Illustration
+                                        OnboardingIllustration(
+                                          art: slide.art,
+                                          size: artSize,
                                         ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      // Subtitle with comfortable reading line-height
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16),
-                                        child: Text(
-                                          subtitle,
+                                        const SizedBox(height: 24),
+                                        // Bold clean headline
+                                        Text(
+                                          title,
                                           textAlign: TextAlign.center,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 14.5,
-                                            fontWeight: FontWeight.w500,
-                                            color: const Color(0xFF64748B),
-                                            height: 1.5,
+                                          style: GoogleFonts.manrope(
+                                            fontSize: 27,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.ink,
+                                            letterSpacing: -0.7,
+                                            height: 1.22,
                                           ),
                                         ),
-                                      ),
-                                      const Spacer(flex: 2),
-                                    ],
+                                        const SizedBox(height: 12),
+                                        // Subtitle with comfortable reading line-height
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16),
+                                          child: Text(
+                                            subtitle,
+                                            textAlign: TextAlign.center,
+                                            style: GoogleFonts.manrope(
+                                              fontSize: 14.5,
+                                              fontWeight: FontWeight.w500,
+                                              color: AppColors.textMuted,
+                                              height: 1.55,
+                                            ),
+                                          ),
+                                        ),
+                                        const Spacer(flex: 2),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
-                      },
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  ),
 
-                  // 3. Smooth Modern Page Indicators (Active Pill + Inactive Dots)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_slides.length, (index) {
-                        final isSelected = index == _currentPage;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 260),
-                          curve: Curves.easeOutCubic,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: isSelected ? 26 : 8,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFF111111)
-                                : const Color(0xFFF0FDF4),
-                            borderRadius: BorderRadius.circular(4),
+                    // 3. Smooth Modern Page Indicators (Active Pill + Inactive Dots)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_slides.length, (index) {
+                          final isSelected = index == _currentPage;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 260),
+                            curve: Curves.easeOutCubic,
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isSelected ? 26 : 8,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryDeep
+                                  : AppColors.border,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // 4. Primary Brand Pill Button ("Get Started" / "Continue")
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primaryDeep, AppColors.primary],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.28),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
                           ),
-                        );
-                      }),
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // 4. Primary Dark Pill Button ("Access Your Account" / "Get Started")
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF191C1F),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _nextPage,
                           borderRadius: BorderRadius.circular(28),
-                        ),
-                      ),
-                      child: Text(
-                        _currentPage == _slides.length - 1
-                            ? (isSwahili ? 'Anza Sasa' : 'Access Your Account')
-                            : (isSwahili ? 'Endelea' : 'Continue'),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 5. Secondary Bottom Link ("Don't have an account? Signup")
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          isSwahili
-                              ? 'Una akaunti tayari? '
-                              : "Don't have an account? ",
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            color: const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: widget.onSignIn,
-                          behavior: HitTestBehavior.opaque,
-                          child: Text(
-                            isSwahili ? 'Ingia' : 'Signup',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF111111),
+                          splashColor: Colors.white.withValues(alpha: 0.12),
+                          highlightColor: Colors.white.withValues(alpha: 0.06),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: Center(
+                              child: Text(
+                                _currentPage == _slides.length - 1
+                                    ? (isSwahili
+                                        ? 'Anza Sasa'
+                                        : 'Access Your Account')
+                                    : (isSwahili ? 'Endelea' : 'Continue'),
+                                style: GoogleFonts.manrope(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.1,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 16),
+
+                    // 5. Secondary Bottom Link ("Already have an account? Sign in")
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isSwahili
+                                ? 'Una akaunti tayari? '
+                                : 'Already have an account? ',
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: widget.onSignIn,
+                            behavior: HitTestBehavior.opaque,
+                            child: Text(
+                              isSwahili ? 'Ingia' : 'Sign in',
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDeep,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -295,11 +326,11 @@ class _TopBar extends StatelessWidget {
                   child: Text(
                     'TrackMauzo',
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.manrope(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.6,
-                      color: const Color(0xFF111111),
+                      color: AppColors.ink,
                     ),
                   ),
                 ),
@@ -317,10 +348,10 @@ class _TopBar extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFF0FDF4),
+                    color: AppColors.border,
                     width: 1,
                   ),
                 ),
@@ -330,22 +361,22 @@ class _TopBar extends StatelessWidget {
                     const Icon(
                       Icons.translate_rounded,
                       size: 15,
-                      color: Color(0xFF64748B),
+                      color: AppColors.primaryDeep,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       isSwahili ? 'Kiswahili' : 'English',
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.manrope(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryDeep,
                       ),
                     ),
                     const SizedBox(width: 2),
                     const Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 16,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textLight,
                     ),
                   ],
                 ),
@@ -373,38 +404,6 @@ class _ModernGreenRibbonLogo extends StatelessWidget {
       ),
     );
   }
-}
-
-class _RibbonLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    // Stylized "Z / N" ribbon in vibrant green matching the reference
-    final path = Path()
-      ..moveTo(w * 0.15, h * 0.72)
-      ..cubicTo(w * 0.15, h * 0.88, w * 0.40, h * 0.90, w * 0.52, h * 0.74)
-      ..lineTo(w * 0.78, h * 0.32)
-      ..cubicTo(w * 0.88, h * 0.16, w * 0.65, h * 0.08, w * 0.50, h * 0.22)
-      ..cubicTo(w * 0.38, h * 0.34, w * 0.60, h * 0.58, w * 0.85, h * 0.48);
-
-    final ribbonPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF111111), Color(0xFF111111)],
-        begin: Alignment.bottomLeft,
-        end: Alignment.topRight,
-      ).createShader(Rect.fromLTWH(0, 0, w, h))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.2
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    canvas.drawPath(path, ribbonPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _OnboardingItem {

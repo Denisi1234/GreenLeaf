@@ -73,7 +73,7 @@ class OrderLine {
   ProductItem get product => ProductItem(
         itemName,
         itemSize,
-        unitPrice,
+        unitPriceValue.toString(),
         artType,
         code: itemCode,
         category: itemCategory,

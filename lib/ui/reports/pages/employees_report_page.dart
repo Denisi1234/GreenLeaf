@@ -53,7 +53,7 @@ class EmployeesReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Total Sales',
-        value: '₹${NumberFormat('#,##0.##').format(totalSales)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(totalSales)}',
         icon: Icons.attach_money,
         iconColor: Color(0xFF111111),
         tint: Color(0xFF111111).withValues(alpha: 0.1),
@@ -61,7 +61,7 @@ class EmployeesReportPage extends StatelessWidget {
       ),
       MetricData(
         title: 'Avg Sales/Employee',
-        value: '₹${NumberFormat('#,##0.##').format(avgSalesPerEmployee)}',
+        value: 'TSh ${NumberFormat('#,##0.##').format(avgSalesPerEmployee)}',
         icon: Icons.analytics,
         iconColor: Color(0xFF15803D),
         tint: Color(0xFF15803D).withValues(alpha: 0.1),
@@ -101,7 +101,7 @@ class EmployeesReportPage extends StatelessWidget {
               label: row[0].toString(),
               value: (row[3] as num).toDouble(),
               displayValue:
-                  '₹${NumberFormat('#,##0').format((row[3] as num).toDouble())}',
+                  'TSh ${NumberFormat('#,##0').format((row[3] as num).toDouble())}',
             ))
         .toList();
     final maxValue = trendPoints.isEmpty
@@ -169,7 +169,7 @@ class EmployeesReportPage extends StatelessWidget {
     insights.add(InsightCard(
       title: 'Top Performer',
       description:
-          '$topEmployeeName generates ${topEmployeeShare.toStringAsFixed(1)}% of total sales (₹${NumberFormat('#,##0').format(topEmployeeSales)})',
+          '$topEmployeeName generates ${topEmployeeShare.toStringAsFixed(1)}% of total sales (TSh ${NumberFormat('#,##0').format(topEmployeeSales)})',
       icon: Icons.emoji_events,
       color: Color(0xFF15803D),
       severity: InsightSeverity.success,

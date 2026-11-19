@@ -40,6 +40,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
   String? _selectedCategory;
   String? _selectedImagePath;
+  bool _trackExpiry = false;
+  DateTime? _expiryDate;
   late BusinessCategory _businessCategory;
   late List<String> _categoryOptions;
   late AppStrings strings;
@@ -67,6 +69,48 @@ class _AddProductPageState extends State<AddProductPage> {
     );
     _selectedCategory = widget.product?.category;
     _selectedImagePath = widget.product?.imagePath;
+    _expiryDate =
+        _parseExpiryDate(widget.product?.categoryData['expiry_date']);
+    _trackExpiry = _expiryDate != null;
+  }
+
+  DateTime? _parseExpiryDate(Object? value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    if (text.isEmpty) return null;
+    final parsed = DateTime.tryParse(text);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  String _isoDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
+  String _displayDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${date.day.toString().padLeft(2, '0')} '
+        '${months[date.month - 1]} ${date.year}';
+  }
+
+  Future<void> _pickExpiryDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expiryDate ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 15, 12, 31),
+      helpText: 'Select expiry date',
+    );
+    if (picked == null) return;
+    setState(() {
+      _expiryDate = DateTime(picked.year, picked.month, picked.day);
+      _trackExpiry = true;
+    });
   }
 
   @override
@@ -203,6 +247,15 @@ class _AddProductPageState extends State<AddProductPage> {
         double.tryParse(_sellingPriceController.text.trim()) ?? 0.0;
     final stock = int.tryParse(_stockController.text.trim()) ?? 0;
 
+    final metadata = <String, Object?>{
+      ...?widget.product?.categoryData,
+    };
+    if (_trackExpiry && _expiryDate != null) {
+      metadata['expiry_date'] = _isoDate(_expiryDate!);
+    } else {
+      metadata.remove('expiry_date');
+    }
+
     final product = InventoryProductItem(
       code: widget.product?.code ?? widget.nextCode,
       name: _nameController.text.trim(),
@@ -217,39 +270,22 @@ class _AddProductPageState extends State<AddProductPage> {
             _selectedCategory ?? 'General',
           ),
       imagePath: _selectedImagePath,
-      categoryData: const <String, Object?>{},
+      categoryData: metadata,
     );
 
     Navigator.of(context).pop(product);
   }
 
   List<String> _productCategoriesFor(BusinessCategory category) {
-    return switch (category) {
-      BusinessCategory.pharmacy => const [
-          'Medicines',
-          'OTC',
-          'Prescriptions',
-          'Supplements',
-          'Medical Supplies',
-        ],
-      BusinessCategory.electronics => const [
-          'Phones',
-          'Accessories',
-          'Computers',
-          'Audio',
-          'Appliances',
-          'Networking',
-        ],
-      BusinessCategory.retail => const [
-          'Beverages',
-          'Snacks',
-          'Stationery',
-          'Disposable',
-          'Personal Care',
-          'Groceries',
-          'Household',
-        ],
-    };
+    return const [
+      'Beverages',
+      'Snacks',
+      'Stationery',
+      'Disposable',
+      'Personal Care',
+      'Groceries',
+      'Household',
+    ];
   }
 
   Future<void> _deleteProduct() async {
@@ -437,12 +473,12 @@ class _AddProductPageState extends State<AddProductPage> {
                       // Section 1: Basic Info
                       _SectionHeader(title: 'Item Information'),
                       const SizedBox(height: 12),
-                      _FieldLabel('Item Name', isRequired: true),
-                      const SizedBox(height: 6),
-                      _CleanTextField(
+                      MarketFormField(
+                        label: 'Item Name',
+                        isRequired: true,
                         controller: _nameController,
-                        hint: 'e.g., White Rice 1kg, Coca-Cola 350ml',
-                        prefixIcon: Icons.inventory_2_outlined,
+                        hintText: 'e.g., White Rice 1kg, Coca-Cola 350ml',
+                        prefixIcon: const Icon(Icons.inventory_2_outlined, color: AppColors.textMuted, size: 20),
                         validator: (val) {
                           if (val == null || val.trim().isEmpty) {
                             return 'Item name is required';
@@ -451,36 +487,55 @@ class _AddProductPageState extends State<AddProductPage> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _FieldLabel('Category', isRequired: true),
-                          InkWell(
-                            onTap: _showCreateCategoryDialog,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.add_circle_outline_rounded, size: 15, color: Color(0xFF0284C7)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '+ New Category',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF0284C7),
-                                    ),
+                      MarketDropdownField<String>(
+                        label: 'Category',
+                        isRequired: true,
+                        labelAction: InkWell(
+                          onTap: _showCreateCategoryDialog,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.add_circle_outline_rounded, size: 15, color: Color(0xFF0284C7)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '+ New Category',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF0284C7),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        value: _categoryOptions.contains(_selectedCategory)
+                            ? _selectedCategory
+                            : (_categoryOptions.isNotEmpty ? _categoryOptions.first : null),
+                        items: [
+                          ..._categoryOptions.map((cat) => DropdownMenuItem(
+                                value: cat,
+                                child: Text(cat, style: GoogleFonts.manrope(fontWeight: FontWeight.w600, fontSize: 14)),
+                              )),
+                          DropdownMenuItem(
+                            value: '__new__',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF0284C7), size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '+ Add New Category',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF0284C7),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 6),
-                      _CategoryDropdown(
-                        value: _selectedCategory,
-                        items: _categoryOptions,
                         onChanged: (val) {
                           if (val == '__new__') {
                             _showCreateCategoryDialog();
@@ -488,7 +543,6 @@ class _AddProductPageState extends State<AddProductPage> {
                             setState(() => _selectedCategory = val);
                           }
                         },
-                        onAddNew: _showCreateCategoryDialog,
                       ),
                       const SizedBox(height: 24),
 
@@ -496,53 +550,43 @@ class _AddProductPageState extends State<AddProductPage> {
                       _SectionHeader(title: 'Pricing & Stock'),
                       const SizedBox(height: 12),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _FieldLabel('Sale Price', isRequired: true),
-                                const SizedBox(height: 6),
-                                _CleanTextField(
-                                  controller: _sellingPriceController,
-                                  hint: '0.00',
-                                  prefixText: 'Sh ',
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  validator: (val) {
-                                    if (val == null || val.trim().isEmpty) return 'Required';
-                                    final num = double.tryParse(val.trim());
-                                    if (num == null || num < 0) return 'Invalid';
-                                    return null;
-                                  },
-                                ),
-                              ],
+                            child: MarketFormField(
+                              label: 'Sale Price',
+                              isRequired: true,
+                              controller: _sellingPriceController,
+                              hintText: '0.00',
+                              prefixText: 'Sh ',
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              validator: (val) {
+                                if (val == null || val.trim().isEmpty) return 'Required';
+                                final num = double.tryParse(val.trim());
+                                if (num == null || num < 0) return 'Invalid';
+                                return null;
+                              },
                             ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _FieldLabel('Purchase Price'),
-                                const SizedBox(height: 6),
-                                _CleanTextField(
-                                  controller: _purchasePriceController,
-                                  hint: '0.00',
-                                  prefixText: 'Sh ',
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                ),
-                              ],
+                            child: MarketFormField(
+                              label: 'Purchase Price',
+                              controller: _purchasePriceController,
+                              hintText: '0.00',
+                              prefixText: 'Sh ',
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      _FieldLabel('Initial Stock Quantity', isRequired: true),
-                      const SizedBox(height: 6),
-                      _CleanTextField(
+                      MarketFormField(
+                        label: 'Initial Stock Quantity',
+                        isRequired: true,
                         controller: _stockController,
-                        hint: '1',
-                        prefixIcon: Icons.production_quantity_limits_rounded,
+                        hintText: '1',
+                        prefixIcon: const Icon(Icons.production_quantity_limits_rounded, color: AppColors.textMuted, size: 20),
                         keyboardType: TextInputType.number,
                         validator: (val) {
                           if (val == null || val.trim().isEmpty) return 'Stock quantity is required';
@@ -553,7 +597,113 @@ class _AddProductPageState extends State<AddProductPage> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Section 3: Photo (Optional)
+                      // Section 3: Expiry Tracking (Optional)
+                      _SectionHeader(title: 'Expiry Tracking (Optional)'),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.event_busy_rounded,
+                                    size: 20, color: Color(0xFF0284C7)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Track expiry date',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Receive alerts when this item is about to expire',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 11,
+                                          color: const Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: _trackExpiry,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _trackExpiry = value;
+                                      if (value && _expiryDate == null) {
+                                        _expiryDate = DateTime.now();
+                                      }
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                            if (_trackExpiry) ...[
+                              const SizedBox(height: 10),
+                              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Expiry date',
+                                          style: GoogleFonts.manrope(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF475569),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _expiryDate == null
+                                              ? 'No date selected'
+                                              : _displayDate(_expiryDate!),
+                                          style: GoogleFonts.manrope(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: _pickExpiryDate,
+                                    icon: const Icon(
+                                      Icons.calendar_today_outlined,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      _expiryDate == null ? 'Set date' : 'Change',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Section 4: Photo (Optional)
                       _SectionHeader(title: 'Item Photo (Optional)'),
                       const SizedBox(height: 12),
                       _PhotoUploadTile(
@@ -579,46 +729,21 @@ class _AddProductPageState extends State<AddProductPage> {
                 children: [
                   Expanded(
                     flex: 2,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        foregroundColor: const Color(0xFF475569),
-                        side: const BorderSide(color: Color(0xFFCBD5E1)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 14),
-                      ),
+                    child: MarketButton.secondary(
+                      label: 'Cancel',
+                      onTap: () => Navigator.of(context).pop(),
+                      height: 48,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 3,
-                    child: FilledButton(
-                      onPressed: _saveProduct,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: const Color(0xFFEF233C), // Matching the red button style
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(isEdit ? Icons.check_circle_outline_rounded : Icons.add_circle_outline_rounded, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            isEdit ? 'Update Item' : 'Save Item',
-                            style: GoogleFonts.manrope(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: MarketButton(
+                      label: isEdit ? 'Update Item' : 'Save Item',
+                      icon: isEdit ? Icons.check_circle_outline_rounded : Icons.add_circle_outline_rounded,
+                      variant: MarketButtonVariant.success,
+                      onTap: _saveProduct,
+                      height: 48,
                     ),
                   ),
                 ],
@@ -648,168 +773,6 @@ class _SectionHeader extends StatelessWidget {
         fontWeight: FontWeight.w700,
         color: const Color(0xFF0F172A),
         letterSpacing: -0.1,
-      ),
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text, {this.isRequired = false});
-
-  final String text;
-  final bool isRequired;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          text,
-          style: GoogleFonts.manrope(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF475569),
-          ),
-        ),
-        if (isRequired)
-          const Text(
-            ' *',
-            style: TextStyle(color: Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.w700),
-          ),
-      ],
-    );
-  }
-}
-
-class _CleanTextField extends StatelessWidget {
-  const _CleanTextField({
-    required this.controller,
-    required this.hint,
-    this.prefixIcon,
-    this.prefixText,
-    this.keyboardType,
-    this.validator,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final IconData? prefixIcon;
-  final String? prefixText;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        validator: validator,
-        style: GoogleFonts.manrope(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF0F172A),
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF94A3B8)),
-          prefixIcon: prefixIcon != null
-              ? Icon(prefixIcon, color: const Color(0xFF64748B), size: 18)
-              : (prefixText != null
-                  ? Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 13, 4, 13),
-                      child: Text(
-                        prefixText!,
-                        style: GoogleFonts.manrope(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF64748B),
-                          fontSize: 13,
-                        ),
-                      ),
-                    )
-                  : null),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryDropdown extends StatelessWidget {
-  const _CategoryDropdown({
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    required this.onAddNew,
-  });
-
-  final String? value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-  final VoidCallback onAddNew;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: items.contains(value) ? value : (items.isNotEmpty ? items.first : null),
-          isExpanded: true,
-          borderRadius: BorderRadius.zero,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 22),
-          items: [
-            ...items.map((cat) {
-              return DropdownMenuItem<String>(
-                value: cat,
-                child: Text(
-                  cat,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
-                  ),
-                ),
-              );
-            }),
-            DropdownMenuItem<String>(
-              value: '__new__',
-              child: Row(
-                children: [
-                  const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF0284C7), size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    '+ Add New Category',
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0284C7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          onChanged: onChanged,
-        ),
       ),
     );
   }

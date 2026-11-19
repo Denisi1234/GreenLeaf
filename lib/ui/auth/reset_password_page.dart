@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
-import '../../service/backend_sms_service.dart';
 import '../../service/pos_local_store.dart';
 import 'auth_shell.dart';
 
@@ -42,7 +40,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   bool _obscureConfirm = true;
   String? _error;
 
-  String? _generatedOtp;
   String? _backendResetToken;
   int _resendCountdown = 0;
   Timer? _countdownTimer;
@@ -89,27 +86,23 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     final store = context.read<PosLocalStore>();
 
-    // 1. Generate 6-digit OTP
-    final randomCode = (100000 + Random().nextInt(900000)).toString();
-    _generatedOtp = randomCode;
-
-    // 2. Try sending via Backend API if connected, or direct via NextSMS service
-    bool sent = false;
-    if (store.cloudApi != null) {
-      try {
-        final res = await store.cloudApi!.sendOtp(rawPhone);
-        sent = (res['data'] as Map)['sent'] == true;
-      } catch (_) {
-        sent = false;
-      }
+    // OTPs must always be issued and verified by the backend so the client
+    // never holds or trusts a code it generated itself.
+    final api = store.cloudApi;
+    if (api == null) {
+      setState(() {
+        _busy = false;
+        _error = 'Kuweka upya nenosiri kunahitaji muunganisho wa mtandao.';
+      });
+      return;
     }
 
-    if (!sent) {
-      // Fallback: send directly through NextSMS configured credentials
-      sent = await BackendSmsService.sendOtp(
-        recipientPhone: rawPhone,
-        code: randomCode,
-      );
+    bool sent = false;
+    try {
+      final res = await api.sendOtp(rawPhone);
+      sent = (res['data'] as Map)['sent'] == true;
+    } catch (_) {
+      sent = false;
     }
 
     if (!mounted) return;
@@ -143,32 +136,35 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     });
 
     final store = context.read<PosLocalStore>();
-    bool isValid = false;
+    final api = store.cloudApi;
+    String? resetToken;
 
-    if (store.cloudApi != null) {
+    if (api != null) {
       try {
-        _backendResetToken = await store.cloudApi!
-            .verifyOtp(_phoneController.text.trim(), inputOtp);
-        isValid = true;
+        resetToken = await api.verifyOtp(
+          _phoneController.text.trim(),
+          inputOtp,
+        );
       } catch (_) {
-        isValid = false;
+        resetToken = null;
       }
-    }
-
-    if (!isValid && _generatedOtp != null && inputOtp == _generatedOtp) {
-      isValid = true;
     }
 
     if (!mounted) return;
     setState(() => _busy = false);
 
-    if (isValid) {
+    if (resetToken != null && resetToken.isNotEmpty) {
+      _backendResetToken = resetToken;
       setState(() {
         _step = _ResetStep.newPassword;
         _error = null;
       });
     } else {
-      setState(() => _error = 'Namba ya uthibitisho (OTP) si sahihi');
+      setState(() {
+        _error = api == null
+            ? 'Uthibitisho wa OTP unahitaji muunganisho wa mtandao.'
+            : 'Namba ya uthibitisho (OTP) si sahihi';
+      });
     }
   }
 
@@ -193,22 +189,20 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     final store = context.read<PosLocalStore>();
     final rawPhone = _phoneController.text.trim();
+    final api = store.cloudApi;
+    final resetToken = _backendResetToken;
 
     bool ok = false;
-    if (store.cloudApi != null && _backendResetToken != null) {
+    if (api != null && resetToken != null) {
       try {
-        ok = await store.cloudApi!.resetPasswordWithOtp(
+        ok = await api.resetPasswordWithOtp(
           phone: rawPhone,
-          resetToken: _backendResetToken!,
+          resetToken: resetToken,
           newPassword: newPass,
         );
       } catch (_) {
         ok = false;
       }
-    }
-
-    if (!ok) {
-      ok = await store.resetPassword(phone: rawPhone, newPassword: newPass);
     }
 
     if (!mounted) return;

@@ -1,3 +1,4 @@
+import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -161,264 +162,275 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: _dual(strings, 'Change password', 'Badilisha nenosiri'),
-              subtitle: _dual(
-                strings,
-                'Keep your shop account secure',
-                'Linda akaunti ya duka lako',
-              ),
-              showBorder: false,
-            ),
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
-                  children: [
-                    MarketSurfaceCard(
-                      padding: const EdgeInsets.all(16),
-                      borderColor: AppColors.border,
-                      radius: 0,
-                      showShadow: false,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+      body: ManagementViewport(
+          maxWidth: 860,
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title:
+                      _dual(strings, 'Change password', 'Badilisha nenosiri'),
+                  subtitle: _dual(
+                    strings,
+                    'Keep your shop account secure',
+                    'Linda akaunti ya duka lako',
+                  ),
+                  showBorder: false,
+                ),
+                Expanded(
+                  child: Form(
+                    key: _formKey,
+                    child: ListView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+                      children: [
+                        MarketSurfaceCard(
+                          padding: const EdgeInsets.all(16),
+                          borderColor: AppColors.border,
+                          radius: AppRadius.standard,
+                          showShadow: false,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 34,
-                                height: 34,
-                                alignment: Alignment.center,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.surfaceSecondary,
-                                  borderRadius: BorderRadius.zero,
-                                ),
-                                child: const Icon(Icons.lock_outline_rounded,
-                                    color: AppColors.primary, size: 18),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  _dual(strings, 'Account security',
-                                      'Usalama wa akaunti'),
-                                  style: AppTypography.bodyMain.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _PasswordField(
-                            label: _dual(strings, 'Current password',
-                                'Nenosiri la sasa'),
-                            hint: _dual(strings, 'Enter your current password',
-                                'Weka nenosiri lako la sasa'),
-                            controller: _current,
-                            obscure: _obscureCurrent,
-                            onToggle: () => setState(
-                                () => _obscureCurrent = !_obscureCurrent),
-                            enabled: !_saving,
-                            strings: strings,
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                    ? _dual(
-                                        strings,
-                                        'Current password is required',
-                                        'Nenosiri la sasa linahitajika')
-                                    : null,
-                          ),
-                          const SizedBox(height: 14),
-                          _PasswordField(
-                            label: _dual(
-                                strings, 'New password', 'Nenosiri jipya'),
-                            hint: _dual(
-                                strings,
-                                'At least $_minLength characters',
-                                'Herufi $_minLength au zaidi'),
-                            controller: _next,
-                            obscure: _obscureNext,
-                            onToggle: () =>
-                                setState(() => _obscureNext = !_obscureNext),
-                            enabled: !_saving,
-                            strings: strings,
-                            onChanged: () {
-                              setState(() {});
-                              if (_error != null) {
-                                setState(() => _error = null);
-                              }
-                            },
-                            validator: (value) {
-                              final text = value ?? '';
-                              if (text.isEmpty) {
-                                return _dual(
-                                    strings,
-                                    'New password is required',
-                                    'Nenosiri jipya linahitajika');
-                              }
-                              if (text.length < _minLength) {
-                                return _dual(
-                                    strings,
-                                    'Use at least $_minLength characters',
-                                    'Tumia herufi $_minLength au zaidi');
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          _StrengthMeter(
-                            strength: strength,
-                            strings: strings,
-                          ),
-                          const SizedBox(height: 14),
-                          _PasswordField(
-                            label: _dual(strings, 'Confirm new password',
-                                'Rudia nenosiri jipya'),
-                            hint: _dual(strings, 'Repeat the new password',
-                                'Rudia nenosiri jipya'),
-                            controller: _confirm,
-                            obscure: _obscureConfirm,
-                            onToggle: () => setState(
-                                () => _obscureConfirm = !_obscureConfirm),
-                            enabled: !_saving,
-                            strings: strings,
-                            onChanged: () {
-                              setState(() {});
-                              if (_error != null) {
-                                setState(() => _error = null);
-                              }
-                            },
-                            validator: (value) {
-                              if ((value ?? '').isEmpty) {
-                                return _dual(
-                                    strings,
-                                    'Confirm your new password',
-                                    'Thibitisha nenosiri jipya');
-                              }
-                              if (value != _next.text) {
-                                return _dual(strings, 'Passwords do not match',
-                                    'Manenosiri hayafanani');
-                              }
-                              return null;
-                            },
-                          ),
-                          if (_error != null) ...[
-                            const SizedBox(height: 14),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: AppColors.dangerLight,
-                                borderRadius: BorderRadius.zero,
-                                border: Border.all(
-                                  color:
-                                      AppColors.danger.withValues(alpha: 0.16),
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Row(
                                 children: [
-                                  const Icon(Icons.error_outline_rounded,
-                                      color: AppColors.danger, size: 16),
-                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    alignment: Alignment.center,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.surfaceSecondary,
+                                      borderRadius: BorderRadius.zero,
+                                    ),
+                                    child: const Icon(
+                                        Icons.lock_outline_rounded,
+                                        color: AppColors.primary,
+                                        size: 18),
+                                  ),
+                                  const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      _error!,
-                                      style: AppTypography.bodySmall.copyWith(
-                                        color: AppColors.dangerDeep,
-                                        fontWeight: FontWeight.w600,
+                                      _dual(strings, 'Account security',
+                                          'Usalama wa akaunti'),
+                                      style: AppTypography.bodyMain.copyWith(
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ],
-                      ),
+                              const SizedBox(height: 16),
+                              _PasswordField(
+                                label: _dual(strings, 'Current password',
+                                    'Nenosiri la sasa'),
+                                hint: _dual(
+                                    strings,
+                                    'Enter your current password',
+                                    'Weka nenosiri lako la sasa'),
+                                controller: _current,
+                                obscure: _obscureCurrent,
+                                onToggle: () => setState(
+                                    () => _obscureCurrent = !_obscureCurrent),
+                                enabled: !_saving,
+                                strings: strings,
+                                validator: (value) =>
+                                    (value == null || value.trim().isEmpty)
+                                        ? _dual(
+                                            strings,
+                                            'Current password is required',
+                                            'Nenosiri la sasa linahitajika')
+                                        : null,
+                              ),
+                              const SizedBox(height: 14),
+                              _PasswordField(
+                                label: _dual(
+                                    strings, 'New password', 'Nenosiri jipya'),
+                                hint: _dual(
+                                    strings,
+                                    'At least $_minLength characters',
+                                    'Herufi $_minLength au zaidi'),
+                                controller: _next,
+                                obscure: _obscureNext,
+                                onToggle: () => setState(
+                                    () => _obscureNext = !_obscureNext),
+                                enabled: !_saving,
+                                strings: strings,
+                                onChanged: () {
+                                  setState(() {});
+                                  if (_error != null) {
+                                    setState(() => _error = null);
+                                  }
+                                },
+                                validator: (value) {
+                                  final text = value ?? '';
+                                  if (text.isEmpty) {
+                                    return _dual(
+                                        strings,
+                                        'New password is required',
+                                        'Nenosiri jipya linahitajika');
+                                  }
+                                  if (text.length < _minLength) {
+                                    return _dual(
+                                        strings,
+                                        'Use at least $_minLength characters',
+                                        'Tumia herufi $_minLength au zaidi');
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              _StrengthMeter(
+                                strength: strength,
+                                strings: strings,
+                              ),
+                              const SizedBox(height: 14),
+                              _PasswordField(
+                                label: _dual(strings, 'Confirm new password',
+                                    'Rudia nenosiri jipya'),
+                                hint: _dual(strings, 'Repeat the new password',
+                                    'Rudia nenosiri jipya'),
+                                controller: _confirm,
+                                obscure: _obscureConfirm,
+                                onToggle: () => setState(
+                                    () => _obscureConfirm = !_obscureConfirm),
+                                enabled: !_saving,
+                                strings: strings,
+                                onChanged: () {
+                                  setState(() {});
+                                  if (_error != null) {
+                                    setState(() => _error = null);
+                                  }
+                                },
+                                validator: (value) {
+                                  if ((value ?? '').isEmpty) {
+                                    return _dual(
+                                        strings,
+                                        'Confirm your new password',
+                                        'Thibitisha nenosiri jipya');
+                                  }
+                                  if (value != _next.text) {
+                                    return _dual(
+                                        strings,
+                                        'Passwords do not match',
+                                        'Manenosiri hayafanani');
+                                  }
+                                  return null;
+                                },
+                              ),
+                              if (_error != null) ...[
+                                const SizedBox(height: 14),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.dangerLight,
+                                    borderRadius: BorderRadius.zero,
+                                    border: Border.all(
+                                      color: AppColors.danger
+                                          .withValues(alpha: 0.16),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(Icons.error_outline_rounded,
+                                          color: AppColors.danger, size: 16),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _error!,
+                                          style:
+                                              AppTypography.bodySmall.copyWith(
+                                            color: AppColors.dangerDeep,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        MarketSurfaceCard(
+                          padding: const EdgeInsets.all(16),
+                          borderColor: AppColors.border,
+                          radius: AppRadius.standard,
+                          showShadow: false,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _dual(strings, 'Password requirements',
+                                    'Masharti ya nenosiri'),
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _RequirementRow(
+                                label: _dual(
+                                    strings,
+                                    'At least $_minLength characters',
+                                    'Herufi $_minLength au zaidi'),
+                                met: _hasMinLength,
+                                strings: strings,
+                              ),
+                              _RequirementRow(
+                                label: _dual(
+                                    strings, 'Contains a letter', 'Ina herufi'),
+                                met: _hasLetter,
+                                strings: strings,
+                              ),
+                              _RequirementRow(
+                                label: _dual(
+                                    strings, 'Contains a number', 'Ina namba'),
+                                met: _hasNumber,
+                                strings: strings,
+                              ),
+                              _RequirementRow(
+                                label: _dual(strings, 'Passwords match',
+                                    'Manenosiri yanafanana'),
+                                met: _matches,
+                                strings: strings,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        _SaveButton(
+                          saving: _saving,
+                          label: _saving
+                              ? _dual(strings, 'Updating...', 'Inasasisha...')
+                              : _dual(strings, 'Update password',
+                                  'Sasisha nenosiri'),
+                          onTap: _saving ? null : _submit,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _dual(
+                            strings,
+                            'You stay signed in on this device after changing your password.',
+                            'Utabaki umeingia kwenye kifaa hiki baada ya kubadilisha nenosiri.',
+                          ),
+                          textAlign: TextAlign.center,
+                          style: AppTypography.helperText.copyWith(
+                            color: AppColors.textMuted,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    MarketSurfaceCard(
-                      padding: const EdgeInsets.all(16),
-                      borderColor: AppColors.border,
-                      radius: 0,
-                      showShadow: false,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _dual(strings, 'Password requirements',
-                                'Masharti ya nenosiri'),
-                            style: AppTypography.bodySmall.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          _RequirementRow(
-                            label: _dual(
-                                strings,
-                                'At least $_minLength characters',
-                                'Herufi $_minLength au zaidi'),
-                            met: _hasMinLength,
-                            strings: strings,
-                          ),
-                          _RequirementRow(
-                            label: _dual(
-                                strings, 'Contains a letter', 'Ina herufi'),
-                            met: _hasLetter,
-                            strings: strings,
-                          ),
-                          _RequirementRow(
-                            label: _dual(
-                                strings, 'Contains a number', 'Ina namba'),
-                            met: _hasNumber,
-                            strings: strings,
-                          ),
-                          _RequirementRow(
-                            label: _dual(strings, 'Passwords match',
-                                'Manenosiri yanafanana'),
-                            met: _matches,
-                            strings: strings,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _SaveButton(
-                      saving: _saving,
-                      label: _saving
-                          ? _dual(strings, 'Updating...', 'Inasasisha...')
-                          : _dual(
-                              strings, 'Update password', 'Sasisha nenosiri'),
-                      onTap: _saving ? null : _submit,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _dual(
-                        strings,
-                        'You stay signed in on this device after changing your password.',
-                        'Utabaki umeingia kwenye kifaa hiki baada ya kubadilisha nenosiri.',
-                      ),
-                      textAlign: TextAlign.center,
-                      style: AppTypography.helperText.copyWith(
-                        color: AppColors.textMuted,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          )),
     );
   }
 }
