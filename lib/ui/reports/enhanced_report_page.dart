@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -896,7 +897,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             _buildToolbar(table, choices, selection),
             Expanded(
                 child: pageRows.isEmpty
-                    ? _buildEmptyState(report, table.note)
+                    ? _buildEmptyState(table.note)
                     : _buildContent(table, pageRows, additionalMetrics, data,
                         processedRows)),
             _buildPagination(
@@ -905,17 +906,41 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     );
   }
 
-  Widget _buildExportMenu(ReportTable table) => OutlinedButton.icon(
-        onPressed: _exporting || table.rows.isEmpty
+  Widget _buildExportMenu(ReportTable table) => InkWell(
+        onTap: _exporting || table.rows.isEmpty
             ? null
             : () => _showExportSheet(table),
-        icon: _exporting
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2))
-            : const Icon(Icons.ios_share_outlined, size: 18),
-        label: const Text('Export'),
+        child: Container(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: const BoxDecoration(
+            color: AppColors.surfaceSecondary,
+            borderRadius: BorderRadius.zero,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_exporting) ...[
+                const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink)),
+                const SizedBox(width: 8),
+              ] else ...[
+                const Icon(Icons.ios_share_outlined, size: 16, color: AppColors.ink),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                'Export',
+                style: AppTypography.label.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: table.rows.isEmpty ? AppColors.textLight : AppColors.ink,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
 
   Future<void> _showExportSheet(ReportTable table) async {
@@ -1100,12 +1125,13 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
       onPressed: onTap,
       avatar: Icon(_formatIcon(format), size: 16),
       label: Text(format.label),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       labelStyle: AppTypography.helperText.copyWith(
         fontWeight: FontWeight.w600,
         color: AppColors.ink,
       ),
       backgroundColor: AppColors.surfaceSecondary,
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide.none,
     );
   }
 
@@ -1170,23 +1196,29 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
           const SizedBox(width: 8),
           Container(
             height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
+            width: 46,
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceSecondary,
               borderRadius: BorderRadius.zero,
-              border: Border.all(color: AppColors.border),
             ),
             child: IconButton(
               tooltip: 'Show columns',
               onPressed: () => _showColumnsSheet(table),
-              icon: const Icon(Icons.view_column_outlined, size: 20, color: AppColors.ink),
+              icon: SvgPicture.asset(
+                'assets/images/column_toggle.svg',
+                width: 20,
+                height: 20,
+                colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
+              ),
             ),
           ),
         ]),
         const SizedBox(height: 12),
-        Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (!widget.report.isSnapshot) ...[
                 InkWell(
@@ -1194,10 +1226,9 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   child: Container(
                     height: 42,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
+                    decoration: const BoxDecoration(
+                      color: AppColors.surfaceSecondary,
                       borderRadius: BorderRadius.zero,
-                      border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1218,13 +1249,30 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 _PresetPeriodMenu(
                     selectedPreset: _selectedPreset,
                     onPresetSelected: _applyPreset),
               ] else
-                const WorkspaceStatus(
-                    label: 'Current snapshot', color: AppColors.textBody),
-              if (choices.isNotEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: WorkspaceStatus(
+                      label: 'Current snapshot', color: AppColors.textBody),
+                ),
+              if (_searchQuery.isNotEmpty ||
+                  selection != null ||
+                  (!widget.report.isSnapshot && _range != null)) ...[
+                const SizedBox(width: 8),
+                TextButton.icon(
+                    onPressed: _clearFilters,
+                    style: TextButton.styleFrom(
+                        foregroundColor: AppColors.dangerDeep,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                    icon: const Icon(Icons.close_rounded, size: 16),
+                    label: const Text('Clear filters')),
+              ],
+              if (choices.isNotEmpty) ...[
+                const SizedBox(width: 8),
                 SizedBox(
                     width: 220,
                     child: DropdownButtonFormField<String>(
@@ -1251,15 +1299,10 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                         _page = 0;
                       }),
                     )),
-              if (_searchQuery.isNotEmpty ||
-                  selection != null ||
-                  (!widget.report.isSnapshot && _range != null))
-                TextButton(
-                    onPressed: _clearFilters,
-                    style: TextButton.styleFrom(
-                        foregroundColor: AppColors.dangerDeep),
-                    child: const Text('Clear filters')),
-            ]),
+              ],
+            ],
+          ),
+        ),
       ]),
     );
   }
@@ -1374,48 +1417,91 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         ]),
       );
 
-  Widget _buildEmptyState(PosReport report, String? note) => Center(
-          child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+  Widget _buildEmptyState(String? note) {
+    final hasFilters = _searchQuery.isNotEmpty || _selection != null;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
         child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: WorkspacePanel(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.table_chart_outlined,
-                  size: 36, color: AppColors.textMuted),
-              const SizedBox(height: 16),
-              Text('No data available', style: AppTypography.h3),
-              const SizedBox(height: 8),
-              Text('No records match the selected dates and filters.',
-                  textAlign: TextAlign.center, style: AppTypography.bodySmall),
-              if (note != null) ...[
-                const SizedBox(height: 12),
-                Text(note,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.bodySmall
-                        .copyWith(color: AppColors.textMuted))
-              ],
-              const SizedBox(height: 16),
-              if (_searchQuery.isEmpty &&
-                  _selection == null &&
-                  _setupAction != null)
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                          builder: (_) => _setupAction!.$1())),
-                  icon: Icon(_setupAction!.$3, size: 18),
-                  label: Text(_setupAction!.$2),
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.zero,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Soft badge with human graphic
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceSecondary,
+                    borderRadius: BorderRadius.zero,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      hasFilters
+                          ? Icons.filter_alt_off_outlined
+                          : Icons.insights_rounded,
+                      size: 28,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ),
-              if (_searchQuery.isNotEmpty ||
-                  _selection != null ||
-                  (!report.isSnapshot && _range != null))
-                TextButton(
-                    onPressed: _clearFilters,
-                    style: TextButton.styleFrom(
-                        foregroundColor: AppColors.dangerDeep),
-                    child: const Text('Clear filters')),
-            ]))),
-      ));
+                const SizedBox(height: 20),
+                Text(
+                  hasFilters
+                      ? 'No matches found'
+                      : 'No activity recorded yet',
+                  style: AppTypography.h3.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  hasFilters
+                      ? 'We couldn\'t find any records matching your search or date criteria. Try adjusting or clearing your filters.'
+                      : (note ?? 'Transactions, entries, or activity for this period will appear here once recorded.'),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (hasFilters) ...[
+                  MarketButton.secondary(
+                    label: 'Reset all filters',
+                    icon: Icons.refresh_rounded,
+                    isFullWidth: false,
+                    onTap: _clearFilters,
+                    height: 42,
+                  ),
+                ] else if (_setupAction != null) ...[
+                  MarketButton.primary(
+                    label: _setupAction!.$2,
+                    icon: _setupAction!.$3,
+                    isFullWidth: false,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => _setupAction!.$1(),
+                      ),
+                    ),
+                    height: 44,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   (Widget Function(), String, IconData)? get _setupAction {
     final data = widget.report.data;
@@ -1835,7 +1921,7 @@ class _PresetPeriodMenu extends StatelessWidget {
     return PopupMenuButton<PresetPeriod>(
       tooltip: 'Quick date ranges',
       onSelected: onPresetSelected,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       itemBuilder: (context) => [
         for (final preset in PresetPeriod.values)
           PopupMenuItem(
@@ -1866,10 +1952,9 @@ class _PresetPeriodMenu extends StatelessWidget {
       child: Container(
         height: 42,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceSecondary,
+          borderRadius: BorderRadius.zero,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -199,48 +199,57 @@ class _SettingsPageState extends State<SettingsPage> {
                           settingsText(lang, 'No matching settings',
                               'Hakuna mipangilio inayolingana'),
                           style: AppTypography.bodySmall))
-                  : ListView.separated(
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final tab = filtered[index];
-                        final active = wide && tab.section == selected;
-                        return Material(
-                          color: active
-                              ? AppColors.primaryLight
-                              : AppColors.surface,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              side: BorderSide(
-                                  color: active
-                                      ? AppColors.primaryDeep
-                                      : AppColors.border)),
-                          clipBehavior: Clip.antiAlias,
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 6),
-                            leading: Icon(tab.icon,
-                                color: active
-                                    ? AppColors.primaryDeep
-                                    : AppColors.textMuted),
-                            title: Text(tab.label,
-                                style: AppTypography.bodyMedium
-                                    .copyWith(fontWeight: FontWeight.w700)),
-                            subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(_description(tab.section, lang),
-                                    style: AppTypography.label)),
-                            trailing: wide
-                                ? null
-                                : const Icon(Icons.chevron_right_rounded,
-                                    size: 20),
-                            onTap: () => _openDetail(tab.section),
-                          ),
-                        );
-                      },
+                  : WorkspacePanel(
+                      padding: EdgeInsets.zero,
+                      child: ListView.separated(
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1, color: AppColors.borderLight),
+                        itemBuilder: (context, index) {
+                          final tab = filtered[index];
+                          final active = wide && tab.section == selected;
+                          const palettes = [
+                            (Color(0xFFFCE7F3), Color(0xFFBE185D)),
+                            (Color(0xFFE0F2FE), Color(0xFF0369A1)),
+                            (Color(0xFFFEF3C7), Color(0xFFB45309)),
+                            (Color(0xFFFEE2E2), Color(0xFFB91C1C)),
+                          ];
+                          final palette = palettes[index % palettes.length];
+                          return Material(
+                            color: active
+                                ? AppColors.surfaceSecondary
+                                : Colors.transparent,
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              leading: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: palette.$1,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(tab.icon,
+                                    size: 20, color: palette.$2),
+                              ),
+                              title: Text(tab.label,
+                                  style: AppTypography.bodyMedium
+                                      .copyWith(fontWeight: FontWeight.w700)),
+                              subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(_description(tab.section, lang),
+                                      style: AppTypography.label)),
+                              trailing: wide
+                                  ? null
+                                  : const Icon(Icons.chevron_right_rounded,
+                                      size: 20, color: AppColors.textMuted),
+                              onTap: () => _openDetail(tab.section),
+                            ),
+                          );
+                        },
+                      ),
                     )),
-          const SizedBox(height: 12),
-          const _ConnectionBadge(),
         ]);
     final detail =
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

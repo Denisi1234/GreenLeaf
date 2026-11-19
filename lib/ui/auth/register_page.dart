@@ -68,23 +68,6 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _busy = false);
 
     if (ok) {
-      // After successful registration, authenticate with the cloud server
-      // so the session is established and data is pulled from the backend.
-      final api = store.cloudApi;
-      if (api != null) {
-        try {
-          await api.authenticate(
-            email: _phoneController.text.trim(),
-            password: _passwordController.text,
-            register: true,
-            name: _nameController.text.trim(),
-            storeName: '',
-          );
-          await store.refreshFromServer();
-        } catch (_) {
-          // Non-fatal: local session is still active.
-        }
-      }
       return;
     }
 

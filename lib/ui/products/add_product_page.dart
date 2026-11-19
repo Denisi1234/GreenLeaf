@@ -177,7 +177,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   color: const Color(0xFF0F172A),
                 ),
                 decoration: const InputDecoration(
-                  hintText: 'e.g., Electronics, Bakery, Cosmetics',
+                    hintText: 'e.g., Beverages, Bakery, Cosmetics',
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(vertical: 12),

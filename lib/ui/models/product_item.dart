@@ -66,15 +66,3 @@ enum ProductArtType {
   tide,
 }
 
-const productItems = <ProductItem>[
-  ProductItem('Mineral Water 500ml', '500 ml', '3000', ProductArtType.aquafina),
-  ProductItem('Coca-Cola', '330 ml', '3750', ProductArtType.coke),
-  ProductItem("Lay's Classic", 'Potato Chips 52g', '4500', ProductArtType.lays),
-  ProductItem('Galaxy Milk', 'Chocolate 40g', '4000', ProductArtType.galaxy),
-  ProductItem("Kellogg's Corn Flakes", '500g', '8500', ProductArtType.kelloggs),
-  ProductItem('Dove Beauty Bar', '100g', '3125', ProductArtType.dove),
-  ProductItem('Colgate', 'Maximum Protection', '5250', ProductArtType.colgate),
-  ProductItem('Dettol Hand Wash', '250 ml', '7125', ProductArtType.dettol),
-  ProductItem(
-      'Tide Original', 'Detergent Powder', '12250', ProductArtType.tide),
-];

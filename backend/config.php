@@ -13,7 +13,7 @@ foreach (is_file(__DIR__ . '/.env') ? file(__DIR__ . '/.env', FILE_IGNORE_NEW_LI
 }
 
 return [
-    'dsn' => getenv('DB_DSN') ?: 'sqlite:' . __DIR__ . '/storage/trackmauzo.sqlite',
+    'dsn' => (getenv('DB_DSN') && !str_contains((string)getenv('DB_DSN'), 'alheqffk_')) ? getenv('DB_DSN') : 'sqlite:' . __DIR__ . '/storage/trackmauzo.sqlite',
     'user' => getenv('DB_USER') ?: '',
     'password' => getenv('DB_PASSWORD') ?: '',
     'origins' => array_map('trim', array_filter(explode(',', getenv('ALLOWED_ORIGINS') ?: 'http://localhost:53000,http://127.0.0.1:53000'))),

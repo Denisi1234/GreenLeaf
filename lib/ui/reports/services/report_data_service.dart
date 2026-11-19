@@ -9,7 +9,6 @@ import '../../../service/pos_local_store.dart';
 import '../../../service/pos_order_models.dart';
 import '../../models/customer_data.dart';
 import '../../models/product_item.dart';
-import '../../products/inventory_product_item.dart';
 import '../models/report_models.dart';
 import '../pos_report_data.dart';
 
@@ -114,12 +113,6 @@ class ReportDataService {
       0,
       (sum, order) => sum + order.total,
     );
-    final totalExpenses = _expensesWithinRange(
-      store.expenses,
-      range.start,
-      range.end,
-    ).fold<double>(0, (sum, expense) => sum + expense.amount);
-    final totalProfit = totalRevenue - totalExpenses;
     final totalOrders = ordersInRange.length;
     final averageOrderValue =
         totalOrders == 0 ? 0.0 : totalRevenue / totalOrders;
@@ -716,118 +709,6 @@ class ReportDataService {
           DateTime(expense.date.year, expense.date.month, expense.date.day);
       return !day.isBefore(start) && !day.isAfter(end);
     }).toList();
-  }
-
-  static int _expiringSoonCount(List<InventoryProductItem> items) {
-    final now = DateTime.now();
-    final threshold = now.add(const Duration(days: 30));
-    var count = 0;
-    for (final item in items) {
-      final expiry = _parseDateMetadata(item.categoryData['expiry_date']);
-      if (expiry == null) continue;
-      if (!expiry.isBefore(now) && !expiry.isAfter(threshold)) {
-        count += 1;
-      }
-    }
-    return count;
-  }
-
-  static int _metadataValueCount(
-    List<InventoryProductItem> items,
-    String key, {
-    required String expectedValue,
-  }) {
-    final normalizedExpected = expectedValue.trim().toLowerCase();
-    return items.where((item) {
-      final value = item.categoryData[key];
-      return value != null &&
-          value.toString().trim().toLowerCase() == normalizedExpected;
-    }).length;
-  }
-
-  static int _metadataNonEmptyCount(
-    List<InventoryProductItem> items,
-    List<String> keys,
-  ) {
-    return items.where((item) {
-      for (final key in keys) {
-        final value = item.categoryData[key]?.toString().trim() ?? '';
-        if (value.isNotEmpty) return true;
-      }
-      return false;
-    }).length;
-  }
-
-  static int _metadataDistinctCount(
-    List<InventoryProductItem> items,
-    List<String> keys,
-  ) {
-    final values = <String>{};
-    for (final item in items) {
-      for (final key in keys) {
-        final value = item.categoryData[key]?.toString().trim() ?? '';
-        if (value.isNotEmpty) {
-          values.add(value);
-        }
-      }
-    }
-    return values.length;
-  }
-
-  static String? _topMetadataLabel(
-    List<InventoryProductItem> items,
-    List<String> keys,
-  ) {
-    final counts = <String, int>{};
-    for (final item in items) {
-      for (final key in keys) {
-        final value = item.categoryData[key]?.toString().trim() ?? '';
-        if (value.isEmpty) continue;
-        counts[value] = (counts[value] ?? 0) + 1;
-      }
-    }
-    if (counts.isEmpty) return null;
-    final topEntry = counts.entries.reduce(
-      (left, right) => left.value >= right.value ? left : right,
-    );
-    return topEntry.key;
-  }
-
-  static String _peakHourLabel(List<CompletedOrder> orders) {
-    if (orders.isEmpty) return 'No peak';
-    final counts = <int, int>{};
-    for (final order in orders) {
-      final parsed = DateTime.tryParse(order.dateTime);
-      if (parsed == null) continue;
-      counts[parsed.hour] = (counts[parsed.hour] ?? 0) + 1;
-    }
-    if (counts.isEmpty) return 'No peak';
-    final topHour = counts.entries
-        .reduce(
-          (left, right) => left.value >= right.value ? left : right,
-        )
-        .key;
-    return _formatHour(topHour);
-  }
-
-  static String _formatHour(int hour) {
-    final suffix = hour >= 12 ? 'PM' : 'AM';
-    final hour12 = hour % 12 == 0 ? 12 : hour % 12;
-    return '$hour12 $suffix';
-  }
-
-  static String _categoryMixLabel(List<InventoryProductItem> items) {
-    final categories = items
-        .map((item) => item.category.trim())
-        .where((category) => category.isNotEmpty)
-        .toSet();
-    if (categories.isEmpty) return 'No mix data';
-    return '${categories.length} categories';
-  }
-
-  static DateTime? _parseDateMetadata(Object? value) {
-    if (value == null) return null;
-    return DateTime.tryParse(value.toString().trim());
   }
 
   static String _trendLabel(DateTime date) {

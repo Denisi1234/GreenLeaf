@@ -62,8 +62,10 @@ class PosHybridDatabase extends PosLocalDatabase {
 
   void startAutoSync() {
     _retryTimer?.cancel();
+    // Professional real-time live sync for remote store monitoring:
+    // Pull fresh changes every 5 seconds so a store owner in Mwanza sees sales made in Dodoma almost instantaneously.
     _retryTimer = Timer.periodic(
-      const Duration(seconds: 20),
+      const Duration(seconds: 5),
       (_) => syncNow(pull: true),
     );
     _scheduleFlush();
@@ -84,7 +86,8 @@ class PosHybridDatabase extends PosLocalDatabase {
   void _scheduleFlush() {
     if (_disposed) return;
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 700), () {
+    // Fast flush to push sales / stock changes to the cloud within 300ms
+    _debounce = Timer(const Duration(milliseconds: 300), () {
       syncNow(pull: false);
     });
   }

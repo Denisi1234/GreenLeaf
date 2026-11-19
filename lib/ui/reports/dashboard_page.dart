@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
 import '../../utils/currency_formatter.dart';
+import '../more/add_expense_page.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'enhanced_report_page.dart';
@@ -62,7 +63,6 @@ class _DashboardPageState extends State<DashboardPage> {
     final store = context.watch<PosLocalStore>();
     final orders = store.orders;
     final expenses = store.expenses;
-    final inventory = store.inventory;
 
     final now = DateTime.now();
 
@@ -82,14 +82,13 @@ class _DashboardPageState extends State<DashboardPage> {
     }).toList();
     final yesterdaySales = yesterdayOrders.fold<double>(0.0, (sum, o) => sum + o.total);
 
-    // Month expenses
-    final monthExpenses = expenses.where((e) {
-      final d = e.date;
-      return d.year == now.year && d.month == now.month;
+    // Today's expenses
+    final todayExpenses = expenses.where((e) {
+      final d = e.date.toLocal();
+      return d.year == now.year && d.month == now.month && d.day == now.day;
     }).fold<double>(0.0, (sum, e) => sum + e.amount);
 
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final currentMonthName = months[now.month - 1];
 
     // Compute monthly trends for chart
     final m3 = now.month;
@@ -136,10 +135,16 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             const SizedBox(height: 12),
 
-            // Card 2: Expenses (Nov)
+            // Card 2: Expenses (Today)
             _ExpensesSummaryCard(
-              monthName: currentMonthName,
-              formattedAmount: _formatPrice(monthExpenses),
+              formattedAmount: _formatPrice(todayExpenses),
+              onAddExpense: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const AddExpensePage(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
 
@@ -380,16 +385,16 @@ class _SaleOverviewChartPainter extends CustomPainter {
 }
 
 // ---------------------------------------------------------------------------
-// Card 2: Expenses (Nov)
+// Card 2: Expenses (Today)
 // ---------------------------------------------------------------------------
 class _ExpensesSummaryCard extends StatelessWidget {
   const _ExpensesSummaryCard({
-    required this.monthName,
     required this.formattedAmount,
+    required this.onAddExpense,
   });
 
-  final String monthName;
   final String formattedAmount;
+  final VoidCallback onAddExpense;
 
   @override
   Widget build(BuildContext context) {
@@ -411,13 +416,36 @@ class _ExpensesSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Expenses ($monthName)',
-            style: GoogleFonts.manrope(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
-            ),
+          Row(
+            children: [
+              Text(
+                'Expenses (Today)',
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: onAddExpense,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 2,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    'Add expense',
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0284C7),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
@@ -458,15 +486,8 @@ class _MostUsedReportsCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        borderRadius: BorderRadius.zero,
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         children: [
@@ -504,12 +525,16 @@ class _MostUsedReportsCard extends StatelessWidget {
                 icon: Icons.receipt_long_rounded,
                 badgeSymbol: '%',
                 badgeColor: const Color(0xFFF472B6),
+                bgColor: const Color(0xFFFCE7F3),
+                iconColor: const Color(0xFFBE185D),
                 onTap: onSalesTap,
               ),
               _ReportIconItem(
                 label: 'Purchases',
                 icon: Icons.assignment_outlined,
                 badgeSymbol: null,
+                bgColor: const Color(0xFFE0F2FE),
+                iconColor: const Color(0xFF0369A1),
                 onTap: onPurchasesTap,
               ),
               _ReportIconItem(
@@ -517,14 +542,18 @@ class _MostUsedReportsCard extends StatelessWidget {
                 icon: Icons.receipt_outlined,
                 badgeSymbol: '₹',
                 hasCrown: true,
-                badgeColor: const Color(0xFFF472B6),
+                badgeColor: const Color(0xFFF59E0B),
+                bgColor: const Color(0xFFFEF3C7),
+                iconColor: const Color(0xFFB45309),
                 onTap: onBalSheetTap,
               ),
               _ReportIconItem(
                 label: 'Profit & Loss',
                 icon: Icons.description_outlined,
                 badgeSymbol: '1L',
-                badgeColor: const Color(0xFFF472B6),
+                badgeColor: const Color(0xFFEF4444),
+                bgColor: const Color(0xFFFEE2E2),
+                iconColor: const Color(0xFFB91C1C),
                 onTap: onProfitLossTap,
               ),
             ],
@@ -542,6 +571,8 @@ class _ReportIconItem extends StatelessWidget {
     this.badgeSymbol,
     this.hasCrown = false,
     this.badgeColor = const Color(0xFFF472B6),
+    this.bgColor = const Color(0xFFFCE7F3),
+    this.iconColor = const Color(0xFF1E293B),
     required this.onTap,
   });
 
@@ -550,6 +581,8 @@ class _ReportIconItem extends StatelessWidget {
   final String? badgeSymbol;
   final bool hasCrown;
   final Color badgeColor;
+  final Color bgColor;
+  final Color iconColor;
   final VoidCallback onTap;
 
   @override
@@ -564,19 +597,18 @@ class _ReportIconItem extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                // Soft pink background pad
                 Container(
                   width: 44,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFCE7F3),
+                    color: bgColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     icon,
                     size: 24,
-                    color: const Color(0xFF1E293B),
+                    color: iconColor,
                   ),
                 ),
                 if (hasCrown)

@@ -105,10 +105,6 @@ class AppStrings {
   String get checkout => _pick('Checkout', 'Malipo');
   String get checkoutRetail => _pick('Checkout', 'Lipa');
   String get checkoutRestaurant => _pick('Open Table', 'Fungua Meza');
-  String get checkoutPharmacy =>
-      _pick('Process Prescription', 'Kamilisha Dawa');
-  String get checkoutElectronics =>
-      _pick('Process Warranty', 'Kamilisha Dhamana');
   String get checkoutWarehouse => _pick('Process Order', 'Kamilisha Oda');
   String get checkoutSupermarket => _pick('Loyalty Checkout', 'Lipa na Pointi');
 
@@ -160,17 +156,6 @@ class AppStrings {
   String get moreSubtitle => _pick('Store profile, staff, and tools',
       'Wasifu wa duka, wafanyakazi, na zana');
   String get operations => _pick('Operations', 'Uendeshaji');
-  String get pharmacyActions =>
-      _pick('Pharmacy Actions', 'Vitendo vya Duka la Dawa');
-  String get deviceActions => _pick('Device Actions', 'Vitendo vya Vifaa');
-  String get retailActions => _pick('Retail Actions', 'Vitendo vya Rejareja');
-  String get scanPrescription => _pick('Scan Prescription', 'Changanua Dawa');
-  String get expiryCheck => _pick('Expiry Check', 'Ukaguzi wa Kuisha');
-  String get refillQueue => _pick('Refill Queue', 'Foleni ya Kujaza');
-  String get medicineCatalog => _pick('Medicine Catalog', 'Katalogi ya Dawa');
-  String get prescriptionSales => _pick('Prescription Sales', 'Mauzo ya Dawa');
-  String get deviceCatalog => _pick('Device Catalog', 'Katalogi ya Vifaa');
-  String get warrantyClaims => _pick('Warranty Claims', 'Madai ya Dhamana');
   String get customers => _pick('Customers', 'Wateja');
   String get debitLedger => _pick('Debit & Credit', 'Madeni na Malipo');
   String get expensesTracking =>

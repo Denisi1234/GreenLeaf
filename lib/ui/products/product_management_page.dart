@@ -384,16 +384,28 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
               SliverPadding(
                 padding: EdgeInsets.all(wide ? 24 : 16),
                 sliver: SliverList.list(children: [
-                  WorkspaceHeading(
+                  const WorkspaceHeading(
                     title: 'Inventory',
                     subtitle:
                         'Manage your products, pricing and stock availability.',
-                    action: FilledButton.icon(
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: FilledButton.icon(
                       onPressed: _openAddProductPage,
                       style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.successDeep),
+                        backgroundColor: AppColors.successDeep,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
+                      ),
                       icon: const Icon(Icons.add_rounded),
-                      label: const Text('Add item'),
+                      label: const Text(
+                        'Add item',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -408,31 +420,41 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                           child: WorkspaceMetric(
                               label: 'Total items',
                               value: '${inventory.length}',
-                              icon: Icons.inventory_2_outlined)),
+                              icon: Icons.inventory_2_outlined,
+                              sharp: true,
+                              borderless: true,
+                              backgroundColor: const Color(0xFFFCE7F3),
+                              color: const Color(0xFFBE185D))),
                       SizedBox(
                           width: width,
                           child: WorkspaceMetric(
                               label: 'Stock value',
                               value: _formatPrice(stockValue),
-                              icon: Icons.account_balance_wallet_outlined)),
+                              icon: Icons.account_balance_wallet_outlined,
+                              sharp: true,
+                              borderless: true,
+                              backgroundColor: const Color(0xFFE0F2FE),
+                              color: const Color(0xFF0369A1))),
                       SizedBox(
                           width: width,
                           child: WorkspaceMetric(
                               label: 'Low stock',
                               value: '$lowCount',
                               icon: Icons.trending_down_rounded,
-                              color: lowCount > 0
-                                  ? AppColors.warningDeep
-                                  : AppColors.textMuted)),
+                              sharp: true,
+                              borderless: true,
+                              backgroundColor: const Color(0xFFFEF3C7),
+                              color: const Color(0xFFB45309))),
                       SizedBox(
                           width: width,
                           child: WorkspaceMetric(
                               label: 'Out of stock',
                               value: '$outCount',
                               icon: Icons.inventory_outlined,
-                              color: outCount > 0
-                                  ? AppColors.dangerDeep
-                                  : AppColors.textMuted)),
+                              sharp: true,
+                              borderless: true,
+                              backgroundColor: const Color(0xFFFEE2E2),
+                              color: const Color(0xFFB91C1C))),
                     ]);
                   }),
                   const SizedBox(height: 20),
@@ -470,7 +492,23 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                               : null,
                                       isExpanded: true,
                                       decoration: const InputDecoration(
-                                          labelText: 'Category'),
+                                        labelText: 'Category',
+                                        filled: true,
+                                        fillColor: AppColors.surfaceSecondary,
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.zero,
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.zero,
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.zero,
+                                          borderSide: BorderSide.none,
+                                        ),
+                                      ),
                                       items: [
                                         const DropdownMenuItem<String>(
                                             value: null,
@@ -496,7 +534,23 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                       isExpanded: true,
                                       initialValue: _stockFilter,
                                       decoration: const InputDecoration(
-                                          labelText: 'Stock status'),
+                                        labelText: 'Stock status',
+                                        filled: true,
+                                        fillColor: AppColors.surfaceSecondary,
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.zero,
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.zero,
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.zero,
+                                          borderSide: BorderSide.none,
+                                        ),
+                                      ),
                                       items: const [
                                         DropdownMenuItem(
                                             value: 'all',

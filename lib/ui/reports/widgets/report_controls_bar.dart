@@ -60,12 +60,12 @@ class _PeriodSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<ReportPeriod>(
       tooltip: 'Select period',
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.standard),
-          border: Border.all(color: AppColors.border),
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceSecondary,
+          borderRadius: BorderRadius.zero,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -111,32 +111,40 @@ class _DownloadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: isDownloading ? null : onTap,
-      icon: isDownloading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
+    return InkWell(
+      onTap: isDownloading ? null : onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceSecondary,
+          borderRadius: BorderRadius.zero,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isDownloading) ...[
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ] else ...[
+              const Icon(Icons.download_rounded, size: 16, color: AppColors.primary),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              isDownloading ? 'Preparing...' : 'PDF',
+              style: AppTypography.label.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
                 color: AppColors.primary,
               ),
-            )
-          : const Icon(Icons.download_rounded, size: 18),
-      label: Text(
-        isDownloading ? 'Preparing...' : 'PDF',
-        style: AppTypography.label.copyWith(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primary,
-        ),
-      ),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primary,
-        side: const BorderSide(color: AppColors.primary),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.standard),
+            ),
+          ],
         ),
       ),
     );

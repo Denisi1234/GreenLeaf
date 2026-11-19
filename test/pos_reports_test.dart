@@ -73,7 +73,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(InkWell, 'Detailed Sales').last);
     await tester.pumpAndSettle();
-    expect(find.text('No data available'), findsOneWidget);
+    expect(find.text('No activity recorded yet'), findsOneWidget);
 
     await tester.pageBack();
     await tester.pumpAndSettle();

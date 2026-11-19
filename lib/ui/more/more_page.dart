@@ -162,36 +162,6 @@ class _MorePageState extends State<MorePage> {
                 'Mapendeleo ya biashara, risiti na akaunti'),
             () => const SettingsPage()),
       ]),
-      _ToolSection(t('Support & data', 'Msaada na data'), [
-        _Tool(
-            'sync',
-            Icons.cloud_sync_outlined,
-            t('Sync & backup', 'Usawazishaji na nakala'),
-            t('Cloud sync, backups and data storage',
-                'Usawazishaji wa wingu, nakala na hifadhi ya data'),
-            () => const SettingsPage(initialSection: SettingsSection.data)),
-        _Tool(
-            'help',
-            Icons.support_agent_outlined,
-            t('Help & support', 'Msaada'),
-            t('Contact support and get started',
-                'Wasiliana na msaada na ujifunze matumizi'),
-            () => const HelpSupportPage()),
-        _Tool(
-            'privacy',
-            Icons.privacy_tip_outlined,
-            t('Privacy policy', 'Sera ya faragha'),
-            t('How your information is handled',
-                'Jinsi taarifa zako zinavyotumika'),
-            () => const PrivacyPolicyPage()),
-        _Tool(
-            'about',
-            Icons.info_outline_rounded,
-            t('About the app', 'Kuhusu programu'),
-            t('App information and business tools',
-                'Taarifa za programu na zana za biashara'),
-            () => const AboutAppPage()),
-      ]),
     ];
     final query = _query.trim().toLowerCase();
     final filtered = [
@@ -359,7 +329,15 @@ class _ToolPanel extends StatelessWidget {
             child: Text(section.title, style: AppTypography.sectionHeader)),
         for (var index = 0; index < section.tools.length; index++) ...[
           if (index > 0) const Divider(height: 1, color: AppColors.borderLight),
-          Material(
+          Builder(builder: (context) {
+            const palettes = [
+              (Color(0xFFFCE7F3), Color(0xFFBE185D)), // Rose / Sales
+              (Color(0xFFE0F2FE), Color(0xFF0369A1)), // Sky / Stock
+              (Color(0xFFFEF3C7), Color(0xFFB45309)), // Amber / Warning
+              (Color(0xFFFEE2E2), Color(0xFFB91C1C)), // Red / Out
+            ];
+            final palette = palettes[index % palettes.length];
+            return Material(
               color: Colors.transparent,
               child: InkWell(
                 key: ValueKey('more-${section.tools[index].id}'),
@@ -370,8 +348,20 @@ class _ToolPanel extends StatelessWidget {
                     child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Icon(section.tools[index].icon,
-                              size: 22, color: AppColors.textBody),
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: palette.$1,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              section.tools[index].icon,
+                              size: 20,
+                              color: palette.$2,
+                            ),
+                          ),
                           const SizedBox(width: 14),
                           Expanded(
                               child: Column(
@@ -389,7 +379,9 @@ class _ToolPanel extends StatelessWidget {
                           const Icon(Icons.chevron_right_rounded,
                               size: 19, color: AppColors.textMuted),
                         ])),
-              )),
+              ),
+            );
+          }),
         ],
       ]));
 }

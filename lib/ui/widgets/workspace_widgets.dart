@@ -8,18 +8,24 @@ class WorkspacePanel extends StatelessWidget {
   const WorkspacePanel(
       {super.key,
       required this.child,
-      this.padding = const EdgeInsets.all(20)});
+      this.padding = const EdgeInsets.all(20),
+      this.sharp = false,
+      this.borderless = false,
+      this.backgroundColor});
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final bool sharp;
+  final bool borderless;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) => Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(12),
+          color: backgroundColor ?? AppColors.surface,
+          border: borderless ? null : Border.all(color: AppColors.border),
+          borderRadius: sharp ? BorderRadius.zero : BorderRadius.circular(12),
         ),
         child: Padding(padding: padding, child: child),
       );
@@ -67,16 +73,25 @@ class WorkspaceMetric extends StatelessWidget {
       required this.label,
       required this.value,
       required this.icon,
-      this.color = AppColors.ink});
+      this.color = AppColors.ink,
+      this.sharp = false,
+      this.borderless = false,
+      this.backgroundColor});
 
   final String label;
   final String value;
   final IconData icon;
   final Color color;
+  final bool sharp;
+  final bool borderless;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) => WorkspacePanel(
         padding: const EdgeInsets.all(16),
+        sharp: sharp,
+        borderless: borderless,
+        backgroundColor: backgroundColor,
         child: Row(children: [
           Icon(icon, color: color, size: 22),
           const SizedBox(width: 12),

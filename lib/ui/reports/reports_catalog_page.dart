@@ -68,6 +68,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                               padding: const EdgeInsets.only(right: 8),
                               child: ChoiceChip(
                                   label: const Text('All reports'),
+                                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                   selected: _group == null,
                                   onSelected: (_) =>
                                       setState(() => _group = null))),
@@ -76,6 +77,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                                 padding: const EdgeInsets.only(right: 8),
                                 child: ChoiceChip(
                                     label: Text(_groupTitle(group)),
+                                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                     selected: _group == group,
                                     onSelected: (_) =>
                                         setState(() => _group = group))),

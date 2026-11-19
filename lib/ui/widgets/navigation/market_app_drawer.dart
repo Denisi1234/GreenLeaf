@@ -5,21 +5,13 @@ import 'package:provider/provider.dart';
 
 import '../../../l10n/app_strings.dart';
 import '../../../service/pos_local_store.dart';
-import '../../business_category_config.dart';
-import '../../home/sales_page.dart';
 import '../../more/about_app_page.dart';
 import '../../more/customers_page.dart';
 import '../../more/expenses_tracking_page.dart';
 import '../../more/help_support_page.dart';
-import '../../products/product_management_page.dart';
 import '../app_design.dart';
 import '../business/business_category_widgets.dart';
 import '../common/logout_confirmation_dialog.dart';
-import '../common/market_notice.dart';
-
-String _dual(AppStrings strings, String english, String swahili) {
-  return strings.isSwahili ? swahili : english;
-}
 
 class MarketAppDrawer extends StatelessWidget {
   const MarketAppDrawer({
@@ -28,20 +20,6 @@ class MarketAppDrawer extends StatelessWidget {
   });
 
   final String selectedItem;
-
-  List<_DrawerItemData> _quickActionsFor(
-    BusinessCategoryConfig config,
-    AppStrings strings,
-  ) {
-    return [];
-  }
-
-  List<_DrawerItemData> _operationsItemsFor(
-    BusinessCategoryConfig config,
-    AppStrings strings,
-  ) {
-    return [];
-  }
 
   List<_DrawerItemData> _supportItems(AppStrings strings) {
     return [
@@ -54,10 +32,7 @@ class MarketAppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final drawerWidth = MediaQuery.of(context).size.width * 0.85;
     final store = context.watch<PosLocalStore>();
-    final config = store.businessCategoryConfig;
     final strings = AppStrings.of(store.languageCode);
-    final quickActions = _quickActionsFor(config, strings);
-    final operations = _operationsItemsFor(config, strings);
 
     return Drawer(
       width: drawerWidth,
@@ -78,32 +53,6 @@ class MarketAppDrawer extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (quickActions.isNotEmpty) ...[
-                      _DrawerSectionHeader(
-                        title: _quickActionsTitle(config.category, strings),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _DrawerSection(
-                        items: quickActions,
-                        selectedItem: selectedItem,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      const Divider(color: AppColors.divider, height: 1),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                    if (operations.isNotEmpty) ...[
-                      _DrawerSectionHeader(
-                        title: _operationsTitle(config.category, strings),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      _DrawerSection(
-                        items: operations,
-                        selectedItem: selectedItem,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      const Divider(color: AppColors.divider, height: 1),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
                     _DrawerSection(
                       items: _supportItems(strings),
                       selectedItem: selectedItem,
@@ -232,25 +181,6 @@ class _DrawerSection extends StatelessWidget {
   }
 }
 
-class _DrawerSectionHeader extends StatelessWidget {
-  const _DrawerSectionHeader({
-    required this.title,
-  });
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title.toUpperCase(),
-      style: AppTypography.label.copyWith(
-        color: AppColors.textLight,
-        letterSpacing: 1.1,
-      ),
-    );
-  }
-}
-
 class _DrawerTile extends StatelessWidget {
   const _DrawerTile({
     required this.item,
@@ -267,10 +197,6 @@ class _DrawerTile extends StatelessWidget {
       onTap: () {
         Navigator.of(context).pop();
         if (isSelected) {
-          return;
-        }
-        if (item.onTap != null) {
-          item.onTap!(context);
           return;
         }
         final route = _routeForLabel(item.label);
@@ -387,17 +313,8 @@ class _LogoutButton extends StatelessWidget {
 }
 
 class _DrawerItemData {
-  const _DrawerItemData(this.label, this.icon, {this.onTap});
+  const _DrawerItemData(this.label, this.icon);
 
   final String label;
   final IconData icon;
-  final void Function(BuildContext context)? onTap;
-}
-
-String _quickActionsTitle(BusinessCategory category, AppStrings strings) {
-  return strings.retailActions;
-}
-
-String _operationsTitle(BusinessCategory category, AppStrings strings) {
-  return strings.operations;
 }

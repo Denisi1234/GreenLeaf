@@ -312,23 +312,14 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                     ],
                   )),
               const SizedBox(height: 16),
-              TextField(
+              MarketSearchField(
                 controller: _searchController,
+                hintText: 'Search products, item codes or barcodes',
                 onChanged: (value) => setState(() => _searchQuery = value),
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: 'Search products, item codes or barcodes',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: query.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Clear search',
-                          onPressed: () => setState(() {
-                                _searchController.clear();
-                                _searchQuery = '';
-                              }),
-                          icon: const Icon(Icons.close_rounded)),
-                ),
+                onClear: () => setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }),
               ),
               const SizedBox(height: 12),
               _SalesCategoryStrip(
@@ -345,6 +336,15 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                     FilterChip(
                         label: const Text('In stock only'),
                         selected: _inStockOnly,
+                        showCheckmark: false,
+                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        side: BorderSide.none,
+                        backgroundColor: AppColors.surfaceSecondary,
+                        selectedColor: AppColors.ink,
+                        labelStyle: AppTypography.bodySmall.copyWith(
+                          color: _inStockOnly ? Colors.white : AppColors.textBody,
+                          fontWeight: _inStockOnly ? FontWeight.w700 : FontWeight.w500,
+                        ),
                         onSelected: (value) =>
                             setState(() => _inStockOnly = value)),
                     PopupMenuButton<String>(
@@ -665,9 +665,13 @@ class _SalesCategoryChip extends StatelessWidget {
         onSelected: (_) => onTap(),
         showCheckmark: false,
         selectedColor: AppColors.ink,
-        labelStyle: AppTypography.bodySmall
-            .copyWith(color: selected ? Colors.white : AppColors.textBody),
-        side: BorderSide(color: selected ? AppColors.ink : AppColors.border),
+        backgroundColor: AppColors.surfaceSecondary,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        side: BorderSide.none,
+        labelStyle: AppTypography.bodySmall.copyWith(
+          color: selected ? Colors.white : AppColors.textBody,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        ),
       );
 }
 

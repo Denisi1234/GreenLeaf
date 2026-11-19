@@ -470,6 +470,8 @@ class PosLocalStore extends ChangeNotifier {
 
     // If a saved cloud session exists, restore the cloud API so the app
     // can sync with the shared backend automatically — no user action needed.
+    // If no session exists yet, initialize the default PhpApiClient so the app
+    // is ready to authenticate and sync with the cloud server seamlessly.
     final session = await _database.loadSyncSession();
     if (session != null) {
       final endpoint = session['endpoint'] as String?;
@@ -483,6 +485,9 @@ class PosLocalStore extends ChangeNotifier {
         );
         _cloudApi = PosHybridDatabase(api);
       }
+    } else {
+      final api = PhpApiClient();
+      _cloudApi = PosHybridDatabase(api);
     }
 
     final db = _cloudApi ?? _database;
@@ -520,12 +525,13 @@ class PosLocalStore extends ChangeNotifier {
       ..clear()
       ..addAll(storedInventory);
 
-    _syncProductsFromInventory();
-
     final storedCart = await _database.loadCart(_activeStoreId);
     _cartItems
       ..clear()
       ..addAll(storedCart);
+
+    await _removeDemoInventory();
+    _syncProductsFromInventory();
 
     _orders
       ..clear()
@@ -2293,6 +2299,35 @@ class PosLocalStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const _demoProducts = <String, String>{
+    'P001': 'Mineral Water 500ml',
+    'P002': 'Coca-Cola',
+    'P003': "Lay's Classic",
+    'P004': 'Galaxy Milk',
+    'P005': "Kellogg's Corn Flakes",
+    'P006': 'Dove Beauty Bar',
+    'P007': 'Colgate',
+    'P008': 'Dettol Hand Wash',
+    'P009': 'Tide Original',
+  };
+
+  bool _isDemoProduct(String? code, String name) =>
+      _demoProducts[code?.trim()] == name.trim();
+
+  Future<void> _removeDemoInventory() async {
+    final inventoryBefore = _allInventory.length;
+    final cartBefore = _cartItems.length;
+    _allInventory.removeWhere((item) => _isDemoProduct(item.code, item.name));
+    _cartItems.removeWhere((item) => _isDemoProduct(item.code, item.name));
+    if (_allInventory.length != inventoryBefore) {
+      await _database.replaceInventory(_allInventory, _activeStoreId);
+    }
+    if (_cartItems.length != cartBefore) {
+      _updateCartTotals();
+      await _persistCart();
+    }
+  }
+
   void _syncProductsFromInventory() {
     _products
       ..clear()
@@ -2787,6 +2822,50 @@ class PosLocalStore extends ChangeNotifier {
     }
 
     if (member == null) {
+      // If user is not yet in local SQLite (e.g. freshly installed app or new device),
+      // attempt online authentication with the server first.
+      final api = cloudApi;
+      if (api != null) {
+        try {
+          await api.authenticate(
+            email: trimmed,
+            password: password,
+            register: false,
+          );
+          await _database.saveSyncSession(
+            endpoint: api.baseUrl,
+            token: api.token ?? '',
+            user: api.user,
+          );
+          await refreshFromServer();
+
+          // After refreshing from server, verify user now exists locally
+          for (final staff in _staffMembers) {
+            final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
+            final staffUser = staff.username.trim().replaceAll(RegExp(r'\s+'), '');
+            if ((staffPhone.isNotEmpty && (staffPhone == trimmed || staffPhone.endsWith(trimmed) || trimmed.endsWith(staffPhone))) ||
+                (staffUser.isNotEmpty && staffUser.toLowerCase() == trimmed.toLowerCase())) {
+              member = staff;
+              break;
+            }
+          }
+
+          if (member != null) {
+            _isLoggedIn = true;
+            _currentUserId = member.id;
+            notifyListeners();
+            return true;
+          }
+        } on ApiException catch (error) {
+          if (error.status == 401) {
+            _lastAuthError = 'invalid_password';
+          } else {
+            _lastAuthError = error.message;
+          }
+          return false;
+        } catch (_) {}
+      }
+
       _lastAuthError = 'user_not_found';
       return false;
     }
