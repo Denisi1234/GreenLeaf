@@ -7,8 +7,8 @@ class MarketSurfaceCard extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.backgroundColor = Colors.white,
     this.borderColor = const Color(0xFFD6E4F0),
-    this.radius = 10,
-    this.showShadow = true,
+    this.radius = 0,
+    this.showShadow = false,
   });
 
   final Widget child;

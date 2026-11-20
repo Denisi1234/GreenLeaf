@@ -1,0 +1,523 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../../../service/daily_sales_report_service.dart';
+import '../../../service/pos_local_store.dart';
+import '../../../utils/currency_formatter.dart';
+import '../../widgets/app_design.dart';
+import '../settings_layout.dart';
+
+/// Data storage, cloud sync and backup pane.
+class DataSyncSettingsPane extends StatefulWidget {
+  const DataSyncSettingsPane({super.key});
+
+  @override
+  State<DataSyncSettingsPane> createState() => _DataSyncSettingsPaneState();
+}
+
+class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
+  bool _busy = false;
+  bool _loadingHealth = true;
+  int _pending = 0;
+  int _failed = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadHealth());
+  }
+
+  Future<void> _loadHealth() async {
+    if (!mounted) return;
+    final store = context.read<PosLocalStore>();
+    try {
+      final health = await store.syncHealth();
+      if (!mounted) return;
+      setState(() {
+        _pending = health.pending;
+        _failed = health.failed;
+        _loadingHealth = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingHealth = false);
+    }
+  }
+
+  Future<void> _sendTestSms(PosLocalStore store) async {
+    setState(() => _busy = true);
+    final DailySmsResult result;
+    try {
+      result = await store.sendDailySmsNow();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showSettingsResult(context, error.toString(), error: true);
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _busy = false);
+    showSettingsResult(context, result.message, error: !result.success);
+  }
+
+  Future<void> _run(
+    Future<void> Function() action,
+    String okMessage, {
+    bool refreshHealth = true,
+  }) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+      if (refreshHealth) await _loadHealth();
+      if (mounted) showSettingsResult(context, okMessage);
+    } catch (error) {
+      if (mounted) showSettingsResult(context, error.toString(), error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _exportBackup(PosLocalStore store) async {
+    final lang = store.languageCode;
+    setState(() => _busy = true);
+    try {
+      final payload = <String, dynamic>{
+        'app': 'TrackMauzo',
+        'exported_at': DateTime.now().toIso8601String(),
+        'profile': {
+          'store_name': store.profile.storeName,
+          'owner_name': store.profile.ownerName,
+          'role_title': store.profile.roleTitle,
+          'phone': store.profile.contactNumber,
+          'email': store.profile.emailAddress,
+          'address': store.profile.physicalAddress,
+          'tax_id': store.profile.taxId,
+        },
+        'receipt_settings': {
+          'header': store.receiptSettings.header,
+          'footer': store.receiptSettings.footer,
+        },
+        'customers': store.customers
+            .map((c) => {
+                  'id': c.id,
+                  'name': c.name,
+                  'phone': c.phone,
+                  'email': c.email,
+                  'address': c.address,
+                  'debit_balance': c.debitBalance,
+                  'created_at': c.createdAt.toIso8601String(),
+                })
+            .toList(),
+        'debit_ledger': store.debitEntries
+            .map((e) => {
+                  'id': e.id,
+                  'customer': e.customerName,
+                  'type': e.type.value,
+                  'amount': e.amount,
+                  'note': e.note,
+                  'created_at': e.createdAt.toIso8601String(),
+                })
+            .toList(),
+        'sales': store.orders
+            .map((o) => {
+                  'id': o.id,
+                  'date_time': o.dateTime,
+                  'total': o.total,
+                  'payment_method': o.paymentMethod,
+                  'customer': o.customerName,
+                })
+            .toList(),
+        'inventory': store.inventory
+            .map((i) => {
+                  'code': i.code,
+                  'name': i.name,
+                  'stock': i.stockCount,
+                  'price': i.sellingPrice,
+                })
+            .toList(),
+        'expenses': store.expenses
+            .map((e) => {
+                  'id': e.id,
+                  'title': e.title,
+                  'amount': e.amount,
+                  'category': e.category,
+                  'date': e.date,
+                })
+            .toList(),
+        'staff': store.staffMembers
+            .map((s) => {'id': s.id, 'name': s.name, 'phone': s.phone})
+            .toList(),
+      };
+
+      final bytes = Uint8List.fromList(
+        utf8.encode(const JsonEncoder.withIndent('  ').convert(payload)),
+      );
+      final directory = await getApplicationDocumentsDirectory();
+      final stamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
+      final file = File('${directory.path}/trackmauzo_backup_$stamp.json');
+      await file.writeAsBytes(bytes);
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path, mimeType: 'application/json')]),
+      );
+      if (!mounted) return;
+      showSettingsResult(
+        context,
+        settingsText(lang, 'Backup exported', 'Nakala imehamishwa'),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      showSettingsResult(context, error.toString(), error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = context.watch<PosLocalStore>();
+    final lang = store.languageCode;
+    String t(String en, String sw) => settingsText(lang, en, sw);
+    final connected = store.cloudApi != null;
+    final error = store.lastPersistenceError;
+    final inventoryUnits =
+        store.inventory.fold<int>(0, (sum, item) => sum + item.stockCount);
+    final recordedRevenue =
+        store.orders.fold<double>(0, (sum, order) => sum + order.total);
+    final hasQueue = connected || _pending > 0 || _failed > 0;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+      children: [
+        SettingsCard(
+          icon: Icons.cloud_sync_outlined,
+          title: t('Storage & sync', 'Hifadhi na usawazishaji'),
+          description: connected
+              ? t('Your data is saved to your TrackMauzo server.',
+                  'Data yako inahifadhiwa kwenye seva ya TrackMauzo.')
+              : t('Your data is saved on this device only.',
+                  'Data yako inahifadhiwa kwenye kifaa hiki pekee.'),
+          trailing: SettingsStatusPill(
+            label: connected
+                ? t('Connected', 'Imeunganishwa')
+                : t('Offline', 'Nje ya mtandao'),
+            positive: connected,
+          ),
+          children: [
+            SettingsInfoRow(
+              label: t('Storage mode', 'Aina ya hifadhi'),
+              value: connected
+                  ? t('Cloud server', 'Seva ya mtandaoni')
+                  : t('This device', 'Kifaa hiki'),
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Sync queue', 'Foleni ya usawazishaji'),
+              value: _loadingHealth
+                  ? t('Checking...', 'Inakagua...')
+                  : hasQueue
+                      ? t(
+                          '$_pending pending • $_failed failed',
+                          '$_pending zinasubiri • $_failed zimeshindikana',
+                        )
+                      : t('No pending changes',
+                          'Hakuna mabadiliko yanayosubiri'),
+            ),
+            if (hasQueue) ...[
+              const Divider(height: 1),
+              SettingsInfoRow(
+                label: t('Queue health', 'Afya ya foleni'),
+                value: _failed == 0
+                    ? t('Healthy', 'Nzuri')
+                    : t('Needs attention', 'Inahitaji uangalizi'),
+                valueColor: _failed == 0
+                    ? AppColors.successDeep
+                    : AppColors.warningDeep,
+              ),
+            ],
+            if (error != null && error.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.dangerLight,
+                  borderRadius: BorderRadius.zero,
+                  border: Border.all(color: AppColors.dangerBorder),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.error_outline_rounded,
+                        color: AppColors.danger, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        error,
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.dangerDeep),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (connected) ...[
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: _busy
+                        ? null
+                        : () => _run(
+                              store.refreshFromServer,
+                              t('Data synced', 'Data imesawazishwa'),
+                            ),
+                    style: FilledButton.styleFrom(
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                    ),
+                    icon: _busy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.sync_rounded, size: 18),
+                    label: Text(t('Sync now', 'Sawazisha sasa')),
+                  ),
+                  if (_failed > 0)
+                    OutlinedButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => _run(
+                                store.retryFailedSync,
+                                t('Failed changes retried',
+                                    'Mabadiliko yameshawazishwa tena'),
+                              ),
+                      style: OutlinedButton.styleFrom(
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
+                      ),
+                      icon: const Icon(Icons.replay_rounded, size: 18),
+                      label: Text(t('Retry failed', 'Jaribu tena')),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+        SettingsCard(
+          icon: Icons.sms_outlined,
+          title: t('Daily SMS report', 'Ripoti ya SMS ya kila siku'),
+          description: t(
+            'Send an end-of-day sales summary to the owner by SMS.',
+            'Tuma muhtasari wa mauzo wa jioni kwa mmiliki kwa SMS.',
+          ),
+          trailing: SettingsStatusPill(
+            label: store.storePreferences.autoDailySmsReport
+                ? t('On', 'Imewashwa')
+                : t('Off', 'Imezimwa'),
+            positive: store.storePreferences.autoDailySmsReport,
+          ),
+          children: [
+            SettingsSwitchTile(
+              title: t('Send automatically', 'Tuma kiotomatiki'),
+              subtitle: t(
+                'Runs every evening in East Africa Time (UTC+3).',
+                'Hufanya kazi kila jioni kwa saa za Afrika Mashariki (UTC+3).',
+              ),
+              value: store.storePreferences.autoDailySmsReport,
+              onChanged: _busy
+                  ? null
+                  : (value) async {
+                      setState(() => _busy = true);
+                      try {
+                        await store.setStorePreferences(
+                          store.storePreferences.copyWith(
+                            autoDailySmsReport: value,
+                          ),
+                        );
+                      } finally {
+                        if (mounted) setState(() => _busy = false);
+                      }
+                    },
+            ),
+            const Divider(height: 1),
+            SettingsField(
+              label: t('Delivery time', 'Muda wa kutuma'),
+              hint: t('24-hour clock, e.g. 21:00', 'Saa 24, mf. 21:00'),
+              child: DropdownButtonFormField<String>(
+                key: ValueKey(
+                    'sms-${store.storePreferences.dailySmsTime}-$lang'),
+                initialValue: store.storePreferences.dailySmsTime,
+                items: [
+                  for (final time in const [
+                    '18:00',
+                    '19:00',
+                    '20:00',
+                    '21:00',
+                    '22:00',
+                  ])
+                    DropdownMenuItem(value: time, child: Text(time)),
+                ],
+                onChanged: _busy
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        store.setStorePreferences(
+                          store.storePreferences.copyWith(dailySmsTime: value),
+                        );
+                      },
+              ),
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : () => _sendTestSms(store),
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
+                ),
+                icon: _busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_rounded, size: 18),
+                label: Text(t('Send test report now', 'Tuma ripoti sasa')),
+              ),
+            ),
+          ],
+        ),
+        SettingsCard(
+          icon: Icons.storage_outlined,
+          title: t('Data summary', 'Muhtasari wa data'),
+          description: t('What is currently available on this device.',
+              'Kilichopo kwenye kifaa hiki kwa sasa.'),
+          children: [
+            SettingsInfoRow(
+              label: t('Products', 'Bidhaa'),
+              value: '${store.inventory.length}',
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Stock units', 'Vipimo vya bidhaa'),
+              value: '$inventoryUnits',
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Sales recorded', 'Mauzo yaliyorekodiwa'),
+              value: '${store.orders.length}',
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Sales value', 'Thamani ya mauzo'),
+              value: formatCurrencyWithPrefix(recordedRevenue),
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Customers', 'Wateja'),
+              value: '${store.customers.length}',
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Debtors', 'Wadaiwa'),
+              value: '${store.debtorCount}',
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Staff members', 'Wafanyakazi'),
+              value: '${store.staffMembers.length}',
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Expenses', 'Matumizi'),
+              value: '${store.expenses.length}',
+            ),
+          ],
+        ),
+        SettingsCard(
+          icon: Icons.backup_outlined,
+          title: t('Backup & export', 'Hifadhi nakala na hamisha'),
+          description: t(
+            'Download a snapshot of this device data as a JSON file.',
+            'Pakua nakala ya data ya kifaa hiki kama faili la JSON.',
+          ),
+          children: [
+            SettingsInfoRow(
+              label: t('Records in backup', 'Rekodi kwenye nakala'),
+              value: t(
+                '${store.orders.length} sales • ${store.customers.length} customers • ${store.inventory.length} products',
+                'mauzo ${store.orders.length} • wateja ${store.customers.length} • bidhaa ${store.inventory.length}',
+              ),
+            ),
+            const Divider(height: 1),
+            SettingsInfoRow(
+              label: t('Includes', 'Inajumuisha'),
+              value: t(
+                'Profile, sales, stock, customers, credit ledger, expenses, staff',
+                'Wasifu, mauzo, hisa, wateja, madeni, matumizi, wafanyakazi',
+              ),
+            ),
+            const SizedBox(height: 14),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : () => _exportBackup(store),
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
+                ),
+                icon: const Icon(Icons.ios_share_rounded, size: 18),
+                label: Text(t('Export backup (JSON)', 'Hamisha nakala (JSON)')),
+              ),
+            ),
+          ],
+        ),
+        SettingsCard(
+          icon: Icons.build_circle_outlined,
+          title: t('Maintenance', 'Matengenezo'),
+          description: t(
+            'Refresh local records without changing your saved data.',
+            'Sasisha kumbukumbu za ndani bila kubadilisha data yako.',
+          ),
+          children: [
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: _busy
+                    ? null
+                    : () => _run(
+                          store.reloadFromLocal,
+                          t('Local data refreshed',
+                              'Data ya ndani imesasishwa'),
+                        ),
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
+                ),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(t('Reload local data', 'Pakia data upya')),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}

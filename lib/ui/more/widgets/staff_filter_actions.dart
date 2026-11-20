@@ -1,0 +1,176 @@
+import 'package:flutter/material.dart';
+
+import '../../../l10n/app_strings.dart';
+import '../../../service/pos_local_store.dart';
+import '../../widgets/app_design.dart';
+import 'staff_models.dart';
+
+class StaffRoleFilterChip extends StatelessWidget {
+  const StaffRoleFilterChip({
+    super.key,
+    required this.store,
+    required this.selectedRole,
+    required this.onSelected,
+  });
+
+  final PosLocalStore store;
+  final StaffRoleData? selectedRole;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(store.languageCode);
+    final label =
+        selectedRole?.title ?? staffDual(strings, 'All roles', 'Nafasi zote');
+    return PopupMenuButton<String>(
+      tooltip: staffDual(strings, 'Filter by role', 'Chuja kwa nafasi'),
+      onSelected: (value) => onSelected(value == '__all__' ? null : value),
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: '__all__',
+          child: Text(staffDual(strings, 'All roles', 'Nafasi zote')),
+        ),
+        ...store.staffRoles.map(
+          (role) => PopupMenuItem<String>(
+            value: role.id,
+            child: Text(role.title),
+          ),
+        ),
+      ],
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color:
+              selectedRole == null ? AppColors.surface : AppColors.primaryLight,
+          borderRadius: BorderRadius.zero,
+          border: Border.all(
+            color: selectedRole == null
+                ? AppColors.border
+                : AppColors.primary.withValues(alpha: 0.28),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.filter_alt_outlined,
+              size: 16,
+              color: selectedRole == null
+                  ? AppColors.textMuted
+                  : AppColors.primary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: selectedRole == null
+                    ? AppColors.textMuted
+                    : AppColors.primaryDeep,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 2),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class StaffChoicePill extends StatelessWidget {
+  const StaffChoicePill({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.zero,
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryLight : Colors.white,
+          borderRadius: BorderRadius.zero,
+          border: Border.all(
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.28)
+                : AppColors.border,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? AppColors.primaryDeep : AppColors.textMuted,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class StaffSheetAction extends StatelessWidget {
+  const StaffSheetAction({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? AppColors.danger : AppColors.textMain;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 21),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textLight,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

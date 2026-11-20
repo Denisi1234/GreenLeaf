@@ -14,11 +14,21 @@ class ApiException implements Exception {
 }
 
 class PhpApiClient {
-  static const String defaultBaseUrl = 'https://api.azagroup.co.tz';
+  static const String defaultBaseUrl = String.fromEnvironment(
+    'TRACKMAUZO_API_URL',
+    defaultValue: 'https://api.azagroup.co.tz/api',
+  );
 
   PhpApiClient([String? baseUrl])
-      : baseUrl = (baseUrl != null && baseUrl.isNotEmpty ? baseUrl : defaultBaseUrl)
-            .replaceFirst(RegExp(r'/+$'), '');
+      : baseUrl = _normalizeBaseUrl(
+          baseUrl != null && baseUrl.isNotEmpty ? baseUrl : defaultBaseUrl,
+        );
+
+  static String _normalizeBaseUrl(String raw) {
+    final trimmed = raw.trim().replaceFirst(RegExp(r'/+$'), '');
+    if (trimmed.endsWith('/api')) return trimmed;
+    return '$trimmed/api';
+  }
 
   final String baseUrl;
   final http.Client _http = http.Client();
@@ -93,6 +103,7 @@ class PhpApiClient {
     required bool register,
     String name = '',
     String storeName = '',
+    String? otpToken,
   }) async {
     final result = await request(
       'POST',
@@ -101,7 +112,8 @@ class PhpApiClient {
         'email': email,
         'password': password,
         'name': name,
-        'store_name': storeName
+        'store_name': storeName,
+        if (otpToken != null && otpToken.isNotEmpty) 'otp_token': otpToken,
       },
     );
     final data = result['data'] as Map<String, dynamic>;
@@ -139,8 +151,11 @@ class PhpApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> sendOtp(String phone) async {
-    return request('POST', 'auth/otp/send', body: {'phone': phone});
+  Future<Map<String, dynamic>> sendOtp(String phone, {String? purpose}) async {
+    return request('POST', 'auth/otp/send', body: {
+      'phone': phone,
+      if (purpose != null && purpose.isNotEmpty) 'purpose': purpose,
+    });
   }
 
   Future<String> verifyOtp(String phone, String code) async {

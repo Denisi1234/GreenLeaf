@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'widgets/staff_form_widgets.dart';
 
 class AddEditStaffPage extends StatefulWidget {
   const AddEditStaffPage({
@@ -362,48 +363,49 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
         body: ManagementViewport(
-            maxWidth: 860,
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  MarketPageHeader(
-                    title: widget.isEditing ? 'Edit Staff' : 'Add Staff',
-                    subtitle: widget.isEditing
-                        ? 'Update profile, employment, and access'
-                        : 'Create a professional staff profile',
-                    centerTitle: false,
-                    showBorder: false,
-                  ),
-                  _TabSelector(
-                    tabs: _tabs,
-                    selectedIndex: _selectedTab,
-                    onSelected: (index) => setState(() => _selectedTab = index),
-                  ),
-                  Expanded(
-                    child: Form(
-                      key: _formKey,
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          child: KeyedSubtree(
-                            key: ValueKey<int>(_selectedTab),
-                            child: _buildTab(_selectedTab),
-                          ),
+          maxWidth: 860,
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                MarketPageHeader(
+                  title: widget.isEditing ? 'Edit Staff' : 'Add Staff',
+                  subtitle: widget.isEditing
+                      ? 'Update profile, employment, and access'
+                      : 'Create a professional staff profile',
+                  centerTitle: false,
+                  showBorder: false,
+                ),
+                StaffTabSelector(
+                  tabs: _tabs,
+                  selectedIndex: _selectedTab,
+                  onSelected: (index) => setState(() => _selectedTab = index),
+                ),
+                Expanded(
+                  child: Form(
+                    key: _formKey,
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        child: KeyedSubtree(
+                          key: ValueKey<int>(_selectedTab),
+                          child: _buildTab(_selectedTab),
                         ),
                       ),
                     ),
                   ),
-                  _SaveBar(
-                    isSaving: _isSaving,
-                    isEditing: widget.isEditing,
-                    onSave: _isSaving ? null : _save,
-                  ),
-                ],
-              ),
-            )),
+                ),
+                StaffSaveBar(
+                  isSaving: _isSaving,
+                  isEditing: widget.isEditing,
+                  onSave: _isSaving ? null : _save,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -479,11 +481,11 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
           ),
         ),
         const SizedBox(height: 22),
-        _FormSection(
+        StaffFormSection(
           title: 'Personal Information',
           description: 'Core contact details used across the POS.',
           children: [
-            _AppTextField(
+            StaffAppTextField(
               controller: _nameController,
               label: 'Full name',
               hint: 'e.g. Amina Joseph',
@@ -492,7 +494,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               textCapitalization: TextCapitalization.words,
               onChanged: (_) => _clearError('name'),
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _phoneController,
               label: 'Phone number',
               hint: 'e.g. +255 712 345 678',
@@ -501,7 +503,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               errorText: _errors['phone'],
               onChanged: (_) => _clearError('phone'),
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _emailController,
               label: 'Email (optional)',
               hint: 'staff@store.co.tz',
@@ -510,7 +512,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               errorText: _errors['email'],
               onChanged: (_) => _clearError('email'),
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _addressController,
               label: 'Address (optional)',
               hint: 'Street, city',
@@ -518,14 +520,14 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 4),
-            const _FieldLabel('Account status'),
+            const StaffFieldLabel('Account status'),
             const SizedBox(height: 10),
             Wrap(
               spacing: 10,
               runSpacing: 10,
               children: StaffStatus.values.map((status) {
                 final selected = status == _status;
-                return _ChoicePill(
+                return StaffFormChoicePill(
                   label: status.label,
                   selected: selected,
                   onTap: () => setState(() => _status = status),
@@ -533,7 +535,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               }).toList(),
             ),
             const SizedBox(height: 18),
-            _AppTextField(
+            StaffAppTextField(
               controller: _notesController,
               label: 'Notes (optional)',
               hint: 'Internal notes about this staff member',
@@ -550,11 +552,11 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _FormSection(
+        StaffFormSection(
           title: 'Employment Details',
           description: 'HR information kept private to store administrators.',
           children: [
-            _AppTextField(
+            StaffAppTextField(
               controller: _employeeNumberController,
               label: 'Employee number (optional)',
               hint: 'e.g. EMP-0042',
@@ -562,23 +564,23 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               errorText: _errors['employeeNumber'],
               onChanged: (_) => _clearError('employeeNumber'),
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _jobTitleController,
               label: 'Job title',
               hint: 'e.g. Head Cashier',
               icon: Icons.work_outline_rounded,
               textCapitalization: TextCapitalization.words,
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _departmentController,
               label: 'Department',
               hint: 'e.g. Front counter',
               icon: Icons.apartment_outlined,
               textCapitalization: TextCapitalization.words,
             ),
-            const _FieldLabel('Hire date'),
+            const StaffFieldLabel('Hire date'),
             const SizedBox(height: 10),
-            _DateField(
+            StaffDateField(
               value: _hireDate,
               onTap: _pickHireDate,
               onClear: _hireDate.isEmpty
@@ -586,7 +588,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                   : () => setState(() => _hireDate = ''),
             ),
             const SizedBox(height: 18),
-            _AppDropdown<EmploymentType>(
+            StaffAppDropdown<EmploymentType>(
               label: 'Employment type',
               value: _employmentType,
               hint: 'Select employment type',
@@ -600,7 +602,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                   .toList(),
               onChanged: (value) => setState(() => _employmentType = value),
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _hourlyRateController,
               label: 'Hourly rate (TSh)',
               hint: '0',
@@ -613,25 +615,25 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
           ],
         ),
         const SizedBox(height: 16),
-        _FormSection(
+        StaffFormSection(
           title: 'Emergency Contact',
           description: 'Who to reach if something happens at work.',
           children: [
-            _AppTextField(
+            StaffAppTextField(
               controller: _emergencyNameController,
               label: 'Contact name',
               hint: 'Full name',
               icon: Icons.contact_emergency_outlined,
               textCapitalization: TextCapitalization.words,
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _emergencyPhoneController,
               label: 'Contact phone',
               hint: 'Phone number',
               icon: Icons.phone_in_talk_outlined,
               keyboardType: TextInputType.phone,
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _emergencyRelationController,
               label: 'Relationship',
               hint: 'e.g. Spouse, Sibling',
@@ -648,13 +650,13 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _FormSection(
+        StaffFormSection(
           title: 'Login Credentials',
           description: widget.isEditing
               ? 'Leave the password blank to keep the current one.'
               : 'Required for staff to sign in at the register.',
           children: [
-            _AppTextField(
+            StaffAppTextField(
               controller: _usernameController,
               label: 'Username',
               hint: 'At least 5 characters',
@@ -662,7 +664,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               errorText: _errors['username'],
               onChanged: (_) => _clearError('username'),
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _passwordController,
               label: widget.isEditing ? 'New password (optional)' : 'Password',
               hint: 'At least 8 characters',
@@ -682,7 +684,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                 ),
               ),
             ),
-            _AppTextField(
+            StaffAppTextField(
               controller: _confirmPasswordController,
               label: 'Confirm password',
               hint: 'Repeat the password',
@@ -705,7 +707,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
           ],
         ),
         const SizedBox(height: 16),
-        const _InfoCard(
+        const StaffInfoCard(
           icon: Icons.shield_outlined,
           title: 'Secure by design',
           message:
@@ -722,12 +724,12 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _FormSection(
+        StaffFormSection(
           title: 'Role & Permissions',
           description:
               'Permissions are managed by role so access stays consistent across the team.',
           children: [
-            _AppDropdown<String>(
+            StaffAppDropdown<String>(
               label: 'Assigned role',
               value: _selectedRoleId,
               hint: 'Select a role',
@@ -755,10 +757,10 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               ),
             ],
             const SizedBox(height: 18),
-            const _FieldLabel('Inherited permissions'),
+            const StaffFieldLabel('Inherited permissions'),
             const SizedBox(height: 10),
             if (permissions.isEmpty)
-              const _InfoCard(
+              const StaffInfoCard(
                 icon: Icons.info_outline_rounded,
                 title: 'No permissions yet',
                 message:
@@ -768,13 +770,13 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
               ...permissions.map(
                 (permission) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: _PermissionRow(label: permission),
+                  child: StaffPermissionRow(label: permission),
                 ),
               ),
           ],
         ),
         const SizedBox(height: 16),
-        const _InfoCard(
+        const StaffInfoCard(
           icon: Icons.admin_panel_settings_outlined,
           title: 'Least privilege',
           message:
@@ -788,484 +790,4 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     if (value == value.roundToDouble()) return value.toStringAsFixed(0);
     return value.toStringAsFixed(2);
   }
-}
-
-class _TabSelector extends StatelessWidget {
-  const _TabSelector({
-    required this.tabs,
-    required this.selectedIndex,
-    required this.onSelected,
-  });
-
-  final List<String> tabs;
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 18),
-      padding: const EdgeInsets.all(4),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceHover,
-        borderRadius: BorderRadius.zero,
-      ),
-      child: Row(
-        children: List.generate(tabs.length, (index) {
-          final selected = index == selectedIndex;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onSelected(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.surface : Colors.transparent,
-                  borderRadius: BorderRadius.zero,
-                  boxShadow: selected ? AppShadows.soft : null,
-                ),
-                child: Text(
-                  tabs[index],
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(
-                    color:
-                        selected ? AppColors.primaryDeep : AppColors.textMuted,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
-class _FormSection extends StatelessWidget {
-  const _FormSection({
-    required this.title,
-    required this.description,
-    required this.children,
-  });
-
-  final String title;
-  final String description;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.all(18),
-      borderColor: AppColors.border,
-      radius: AppRadius.standard,
-      showShadow: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AppTypography.cardHeader),
-          const SizedBox(height: 4),
-          Text(
-            description,
-            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 18),
-          ...children,
-        ],
-      ),
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AppTypography.bodySmall.copyWith(
-        color: AppColors.textMain,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _AppTextField extends StatelessWidget {
-  const _AppTextField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    required this.icon,
-    this.errorText,
-    this.keyboardType,
-    this.obscureText = false,
-    this.suffix,
-    this.maxLines = 1,
-    this.textCapitalization = TextCapitalization.none,
-    this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final IconData icon;
-  final String? errorText;
-  final TextInputType? keyboardType;
-  final bool obscureText;
-  final Widget? suffix;
-  final int maxLines;
-  final TextCapitalization textCapitalization;
-  final ValueChanged<String>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: MarketFormField(
-        label: label,
-        hintText: hint,
-        controller: controller,
-        keyboardType: keyboardType,
-        obscureText: obscureText,
-        maxLines: maxLines,
-        textCapitalization: textCapitalization,
-        onChanged: onChanged,
-        prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
-        suffixIcon: suffix,
-        validator: errorText != null && errorText!.isNotEmpty
-            ? (_) => errorText
-            : null,
-      ),
-    );
-  }
-}
-
-class _AppDropdown<T> extends StatelessWidget {
-  const _AppDropdown({
-    required this.label,
-    required this.value,
-    required this.hint,
-    required this.items,
-    required this.onChanged,
-    this.errorText,
-  });
-
-  final String label;
-  final T? value;
-  final String hint;
-  final List<DropdownMenuItem<T>> items;
-  final ValueChanged<T?> onChanged;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _FieldLabel(label),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<T>(
-            initialValue: value,
-            items: items,
-            onChanged: onChanged,
-            isExpanded: true,
-            icon: const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: AppColors.textMuted,
-            ),
-            style: AppTypography.bodyMain.copyWith(
-              color: AppColors.textMain,
-              fontWeight: FontWeight.w600,
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textLight,
-                fontWeight: FontWeight.w500,
-              ),
-              filled: true,
-              fillColor: AppColors.surfaceSecondary,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              errorText: errorText,
-              errorStyle: AppTypography.helperText.copyWith(
-                color: AppColors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-              border: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: AppColors.primary),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.value,
-    required this.onTap,
-    this.onClear,
-  });
-
-  final String value;
-  final VoidCallback onTap;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasValue = value.isNotEmpty;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.zero,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.zero,
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.calendar_today_outlined,
-              color: AppColors.textMuted,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                hasValue ? _formatHireDate(value) : 'Select hire date',
-                style: AppTypography.bodyMain.copyWith(
-                  color: hasValue ? AppColors.textMain : AppColors.textLight,
-                  fontWeight: hasValue ? FontWeight.w600 : FontWeight.w500,
-                ),
-              ),
-            ),
-            if (onClear != null)
-              GestureDetector(
-                onTap: onClear,
-                child: const Icon(
-                  Icons.close_rounded,
-                  color: AppColors.textMuted,
-                  size: 20,
-                ),
-              )
-            else
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textMuted,
-                size: 22,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChoicePill extends StatelessWidget {
-  const _ChoicePill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected
-                ? AppColors.primary.withValues(alpha: 0.28)
-                : AppColors.border,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.bodySmall.copyWith(
-            color: selected ? AppColors.primaryDeep : AppColors.textMuted,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PermissionRow extends StatelessWidget {
-  const _PermissionRow({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-              color: AppColors.successLight,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_rounded,
-              color: AppColors.success,
-              size: 15,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              label,
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textMain,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-
-  final IconData icon;
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.all(14),
-      backgroundColor: AppColors.surfaceSecondary,
-      borderColor: AppColors.primary.withValues(alpha: 0.16),
-      radius: AppRadius.standard,
-      showShadow: false,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: AppColors.primary, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.primaryDeep,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  message,
-                  style: AppTypography.helperText.copyWith(
-                    color: AppColors.textMuted,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SaveBar extends StatelessWidget {
-  const _SaveBar({
-    required this.isSaving,
-    required this.isEditing,
-    required this.onSave,
-  });
-
-  final bool isSaving;
-  final bool isEditing;
-  final VoidCallback? onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: MarketButton(
-          label: isSaving
-              ? 'Saving...'
-              : (isEditing ? 'Save Changes' : 'Create Staff'),
-          icon: isSaving ? Icons.hourglass_top_rounded : Icons.save_outlined,
-          onTap: onSave ?? () {},
-        ),
-      ),
-    );
-  }
-}
-
-String _formatHireDate(String value) {
-  final date = DateTime.tryParse(value);
-  if (date == null) return value;
-  const months = <String>[
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }

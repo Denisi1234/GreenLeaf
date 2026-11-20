@@ -212,18 +212,31 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
               },
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                _QuickAmount(
-                  label: _dual(strings, 'Full balance', 'Deni lote'),
-                  onTap: balance <= 0 ? null : () => _fill(paid),
-                ),
-                const SizedBox(width: 8),
-                _QuickAmount(
-                  label: _dual(strings, 'Half', 'Nusu'),
-                  onTap: balance <= 0 ? null : () => _fill(paid / 2),
-                ),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _QuickAmount(
+                    label: _dual(strings, 'Full balance', 'Deni lote'),
+                    onTap: balance <= 0 ? null : () => _fill(paid),
+                  ),
+                  const SizedBox(width: 8),
+                  _QuickAmount(
+                    label: _dual(strings, '75%', '75%'),
+                    onTap: balance <= 0 ? null : () => _fill(paid * 0.75),
+                  ),
+                  const SizedBox(width: 8),
+                  _QuickAmount(
+                    label: _dual(strings, 'Half (50%)', 'Nusu (50%)'),
+                    onTap: balance <= 0 ? null : () => _fill(paid / 2),
+                  ),
+                  const SizedBox(width: 8),
+                  _QuickAmount(
+                    label: _dual(strings, '25%', '25%'),
+                    onTap: balance <= 0 ? null : () => _fill(paid * 0.25),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 14),
             Text(
@@ -288,27 +301,26 @@ class _QuickAmount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Material(
-        color: onTap == null ? AppColors.surfaceSecondary : AppColors.surface,
+    return Material(
+      color: onTap == null ? AppColors.surfaceSecondary : AppColors.surface,
+      borderRadius: BorderRadius.zero,
+      child: InkWell(
         borderRadius: BorderRadius.zero,
-        child: InkWell(
-          borderRadius: BorderRadius.zero,
-          highlightColor: Colors.transparent,
-          onTap: onTap,
-          child: Container(
-            height: 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.zero,
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Text(
-              label,
-              style: AppTypography.helperText.copyWith(
-                color: onTap == null ? AppColors.textLight : AppColors.textBody,
-                fontWeight: FontWeight.w800,
-              ),
+        highlightColor: Colors.transparent,
+        onTap: onTap,
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.zero,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Text(
+            label,
+            style: AppTypography.helperText.copyWith(
+              color: onTap == null ? AppColors.textLight : AppColors.textBody,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),

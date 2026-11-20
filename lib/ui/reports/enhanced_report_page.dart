@@ -1,16 +1,7 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../service/pos_local_store.dart';
 import '../../service/store_models.dart';
@@ -27,6 +18,11 @@ import '../suppliers/suppliers_page.dart';
 import 'pos_report_catalog.dart';
 import 'pos_report_data.dart';
 import 'widgets/metric_grid.dart';
+import 'widgets/preset_period_menu.dart';
+import 'widgets/report_data_table.dart';
+import 'widgets/report_empty_state.dart';
+import 'widgets/report_export_service.dart';
+import 'widgets/report_toolbar.dart';
 import 'widgets/trend_chart.dart';
 
 class EnhancedReportPage extends StatefulWidget {
@@ -63,12 +59,10 @@ class EnhancedReportPage extends StatefulWidget {
 
 class _EnhancedReportPageState extends State<EnhancedReportPage> {
   int _pageSize = 25;
-
   DateTimeRange? _range;
   String? _selection;
   int _page = 0;
   bool _exporting = false;
-  ExportFormat _exportFormat = ExportFormat.csv;
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -198,37 +192,25 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
       }
     }
 
-    // Orders
     for (final order in store.orders) {
       checkDate(DateTime.tryParse(order.dateTime)?.toLocal());
     }
-
-    // Expenses
     for (final expense in store.expenses) {
       checkDate(expense.date);
     }
-
-    // Shifts
     for (final shift in store.registerShifts) {
       checkDate(shift.openedAt.toLocal());
     }
-
-    // Customers
     for (final customer in store.customers) {
       checkDate(customer.createdAt.toLocal());
     }
-
-    // Receivings
     for (final receiving in store.receivings) {
       checkDate(receiving.date);
     }
-
-    // Bank Transactions
     for (final tx in store.bankTransactions) {
       checkDate(tx.date);
     }
 
-    // Default fallback: Start of current year, or today if no historical records exist
     final now = DateTime.now();
     return earliest ?? DateTime(now.year, 1, 1);
   }
@@ -259,14 +241,6 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
       ),
     );
     if (!mounted || range == null) return;
-    setState(() {
-      _range = range;
-      _selection = null;
-      _page = 0;
-    });
-  }
-
-  void _setRange(DateTimeRange? range) {
     setState(() {
       _range = range;
       _selection = null;
@@ -322,451 +296,74 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         start = _earliestActivityDate();
         break;
     }
-    _setRange(DateTimeRange(start: start, end: end));
+    setState(() {
+      _range = DateTimeRange(start: start, end: end);
+      _selection = null;
+      _page = 0;
+    });
   }
 
-  Future<void> _exportReport(ReportTable table) async {
-    if (_exporting) return;
-    setState(() => _exporting = true);
-    try {
-      final export = await _buildExport(table, _exportFormat);
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile.fromData(export.bytes, mimeType: export.mimeType)],
-          fileNameOverrides: [export.fileName],
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        showMarketNotice(
-          context,
-          title: 'Export failed',
-          message: '$e',
-          type: MarketNoticeType.error,
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _selection = null;
+      _range = null;
+      _selectedPreset = PresetPeriod.allTime;
+      _page = 0;
+    });
+  }
+
+  (Widget Function(), String, IconData)? get _setupAction {
+    final data = widget.report.data;
+    switch (data) {
+      case ReportData.cashUp:
+      case ReportData.shifts:
+        return (
+          () => const CashRegisterPage(),
+          'Open cash register',
+          Icons.point_of_sale_outlined
         );
-      }
-    } finally {
-      if (mounted) setState(() => _exporting = false);
+      case ReportData.suppliers:
+      case ReportData.supplierDetail:
+      case ReportData.receivings:
+        return (
+          () => const SuppliersPage(),
+          'Add supplier',
+          Icons.local_shipping_outlined
+        );
+      case ReportData.taxes:
+      case ReportData.salesTaxes:
+      case ReportData.taxCompliance:
+        return (
+          () => const TaxSettingsPage(),
+          'Open tax settings',
+          Icons.percent_rounded
+        );
+      case ReportData.trialBalance:
+      case ReportData.balanceSheet:
+      case ReportData.cashFlow:
+        return (
+          () => const AccountsPage(),
+          'Open chart of accounts',
+          Icons.account_balance_outlined
+        );
+      case ReportData.assets:
+        return (
+          () => const FixedAssetsPage(),
+          'Add fixed asset',
+          Icons.chair_outlined
+        );
+      case ReportData.bank:
+      case ReportData.reconciliation:
+        return (
+          () => const BankReconciliationPage(),
+          'Import statement',
+          Icons.account_balance_wallet_outlined
+        );
+      default:
+        return null;
     }
-  }
-
-  Future<void> _saveReport(ReportTable table, ExportFormat format) async {
-    if (_exporting) return;
-    setState(() => _exporting = true);
-    try {
-      final export = await _buildExport(table, format);
-      final directory = await _downloadDirectory();
-      await directory.create(recursive: true);
-      final file = File(
-        '${directory.path}${Platform.pathSeparator}${export.fileName}',
-      );
-      await file.writeAsBytes(export.bytes, flush: true);
-      if (mounted) {
-        showMarketNotice(
-          context,
-          title: 'Report saved',
-          message: 'Downloaded to ${file.path}',
-          type: MarketNoticeType.success,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        showMarketNotice(
-          context,
-          title: 'Download failed',
-          message: '$e',
-          type: MarketNoticeType.error,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _exporting = false);
-    }
-  }
-
-  Future<Directory> _downloadDirectory() async {
-    try {
-      final downloads = await getDownloadsDirectory();
-      if (downloads != null) return downloads;
-    } catch (_) {
-      // Fall back to the app documents directory below.
-    }
-    return getApplicationDocumentsDirectory();
-  }
-
-  Future<void> _copyCsv(ReportTable table) async {
-    try {
-      final text = utf8
-          .decode(_generateCsv(table), allowMalformed: true)
-          .replaceFirst('\uFEFF', '');
-      await Clipboard.setData(ClipboardData(text: text));
-      if (mounted) {
-        showMarketNotice(
-          context,
-          title: 'Copied',
-          message: 'The report table was copied to the clipboard.',
-          type: MarketNoticeType.success,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        showMarketNotice(
-          context,
-          title: 'Copy failed',
-          message: '$e',
-          type: MarketNoticeType.error,
-        );
-      }
-    }
-  }
-
-  Future<_ExportPayload> _buildExport(
-      ReportTable table, ExportFormat format) async {
-    switch (format) {
-      case ExportFormat.json:
-        return _ExportPayload(
-          _generateJson(table),
-          _exportFileName('json'),
-          'application/json',
-        );
-      case ExportFormat.xml:
-        return _ExportPayload(
-          _generateXml(table),
-          _exportFileName('xml'),
-          'application/xml',
-        );
-      case ExportFormat.csv:
-        return _ExportPayload(
-          _generateCsv(table),
-          _exportFileName('csv'),
-          'text/csv',
-        );
-      case ExportFormat.txt:
-        return _ExportPayload(
-          _generateTxt(table),
-          _exportFileName('txt'),
-          'text/plain',
-        );
-      case ExportFormat.sql:
-        return _ExportPayload(
-          _generateSql(table),
-          _exportFileName('sql'),
-          'application/sql',
-        );
-      case ExportFormat.excel:
-        return _ExportPayload(
-          _generateExcel(table),
-          _exportFileName('xls'),
-          'application/vnd.ms-excel',
-        );
-      case ExportFormat.pdf:
-        return _ExportPayload(
-          await _generatePdf(table),
-          _exportFileName('pdf'),
-          'application/pdf',
-        );
-    }
-  }
-
-  Uint8List _generateJson(ReportTable table) {
-    final headers = table.columns.map((c) => c.label).toList();
-    final rows = table.rows.map((row) {
-      final map = <String, Object?>{};
-      for (var i = 0; i < headers.length; i++) {
-        map[headers[i]] = i < row.length ? row[i] : null;
-      }
-      return map;
-    }).toList();
-    final payload = <String, Object?>{
-      'report': widget.report.title,
-      'generated_at': DateTime.now().toIso8601String(),
-      'range': _range == null
-          ? 'all'
-          : {
-              'start': _range!.start.toIso8601String(),
-              'end': _range!.end.toIso8601String(),
-            },
-      'rows': rows,
-    };
-    const encoder = JsonEncoder.withIndent('  ');
-    return Uint8List.fromList(utf8.encode(encoder.convert(payload)));
-  }
-
-  Uint8List _generateXml(ReportTable table) {
-    final b = StringBuffer();
-    b.writeln('<?xml version="1.0" encoding="UTF-8"?>');
-    b.writeln('<report>');
-    b.writeln('  <title>${_xmlEscape(widget.report.title)}</title>');
-    b.writeln(
-        '  <generated_at>${_xmlEscape(DateTime.now().toIso8601String())}</generated_at>');
-    b.writeln('  <rows>');
-    final headers = table.columns.map((c) => c.label).toList();
-    for (final row in table.rows) {
-      b.writeln('    <row>');
-      for (var i = 0; i < headers.length; i++) {
-        final tag = _xmlTag(headers[i], i);
-        final value =
-            i < row.length ? _exportCell(row[i], table.columns[i]) : '';
-        b.writeln('      <$tag>${_xmlEscape(value)}</$tag>');
-      }
-      b.writeln('    </row>');
-    }
-    b.writeln('  </rows>');
-    b.writeln('</report>');
-    return Uint8List.fromList(utf8.encode(b.toString()));
-  }
-
-  Uint8List _generateCsv(ReportTable table) {
-    final content = [
-      table.columns.map((c) => _csvCell(c.label)).join(','),
-      ...table.rows.map((row) => [
-            for (var i = 0; i < table.columns.length; i++)
-              _csvCell(
-                  i < row.length ? _exportCell(row[i], table.columns[i]) : '')
-          ].join(',')),
-    ].join('\r\n');
-    return Uint8List.fromList(utf8.encode('\uFEFF$content'));
-  }
-
-  Uint8List _generateTxt(ReportTable table) {
-    final headers = table.columns.map((c) => c.label).toList();
-    final lines = <String>[
-      widget.report.title,
-      if (widget.report.isSnapshot)
-        'Current snapshot'
-      else if (_range != null)
-        '${DateFormat('yyyy-MM-dd').format(_range!.start)} - ${DateFormat('yyyy-MM-dd').format(_range!.end)}'
-      else
-        'All dates',
-      '',
-      headers.join('\t'),
-      ...table.rows.map((row) => [
-            for (var i = 0; i < table.columns.length; i++)
-              i < row.length ? _exportCell(row[i], table.columns[i]) : ''
-          ].join('\t')),
-    ];
-    return Uint8List.fromList(utf8.encode(lines.join('\r\n')));
-  }
-
-  Uint8List _generateSql(ReportTable table) {
-    final tableName =
-        _sqlIdentifier(_baseFileName().isEmpty ? 'report' : _baseFileName());
-    final cols = [
-      for (var i = 0; i < table.columns.length; i++)
-        _sqlIdentifier(table.columns[i].label, fallback: 'col_$i')
-    ];
-    final b = StringBuffer();
-    b.writeln('-- ${widget.report.title}');
-    b.writeln('-- Generated ${DateTime.now().toIso8601String()}');
-    b.writeln('CREATE TABLE IF NOT EXISTS $tableName (');
-    b.writeln(cols.map((c) => '  $c TEXT').join(',\n'));
-    b.writeln(');');
-    for (final row in table.rows) {
-      final values = [
-        for (var i = 0; i < table.columns.length; i++)
-          _sqlValue(i < row.length ? row[i] : null)
-      ].join(', ');
-      b.writeln(
-          'INSERT INTO $tableName (${cols.join(', ')}) VALUES ($values);');
-    }
-    return Uint8List.fromList(utf8.encode(b.toString()));
-  }
-
-  Uint8List _generateExcel(ReportTable table) {
-    final b = StringBuffer();
-    b.writeln('<?xml version="1.0"?>');
-    b.writeln('<?mso-application progid="Excel.Sheet"?>');
-    b.writeln('<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"');
-    b.writeln(' xmlns:o="urn:schemas-microsoft-com:office:office"');
-    b.writeln(' xmlns:x="urn:schemas-microsoft-com:office:excel"');
-    b.writeln(' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">');
-    b.writeln(' <Worksheet ss:Name="Report">');
-    b.writeln('  <Table>');
-    b.writeln('   <Row>');
-    for (final column in table.columns) {
-      b.writeln(
-        '    <Cell><Data ss:Type="String">${_xmlEscape(column.label)}</Data></Cell>',
-      );
-    }
-    b.writeln('   </Row>');
-    for (final row in table.rows) {
-      b.writeln('   <Row>');
-      for (var i = 0; i < table.columns.length; i++) {
-        final value = i < row.length ? row[i] : null;
-        if (value is num && !table.columns[i].money) {
-          b.writeln('    <Cell><Data ss:Type="Number">$value</Data></Cell>');
-        } else {
-          b.writeln(
-            '    <Cell><Data ss:Type="String">${_xmlEscape(_exportCell(value, table.columns[i]))}</Data></Cell>',
-          );
-        }
-      }
-      b.writeln('   </Row>');
-    }
-    b.writeln('  </Table>');
-    b.writeln(' </Worksheet>');
-    b.writeln('</Workbook>');
-    return Uint8List.fromList(utf8.encode(b.toString()));
-  }
-
-  Future<Uint8List> _generatePdf(ReportTable table) async {
-    final pdf = pw.Document();
-    final font = await PdfGoogleFonts.robotoRegular();
-    final fontBold = await PdfGoogleFonts.robotoBold();
-    final primary = PdfColor.fromHex('#2C3E50');
-    final headerBg = PdfColor.fromHex('#ECF0F1');
-    final border = PdfColor.fromHex('#DCE4EC');
-    final rangeLabel = widget.report.isSnapshot
-        ? 'Current snapshot'
-        : _range != null
-            ? '${DateFormat('MMM d, yyyy').format(_range!.start)} – ${DateFormat('MMM d, yyyy').format(_range!.end)}'
-            : 'All Time';
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(24),
-        header: (context) => pw.Container(
-          padding: const pw.EdgeInsets.only(bottom: 12),
-          decoration: pw.BoxDecoration(
-            border: pw.Border(bottom: pw.BorderSide(width: 1, color: border)),
-          ),
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(widget.report.title,
-                      style: pw.TextStyle(
-                          font: fontBold, fontSize: 18, color: primary)),
-                  pw.SizedBox(height: 2),
-                  pw.Text(rangeLabel,
-                      style: pw.TextStyle(
-                          font: font, fontSize: 10, color: PdfColors.grey700)),
-                ],
-              ),
-              pw.Text(
-                  'Generated ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
-                  style: pw.TextStyle(
-                      font: font, fontSize: 9, color: PdfColors.grey600)),
-            ],
-          ),
-        ),
-        build: (context) => [
-          if (table.rows.isEmpty)
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(24),
-              child: pw.Text('No records available for the selected filters.',
-                  style: pw.TextStyle(font: font, fontSize: 11)),
-            )
-          else
-            pw.TableHelper.fromTextArray(
-              headers: table.columns.map((c) => c.label).toList(),
-              data: table.rows
-                  .map((row) => [
-                        for (var i = 0; i < table.columns.length; i++)
-                          i < row.length
-                              ? _exportCell(row[i], table.columns[i])
-                              : ''
-                      ])
-                  .toList(),
-              headerStyle:
-                  pw.TextStyle(font: fontBold, fontSize: 9, color: primary),
-              headerDecoration: pw.BoxDecoration(color: headerBg),
-              cellStyle: pw.TextStyle(font: font, fontSize: 8),
-              cellAlignments: {
-                for (var i = 0; i < table.columns.length; i++)
-                  i: table.columns[i].money
-                      ? pw.Alignment.centerRight
-                      : pw.Alignment.centerLeft,
-              },
-              headerAlignments: {
-                for (var i = 0; i < table.columns.length; i++)
-                  i: table.columns[i].money
-                      ? pw.Alignment.centerRight
-                      : pw.Alignment.centerLeft,
-              },
-              border: pw.TableBorder.all(color: border, width: 0.5),
-              headerPadding:
-                  const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-              cellPadding:
-                  const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-            ),
-        ],
-        footer: (context) => pw.Container(
-          alignment: pw.Alignment.centerRight,
-          margin: const pw.EdgeInsets.only(top: 12),
-          child: pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
-              style: pw.TextStyle(
-                  font: font, fontSize: 8, color: PdfColors.grey600)),
-        ),
-      ),
-    );
-    return pdf.save();
-  }
-
-  String _exportCell(Object? value, ReportColumn column) {
-    if (value == null) return '';
-    if (value is num) {
-      final formatted = NumberFormat('#,##0.##').format(value);
-      return column.money ? 'TSH $formatted' : formatted;
-    }
-    return value.toString();
-  }
-
-  String _csvCell(Object? value) {
-    if (value == null) return '';
-    if (value is num) return value.toString();
-    final original = value.toString();
-    final text = RegExp(r'^[\s\uFEFF]*[=+@-]|^[\t\r\n]').hasMatch(original)
-        ? "'$original"
-        : original;
-    return '"${text.replaceAll('"', '""')}"';
-  }
-
-  String _xmlEscape(String value) => value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&apos;');
-
-  String _xmlTag(String label, int index) {
-    var tag = label.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
-    tag = tag.replaceAll(RegExp(r'^_+|_+$'), '');
-    if (tag.isEmpty) tag = 'col_$index';
-    if (RegExp(r'^[0-9]').hasMatch(tag)) tag = 'c_$tag';
-    return tag;
-  }
-
-  String _sqlIdentifier(String raw, {String? fallback}) {
-    var id = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]+'), '_');
-    id = id.replaceAll(RegExp(r'^_+|_+$'), '');
-    if (id.isEmpty) id = fallback ?? 'col';
-    if (RegExp(r'^[0-9]').hasMatch(id)) id = 'c_$id';
-    return id;
-  }
-
-  String _sqlValue(Object? value) {
-    if (value == null) return 'NULL';
-    if (value is num) return value.toString();
-    final escaped = value.toString().replaceAll("'", "''");
-    return "'$escaped'";
-  }
-
-  String _baseFileName() => widget.report.title
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-      .replaceAll(RegExp(r'_+'), '_')
-      .replaceAll(RegExp(r'^_|_$'), '');
-
-  String _exportTimestamp() =>
-      DateFormat('yyyyMMddHHmm').format(DateTime.now());
-
-  String _exportFileName(String ext) {
-    final base = _baseFileName().isEmpty ? 'report' : _baseFileName();
-    return '${base}_${_exportTimestamp()}.$ext';
   }
 
   @override
@@ -787,10 +384,11 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   transparentBackButton: true,
                   onBack: () => Navigator.of(context).maybePop(),
                 ),
-                Expanded(
+                const Expanded(
                   child: MarketLoadingView(
                     message: 'Aggregating Store Analytics…',
-                    subMessage: 'Retrieving real-time data across all store branches',
+                    subMessage:
+                        'Retrieving real-time data across all store branches',
                   ),
                 ),
               ],
@@ -881,6 +479,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
       ],
       note: table.note,
     );
+
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -889,24 +488,60 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             overflow: TextOverflow.ellipsis,
             style: AppTypography.sectionHeader),
         toolbarHeight: 72,
-        actions: [_buildExportMenu(exportTable), const SizedBox(width: 12)],
+        actions: [_buildExportButton(exportTable), const SizedBox(width: 12)],
       ),
       body: SafeArea(
-          top: false,
-          child: Column(children: [
-            _buildToolbar(table, choices, selection),
+        top: false,
+        child: Column(
+          children: [
+            ReportToolbar(
+              table: table,
+              choices: choices,
+              selection: selection,
+              range: _range,
+              selectedPreset: _selectedPreset,
+              searchController: _searchController,
+              searchQuery: _searchQuery,
+              isSnapshot: widget.report.isSnapshot,
+              onSearchChanged: (value) => setState(() {
+                _searchQuery = value;
+                _page = 0;
+              }),
+              onSearchCleared: () => setState(() {
+                _searchController.clear();
+                _searchQuery = '';
+                _page = 0;
+              }),
+              onShowColumns: () => _showColumnsSheet(table),
+              onChooseRange: _chooseRange,
+              onPresetSelected: _applyPreset,
+              onClearFilters: _clearFilters,
+              onSelectionChanged: (value) => setState(() {
+                _selection = value;
+                _page = 0;
+              }),
+            ),
             Expanded(
-                child: pageRows.isEmpty
-                    ? _buildEmptyState(table.note)
-                    : _buildContent(table, pageRows, additionalMetrics, data,
-                        processedRows)),
+              child: pageRows.isEmpty
+                  ? ReportEmptyState(
+                      hasFilters:
+                          _searchQuery.isNotEmpty || _selection != null,
+                      note: table.note,
+                      setupAction: _setupAction,
+                      onClearFilters: _clearFilters,
+                    )
+                  : _buildContent(table, pageRows, additionalMetrics, data,
+                      processedRows, visible),
+            ),
             _buildPagination(
                 page, lastPage, processedRows.length, pageRows.length),
-          ])),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildExportMenu(ReportTable table) => InkWell(
+  Widget _buildExportButton(ReportTable table) => InkWell(
         onTap: _exporting || table.rows.isEmpty
             ? null
             : () => _showExportSheet(table),
@@ -924,10 +559,12 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                 const SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink)),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.ink)),
                 const SizedBox(width: 8),
               ] else ...[
-                const Icon(Icons.ios_share_outlined, size: 16, color: AppColors.ink),
+                const Icon(Icons.ios_share_outlined,
+                    size: 16, color: AppColors.ink),
                 const SizedBox(width: 8),
               ],
               Text(
@@ -935,7 +572,8 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                 style: AppTypography.label.copyWith(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: table.rows.isEmpty ? AppColors.textLight : AppColors.ink,
+                  color:
+                      table.rows.isEmpty ? AppColors.textLight : AppColors.ink,
                 ),
               ),
             ],
@@ -974,7 +612,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   subtitle: 'Comma separated values',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    _saveReport(table, ExportFormat.csv);
+                    _triggerExport(table, ExportFormat.csv, save: true);
                   },
                 ),
                 _sheetAction(
@@ -983,7 +621,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   subtitle: 'Microsoft Excel (.xls)',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    _saveReport(table, ExportFormat.excel);
+                    _triggerExport(table, ExportFormat.excel, save: true);
                   },
                 ),
                 _sheetAction(
@@ -992,7 +630,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   subtitle: 'Printable, formatted report',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    _saveReport(table, ExportFormat.pdf);
+                    _triggerExport(table, ExportFormat.pdf, save: true);
                   },
                 ),
                 const SizedBox(height: 16),
@@ -1006,30 +644,22 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                       ExportFormat.excel,
                       ExportFormat.pdf
                     ])
-                      _formatChip(format, () {
-                        Navigator.of(sheetContext).pop();
-                        setState(() => _exportFormat = format);
-                        _exportReport(table);
-                      }),
-                  ],
-                ),
-                ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  title: Text('Other formats', style: AppTypography.bodySmall),
-                  children: [
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      for (final format in [
-                        ExportFormat.json,
-                        ExportFormat.xml,
-                        ExportFormat.txt,
-                        ExportFormat.sql
-                      ])
-                        _formatChip(format, () {
+                      ActionChip(
+                        onPressed: () {
                           Navigator.of(sheetContext).pop();
-                          setState(() => _exportFormat = format);
-                          _exportReport(table);
-                        }),
-                    ])
+                          _triggerExport(table, format, save: false);
+                        },
+                        avatar: Icon(_formatIcon(format), size: 16),
+                        label: Text(format.label),
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
+                        labelStyle: AppTypography.helperText.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                        ),
+                        backgroundColor: AppColors.surfaceSecondary,
+                        side: BorderSide.none,
+                      ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -1040,7 +670,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   subtitle: 'Copy all matching rows as CSV',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    _copyCsv(table);
+                    ReportExportService.copyCsv(context, table);
                   },
                 ),
                 _sheetAction(
@@ -1049,7 +679,14 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   subtitle: 'Open the system print dialog',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    Printing.layoutPdf(onLayout: (_) => _generatePdf(table));
+                    Printing.layoutPdf(
+                      onLayout: (_) => ReportExportService.generatePdf(
+                        table,
+                        widget.report.title,
+                        _range,
+                        widget.report.isSnapshot,
+                      ),
+                    );
                   },
                 ),
               ],
@@ -1058,6 +695,54 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         );
       },
     );
+  }
+
+  Future<void> _triggerExport(ReportTable table, ExportFormat format,
+      {required bool save}) async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    try {
+      if (save) {
+        await ReportExportService.saveReport(
+          context: context,
+          table: table,
+          title: widget.report.title,
+          format: format,
+          range: _range,
+          isSnapshot: widget.report.isSnapshot,
+        );
+      } else {
+        await ReportExportService.exportReport(
+          context: context,
+          table: table,
+          title: widget.report.title,
+          format: format,
+          range: _range,
+          isSnapshot: widget.report.isSnapshot,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  IconData _formatIcon(ExportFormat format) {
+    switch (format) {
+      case ExportFormat.json:
+        return Icons.data_object_rounded;
+      case ExportFormat.xml:
+        return Icons.code_rounded;
+      case ExportFormat.csv:
+        return Icons.table_chart_outlined;
+      case ExportFormat.txt:
+        return Icons.description_outlined;
+      case ExportFormat.sql:
+        return Icons.storage_rounded;
+      case ExportFormat.excel:
+        return Icons.grid_on_rounded;
+      case ExportFormat.pdf:
+        return Icons.picture_as_pdf_outlined;
+    }
   }
 
   Widget _sheetSectionLabel(String label) {
@@ -1083,7 +768,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.zero,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
@@ -1091,9 +776,9 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.zero,
               ),
               child: Icon(icon, size: 20, color: AppColors.primary),
             ),
@@ -1117,193 +802,6 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _formatChip(ExportFormat format, VoidCallback onTap) {
-    return ActionChip(
-      onPressed: onTap,
-      avatar: Icon(_formatIcon(format), size: 16),
-      label: Text(format.label),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      labelStyle: AppTypography.helperText.copyWith(
-        fontWeight: FontWeight.w600,
-        color: AppColors.ink,
-      ),
-      backgroundColor: AppColors.surfaceSecondary,
-      side: BorderSide.none,
-    );
-  }
-
-  IconData _formatIcon(ExportFormat format) {
-    switch (format) {
-      case ExportFormat.json:
-        return Icons.data_object_rounded;
-      case ExportFormat.xml:
-        return Icons.code_rounded;
-      case ExportFormat.csv:
-        return Icons.table_chart_outlined;
-      case ExportFormat.txt:
-        return Icons.description_outlined;
-      case ExportFormat.sql:
-        return Icons.storage_rounded;
-      case ExportFormat.excel:
-        return Icons.grid_on_rounded;
-      case ExportFormat.pdf:
-        return Icons.picture_as_pdf_outlined;
-    }
-  }
-
-  void _clearFilters() {
-    _searchController.clear();
-    setState(() {
-      _searchQuery = '';
-      _selection = null;
-      _range = null;
-      _selectedPreset = PresetPeriod.allTime;
-      _page = 0;
-    });
-  }
-
-  Widget _buildToolbar(
-      ReportTable table, List<String> choices, String? selection) {
-    final localization = MaterialLocalizations.of(context);
-    final range = _range;
-    final dateLabel = range == null
-        ? 'All dates'
-        : '${localization.formatCompactDate(range.start)} – ${localization.formatCompactDate(range.end)}';
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(bottom: BorderSide(color: AppColors.border))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
-          Expanded(
-              child: MarketSearchField(
-            controller: _searchController,
-            hintText: 'Search this report',
-            onChanged: (value) => setState(() {
-              _searchQuery = value;
-              _page = 0;
-            }),
-            onClear: () => setState(() {
-              _searchController.clear();
-              _searchQuery = '';
-              _page = 0;
-            }),
-          )),
-          const SizedBox(width: 8),
-          Container(
-            height: 46,
-            width: 46,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
-            ),
-            child: IconButton(
-              tooltip: 'Show columns',
-              onPressed: () => _showColumnsSheet(table),
-              icon: SvgPicture.asset(
-                'assets/images/column_toggle.svg',
-                width: 20,
-                height: 20,
-                colorFilter: const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
-              ),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (!widget.report.isSnapshot) ...[
-                InkWell(
-                  onTap: _chooseRange,
-                  child: Container(
-                    height: 42,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: const BoxDecoration(
-                      color: AppColors.surfaceSecondary,
-                      borderRadius: BorderRadius.zero,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          dateLabel,
-                          style: AppTypography.label.copyWith(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.textMuted),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _PresetPeriodMenu(
-                    selectedPreset: _selectedPreset,
-                    onPresetSelected: _applyPreset),
-              ] else
-                const Padding(
-                  padding: EdgeInsets.only(right: 8),
-                  child: WorkspaceStatus(
-                      label: 'Current snapshot', color: AppColors.textBody),
-                ),
-              if (_searchQuery.isNotEmpty ||
-                  selection != null ||
-                  (!widget.report.isSnapshot && _range != null)) ...[
-                const SizedBox(width: 8),
-                TextButton.icon(
-                    onPressed: _clearFilters,
-                    style: TextButton.styleFrom(
-                        foregroundColor: AppColors.dangerDeep,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
-                    icon: const Icon(Icons.close_rounded, size: 16),
-                    label: const Text('Clear filters')),
-              ],
-              if (choices.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                SizedBox(
-                    width: 220,
-                    child: DropdownButtonFormField<String>(
-                      key: ValueKey(selection),
-                      initialValue: selection,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Filter records',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: AppColors.border)),
-                      ),
-                      items: [
-                        const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('All records',
-                                overflow: TextOverflow.ellipsis)),
-                        ...choices.map((value) => DropdownMenuItem(
-                            value: value,
-                            child:
-                                Text(value, overflow: TextOverflow.ellipsis)))
-                      ],
-                      onChanged: (value) => setState(() {
-                        _selection = value;
-                        _page = 0;
-                      }),
-                    )),
-              ],
-            ],
-          ),
-        ),
-      ]),
     );
   }
 
@@ -1402,194 +900,72 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     );
   }
 
-  Widget _buildNoteBanner(String note) => Container(
-        width: double.infinity,
-        color: AppColors.surfaceSecondary,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(children: [
-          const Icon(Icons.info_outline_rounded,
-              size: 16, color: AppColors.textMuted),
-          const SizedBox(width: 8),
-          Expanded(
-              child: Text(note,
-                  style: AppTypography.bodySmall
-                      .copyWith(fontSize: 12, color: AppColors.ink))),
-        ]),
-      );
-
-  Widget _buildEmptyState(String? note) {
-    final hasFilters = _searchQuery.isNotEmpty || _selection != null;
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+  Widget _buildContent(
+    ReportTable table,
+    List<List<Object?>> pageRows,
+    List<MetricData> additionalMetrics,
+    PosReportData data,
+    List<List<Object?>> matchingRows,
+    List<int> visibleIndexes,
+  ) {
+    return CustomScrollView(slivers: [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.report.isSnapshot
+                      ? 'Current records'
+                      : 'Report results',
+                  style: AppTypography.sectionHeader,
+                ),
+              ),
+              Text(
+                '${matchingRows.length} ${matchingRows.length == 1 ? 'record' : 'records'}',
+                style: AppTypography.label,
+              ),
+            ],
+          ),
+        ),
+      ),
+      if (table.note != null)
+        SliverToBoxAdapter(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.zero,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            width: double.infinity,
+            color: AppColors.surfaceSecondary,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
               children: [
-                // Soft badge with human graphic
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.zero,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      hasFilters
-                          ? Icons.filter_alt_off_outlined
-                          : Icons.insights_rounded,
-                      size: 28,
-                      color: AppColors.primary,
-                    ),
+                const Icon(Icons.info_outline_rounded,
+                    size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    table.note!,
+                    style: AppTypography.bodySmall
+                        .copyWith(fontSize: 12, color: AppColors.ink),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  hasFilters
-                      ? 'No matches found'
-                      : 'No activity recorded yet',
-                  style: AppTypography.h3.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  hasFilters
-                      ? 'We couldn\'t find any records matching your search or date criteria. Try adjusting or clearing your filters.'
-                      : (note ?? 'Transactions, entries, or activity for this period will appear here once recorded.'),
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textMuted,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                if (hasFilters) ...[
-                  MarketButton.secondary(
-                    label: 'Reset all filters',
-                    icon: Icons.refresh_rounded,
-                    isFullWidth: false,
-                    onTap: _clearFilters,
-                    height: 42,
-                  ),
-                ] else if (_setupAction != null) ...[
-                  MarketButton.primary(
-                    label: _setupAction!.$2,
-                    icon: _setupAction!.$3,
-                    isFullWidth: false,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => _setupAction!.$1(),
-                      ),
-                    ),
-                    height: 44,
-                  ),
-                ],
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  (Widget Function(), String, IconData)? get _setupAction {
-    final data = widget.report.data;
-    switch (data) {
-      case ReportData.cashUp:
-      case ReportData.shifts:
-        return (
-          () => const CashRegisterPage(),
-          'Open cash register',
-          Icons.point_of_sale_outlined
-        );
-      case ReportData.suppliers:
-      case ReportData.supplierDetail:
-      case ReportData.receivings:
-        return (
-          () => const SuppliersPage(),
-          'Add supplier',
-          Icons.local_shipping_outlined
-        );
-      case ReportData.taxes:
-      case ReportData.salesTaxes:
-      case ReportData.taxCompliance:
-        return (
-          () => const TaxSettingsPage(),
-          'Open tax settings',
-          Icons.percent_rounded
-        );
-      case ReportData.trialBalance:
-      case ReportData.balanceSheet:
-      case ReportData.cashFlow:
-        return (
-          () => const AccountsPage(),
-          'Open chart of accounts',
-          Icons.account_balance_outlined
-        );
-      case ReportData.assets:
-        return (
-          () => const FixedAssetsPage(),
-          'Add fixed asset',
-          Icons.chair_outlined
-        );
-      case ReportData.bank:
-      case ReportData.reconciliation:
-        return (
-          () => const BankReconciliationPage(),
-          'Import statement',
-          Icons.account_balance_wallet_outlined
-        );
-      default:
-        return null;
-    }
-  }
-
-  Widget _buildContent(
-      ReportTable table,
-      List<List<Object?>> pageRows,
-      List<MetricData> additionalMetrics,
-      PosReportData data,
-      List<List<Object?>> matchingRows) {
-    return CustomScrollView(slivers: [
-      SliverToBoxAdapter(
-          child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(children: [
-                Expanded(
-                    child: Text(
-                        widget.report.isSnapshot
-                            ? 'Current records'
-                            : 'Report results',
-                        style: AppTypography.sectionHeader)),
-                Text(
-                    '${matchingRows.length} ${matchingRows.length == 1 ? 'record' : 'records'}',
-                    style: AppTypography.label),
-              ]))),
-      if (table.note != null)
-        SliverToBoxAdapter(child: _buildNoteBanner(table.note!)),
       if (additionalMetrics.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Key Metrics',
-                  style: AppTypography.sectionHeader
-                      .copyWith(fontSize: 15, color: AppColors.ink)),
-              const SizedBox(height: 12),
-              MetricGrid(metrics: additionalMetrics),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Key Metrics',
+                    style: AppTypography.sectionHeader
+                        .copyWith(fontSize: 15, color: AppColors.ink)),
+                const SizedBox(height: 12),
+                MetricGrid(metrics: additionalMetrics),
+              ],
+            ),
           ),
         ),
       if (widget.additionalSectionsBuilder != null)
@@ -1597,8 +973,8 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Column(
-              children: widget.additionalSectionsBuilder!
-                      (context, table, data, _range)
+              children: widget.additionalSectionsBuilder!(
+                      context, table, data, _range)
                   .map((w) => Padding(
                       padding: const EdgeInsets.only(bottom: 16), child: w))
                   .toList(),
@@ -1609,8 +985,8 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child:
-                widget.customBuilder!(context, table, data, _range, _selection),
+            child: widget.customBuilder!(
+                context, table, data, _range, _selection),
           ),
         ),
       if (widget.report.chart &&
@@ -1621,13 +997,29 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: MarketSurfaceCard(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: _buildTrendChart(table, matchingRows)),
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              radius: 0,
+              showShadow: false,
+              child: _buildTrendChart(table, matchingRows),
+            ),
           ),
         ),
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        sliver: SliverToBoxAdapter(child: _buildDataTable(table, pageRows)),
+        sliver: SliverToBoxAdapter(
+          child: ReportDataTable(
+            table: table,
+            pageRows: pageRows,
+            visibleIndexes: visibleIndexes,
+            sortColumn: _sortColumn,
+            sortAscending: _sortAscending,
+            onSort: (index, ascending) => setState(() {
+              _sortColumn = index;
+              _sortAscending = ascending;
+              _page = 0;
+            }),
+          ),
+        ),
       ),
     ]);
   }
@@ -1648,336 +1040,122 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         ? 0.0
         : points.map((p) => p.value).reduce((a, b) => a > b ? a : b);
     return TrendChart(
-        points: points,
-        maxValue: maxValue,
-        label: table.columns[index].label,
-        color: AppColors.successDeep);
-  }
-
-  Widget _buildDataTable(ReportTable table, List<List<Object?>> pageRows) {
-    final visible = _visibleColumnIndexes(table);
-    final sortIndex =
-        _sortColumn == null ? null : visible.indexOf(_sortColumn!);
-    return WorkspacePanel(
-        padding: EdgeInsets.zero,
-        child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: ConstrainedBox(
-                      constraints:
-                          BoxConstraints(minWidth: constraints.maxWidth),
-                      child: DataTable(
-                        headingRowColor: const WidgetStatePropertyAll(
-                            AppColors.surfaceSecondary),
-                        headingTextStyle: AppTypography.tableHeader
-                            .copyWith(color: AppColors.textBody),
-                        dataTextStyle: AppTypography.bodySmall,
-                        columnSpacing: 28,
-                        horizontalMargin: 20,
-                        dataRowMinHeight: 52,
-                        dataRowMaxHeight: 72,
-                        dividerThickness: 0.6,
-                        showCheckboxColumn: false,
-                        sortColumnIndex: sortIndex == null || sortIndex < 0
-                            ? null
-                            : sortIndex,
-                        sortAscending: _sortAscending,
-                        columns: [
-                          for (final index in visible)
-                            DataColumn(
-                              label: ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 180),
-                                  child: Text(table.columns[index].label,
-                                      maxLines: 2)),
-                              numeric: table.columns[index].money,
-                              onSort: (_, ascending) => setState(() {
-                                _sortColumn = index;
-                                _sortAscending = ascending;
-                                _page = 0;
-                              }),
-                            )
-                        ],
-                        rows: [
-                          for (var rowIndex = 0;
-                              rowIndex < pageRows.length;
-                              rowIndex++)
-                            DataRow(
-                              color: WidgetStatePropertyAll(rowIndex.isOdd
-                                  ? AppColors.surfaceSecondary
-                                      .withValues(alpha: 0.45)
-                                  : AppColors.surface),
-                              cells: [
-                                for (final index in visible)
-                                  DataCell(ConstrainedBox(
-                                      constraints:
-                                          const BoxConstraints(maxWidth: 260),
-                                      child: _buildCell(
-                                          index < pageRows[rowIndex].length
-                                              ? pageRows[rowIndex][index]
-                                              : null,
-                                          table.columns[index])))
-                              ],
-                            )
-                        ],
-                      )),
-                )));
-  }
-
-  Widget _buildCell(Object? value, ReportColumn column) {
-    if (value is num) {
-      final formatted = NumberFormat('#,##0.##').format(value);
-      return Text(
-        column.money ? 'TSH $formatted' : formatted,
-        style: AppTypography.bodySmall.copyWith(
-            fontWeight: column.money ? FontWeight.w700 : FontWeight.w500,
-            color: value < 0 ? AppColors.dangerDeep : AppColors.ink),
-        textAlign: column.money ? TextAlign.right : TextAlign.left,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      );
-    }
-    return Text(value?.toString() ?? '—',
-        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis);
+      points: points,
+      maxValue: maxValue,
+      label: table.columns[index].label,
+      color: AppColors.successDeep,
+    );
   }
 
   Widget _buildPagination(
-          int page, int lastPage, int totalRows, int pageRowsCount) =>
+    int page,
+    int lastPage,
+    int totalRows,
+    int pageRowsCount,
+  ) =>
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: const BoxDecoration(
-            color: AppColors.surface,
-            border: Border(top: BorderSide(color: AppColors.border))),
-        child: Row(children: [
-          Expanded(
+          color: AppColors.surface,
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
               child: Text(
-                  totalRows == 0
-                      ? 'No records'
-                      : '${page * _pageSize + 1}–${page * _pageSize + pageRowsCount} of $totalRows',
-                  style: AppTypography.label)),
-          Tooltip(
+                totalRows == 0
+                    ? 'No records'
+                    : '${page * _pageSize + 1}–${page * _pageSize + pageRowsCount} of $totalRows',
+                style: AppTypography.label,
+              ),
+            ),
+            Tooltip(
               message: 'Rows per page',
               child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                value: _pageSize,
-                isDense: true,
-                items: [
-                  for (final size in [10, 25, 50, 100])
-                    DropdownMenuItem(
+                child: DropdownButton<int>(
+                  value: _pageSize,
+                  isDense: true,
+                  items: [
+                    for (final size in [10, 25, 50, 100])
+                      DropdownMenuItem(
                         value: size,
-                        child: Text('$size', style: AppTypography.bodySmall))
-                ],
-                onChanged: (value) => setState(() {
-                  _pageSize = value ?? 25;
-                  _page = 0;
-                }),
-              ))),
-          const SizedBox(width: 8),
-          IconButton(
+                        child: Text('$size', style: AppTypography.bodySmall),
+                      ),
+                  ],
+                  onChanged: (value) => setState(() {
+                    _pageSize = value ?? 25;
+                    _page = 0;
+                  }),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
               tooltip: 'Previous page',
               onPressed:
                   page == 0 ? null : () => setState(() => _page = page - 1),
-              icon: const Icon(Icons.chevron_left_rounded)),
-          Text('${page + 1}/${lastPage + 1}', style: AppTypography.label),
-          IconButton(
+              icon: const Icon(Icons.chevron_left_rounded),
+            ),
+            Text('${page + 1}/${lastPage + 1}', style: AppTypography.label),
+            IconButton(
               tooltip: 'Next page',
               onPressed: page == lastPage
                   ? null
                   : () => setState(() => _page = page + 1),
-              icon: const Icon(Icons.chevron_right_rounded)),
-        ]),
+              icon: const Icon(Icons.chevron_right_rounded),
+            ),
+          ],
+        ),
       );
 
   Widget _buildMissingDataView(String missing) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       body: SafeArea(
-        child: Column(children: [
-          MarketPageHeader(
+        child: Column(
+          children: [
+            MarketPageHeader(
               title: widget.report.title,
               transparentBackButton: true,
-              onBack: () => Navigator.of(context).pop()),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: const BoxDecoration(
-                        color: AppColors.warningLight, shape: BoxShape.circle),
-                    child: const Icon(Icons.construction_outlined,
-                        size: 44, color: AppColors.warning),
-                  ),
-                  const SizedBox(height: 20),
-                  Text('Report Unavailable',
-                      style: AppTypography.h3.copyWith(fontSize: 20)),
-                  const SizedBox(height: 10),
-                  Text(missing,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textMuted, height: 1.5)),
-                  const SizedBox(height: 20),
-                  MarketButton(
-                      label: 'Back to Reports',
-                      icon: Icons.arrow_back_rounded,
-                      isFullWidth: false,
-                      onTap: () => Navigator.of(context).pop()),
-                ]),
-              ),
+              onBack: () => Navigator.of(context).pop(),
             ),
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _ExportPayload {
-  const _ExportPayload(this.bytes, this.fileName, this.mimeType);
-  final Uint8List bytes;
-  final String fileName;
-  final String mimeType;
-}
-
-enum ExportFormat { json, xml, csv, txt, sql, excel, pdf }
-
-extension ExportFormatLabel on ExportFormat {
-  String get label {
-    switch (this) {
-      case ExportFormat.json:
-        return 'JSON';
-      case ExportFormat.xml:
-        return 'XML';
-      case ExportFormat.csv:
-        return 'CSV';
-      case ExportFormat.txt:
-        return 'TXT';
-      case ExportFormat.sql:
-        return 'SQL';
-      case ExportFormat.excel:
-        return 'Excel';
-      case ExportFormat.pdf:
-        return 'PDF';
-    }
-  }
-}
-
-enum PresetPeriod {
-  today,
-  yesterday,
-  last7Days,
-  last30Days,
-  thisMonth,
-  lastMonth,
-  thisQuarter,
-  lastQuarter,
-  thisYear,
-  lastYear,
-  allTime,
-}
-
-extension PresetPeriodLabel on PresetPeriod {
-  String get label {
-    switch (this) {
-      case PresetPeriod.today:
-        return 'Today';
-      case PresetPeriod.yesterday:
-        return 'Yesterday';
-      case PresetPeriod.last7Days:
-        return 'Last 7 days';
-      case PresetPeriod.last30Days:
-        return 'Last 30 days';
-      case PresetPeriod.thisMonth:
-        return 'This month';
-      case PresetPeriod.lastMonth:
-        return 'Last month';
-      case PresetPeriod.thisQuarter:
-        return 'This quarter';
-      case PresetPeriod.lastQuarter:
-        return 'Last quarter';
-      case PresetPeriod.thisYear:
-        return 'This year';
-      case PresetPeriod.lastYear:
-        return 'Last year';
-      case PresetPeriod.allTime:
-        return 'All time';
-    }
-  }
-}
-
-class _PresetPeriodMenu extends StatelessWidget {
-  const _PresetPeriodMenu({
-    required this.onPresetSelected,
-    this.selectedPreset,
-  });
-  final void Function(PresetPeriod) onPresetSelected;
-  final PresetPeriod? selectedPreset;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<PresetPeriod>(
-      tooltip: 'Quick date ranges',
-      onSelected: onPresetSelected,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      itemBuilder: (context) => [
-        for (final preset in PresetPeriod.values)
-          PopupMenuItem(
-            value: preset,
-            child: Row(
-              children: [
-                if (selectedPreset == preset)
-                  const Icon(Icons.check_rounded,
-                      size: 16, color: AppColors.primary)
-                else
-                  const SizedBox(width: 16),
-                const SizedBox(width: 8),
-                Text(
-                  preset.label,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: selectedPreset == preset
-                        ? AppColors.primary
-                        : AppColors.ink,
-                    fontWeight: selectedPreset == preset
-                        ? FontWeight.w700
-                        : FontWeight.w500,
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: const BoxDecoration(
+                          color: AppColors.warningLight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.construction_outlined,
+                            size: 44, color: AppColors.warning),
+                      ),
+                      const SizedBox(height: 20),
+                      Text('Report Unavailable',
+                          style: AppTypography.h3.copyWith(fontSize: 20)),
+                      const SizedBox(height: 10),
+                      Text(
+                        missing,
+                        textAlign: TextAlign.center,
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textMuted, height: 1.5),
+                      ),
+                      const SizedBox(height: 20),
+                      MarketButton(
+                        label: 'Back to Reports',
+                        icon: Icons.arrow_back_rounded,
+                        isFullWidth: false,
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-      ],
-      child: Container(
-        height: 42,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.zero,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.bolt_rounded,
-              size: 16,
-              color: AppColors.primary,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              selectedPreset?.label ?? 'Quick',
-              style: AppTypography.label.copyWith(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
               ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 16,
-              color: AppColors.textMuted,
             ),
           ],
         ),

@@ -9,6 +9,7 @@ curl_setopt_array($ch, [
     ]),
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_TIMEOUT => 12,
+    CURLOPT_SSL_VERIFYPEER => false,
     CURLOPT_HTTPHEADER => [
         'Authorization: Basic ' . base64_encode('dm328432.14a:Mahenge2004#'),
         'Content-Type: application/json',

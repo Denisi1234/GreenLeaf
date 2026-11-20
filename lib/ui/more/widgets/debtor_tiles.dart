@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../../l10n/app_strings.dart';
+import '../../../service/debit_entry_model.dart';
+import '../../../utils/currency_formatter.dart';
+import '../../widgets/app_design.dart';
+import '../../widgets/market_shared_widgets.dart';
+
+String _dual(AppStrings strings, String english, String swahili) =>
+    strings.isSwahili ? swahili : english;
+
+String _money(double value, {bool compact = false}) {
+  final formatted = compact
+      ? NumberFormat.compact().format(value)
+      : NumberFormat('#,##0.00').format(value);
+  return 'TSh $formatted';
+}
+
+class LedgerTile extends StatelessWidget {
+  const LedgerTile({super.key, required this.entry, required this.strings});
+
+  final DebitEntry entry;
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPayment = entry.isPayment;
+    final color = isPayment ? AppColors.success : AppColors.ink;
+    final background =
+        isPayment ? AppColors.successLight : AppColors.surfaceSecondary;
+
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      borderColor: const Color(0xFFD6E4F0),
+      radius: 0,
+      showShadow: false,
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.zero,
+            ),
+            child: Icon(
+              isPayment ? Icons.south_west_rounded : Icons.north_east_rounded,
+              color: color,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${entry.customerName} · ${entry.type.localized(strings.isSwahili)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    DateFormat('MMM d, yyyy').format(entry.createdAt),
+                    if (entry.note.trim().isNotEmpty) entry.note.trim(),
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.helperText.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${isPayment ? '-' : '+'}${_money(entry.amount, compact: true)}',
+            style: AppTypography.bodySmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class EmptyDebtors extends StatelessWidget {
+  const EmptyDebtors({
+    super.key,
+    required this.strings,
+    required this.filtered,
+    required this.onReset,
+  });
+
+  final AppStrings strings;
+  final bool filtered;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    return MarketSurfaceCard(
+      padding: const EdgeInsets.all(28),
+      borderColor: AppColors.border,
+      radius: 0,
+      showShadow: false,
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              color: AppColors.successLight,
+              borderRadius: BorderRadius.zero,
+            ),
+            child: Icon(
+              filtered ? Icons.search_off_rounded : Icons.verified_rounded,
+              color: AppColors.success,
+              size: 34,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            filtered
+                ? _dual(strings, 'No matching debtors', 'Hakuna wadaiwa')
+                : _dual(strings, 'No debts recorded', 'Hakuna madeni'),
+            style: AppTypography.cardHeader,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            filtered
+                ? _dual(strings, 'Try another name or phone number.',
+                    'Jaribu jina au namba nyingine.')
+                : _dual(
+                    strings,
+                    'Credit sales from the counter appear here with full statements.',
+                    'Mauzo ya mkopo kutoka kaunta yanaonekana hapa na taarifa kamili.'),
+            textAlign: TextAlign.center,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textMuted,
+              height: 1.45,
+            ),
+          ),
+          if (filtered) ...[
+            const SizedBox(height: 16),
+            MarketButton(
+              label: _dual(strings, 'Clear search', 'Ondoa utafutaji'),
+              icon: Icons.filter_alt_off_rounded,
+              isFullWidth: false,
+              onTap: onReset,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

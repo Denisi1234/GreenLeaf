@@ -299,7 +299,26 @@ final class Api
             throw new ApiError(409, 'An account with this phone number already exists.');
         }
 
-        $res = $this->db->transaction(function () use ($email, $phone, $password, $name, $storeName) {
+        // Require verified OTP token for phone-based live registration
+        if (!$isEmail) {
+            $otpToken = trim((string) ($body['otp_token'] ?? ''));
+            if ($otpToken === '') {
+                throw new ApiError(403, 'Thibitisha namba yako ya simu kwa OTP kwanza kabla ya kusajili.');
+            }
+            $otpRows = $this->db->rows(
+                'SELECT * FROM otp_verifications WHERE phone = ? AND expires_at > ?',
+                [$phone, time()]
+            );
+            $expectedHash = hash('sha256', 'verified:' . $otpToken);
+            if ($otpRows === [] || !hash_equals((string) $otpRows[0]['code_hash'], $expectedHash)) {
+                throw new ApiError(403, 'Uthibitisho wa OTP umeisha muda au si sahihi. Omba OTP mpya.');
+            }
+        }
+
+        $res = $this->db->transaction(function () use ($email, $phone, $password, $name, $storeName, $isEmail) {
+            if (!$isEmail) {
+                $this->db->execute('DELETE FROM otp_verifications WHERE phone = ?', [$phone]);
+            }
             $storeId = bin2hex(random_bytes(16));
             $userId = bin2hex(random_bytes(16));
             $created = gmdate('c');
@@ -451,6 +470,7 @@ final class Api
             CURLOPT_POSTFIELDS => $payload,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 12,
+            CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_HTTPHEADER => [
                 'Authorization: ' . $authHeader,
                 'Content-Type: application/json',
@@ -469,6 +489,14 @@ final class Api
     {
         $rawPhone = (string) ($body['phone'] ?? '');
         $phone = $this->formatTanzanianPhone($rawPhone);
+        $purpose = strtolower(trim((string) ($body['purpose'] ?? '')));
+
+        if ($purpose === 'register') {
+            $email = $phone . '@trackmauzo.app';
+            if ($this->db->rows('SELECT id FROM users WHERE email = ?', [$email]) !== []) {
+                throw new ApiError(409, 'Namba hii ya simu tayari imesajiliwa. Tafadhali ingia (Sign in).');
+            }
+        }
 
         // Generate 6-digit secure code
         $code = (string) random_int(100000, 999999);
@@ -493,13 +521,16 @@ final class Api
 
         $smsText = "Namba yako ya uthibitisho ya TrackMauzo (OTP) ni $code. Usitoe namba hii kwa mtu yeyote.";
         $sent = $this->sendNextSms($phone, $smsText);
+        if (!$sent) {
+            throw new ApiError(502, 'Imeshindwa kutuma SMS ya uthibitisho. Hakikisha namba ya simu na ujaribu tena.');
+        }
 
         return [
             'data' => [
-                'sent' => $sent,
+                'sent' => true,
                 'phone' => $phone,
                 'expires_in' => 600,
-                'message' => $sent ? 'OTP sent successfully.' : 'Failed to deliver SMS. Check phone number.',
+                'message' => 'OTP sent successfully.',
             ],
         ];
     }
