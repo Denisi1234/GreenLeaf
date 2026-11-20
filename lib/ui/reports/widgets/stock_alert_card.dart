@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,7 +18,7 @@ class StockAlertCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return _emptyState();
+      return _emptyState(context);
     }
 
     return Column(
@@ -27,7 +28,7 @@ class StockAlertCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Low Stock Alert',
+              context.tr('Low Stock Alert'),
               style: GoogleFonts.manrope(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -38,7 +39,7 @@ class StockAlertCard extends StatelessWidget {
               TextButton(
                 onPressed: onViewAll,
                 child: Text(
-                  'View All',
+                  context.tr('View All'),
                   style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -75,7 +76,7 @@ class StockAlertCard extends StatelessWidget {
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -104,7 +105,7 @@ class StockAlertCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'All Stocked Up',
+                  context.tr('All Stocked Up'),
                   style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -113,7 +114,7 @@ class StockAlertCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'No items are in the low-stock watchlist right now.',
+                  context.tr('No items are in the low-stock watchlist right now.'),
                   style: GoogleFonts.manrope(
                     fontSize: 11,
                     color: const Color(0xFF667085),

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -210,7 +211,7 @@ class StaffAppDropdown<T> extends StatelessWidget {
               fillColor: AppColors.surfaceSecondary,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              errorText: errorText,
+              errorText: errorText == null ? null : context.strings.message(errorText!),
               errorStyle: AppTypography.helperText.copyWith(
                 color: AppColors.danger,
                 fontWeight: FontWeight.w600,
@@ -270,7 +271,7 @@ class StaffDateField extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                hasValue ? formatHireDate(value) : 'Select hire date',
+                hasValue ? formatHireDate(value) : context.tr('Select hire date'),
                 style: AppTypography.bodyMain.copyWith(
                   color: hasValue ? AppColors.textMain : AppColors.textLight,
                   fontWeight: hasValue ? FontWeight.w600 : FontWeight.w500,
@@ -461,8 +462,8 @@ class StaffSaveBar extends StatelessWidget {
         top: false,
         child: MarketButton(
           label: isSaving
-              ? 'Saving...'
-              : (isEditing ? 'Save Changes' : 'Create Staff'),
+              ? context.tr('Saving...')
+              : (isEditing ? context.tr('Save Changes') : context.tr('Create Staff')),
           icon: isSaving ? Icons.hourglass_top_rounded : Icons.save_outlined,
           onTap: onSave ?? () {},
         ),

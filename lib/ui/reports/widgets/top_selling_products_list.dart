@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -55,7 +56,7 @@ class TopSellingProductsList extends StatelessWidget {
             onPressed: onViewAll,
             icon: const Icon(Icons.chevron_right_rounded, size: 16),
             label: Text(
-              'View All',
+              context.tr('View All'),
               style: GoogleFonts.manrope(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

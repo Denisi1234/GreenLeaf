@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_strings.dart';
@@ -118,7 +119,7 @@ class StaffTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    subtitle.isEmpty ? 'No role assigned' : subtitle,
+                    subtitle.isEmpty ? context.tr('No role assigned') : subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodySmall.copyWith(
@@ -149,7 +150,7 @@ class StaffTile extends StatelessWidget {
                 Icons.more_vert_rounded,
                 color: AppColors.textMuted,
               ),
-              tooltip: 'Staff actions',
+              tooltip: context.tr('Staff actions'),
             ),
           ],
         ),

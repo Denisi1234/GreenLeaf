@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -98,7 +99,7 @@ class _LanguageSettingsPaneState extends State<LanguageSettingsPane> {
                   selected: lang == code,
                   busy: _pending == code,
                   title: name,
-                  subtitle: region,
+                  subtitle: code == 'en' ? t('International', 'Kimataifa') : region,
                   onTap: () => _apply(store, code),
                 ),
               ),
@@ -123,7 +124,7 @@ class _LanguageSettingsPaneState extends State<LanguageSettingsPane> {
                   for (final format in StorePreferences.dateFormatOptions)
                     DropdownMenuItem(
                       value: format,
-                      child: Text(_dateSample(format)),
+                      child: Text(DateFormat(format, lang).format(DateTime(2026, 11, 13))),
                     ),
                 ],
                 onChanged: _savingPreferences
@@ -174,20 +175,6 @@ class _LanguageSettingsPaneState extends State<LanguageSettingsPane> {
       ],
     );
   }
-}
-
-String _dateSample(String format) {
-  const month = 'Nov';
-  const day = '13';
-  const monthNumber = '11';
-  const year = '2026';
-  return switch (format) {
-    'd MMM yyyy' => '13 $month $year',
-    'dd/MM/yyyy' => '$day/$monthNumber/$year',
-    'MM/dd/yyyy' => '$monthNumber/$day/$year',
-    'yyyy-MM-dd' => '$year-$monthNumber-$day',
-    _ => '$month $day, $year',
-  };
 }
 
 class ChoiceTile extends StatelessWidget {

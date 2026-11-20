@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -64,7 +65,7 @@ class ComparisonCard extends StatelessWidget {
               ],
               Expanded(
                 child: Text(
-                  title,
+                  context.tr(title),
                   style: AppTypography.label.copyWith(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -107,7 +108,7 @@ class ComparisonCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _ValueColumn(
-                  label: 'Current',
+                  label: context.tr('Current'),
                   value: displayFormat(currentValue),
                   isPrimary: true,
                 ),
@@ -115,7 +116,7 @@ class ComparisonCard extends StatelessWidget {
               Container(width: 1, height: 32, color: AppColors.borderLight),
               Expanded(
                 child: _ValueColumn(
-                  label: 'Previous',
+                  label: context.tr('Previous'),
                   value: displayFormat(previousValue),
                   isPrimary: false,
                 ),
@@ -147,7 +148,7 @@ class _ValueColumn extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            context.tr(label),
             style:
                 AppTypography.helperText.copyWith(color: AppColors.textLight),
           ),
@@ -193,7 +194,7 @@ class PeriodComparison extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                'Period Comparison',
+                context.tr('Period Comparison'),
                 style: AppTypography.sectionHeader.copyWith(fontSize: 15),
               ),
               const Spacer(),
@@ -204,7 +205,7 @@ class PeriodComparison extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'vs',
+                context.tr('vs'),
                 style: AppTypography.helperText
                     .copyWith(color: AppColors.textLight),
               ),
@@ -265,7 +266,7 @@ class _PeriodTag extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        label,
+        context.tr(label),
         style: AppTypography.helperText.copyWith(
           fontSize: 11,
           fontWeight: FontWeight.w700,

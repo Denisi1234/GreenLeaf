@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -32,7 +33,7 @@ class SectionCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  title,
+                  context.tr(title),
                   style: AppTypography.sectionHeader.copyWith(
                     fontSize: 15,
                     color: AppColors.ink,
@@ -71,7 +72,7 @@ class LinkAction extends StatelessWidget {
         foregroundColor: AppColors.primary,
       ),
       child: Text(
-        label,
+        context.tr(label),
         style: AppTypography.label.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w700,

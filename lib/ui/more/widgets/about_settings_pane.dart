@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -46,7 +47,7 @@ class AboutSettingsPane extends StatelessWidget {
       children: [
         SettingsCard(
           icon: Icons.info_outline_rounded,
-          title: 'TrackMauzo',
+          title: context.tr('TrackMauzo'),
           description: t(
             'Point of sale for small shops — the B2C edition of Open Source POS.',
             'Mfumo wa mauzo kwa maduka madogo — toleo la B2C la Open Source POS.',

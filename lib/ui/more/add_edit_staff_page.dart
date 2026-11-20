@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 import '../widgets/app_image.dart';
 
@@ -9,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import 'widgets/staff_credentials_share_dialog.dart';
 import 'widgets/staff_form_widgets.dart';
 
 class AddEditStaffPage extends StatefulWidget {
@@ -155,8 +157,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       if (!mounted) return;
       showMarketNotice(
         context,
-        title: 'Image Unavailable',
-        message: 'Restart the app if gallery access was just added',
+        title: context.tr('Image Unavailable'),
+        message: context.tr('Restart the app if gallery access was just added'),
         type: MarketNoticeType.warning,
       );
     }
@@ -198,36 +200,36 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     _errors.clear();
 
     if (_nameController.text.trim().isEmpty) {
-      _setError('name', 'Full name is required');
+      _setError('name', context.tr('Full name is required'));
     }
     if (_phoneController.text.trim().isEmpty) {
-      _setError('phone', 'Phone number is required');
+      _setError('phone', context.tr('Phone number is required'));
     }
 
     final email = _emailController.text.trim();
     if (email.isNotEmpty &&
         !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-      _setError('email', 'Enter a valid email address');
+      _setError('email', context.tr('Enter a valid email address'));
     }
 
     final username = _usernameController.text.trim();
     if (username.isEmpty) {
-      _setError('username', 'Username is required');
+      _setError('username', context.tr('Username is required'));
     } else if (username.length < 5) {
-      _setError('username', 'Username must be at least 5 characters');
+      _setError('username', context.tr('Username must be at least 5 characters'));
     }
 
     final password = _passwordController.text;
     final minimumLength =
         context.read<PosLocalStore>().cloudApi == null ? 8 : 10;
     if (!widget.isEditing && password.isEmpty) {
-      _setError('password', 'Password is required');
+      _setError('password', context.tr('Password is required'));
     } else if (password.isNotEmpty && password.length < minimumLength) {
       _setError(
-          'password', 'Password must be at least $minimumLength characters');
+          'password', context.tr('Password must be at least {p0} characters', args: {'p0': minimumLength}));
     }
     if (password.isNotEmpty && _confirmPasswordController.text != password) {
-      _setError('confirm', 'Passwords do not match');
+      _setError('confirm', context.tr('Passwords do not match'));
     }
 
     final employeeNumber = _employeeNumberController.text.trim();
@@ -237,7 +239,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
         employeeNumber,
         excludingId: _member?.id,
       )) {
-        _setError('employeeNumber', 'Employee number is already in use');
+        _setError('employeeNumber', context.tr('Employee number is already in use'));
       }
     }
 
@@ -245,18 +247,18 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     if (rateText.isNotEmpty) {
       final rate = double.tryParse(rateText);
       if (rate == null || rate < 0) {
-        _setError('hourlyRate', 'Enter a valid hourly rate');
+        _setError('hourlyRate', context.tr('Enter a valid hourly rate'));
       }
     }
 
     if (_selectedRoleId == null) {
-      _setError('role', 'Select a staff role');
+      _setError('role', context.tr('Select a staff role'));
     }
 
     final store = context.read<PosLocalStore>();
     if (username.isNotEmpty &&
         store.staffUsernameExists(username, excludingId: _member?.id)) {
-      _setError('username', 'Username is already in use');
+      _setError('username', context.tr('Username is already in use'));
     }
 
     if (_errors.isNotEmpty) {
@@ -264,7 +266,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       setState(() => _selectedTab = _tabForError(firstKey));
       showMarketNotice(
         context,
-        title: 'Check the form',
+        title: context.tr('Check the form'),
         message: _errors[firstKey]!,
         type: MarketNoticeType.warning,
       );
@@ -336,11 +338,28 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       }
 
       if (!mounted) return;
+      if (password.isNotEmpty && _phoneController.text.trim().isNotEmpty) {
+        final sw = store.languageCode.trim().toLowerCase() == 'sw';
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogCtx) => StaffCredentialsShareDialog(
+            staffName: saved.name,
+            username: saved.username,
+            password: password,
+            phone: saved.phone,
+            roleTitle: role.title,
+            storeName: store.activeStoreName,
+            isSwahili: sw,
+          ),
+        );
+      }
+      if (!mounted) return;
       Navigator.of(context).pop(saved);
     } catch (error) {
       if (mounted) {
         showMarketNotice(context,
-            title: 'Save Failed',
+            title: context.tr('Save Failed'),
             message: error.toString(),
             type: MarketNoticeType.warning);
       }
@@ -369,10 +388,10 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             child: Column(
               children: [
                 MarketPageHeader(
-                  title: widget.isEditing ? 'Edit Staff' : 'Add Staff',
+                  title: widget.isEditing ? context.tr('Edit Staff') : context.tr('Add Staff'),
                   subtitle: widget.isEditing
-                      ? 'Update profile, employment, and access'
-                      : 'Create a professional staff profile',
+                      ? context.tr('Update profile, employment, and access')
+                      : context.tr('Create a professional staff profile'),
                   centerTitle: false,
                   showBorder: false,
                 ),
@@ -482,13 +501,13 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
         ),
         const SizedBox(height: 22),
         StaffFormSection(
-          title: 'Personal Information',
-          description: 'Core contact details used across the POS.',
+          title: context.tr('Personal Information'),
+          description: context.tr('Core contact details used across the POS.'),
           children: [
             StaffAppTextField(
               controller: _nameController,
-              label: 'Full name',
-              hint: 'e.g. Amina Joseph',
+              label: context.tr('Full name'),
+              hint: context.tr('e.g. Amina Joseph'),
               icon: Icons.person_outline_rounded,
               errorText: _errors['name'],
               textCapitalization: TextCapitalization.words,
@@ -496,7 +515,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             ),
             StaffAppTextField(
               controller: _phoneController,
-              label: 'Phone number',
+              label: context.tr('Phone number'),
               hint: 'e.g. +255 712 345 678',
               icon: Icons.call_outlined,
               keyboardType: TextInputType.phone,
@@ -505,8 +524,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             ),
             StaffAppTextField(
               controller: _emailController,
-              label: 'Email (optional)',
-              hint: 'staff@store.co.tz',
+              label: context.tr('Email (optional)'),
+              hint: context.tr('staff@store.co.tz'),
               icon: Icons.mail_outline_rounded,
               keyboardType: TextInputType.emailAddress,
               errorText: _errors['email'],
@@ -514,8 +533,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             ),
             StaffAppTextField(
               controller: _addressController,
-              label: 'Address (optional)',
-              hint: 'Street, city',
+              label: context.tr('Address (optional)'),
+              hint: context.tr('Street, city'),
               icon: Icons.location_on_outlined,
               textCapitalization: TextCapitalization.words,
             ),
@@ -537,8 +556,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             const SizedBox(height: 18),
             StaffAppTextField(
               controller: _notesController,
-              label: 'Notes (optional)',
-              hint: 'Internal notes about this staff member',
+              label: context.tr('Notes (optional)'),
+              hint: context.tr('Internal notes about this staff member'),
               icon: Icons.sticky_note_2_outlined,
               maxLines: 3,
             ),
@@ -553,28 +572,28 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         StaffFormSection(
-          title: 'Employment Details',
-          description: 'HR information kept private to store administrators.',
+          title: context.tr('Employment Details'),
+          description: context.tr('HR information kept private to store administrators.'),
           children: [
             StaffAppTextField(
               controller: _employeeNumberController,
-              label: 'Employee number (optional)',
-              hint: 'e.g. EMP-0042',
+              label: context.tr('Employee number (optional)'),
+              hint: context.tr('e.g. EMP-0042'),
               icon: Icons.badge_outlined,
               errorText: _errors['employeeNumber'],
               onChanged: (_) => _clearError('employeeNumber'),
             ),
             StaffAppTextField(
               controller: _jobTitleController,
-              label: 'Job title',
-              hint: 'e.g. Head Cashier',
+              label: context.tr('Job title'),
+              hint: context.tr('e.g. Head Cashier'),
               icon: Icons.work_outline_rounded,
               textCapitalization: TextCapitalization.words,
             ),
             StaffAppTextField(
               controller: _departmentController,
-              label: 'Department',
-              hint: 'e.g. Front counter',
+              label: context.tr('Department'),
+              hint: context.tr('e.g. Front counter'),
               icon: Icons.apartment_outlined,
               textCapitalization: TextCapitalization.words,
             ),
@@ -589,14 +608,14 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             ),
             const SizedBox(height: 18),
             StaffAppDropdown<EmploymentType>(
-              label: 'Employment type',
+              label: context.tr('Employment type'),
               value: _employmentType,
-              hint: 'Select employment type',
+              hint: context.tr('Select employment type'),
               items: EmploymentType.values
                   .map(
                     (type) => DropdownMenuItem<EmploymentType>(
                       value: type,
-                      child: Text(type.label),
+                      child: Text(context.tr(type.label)),
                     ),
                   )
                   .toList(),
@@ -604,7 +623,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             ),
             StaffAppTextField(
               controller: _hourlyRateController,
-              label: 'Hourly rate (TSh)',
+              label: context.tr('Hourly rate (TSh)'),
               hint: '0',
               icon: Icons.payments_outlined,
               keyboardType:
@@ -616,27 +635,27 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
         ),
         const SizedBox(height: 16),
         StaffFormSection(
-          title: 'Emergency Contact',
-          description: 'Who to reach if something happens at work.',
+          title: context.tr('Emergency Contact'),
+          description: context.tr('Who to reach if something happens at work.'),
           children: [
             StaffAppTextField(
               controller: _emergencyNameController,
-              label: 'Contact name',
-              hint: 'Full name',
+              label: context.tr('Contact name'),
+              hint: context.tr('Full name'),
               icon: Icons.contact_emergency_outlined,
               textCapitalization: TextCapitalization.words,
             ),
             StaffAppTextField(
               controller: _emergencyPhoneController,
-              label: 'Contact phone',
-              hint: 'Phone number',
+              label: context.tr('Contact phone'),
+              hint: context.tr('Phone number'),
               icon: Icons.phone_in_talk_outlined,
               keyboardType: TextInputType.phone,
             ),
             StaffAppTextField(
               controller: _emergencyRelationController,
-              label: 'Relationship',
-              hint: 'e.g. Spouse, Sibling',
+              label: context.tr('Relationship'),
+              hint: context.tr('e.g. Spouse, Sibling'),
               icon: Icons.people_outline_rounded,
               textCapitalization: TextCapitalization.words,
             ),
@@ -651,23 +670,23 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         StaffFormSection(
-          title: 'Login Credentials',
+          title: context.tr('Login Credentials'),
           description: widget.isEditing
-              ? 'Leave the password blank to keep the current one.'
-              : 'Required for staff to sign in at the register.',
+              ? context.tr('Leave the password blank to keep the current one.')
+              : context.tr('Required for staff to sign in at the register.'),
           children: [
             StaffAppTextField(
               controller: _usernameController,
-              label: 'Username',
-              hint: 'At least 5 characters',
+              label: context.tr('Username'),
+              hint: context.tr('At least 5 characters'),
               icon: Icons.alternate_email_rounded,
               errorText: _errors['username'],
               onChanged: (_) => _clearError('username'),
             ),
             StaffAppTextField(
               controller: _passwordController,
-              label: widget.isEditing ? 'New password (optional)' : 'Password',
-              hint: 'At least 8 characters',
+              label: widget.isEditing ? context.tr('New password (optional)') : context.tr('Password'),
+              hint: context.tr('At least 8 characters'),
               icon: Icons.lock_outline_rounded,
               obscureText: _obscurePassword,
               errorText: _errors['password'],
@@ -686,8 +705,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             ),
             StaffAppTextField(
               controller: _confirmPasswordController,
-              label: 'Confirm password',
-              hint: 'Repeat the password',
+              label: context.tr('Confirm password'),
+              hint: context.tr('Repeat the password'),
               icon: Icons.lock_reset_rounded,
               obscureText: _obscureConfirm,
               errorText: _errors['confirm'],
@@ -707,11 +726,11 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
           ],
         ),
         const SizedBox(height: 16),
-        const StaffInfoCard(
+         StaffInfoCard(
           icon: Icons.shield_outlined,
-          title: 'Secure by design',
+          title: context.tr('Secure by design'),
           message:
-              'Passwords are salted and hashed before they are saved. Only the staff member should know their own password.',
+              context.tr('Passwords are salted and hashed before they are saved. Only the staff member should know their own password.'),
         ),
       ],
     );
@@ -725,14 +744,14 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         StaffFormSection(
-          title: 'Role & Permissions',
+          title: context.tr('Role & Permissions'),
           description:
-              'Permissions are managed by role so access stays consistent across the team.',
+              context.tr('Permissions are managed by role so access stays consistent across the team.'),
           children: [
             StaffAppDropdown<String>(
-              label: 'Assigned role',
+              label: context.tr('Assigned role'),
               value: _selectedRoleId,
-              hint: 'Select a role',
+              hint: context.tr('Select a role'),
               errorText: _errors['role'],
               items: widget.roles
                   .map(
@@ -760,11 +779,11 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             const StaffFieldLabel('Inherited permissions'),
             const SizedBox(height: 10),
             if (permissions.isEmpty)
-              const StaffInfoCard(
+               StaffInfoCard(
                 icon: Icons.info_outline_rounded,
-                title: 'No permissions yet',
+                title: context.tr('No permissions yet'),
                 message:
-                    'This role has no permissions. Open role details to grant access.',
+                    context.tr('This role has no permissions. Open role details to grant access.'),
               )
             else
               ...permissions.map(
@@ -776,11 +795,11 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
           ],
         ),
         const SizedBox(height: 16),
-        const StaffInfoCard(
+         StaffInfoCard(
           icon: Icons.admin_panel_settings_outlined,
-          title: 'Least privilege',
+          title: context.tr('Least privilege'),
           message:
-              'Grant only what each role needs. Access changes apply instantly to every staff member in the role.',
+              context.tr('Grant only what each role needs. Access changes apply instantly to every staff member in the role.'),
         ),
       ],
     );

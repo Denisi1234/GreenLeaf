@@ -129,7 +129,10 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                                         'Jumla ya matumizi'),
                                     value: formatExpenseMoney(total, compact: true),
                                     icon: Icons.payments_outlined,
-                                    color: AppColors.ink,
+                                    sharp: true,
+                                    borderless: true,
+                                    backgroundColor: const Color(0xFFFEE2E2),
+                                    color: const Color(0xFFB91C1C),
                                   ),
                                 ),
                                 SizedBox(
@@ -139,7 +142,10 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                                         'Idadi ya kumbukumbu'),
                                     value: '${filtered.length}',
                                     icon: Icons.receipt_long_outlined,
-                                    color: AppColors.primaryDeep,
+                                    sharp: true,
+                                    borderless: true,
+                                    backgroundColor: const Color(0xFFE0F2FE),
+                                    color: const Color(0xFF0369A1),
                                   ),
                                 ),
                                 SizedBox(
@@ -154,7 +160,10 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                                       compact: true,
                                     ),
                                     icon: Icons.query_stats_rounded,
-                                    color: AppColors.textBody,
+                                    sharp: true,
+                                    borderless: true,
+                                    backgroundColor: const Color(0xFFFEF3C7),
+                                    color: const Color(0xFFB45309),
                                   ),
                                 ),
                                 SizedBox(
@@ -165,8 +174,13 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                                     value: formatExpenseMoney(taxTotal,
                                         compact: true),
                                     icon: Icons.account_balance_outlined,
+                                    sharp: true,
+                                    borderless: true,
+                                    backgroundColor: taxTotal > 0
+                                        ? const Color(0xFFEDE9FE)
+                                        : const Color(0xFFF1F5F9),
                                     color: taxTotal > 0
-                                        ? AppColors.toneIndigo
+                                        ? const Color(0xFF6D28D9)
                                         : AppColors.textMuted,
                                   ),
                                 ),
@@ -231,7 +245,16 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                         if (filtered.isEmpty)
                           ExpenseEmptyState(
                             strings: strings,
+                            isFiltered: _search.isNotEmpty || _paymentFilter != 'All' || inRange.length != all.length,
                             onAdd: _openAddExpense,
+                            onClearFilter: () {
+                              _searchController.clear();
+                              setState(() {
+                                _search = '';
+                                _paymentFilter = 'All';
+                                _range = ExpenseRange.thisMonth;
+                              });
+                            },
                           )
                         else
                           WorkspaceRegister(

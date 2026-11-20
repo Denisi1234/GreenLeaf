@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -140,8 +141,8 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
     if (!store.isInitialized) {
       return Scaffold(
         backgroundColor: AppColors.pageBackground,
-        body: const MarketLoadingView(
-          message: 'Loading Store Profile…',
+        body:  MarketLoadingView(
+          message: context.tr('Loading Store Profile…'),
           subMessage: 'Retrieving business configuration and assets',
         ),
       );

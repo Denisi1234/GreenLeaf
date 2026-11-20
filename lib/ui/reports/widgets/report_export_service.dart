@@ -1,3 +1,5 @@
+import '../../../l10n/app_strings.dart';
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -62,6 +64,7 @@ class ReportExportService {
         format: format,
         range: range,
         isSnapshot: isSnapshot,
+        languageCode: context.strings.languageCode,
       );
       await SharePlus.instance.share(
         ShareParams(
@@ -73,7 +76,7 @@ class ReportExportService {
       if (context.mounted) {
         showMarketNotice(
           context,
-          title: 'Export failed',
+          title: context.tr('Export failed'),
           message: '$e',
           type: MarketNoticeType.error,
         );
@@ -96,6 +99,7 @@ class ReportExportService {
         format: format,
         range: range,
         isSnapshot: isSnapshot,
+        languageCode: context.strings.languageCode,
       );
       final directory = await _downloadDirectory();
       await directory.create(recursive: true);
@@ -106,8 +110,8 @@ class ReportExportService {
       if (context.mounted) {
         showMarketNotice(
           context,
-          title: 'Report saved',
-          message: 'Downloaded to ${file.path}',
+          title: context.tr('Report saved'),
+          message: context.tr('Downloaded to {p0}', args: {'p0': file.path}),
           type: MarketNoticeType.success,
         );
       }
@@ -115,7 +119,7 @@ class ReportExportService {
       if (context.mounted) {
         showMarketNotice(
           context,
-          title: 'Download failed',
+          title: context.tr('Download failed'),
           message: '$e',
           type: MarketNoticeType.error,
         );
@@ -132,8 +136,8 @@ class ReportExportService {
       if (context.mounted) {
         showMarketNotice(
           context,
-          title: 'Copied',
-          message: 'The report table was copied to the clipboard.',
+          title: context.tr('Copied'),
+          message: context.tr('The report table was copied to the clipboard.'),
           type: MarketNoticeType.success,
         );
       }
@@ -141,7 +145,7 @@ class ReportExportService {
       if (context.mounted) {
         showMarketNotice(
           context,
-          title: 'Copy failed',
+          title: context.tr('Copy failed'),
           message: '$e',
           type: MarketNoticeType.error,
         );
@@ -163,7 +167,11 @@ class ReportExportService {
     required ExportFormat format,
     DateTimeRange? range,
     bool isSnapshot = false,
+    String languageCode = 'en',
   }) async {
+    final strings = AppStrings.of(languageCode);
+    table = table.localized(strings);
+    title = strings.text(title);
     switch (format) {
       case ExportFormat.json:
         return ExportPayload(
@@ -185,7 +193,7 @@ class ReportExportService {
         );
       case ExportFormat.txt:
         return ExportPayload(
-          generateTxt(table, title, range, isSnapshot),
+          generateTxt(table, title, range, isSnapshot, languageCode: languageCode),
           exportFileName(title, 'txt'),
           'text/plain',
         );
@@ -203,7 +211,7 @@ class ReportExportService {
         );
       case ExportFormat.pdf:
         return ExportPayload(
-          await generatePdf(table, title, range, isSnapshot),
+          await generatePdf(table, title, range, isSnapshot, languageCode: languageCode),
           exportFileName(title, 'pdf'),
           'application/pdf',
         );
@@ -272,16 +280,17 @@ class ReportExportService {
   }
 
   static Uint8List generateTxt(ReportTable table, String title,
-      DateTimeRange? range, bool isSnapshot) {
+      DateTimeRange? range, bool isSnapshot, {String languageCode = 'en'}) {
+    final strings = AppStrings.of(languageCode);
     final headers = table.columns.map((c) => c.label).toList();
     final lines = <String>[
       title,
       if (isSnapshot)
-        'Current snapshot'
+        strings.text('Current snapshot')
       else if (range != null)
         '${DateFormat('yyyy-MM-dd').format(range.start)} - ${DateFormat('yyyy-MM-dd').format(range.end)}'
       else
-        'All dates',
+        strings.text('All dates'),
       '',
       headers.join('\t'),
       ...table.rows.map((row) => [
@@ -357,19 +366,23 @@ class ReportExportService {
     ReportTable table,
     String title,
     DateTimeRange? range,
-    bool isSnapshot,
-  ) async {
+    bool isSnapshot, {
+    String languageCode = 'en',
+  }) async {
+    final strings = AppStrings.of(languageCode);
+    table = table.localized(strings);
+    title = strings.text(title);
     final pdf = pw.Document();
-    final font = await PdfGoogleFonts.robotoRegular();
-    final fontBold = await PdfGoogleFonts.robotoBold();
+    final font = pw.Font.ttf(await rootBundle.load('assets/fonts/Roboto-Regular.ttf'));
+    final fontBold = pw.Font.ttf(await rootBundle.load('assets/fonts/Roboto-Bold.ttf'));
     final primary = PdfColor.fromHex('#2C3E50');
     final headerBg = PdfColor.fromHex('#ECF0F1');
     final border = PdfColor.fromHex('#DCE4EC');
     final rangeLabel = isSnapshot
-        ? 'Current snapshot'
+        ? strings.text('Current snapshot')
         : range != null
-            ? '${DateFormat('MMM d, yyyy').format(range.start)} – ${DateFormat('MMM d, yyyy').format(range.end)}'
-            : 'All Time';
+            ? '${DateFormat('MMM d, yyyy', strings.languageCode).format(range.start)} – ${DateFormat('MMM d, yyyy', strings.languageCode).format(range.end)}'
+            : strings.text('All Time');
 
     pdf.addPage(
       pw.MultiPage(
@@ -397,7 +410,7 @@ class ReportExportService {
                 ],
               ),
               pw.Text(
-                  'Generated ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+                  '${strings.text('Generated')} ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
                   style: pw.TextStyle(
                       font: font, fontSize: 9, color: PdfColors.grey600)),
             ],
@@ -407,7 +420,7 @@ class ReportExportService {
           if (table.rows.isEmpty)
             pw.Padding(
               padding: const pw.EdgeInsets.all(24),
-              child: pw.Text('No records available for the selected filters.',
+              child: pw.Text(strings.text('No records available for the selected filters.'),
                   style: pw.TextStyle(font: font, fontSize: 11)),
             )
           else
@@ -447,7 +460,8 @@ class ReportExportService {
         footer: (context) => pw.Container(
           alignment: pw.Alignment.centerRight,
           margin: const pw.EdgeInsets.only(top: 12),
-          child: pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
+          child: pw.Text(
+              '${strings.text('Page')} ${context.pageNumber} / ${context.pagesCount}',
               style: pw.TextStyle(
                   font: font, fontSize: 8, color: PdfColors.grey600)),
         ),

@@ -1,5 +1,8 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'service/pos_local_store.dart';
 import 'service/app_notification_service.dart';
@@ -8,11 +11,18 @@ import 'ui/widgets/app_design.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting();
   await AppNotificationService.instance.initialize();
   final store = PosLocalStore();
   runApp(
-    ChangeNotifierProvider.value(
-      value: store,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: store),
+        ChangeNotifierProvider.value(value: store.authService),
+        ChangeNotifierProvider.value(value: store.salesService),
+        ChangeNotifierProvider.value(value: store.inventoryService),
+        ChangeNotifierProvider.value(value: store.accountingService),
+      ],
       child: AppBootstrapper(store: store),
     ),
   );
@@ -39,7 +49,10 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
       future: _initialization,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const MaterialApp(
+          return MaterialApp(
+            locale: Locale(widget.store.languageCode),
+            supportedLocales: const [Locale('sw'), Locale('en')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
             debugShowCheckedModeBanner: false,
             home: _BootstrapScreen(),
           );
@@ -47,6 +60,9 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
 
         if (snapshot.hasError) {
           return MaterialApp(
+            locale: Locale(widget.store.languageCode),
+            supportedLocales: const [Locale('sw'), Locale('en')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
             debugShowCheckedModeBanner: false,
             home: _BootstrapErrorScreen(
               error: snapshot.error,
@@ -116,8 +132,8 @@ class _BootstrapErrorScreen extends StatelessWidget {
                 size: 44,
               ),
               const SizedBox(height: 12),
-              const Text(
-                'TrackMauzo haikuweza kuanza',
+               Text(
+                context.tr('TrackMauzo haikuweza kuanza'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.ink,
@@ -127,7 +143,7 @@ class _BootstrapErrorScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                error?.toString() ?? 'Hitilafu isiyojulikana wakati wa kuanza',
+                error?.toString() ?? context.tr('Hitilafu isiyojulikana wakati wa kuanza'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.textMuted,

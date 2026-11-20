@@ -1,4 +1,3 @@
-import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,8 +5,11 @@ import '../../service/pos_local_store.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
+import '../widgets/workspace_widgets.dart';
 import 'bank_line_form_page.dart';
 import 'import_statement_page.dart';
+import 'widgets/bank_reconciliation_kpi_metrics.dart';
+import 'widgets/reconciliation_empty_state.dart';
 import 'widgets/reconciliation_models.dart';
 import 'widgets/statement_row_tile.dart';
 
@@ -51,6 +53,11 @@ class BankReconciliationPage extends StatelessWidget {
                 onBack: () => Navigator.of(context).maybePop(),
                 actions: [
                   IconButton(
+                    tooltip: t('Import statement', 'Ingiza taarifa'),
+                    onPressed: () => _openImport(context),
+                    icon: const Icon(Icons.upload_file_outlined, color: AppColors.ink),
+                  ),
+                  IconButton(
                     tooltip: t('Add line', 'Ongeza mstari'),
                     onPressed: () => _openAddLine(context),
                     icon: const Icon(Icons.add_rounded, color: AppColors.ink),
@@ -61,103 +68,115 @@ class BankReconciliationPage extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                   children: [
+                    // Overview status banner
                     ReconciliationCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
                         children: [
-                          Text(
-                            t('Reconciliation status', 'Hali ya upatanishi'),
-                            style: AppTypography.label
-                                .copyWith(color: AppColors.textMuted),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            unmatched.isEmpty
-                                ? t('All lines matched',
-                                    'Mistari yote imeoanishwa')
-                                : t('${unmatched.length} line${unmatched.length == 1 ? '' : 's'} unmatched',
-                                    'Mistari ${unmatched.length} haijaoanishwa'),
-                            style: AppTypography.h1.copyWith(
-                              fontSize: 26,
-                              color: unmatched.isEmpty
-                                  ? AppColors.success
-                                  : AppColors.danger,
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: unmatched.isEmpty && entries.isNotEmpty
+                                  ? const Color(0xFFDCFCE7)
+                                  : (entries.isEmpty
+                                      ? AppColors.surfaceSecondary
+                                      : const Color(0xFFFEE2E2)),
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            child: Icon(
+                              unmatched.isEmpty && entries.isNotEmpty
+                                  ? Icons.verified_outlined
+                                  : (entries.isEmpty
+                                      ? Icons.account_balance_outlined
+                                      : Icons.warning_amber_rounded),
+                              color: unmatched.isEmpty && entries.isNotEmpty
+                                  ? const Color(0xFF15803D)
+                                  : (entries.isEmpty
+                                      ? AppColors.textMuted
+                                      : const Color(0xFFB91C1C)),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            unmatched.isEmpty
-                                ? t('Statement and records are in agreement for imported lines.',
-                                    'Taarifa na rekodi zinalingana kwa mistari iliyoingizwa.')
-                                : t('Unmatched value ${_money(unmatchedTotal)} — review or auto match.',
-                                    'Thamani isiyooanishwa ${_money(unmatchedTotal)} — kagua au oanisha.'),
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.textMuted,
-                              height: 1.4,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entries.isEmpty
+                                      ? t('No reconciliation data', 'Hakuna data ya upatanishi')
+                                      : (unmatched.isEmpty
+                                          ? t('All lines matched', 'Mistari yote imeoanishwa')
+                                          : t(
+                                              '${unmatched.length} line${unmatched.length == 1 ? '' : 's'} unmatched',
+                                              'Mistari ${unmatched.length} haijaoanishwa',
+                                            )),
+                                  style: AppTypography.h3.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: entries.isEmpty
+                                        ? AppColors.ink
+                                        : (unmatched.isEmpty
+                                            ? AppColors.success
+                                            : AppColors.danger),
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  entries.isEmpty
+                                      ? t(
+                                          'Import or add statement lines to get started.',
+                                          'Ingiza au ongeza mistari ya taarifa ili kuanza.',
+                                        )
+                                      : (unmatched.isEmpty
+                                          ? t(
+                                              'Statement and records are in complete agreement.',
+                                              'Taarifa na rekodi zinalingana kikamilifu.',
+                                            )
+                                          : t(
+                                              'Unmatched value ${_money(unmatchedTotal)} — review details or auto match.',
+                                              'Thamani isiyooanishwa ${_money(unmatchedTotal)} — kagua au oanisha.',
+                                            )),
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.textMuted,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          if (unmatched.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            MarketButton(
+                              label: t('Auto match', 'Oanisha'),
+                              icon: Icons.auto_fix_high_rounded,
+                              radius: 0,
+                              onTap: () => _autoMatch(context),
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _metricCard(
-                            label: t('Money in', 'Pesa zilizoingia'),
-                            value: _money(inflow),
-                            valueColor: inflow > 0
-                                ? AppColors.success
-                                : AppColors.textMuted,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _metricCard(
-                            label: t('Money out', 'Pesa zilizotoka'),
-                            value: _money(outflow),
-                            valueColor: outflow > 0
-                                ? AppColors.danger
-                                : AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _metricCard(
-                            label: t('Net movement', 'Mabadiliko halisi'),
-                            value: _money(net, signed: true),
-                            valueColor: net > 0
-                                ? AppColors.success
-                                : net < 0
-                                    ? AppColors.danger
-                                    : AppColors.textMuted,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _metricCard(
-                            label:
-                                t('Matched / total', 'Zimeoanishwa / jumla'),
-                            value: '${matched.length} / ${entries.length}',
-                            valueColor:
-                                unmatched.isEmpty && entries.isNotEmpty
-                                    ? AppColors.success
-                                    : AppColors.ink,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 14),
+
+                    // Modern borderless sharp KPI cards
+                    BankReconciliationKpiMetrics(
+                      inflow: inflow,
+                      outflow: outflow,
+                      net: net,
+                      matchedCount: matched.length,
+                      totalCount: entries.length,
+                      isSwahili: sw,
                     ),
                     const SizedBox(height: 16),
+
+                    // Action buttons
                     Row(
                       children: [
                         Expanded(
                           child: MarketButton(
                             label: t('Add line', 'Ongeza mstari'),
                             icon: Icons.add_rounded,
+                            radius: 0,
                             onTap: () => _openAddLine(context),
                           ),
                         ),
@@ -167,79 +186,45 @@ class BankReconciliationPage extends StatelessWidget {
                             label: t('Import statement', 'Ingiza taarifa'),
                             icon: Icons.upload_file_outlined,
                             isPrimary: false,
+                            radius: 0,
                             onTap: () => _openImport(context),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    MarketButton(
-                      label: t(
-                          'Auto match lines', 'Oanisha mistari kiotomatiki'),
-                      icon: Icons.link_rounded,
-                      isPrimary: false,
-                      onTap: entries.isEmpty ? null : () => _autoMatch(context),
-                    ),
                     const SizedBox(height: 20),
-                    _sectionHeader(t('Statement lines', 'Mistari ya taarifa'),
-                        trailing: '${entries.length} ${t('lines', 'mistari')}'),
-                    const SizedBox(height: 8),
+
+                    // Section header & list / empty state
+                    _sectionHeader(
+                      t('Statement lines', 'Mistari ya taarifa'),
+                      trailing: '${entries.length} ${t('lines', 'mistari')}',
+                    ),
+                    const SizedBox(height: 10),
+
                     if (entries.isEmpty)
-                      ReconciliationCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceSecondary,
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: const Icon(
-                                  Icons.account_balance_outlined,
-                                  color: AppColors.textMuted),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              t('No statement lines yet',
-                                  'Hakuna mistari ya taarifa bado'),
-                              style: AppTypography.bodyMain
-                                  .copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              t(
-                                'Add bank/mobile money lines or import them to reconcile against sales and records.',
-                                'Ongeza mistari ya benki/mitandao ya simu au yaingize ili upatanishe na mauzo na rekodi.',
-                              ),
-                              style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.textMuted, height: 1.45),
-                            ),
-                          ],
-                        ),
+                      ReconciliationEmptyState(
+                        isSwahili: sw,
+                        onAddLine: () => _openAddLine(context),
+                        onImport: () => _openImport(context),
                       )
-                    else ...[
+                    else
                       ReconciliationCard(
                         padding: EdgeInsets.zero,
                         child: Column(
                           children: [
                             _tableHeader(t),
-                            const Divider(
-                                height: 1, color: AppColors.divider),
+                            const Divider(height: 1, color: AppColors.divider),
                             for (var i = 0; i < entries.length; i++) ...[
                               StatementRowTile(
                                 entry: entries[i],
                                 isSwahili: sw,
                               ),
                               if (i != entries.length - 1)
-                                const Divider(
-                                    height: 1, color: AppColors.divider),
+                                const Divider(height: 1, color: AppColors.divider),
                             ],
                           ],
                         ),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -276,8 +261,8 @@ class BankReconciliationPage extends StatelessWidget {
       title: sw ? 'Upatanishi' : 'Reconciliation',
       message: count > 0
           ? (sw
-              ? 'Mistari $count imeoanishwa'
-              : '$count line${count == 1 ? '' : 's'} matched')
+              ? 'Mistari $count imeoanishwa kiotomatiki'
+              : '$count line${count == 1 ? '' : 's'} automatically matched')
           : (sw
               ? 'Hakuna mstari uliooanishwa kiotomatiki'
               : 'No lines were auto matched'),
@@ -286,29 +271,42 @@ class BankReconciliationPage extends StatelessWidget {
   }
 
   static Widget _tableHeader(String Function(String, String) t) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+    return Container(
+      color: AppColors.surfaceSecondary,
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       child: Row(
         children: [
           Expanded(
             flex: 5,
-            child: Text(t('Line', 'Mstari'),
-                style: AppTypography.helperText.copyWith(
-                    color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+            child: Text(
+              t('Transaction / Description', 'Muamala / Maelezo'),
+              style: AppTypography.helperText.copyWith(
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           SizedBox(
-            width: 96,
-            child: Text(t('Amount', 'Kiasi'),
-                textAlign: TextAlign.right,
-                style: AppTypography.helperText.copyWith(
-                    color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+            width: 104,
+            child: Text(
+              t('Amount', 'Kiasi'),
+              textAlign: TextAlign.right,
+              style: AppTypography.helperText.copyWith(
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           SizedBox(
-            width: 74,
-            child: Text(t('Status', 'Hali'),
-                textAlign: TextAlign.right,
-                style: AppTypography.helperText.copyWith(
-                    color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+            width: 80,
+            child: Text(
+              t('Status', 'Hali'),
+              textAlign: TextAlign.right,
+              style: AppTypography.helperText.copyWith(
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -319,55 +317,26 @@ class BankReconciliationPage extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(text,
-              style:
-                  AppTypography.sectionHeader.copyWith(color: AppColors.ink)),
+          child: Text(
+            text,
+            style: AppTypography.sectionHeader.copyWith(color: AppColors.ink),
+          ),
         ),
         if (trailing != null)
-          Text(trailing,
-              style: AppTypography.helperText.copyWith(
-                  color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+          Text(
+            trailing,
+            style: AppTypography.helperText.copyWith(
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
       ],
     );
   }
 
-  static Widget _metricCard({
-    required String label,
-    required String value,
-    required Color valueColor,
-  }) {
-    return ReconciliationCard(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: AppTypography.helperText
-                  .copyWith(color: AppColors.textMuted)),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.h3.copyWith(
-              fontSize: 17,
-              color: valueColor,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static String _money(double value, {bool signed = false}) {
+  static String _money(double value) {
     final negative = value < 0;
     final abs = formatCurrency(value.abs());
-    if (signed) {
-      if (value > 0) return '+TSh $abs';
-      if (value < 0) return '-TSh $abs';
-      return 'TSh $abs';
-    }
     return '${negative ? '-' : ''}TSh $abs';
   }
 }

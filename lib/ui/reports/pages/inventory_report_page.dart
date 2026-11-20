@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -91,21 +92,21 @@ class InventoryReportPage extends StatelessWidget {
     final lowStockItems = ReportDataService.lowStockItemsFromData(data);
 
     return [
-      _buildStockAlertCard(lowStockItems),
-      _buildStockValueCard(table),
+      _buildStockAlertCard(context, lowStockItems),
+      _buildStockValueCard(context, table),
       _buildCategoryBreakdownCard(context, table),
       _buildInsightsCard(context, table, lowStockItems),
     ];
   }
 
-  Widget _buildStockAlertCard(List<StockAlertItem> lowStockItems) {
+  Widget _buildStockAlertCard(BuildContext context, List<StockAlertItem> lowStockItems) {
     return SectionCard(
-      title: 'Stock Alerts',
+      title: context.tr('Stock Alerts'),
       child: StockAlertCard(items: lowStockItems),
     );
   }
 
-  Widget _buildStockValueCard(ReportTable table) {
+  Widget _buildStockValueCard(BuildContext context, ReportTable table) {
     final totalCostValue = table.rows
         .fold<double>(0, (sum, row) => sum + (row[6] as num).toDouble());
     final totalRetailValue = table.rows.fold<double>(
@@ -115,35 +116,35 @@ class InventoryReportPage extends StatelessWidget {
         totalCostValue > 0 ? (potentialProfit / totalCostValue) * 100 : 0.0;
 
     return SectionCard(
-      title: 'Inventory Valuation',
+      title: context.tr('Inventory Valuation'),
       child: Column(
         children: [
           Row(
             children: [
               Expanded(
                 child: _ValuationStat(
-                  label: 'Cost Value',
+                  label: context.tr('Cost Value'),
                   value: 'TSh ${NumberFormat('#,##0').format(totalCostValue)}',
                   color: Color(0xFF15803D),
                 ),
               ),
               Expanded(
                 child: _ValuationStat(
-                  label: 'Retail Value',
+                  label: context.tr('Retail Value'),
                   value: 'TSh ${NumberFormat('#,##0').format(totalRetailValue)}',
                   color: Color(0xFF111111),
                 ),
               ),
               Expanded(
                 child: _ValuationStat(
-                  label: 'Potential Profit',
+                  label: context.tr('Potential Profit'),
                   value: 'TSh ${NumberFormat('#,##0').format(potentialProfit)}',
                   color: Color(0xFF15803D),
                 ),
               ),
               Expanded(
                 child: _ValuationStat(
-                  label: 'Markup',
+                  label: context.tr('Markup'),
                   value: '${markupPercent.toStringAsFixed(1)}%',
                   color: Color(0xFF15803D),
                 ),
@@ -192,11 +193,11 @@ class InventoryReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Stock Value by Category',
+      title: context.tr('Stock Value by Category'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Retail Value',
+        label: context.tr('Retail Value'),
         color: Color(0xFF166534),
       ),
     );
@@ -218,9 +219,9 @@ class InventoryReportPage extends StatelessWidget {
           .length;
 
       insights.add(InsightCard(
-        title: 'Stock Replenishment Needed',
+        title: context.tr('Stock Replenishment Needed'),
         description:
-            '$outOfStock items out of stock, $lowStock items below threshold. Immediate reorder recommended.',
+            context.tr('{p0} items out of stock, {p1} items below threshold. Immediate reorder recommended.', args: {'p0': outOfStock, 'p1': lowStock}),
         icon: Icons.inventory,
         color: Colors.red,
         severity:
@@ -237,9 +238,9 @@ class InventoryReportPage extends StatelessWidget {
 
     if (deadStock > 0) {
       insights.add(InsightCard(
-        title: 'Dead Stock Identified',
+        title: context.tr('Dead Stock Identified'),
         description:
-            '$deadStock products have zero stock. Consider discontinuing or promoting.',
+            context.tr('{p0} products have zero stock. Consider discontinuing or promoting.', args: {'p0': deadStock}),
         icon: Icons.delete_outline,
         color: Colors.grey,
         severity: InsightSeverity.info,
@@ -251,9 +252,9 @@ class InventoryReportPage extends StatelessWidget {
         .length;
     if (highValueItems > 0) {
       insights.add(InsightCard(
-        title: 'High-Value Inventory Concentration',
+        title: context.tr('High-Value Inventory Concentration'),
         description:
-            '$highValueItems items represent >10% of inventory value each. Diversify stock to reduce risk.',
+            context.tr('{p0} items represent >10% of inventory value each. Diversify stock to reduce risk.', args: {'p0': highValueItems}),
         icon: Icons.warning_amber,
         color: Color(0xFF15803D),
         severity: InsightSeverity.info,
@@ -263,7 +264,7 @@ class InventoryReportPage extends StatelessWidget {
     if (insights.isEmpty) return const SizedBox.shrink();
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }
@@ -294,7 +295,7 @@ class _ValuationStat extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          label,
+          context.tr(label),
           textAlign: TextAlign.center,
           style: GoogleFonts.manrope(
             fontSize: 11,

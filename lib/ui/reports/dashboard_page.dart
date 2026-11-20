@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -88,7 +90,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return d.year == now.year && d.month == now.month && d.day == now.day;
     }).fold<double>(0.0, (sum, e) => sum + e.amount);
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = List.generate(12, (index) => DateFormat('MMM', context.strings.languageCode).format(DateTime(now.year, index + 1)));
 
     // Compute monthly trends for chart
     final m3 = now.month;
@@ -109,8 +111,8 @@ class _DashboardPageState extends State<DashboardPage> {
     // Growth percentage calculation
     final hasGrowth = yesterdaySales <= 0 ? (todaySales > 0) : (todaySales >= yesterdaySales);
     final growthText = yesterdaySales <= 0
-        ? (todaySales > 0 ? '100% Growth Today' : 'No sales recorded yet today')
-        : '${(((todaySales - yesterdaySales) / yesterdaySales) * 100).abs().toStringAsFixed(0)}% ${hasGrowth ? 'Growth' : 'Dip'} Today';
+        ? (todaySales > 0 ? context.tr('100% Growth Today') : context.tr('No sales recorded yet today'))
+        : context.tr('{p0}% {p1} Today', args: {'p0': (((todaySales - yesterdaySales) / yesterdaySales) * 100).abs().toStringAsFixed(0), 'p1': context.tr(hasGrowth ? 'Growth' : 'Dip')});
 
     return Scaffold(
       backgroundColor: const Color(0xFFEAF2F9), // Soft light-blue grey matching the app theme
@@ -215,7 +217,7 @@ class _TodaySaleOverviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Your Sale Overview (Today)',
+            context.tr('Your Sale Overview (Today)'),
             style: GoogleFonts.manrope(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -228,7 +230,7 @@ class _TodaySaleOverviewCard extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  "Today's Total Sale",
+                  context.tr('Today\'s Total Sale'),
                   style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -419,7 +421,7 @@ class _ExpensesSummaryCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Expenses (Today)',
+                context.tr('Expenses (Today)'),
                 style: GoogleFonts.manrope(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -436,7 +438,7 @@ class _ExpensesSummaryCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   child: Text(
-                    'Add expense',
+                    context.tr('Add expense'),
                     style: GoogleFonts.manrope(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -495,7 +497,7 @@ class _MostUsedReportsCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Most Used Reports',
+                context.tr('Most Used Reports'),
                 style: GoogleFonts.manrope(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -506,7 +508,7 @@ class _MostUsedReportsCard extends StatelessWidget {
               InkWell(
                 onTap: onSeeAllTap,
                 child: Text(
-                  'See All',
+                  context.tr('See All'),
                   style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -521,7 +523,7 @@ class _MostUsedReportsCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _ReportIconItem(
-                label: 'Sales',
+                label: context.tr('Sales'),
                 icon: Icons.receipt_long_rounded,
                 badgeSymbol: '%',
                 badgeColor: const Color(0xFFF472B6),
@@ -530,7 +532,7 @@ class _MostUsedReportsCard extends StatelessWidget {
                 onTap: onSalesTap,
               ),
               _ReportIconItem(
-                label: 'Purchases',
+                label: context.tr('Purchases'),
                 icon: Icons.assignment_outlined,
                 badgeSymbol: null,
                 bgColor: const Color(0xFFE0F2FE),
@@ -538,7 +540,7 @@ class _MostUsedReportsCard extends StatelessWidget {
                 onTap: onPurchasesTap,
               ),
               _ReportIconItem(
-                label: 'Bal. Sheet',
+                label: context.tr('Bal. Sheet'),
                 icon: Icons.receipt_outlined,
                 badgeSymbol: '₹',
                 hasCrown: true,
@@ -548,7 +550,7 @@ class _MostUsedReportsCard extends StatelessWidget {
                 onTap: onBalSheetTap,
               ),
               _ReportIconItem(
-                label: 'Profit & Loss',
+                label: context.tr('Profit & Loss'),
                 icon: Icons.description_outlined,
                 badgeSymbol: '1L',
                 badgeColor: const Color(0xFFEF4444),
@@ -709,7 +711,7 @@ class _StoreAlertsCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Store Alerts',
+                context.tr('Store Alerts'),
                 style: GoogleFonts.manrope(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -724,7 +726,7 @@ class _StoreAlertsCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  totalAlerts > 0 ? '$totalAlerts Active' : 'All Clear',
+                  totalAlerts > 0 ? context.tr('{p0} Active', args: {'p0': totalAlerts}) : context.tr('All Clear'),
                   style: GoogleFonts.manrope(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -744,7 +746,7 @@ class _StoreAlertsCard extends StatelessWidget {
                 icon: Icons.cancel_rounded,
                 color: const Color(0xFFEF4444),
                 bgColor: const Color(0xFFFEE2E2),
-                title: '$outOfStockCount items are completely Out of Stock',
+                title: context.tr('{p0} items are completely Out of Stock', args: {'p0': outOfStockCount}),
                 subtitle: outOfStockItems.take(2).map((p) => p.name).join(', '),
               ),
             ),
@@ -757,7 +759,7 @@ class _StoreAlertsCard extends StatelessWidget {
                 icon: Icons.warning_amber_rounded,
                 color: const Color(0xFFF59E0B),
                 bgColor: const Color(0xFFFEF3C7),
-                title: '$lowStockCount items are Low on Stock',
+                title: context.tr('{p0} items are Low on Stock', args: {'p0': lowStockCount}),
                 subtitle: lowStockItems.take(2).map((p) => '${p.name} (${p.stockCount} left)').join(', '),
               ),
             ),
@@ -770,8 +772,8 @@ class _StoreAlertsCard extends StatelessWidget {
                 icon: Icons.account_balance_wallet_outlined,
                 color: const Color(0xFF0284C7),
                 bgColor: const Color(0xFFE0F2FE),
-                title: '$pendingCreditCount customers have outstanding debt',
-                subtitle: 'Tap to review debtor ledger and collect payments',
+                title: context.tr('{p0} customers have outstanding debt', args: {'p0': pendingCreditCount}),
+                subtitle: context.tr('Tap to review debtor ledger and collect payments'),
               ),
             ),
 
@@ -783,8 +785,8 @@ class _StoreAlertsCard extends StatelessWidget {
                 icon: Icons.check_circle_outline_rounded,
                 color: const Color(0xFF10B981),
                 bgColor: const Color(0xFFD1FAE5),
-                title: 'All store inventory levels and ledgers healthy',
-                subtitle: 'No low stock warnings or urgent pending actions.',
+                title: context.tr('All store inventory levels and ledgers healthy'),
+                subtitle: context.tr('No low stock warnings or urgent pending actions.'),
               ),
             ),
         ],

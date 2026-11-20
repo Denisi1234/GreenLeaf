@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -53,8 +54,8 @@ class ReportEmptyState extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   hasFilters
-                      ? 'No matches found'
-                      : 'No activity recorded yet',
+                      ? context.tr('No matches found')
+                      : context.tr('No activity recorded yet'),
                   style: AppTypography.h3.copyWith(
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
@@ -63,9 +64,8 @@ class ReportEmptyState extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   hasFilters
-                      ? 'We couldn\'t find any records matching your search or date criteria. Try adjusting or clearing your filters.'
-                      : (note ??
-                          'Transactions, entries, or activity for this period will appear here once recorded.'),
+                      ? context.tr('We couldn\'t find any records matching your search or date criteria. Try adjusting or clearing your filters.')
+                      : context.strings.paragraph(note ?? 'Transactions, entries, or activity for this period will appear here once recorded.'),
                   textAlign: TextAlign.center,
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textMuted,
@@ -75,7 +75,7 @@ class ReportEmptyState extends StatelessWidget {
                 const SizedBox(height: 24),
                 if (hasFilters) ...[
                   MarketButton.secondary(
-                    label: 'Reset all filters',
+                    label: context.tr('Reset all filters'),
                     icon: Icons.refresh_rounded,
                     isFullWidth: false,
                     onTap: onClearFilters,
@@ -83,7 +83,7 @@ class ReportEmptyState extends StatelessWidget {
                   ),
                 ] else if (setupAction != null) ...[
                   MarketButton.primary(
-                    label: setupAction!.$2,
+                    label: context.tr(setupAction!.$2),
                     icon: setupAction!.$3,
                     isFullWidth: false,
                     onTap: () => Navigator.of(context).push(

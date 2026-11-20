@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -48,7 +49,7 @@ class ReportToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final localization = MaterialLocalizations.of(context);
     final dateLabel = range == null
-        ? 'All dates'
+        ? context.tr('All dates')
         : '${localization.formatCompactDate(range!.start)} – ${localization.formatCompactDate(range!.end)}';
 
     return Container(
@@ -65,7 +66,7 @@ class ReportToolbar extends StatelessWidget {
               Expanded(
                 child: MarketSearchField(
                   controller: searchController,
-                  hintText: 'Search this report',
+                  hintText: context.tr('Search this report'),
                   onChanged: onSearchChanged,
                   onClear: onSearchCleared,
                 ),
@@ -79,7 +80,7 @@ class ReportToolbar extends StatelessWidget {
                   borderRadius: BorderRadius.zero,
                 ),
                 child: IconButton(
-                  tooltip: 'Show columns',
+                  tooltip: context.tr('Show columns'),
                   onPressed: onShowColumns,
                   icon: SvgPicture.asset(
                     'assets/images/column_toggle.svg',
@@ -136,10 +137,10 @@ class ReportToolbar extends StatelessWidget {
                     onPresetSelected: onPresetSelected,
                   ),
                 ] else
-                  const Padding(
+                   Padding(
                     padding: EdgeInsets.only(right: 8),
                     child: WorkspaceStatus(
-                      label: 'Current snapshot',
+                      label: context.tr('Current snapshot'),
                       color: AppColors.textBody,
                     ),
                   ),
@@ -155,7 +156,7 @@ class ReportToolbar extends StatelessWidget {
                           horizontal: 10, vertical: 8),
                     ),
                     icon: const Icon(Icons.close_rounded, size: 16),
-                    label: const Text('Clear filters'),
+                    label:  Text(context.tr('Clear filters')),
                   ),
                 ],
                 if (choices.isNotEmpty) ...[
@@ -166,8 +167,8 @@ class ReportToolbar extends StatelessWidget {
                       key: ValueKey(selection),
                       initialValue: selection,
                       isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Filter records',
+                      decoration:  InputDecoration(
+                        labelText: context.tr('Filter records'),
                         border:
                             OutlineInputBorder(borderRadius: BorderRadius.zero),
                         enabledBorder: OutlineInputBorder(
@@ -176,9 +177,9 @@ class ReportToolbar extends StatelessWidget {
                         ),
                       ),
                       items: [
-                        const DropdownMenuItem<String>(
+                         DropdownMenuItem<String>(
                           value: null,
-                          child: Text('All records',
+                          child: Text(context.tr('All records'),
                               overflow: TextOverflow.ellipsis),
                         ),
                         ...choices.map((value) => DropdownMenuItem(

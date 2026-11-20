@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -13,7 +14,9 @@ import 'role_details_page.dart';
 import 'staff_member_details_page.dart';
 import 'widgets/staff_action_sheet.dart';
 import 'widgets/staff_cards.dart';
+import 'widgets/staff_credentials_share_dialog.dart';
 import 'widgets/staff_filter_actions.dart';
+import 'widgets/staff_kpi_metrics.dart';
 import 'widgets/staff_models.dart';
 
 class StaffManagementPage extends StatefulWidget {
@@ -267,7 +270,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
         id: 'role-${DateTime.now().millisecondsSinceEpoch}',
         title: titleController.text.trim(),
         subtitle: subtitleController.text.trim().isEmpty
-            ? 'Custom access role'
+            ? context.tr('Custom access role')
             : subtitleController.text.trim(),
         permissions: const <String>[],
         sortOrder: store.staffRoles.length,
@@ -368,35 +371,12 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: StaffStatCard(
-                              label: staffDual(strings, 'Total', 'Jumla'),
-                              value: '${allStaff.length}',
-                              icon: Icons.groups_2_outlined,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: StaffStatCard(
-                              label: staffDual(strings, 'Active', 'Hai'),
-                              value: '$activeCount',
-                              icon: Icons.check_circle_outline_rounded,
-                              color: AppColors.success,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: StaffStatCard(
-                              label: staffDual(strings, 'On leave', 'Likizo'),
-                              value: '$onLeaveCount',
-                              icon: Icons.event_busy_outlined,
-                              color: AppColors.warning,
-                            ),
-                          ),
-                        ],
+                      StaffKpiMetrics(
+                        totalStaff: allStaff.length,
+                        activeStaff: activeCount,
+                        onLeaveStaff: onLeaveCount,
+                        rolesCount: store.staffRoles.length,
+                        isSwahili: strings.isSwahili,
                       ),
                       const SizedBox(height: 16),
                       MarketSearchField(

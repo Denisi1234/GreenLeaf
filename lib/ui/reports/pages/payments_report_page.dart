@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -84,7 +85,7 @@ class PaymentsReportPage extends StatelessWidget {
   ) {
     return [
       _buildPaymentMethodCard(context, table),
-      _buildCollectionEfficiencyCard(table),
+      _buildCollectionEfficiencyCard(context, table),
       _buildInsightsCard(context, table),
     ];
   }
@@ -103,17 +104,17 @@ class PaymentsReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Collected by Payment Method',
+      title: context.tr('Collected by Payment Method'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Collected',
+        label: context.tr('Collected'),
         color: Color(0xFF111111),
       ),
     );
   }
 
-  Widget _buildCollectionEfficiencyCard(ReportTable table) {
+  Widget _buildCollectionEfficiencyCard(BuildContext context, ReportTable table) {
     final totalCollected = table.rows
         .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
     final totalCredit = table.rows
@@ -123,7 +124,7 @@ class PaymentsReportPage extends StatelessWidget {
         totalSales > 0 ? (totalCollected / totalSales) * 100 : 100.0;
 
     return SectionCard(
-      title: 'Collection Efficiency',
+      title: context.tr('Collection Efficiency'),
       child: Column(
         children: [
           Row(
@@ -133,7 +134,7 @@ class PaymentsReportPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Collection Rate',
+                      context.tr('Collection Rate'),
                       style: GoogleFonts.manrope(
                         fontSize: 13,
                         color: Colors.grey.shade600,
@@ -155,10 +156,10 @@ class PaymentsReportPage extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       collectionRate >= 90
-                          ? 'Excellent collection rate'
+                          ? context.tr('Excellent collection rate')
                           : collectionRate >= 70
-                              ? 'Moderate - monitor credit customers'
-                              : 'Low - immediate action needed',
+                              ? context.tr('Moderate - monitor credit customers')
+                              : context.tr('Low - immediate action needed'),
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -187,21 +188,21 @@ class PaymentsReportPage extends StatelessWidget {
             children: [
               Expanded(
                 child: _PaymentStat(
-                  label: 'Collected',
+                  label: context.tr('Collected'),
                   value: 'TSh ${NumberFormat('#,##0').format(totalCollected)}',
                   color: Color(0xFF111111),
                 ),
               ),
               Expanded(
                 child: _PaymentStat(
-                  label: 'On Credit',
+                  label: context.tr('On Credit'),
                   value: 'TSh ${NumberFormat('#,##0').format(totalCredit)}',
                   color: AppColors.ink,
                 ),
               ),
               Expanded(
                 child: _PaymentStat(
-                  label: 'Total Sales',
+                  label: context.tr('Total Sales'),
                   value: 'TSh ${NumberFormat('#,##0').format(totalSales)}',
                   color: Color(0xFF166534),
                 ),
@@ -227,9 +228,9 @@ class PaymentsReportPage extends StatelessWidget {
         totalCollected > 0 ? (topMethodCollected / totalCollected) * 100 : 0.0;
 
     insights.add(InsightCard(
-      title: 'Preferred Payment Method',
+      title: context.tr('Preferred Payment Method'),
       description:
-          '$topMethodName accounts for ${topMethodShare.toStringAsFixed(1)}% of collections (TSh ${NumberFormat('#,##0').format(topMethodCollected)})',
+          context.tr('{p0} accounts for {p1}% of collections (TSh {p2})', args: {'p0': topMethodName, 'p1': topMethodShare.toStringAsFixed(1), 'p2': NumberFormat('#,##0').format(topMethodCollected)}),
       icon: Icons.payment,
       color: Color(0xFF166534),
       severity: InsightSeverity.info,
@@ -239,9 +240,9 @@ class PaymentsReportPage extends StatelessWidget {
         .fold<double>(0, (sum, row) => sum + (row[3] as num).toDouble());
     if (totalCredit > totalCollected) {
       insights.add(InsightCard(
-        title: 'Credit Exceeds Collections',
+        title: context.tr('Credit Exceeds Collections'),
         description:
-            'Credit sales (TSh ${NumberFormat('#,##0').format(totalCredit)}) exceed collected payments (TSh ${NumberFormat('#,##0').format(totalCollected)}). Review credit policies.',
+            context.tr('Credit sales (TSh {p0}) exceed collected payments (TSh {p1}). Review credit policies.', args: {'p0': NumberFormat('#,##0').format(totalCredit), 'p1': NumberFormat('#,##0').format(totalCollected)}),
         icon: Icons.warning,
         color: Colors.red,
         severity: InsightSeverity.critical,
@@ -252,7 +253,7 @@ class PaymentsReportPage extends StatelessWidget {
     }
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }
@@ -283,7 +284,7 @@ class _PaymentStat extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          label,
+          context.tr(label),
           textAlign: TextAlign.center,
           style: GoogleFonts.manrope(
             fontSize: 11,

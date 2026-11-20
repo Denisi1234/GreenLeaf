@@ -38,7 +38,6 @@ class _BusinessSummaryCard extends StatelessWidget {
       decoration: const BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.zero,
-        border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -72,7 +73,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Held Sales (${suspended.length})',
+                      context.tr('Held Sales ({p0})', args: {'p0': suspended.length}),
                       style: GoogleFonts.manrope(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -80,7 +81,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Parked sales waiting to be resumed or paid',
+                      context.tr('Parked sales waiting to be resumed or paid'),
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         color: AppColors.textMuted,
@@ -107,7 +108,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                         size: 40, color: AppColors.textLight),
                     const SizedBox(height: 12),
                     Text(
-                      'No held sales at the moment',
+                      context.tr('No held sales at the moment'),
                       style: GoogleFonts.manrope(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -116,7 +117,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'You can park active orders from the sales screen.',
+                      context.tr('You can park active orders from the sales screen.'),
                       style: GoogleFonts.manrope(
                         fontSize: 12.5,
                         color: AppColors.textMuted,
@@ -169,7 +170,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
-                                      'PARKED',
+                                      context.tr('PARKED'),
                                       style: GoogleFonts.manrope(
                                         fontSize: 9.5,
                                         fontWeight: FontWeight.w800,
@@ -181,7 +182,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${sale.itemCount} items • Sh ${formatCurrency(sale.total)}',
+                                context.tr('{p0} items • Sh {p1}', args: {'p0': sale.itemCount, 'p1': formatCurrency(sale.total)}),
                                 style: GoogleFonts.manrope(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -190,7 +191,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Held at ${timeFormat.format(sale.createdAt)}',
+                                context.tr('Held at {p0}', args: {'p0': timeFormat.format(sale.createdAt)}),
                                 style: GoogleFonts.manrope(
                                   fontSize: 11,
                                   color: AppColors.textMuted,
@@ -200,7 +201,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Delete held sale',
+                          tooltip: context.tr('Delete held sale'),
                           icon: const Icon(Icons.delete_outline_rounded,
                               size: 20, color: AppColors.danger),
                           onPressed: () {
@@ -222,7 +223,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            'Resume',
+                            context.tr('Resume'),
                             style: GoogleFonts.manrope(
                               fontWeight: FontWeight.w700,
                               fontSize: 12.5,

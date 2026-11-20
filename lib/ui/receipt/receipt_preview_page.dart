@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -25,17 +26,20 @@ class ReceiptPreviewPage extends StatefulWidget {
 }
 
 class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
-  late final ReceiptDocument _receipt;
+  late ReceiptDocument _receipt;
   Future<Uint8List>? _pdf;
   bool _busy = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final language = context.strings.languageCode;
+    _pdf = null;
     final store = context.read<PosLocalStore>();
     final profile = store.profile;
     _receipt = ReceiptDocument(
         order: widget.order,
+        languageCode: language,
         storeName: profile.storeName,
         storeAddress: profile.physicalAddress,
         storePhone: profile.contactNumber,
@@ -62,8 +66,8 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     } catch (_) {
       if (mounted)
         showMarketNotice(context,
-            title: 'Receipt action failed',
-            message: 'Please try again. The saved sale has not been removed.',
+            title: context.tr('Receipt action failed'),
+            message: context.tr('Please try again. The saved sale has not been removed.'),
             type: MarketNoticeType.error);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -92,14 +96,14 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     final file = File('${directory.path}${Platform.pathSeparator}$_fileName');
     await file.writeAsBytes(await _bytes(), flush: true);
     if (mounted)
-      showMarketNotice(context, title: 'Receipt saved', message: file.path);
+      showMarketNotice(context, title: context.tr('Receipt saved'), message: file.path);
   }
 
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: _receipt.toText()));
     if (mounted)
       showMarketNotice(context,
-          title: 'Copied', message: 'Receipt details copied to clipboard.');
+          title: context.tr('Copied'), message: context.tr('Receipt details copied to clipboard.'));
   }
 
   Future<void> _sms() async {
@@ -131,20 +135,20 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         context: context,
         builder: (context) => AlertDialog(
               title:
-                  Text(edit ? 'Reopen sale for editing?' : 'Void this sale?'),
+                  Text(edit ? context.tr('Reopen sale for editing?') : context.tr('Void this sale?')),
               content: Text(edit
-                  ? 'The original sale will be voided and its items returned to the cart for editing.'
-                  : 'This will void the recorded sale and return its items to stock.'),
+                  ? context.tr('The original sale will be voided and its items returned to the cart for editing.')
+                  : context.tr('This will void the recorded sale and return its items to stock.')),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel')),
+                    child:  Text(context.tr('Cancel'))),
                 FilledButton(
                     onPressed: () => Navigator.pop(context, true),
                     style: FilledButton.styleFrom(
                         backgroundColor:
                             edit ? AppColors.ink : AppColors.dangerDeep),
-                    child: Text(edit ? 'Reopen sale' : 'Void sale')),
+                    child: Text(edit ? context.tr('Reopen sale') : context.tr('Void sale'))),
               ],
             ));
     if (confirmed != true || !mounted) return;
@@ -178,26 +182,26 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
       canPop: !_busy,
       child: Scaffold(
         backgroundColor: AppColors.pageBackground,
-        appBar: AppBar(title: const Text('Receipt'), actions: [
+        appBar: AppBar(title:  Text(context.tr('Receipt')), actions: [
           PopupMenuButton<String>(
-            tooltip: 'Receipt options',
+            tooltip: context.tr('Receipt options'),
             enabled: !_busy,
             onSelected: _option,
             itemBuilder: (_) => [
-              const PopupMenuItem(
-                  value: 'download', child: Text('Download PDF')),
-              const PopupMenuItem(
-                  value: 'copy', child: Text('Copy receipt text')),
-              const PopupMenuItem(value: 'sms', child: Text('Open in SMS')),
-              const PopupMenuItem(
-                  value: 'whatsapp', child: Text('Open in WhatsApp')),
+               PopupMenuItem(
+                  value: 'download', child: Text(context.tr('Download PDF'))),
+               PopupMenuItem(
+                  value: 'copy', child: Text(context.tr('Copy receipt text'))),
+               PopupMenuItem(value: 'sms', child: Text(context.tr('Open in SMS'))),
+               PopupMenuItem(
+                  value: 'whatsapp', child: Text(context.tr('Open in WhatsApp'))),
               if (!_receipt.isVoided) ...[
                 const PopupMenuDivider(),
-                const PopupMenuItem(
-                    value: 'edit', child: Text('Reopen for editing')),
-                const PopupMenuItem(
+                 PopupMenuItem(
+                    value: 'edit', child: Text(context.tr('Reopen for editing'))),
+                 PopupMenuItem(
                     value: 'void',
-                    child: Text('Void sale',
+                    child: Text(context.tr('Void sale'),
                         style: TextStyle(color: AppColors.dangerDeep))),
               ],
             ],
@@ -231,18 +235,18 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                                   onPressed: _busy ? null : () => _run(_print),
                                   icon: const Icon(Icons.print_outlined,
                                       size: 19),
-                                  label: const Text('Print')),
+                                  label:  Text(context.tr('Print'))),
                               OutlinedButton.icon(
                                   onPressed: _busy ? null : () => _run(_share),
                                   icon: const Icon(Icons.share_outlined,
                                       size: 19),
-                                  label: const Text('Share PDF')),
+                                  label:  Text(context.tr('Share PDF'))),
                               FilledButton.icon(
                                   onPressed: _busy ? null : _newSale,
                                   style: FilledButton.styleFrom(
                                       backgroundColor: AppColors.ink),
                                   icon: const Icon(Icons.add_rounded, size: 19),
-                                  label: const Text('New sale')),
+                                  label:  Text(context.tr('New sale'))),
                             ])),
                   ),
                 ]))),
@@ -279,7 +283,7 @@ class ReceiptPaper extends StatelessWidget {
                   Text(receipt.storePhone, style: AppTypography.bodySmall),
                 if (receipt.settings.showTaxId &&
                     receipt.storeTaxId.trim().isNotEmpty)
-                  Text('TIN: ${receipt.storeTaxId}',
+                  Text(context.tr('TIN: {p0}', args: {'p0': receipt.storeTaxId}),
                       style: AppTypography.bodySmall),
               ])),
         ]),
@@ -348,14 +352,14 @@ class ReceiptPaper extends StatelessWidget {
               child: Row(children: [
                 Expanded(
                     child: Text(total.key,
-                        style: total.key == 'Total'
+                        style: total.key == receipt.label('Total')
                             ? AppTypography.sectionHeader
                             : AppTypography.bodySmall)),
                 const SizedBox(width: 16),
                 Flexible(
                     child: Text(total.value,
                         textAlign: TextAlign.right,
-                        style: total.key == 'Total'
+                        style: total.key == receipt.label('Total')
                             ? AppTypography.h3
                             : AppTypography.bodySmall)),
               ])),

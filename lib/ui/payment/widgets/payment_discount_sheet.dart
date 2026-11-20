@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../business_category_config.dart';
@@ -88,15 +89,15 @@ class _PaymentDiscountSheetState extends State<PaymentDiscountSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Sale discount', style: AppTypography.h2),
+                Text(context.tr('Sale discount'), style: AppTypography.h2),
                 const SizedBox(height: 6),
-                Text('Apply a fixed amount or a percentage to this sale.',
+                Text(context.tr('Apply a fixed amount or a percentage to this sale.'),
                     style: AppTypography.bodySmall),
                 const SizedBox(height: 20),
                 SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: false, label: Text('Amount (TSh)')),
-                    ButtonSegment(value: true, label: Text('Percentage'))
+                  segments:  [
+                    ButtonSegment(value: false, label: Text(context.tr('Amount (TSh)'))),
+                    ButtonSegment(value: true, label: Text(context.tr('Percentage')))
                   ],
                   selected: {_isPercentage},
                   onSelectionChanged: (value) =>
@@ -114,21 +115,21 @@ class _PaymentDiscountSheetState extends State<PaymentDiscountSheet> {
                   style: AppTypography.h2,
                   decoration: InputDecoration(
                     labelText: _isPercentage
-                        ? 'Discount percentage'
-                        : 'Discount amount',
+                        ? context.tr('Discount percentage')
+                        : context.tr('Discount amount'),
                     prefixText: _isPercentage ? null : 'TSh ',
                     suffixText: _isPercentage ? '%' : null,
                   ),
                 ),
                 const SizedBox(height: 24),
                 _DiscountSummaryRow(
-                  label: 'Discount',
+                  label: context.tr('Discount'),
                   value: 'TSh ${_format(discount)}',
                   valueColor: AppColors.successDeep,
                 ),
                 const SizedBox(height: 16),
                 _DiscountSummaryRow(
-                  label: 'New total',
+                  label: context.tr('New total'),
                   value: 'TSh ${_format(widget.subtotal - discount)}',
                   valueColor: AppColors.ink,
                   isBold: true,
@@ -144,7 +145,7 @@ class _PaymentDiscountSheetState extends State<PaymentDiscountSheet> {
                   }),
                   style: FilledButton.styleFrom(
                       backgroundColor: AppColors.successDeep),
-                  child: const Text('Apply discount'),
+                  child:  Text(context.tr('Apply discount')),
                 ),
               ],
             ),

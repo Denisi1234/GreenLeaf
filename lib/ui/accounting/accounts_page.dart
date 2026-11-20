@@ -11,6 +11,7 @@ import 'account_form_page.dart';
 import 'journal_entry_page.dart';
 import 'widgets/account_row_tile.dart';
 import 'widgets/accounting_common_widgets.dart';
+import 'widgets/trial_balance_kpi_metrics.dart';
 
 /// Chart of accounts and manual journal entries.
 class AccountsPage extends StatefulWidget {
@@ -95,68 +96,14 @@ class _AccountsPageState extends State<AccountsPage>
     final rows = store.trialBalance();
     final totalDebit = rows.fold<double>(0, (sum, row) => sum + row.debit);
     final totalCredit = rows.fold<double>(0, (sum, row) => sum + row.credit);
-    final balanced = (totalDebit - totalCredit).abs() < 0.01;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        LedgerCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _t('Trial balance', 'Mizania ya majaribio'),
-                style: AppTypography.label.copyWith(color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: MoneyMetric(
-                      label: _t('Total debit', 'Jumla ya deni'),
-                      value: _money(totalDebit),
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: MoneyMetric(
-                      label: _t('Total credit', 'Jumla ya mkopo'),
-                      value: _money(totalCredit),
-                      color: AppColors.ink,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color:
-                      balanced ? AppColors.successLight : AppColors.dangerLight,
-                  borderRadius: BorderRadius.zero,
-                  border: Border.all(
-                    color: balanced
-                        ? AppColors.success.withValues(alpha: 0.25)
-                        : AppColors.danger.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Text(
-                  balanced
-                      ? _t('Balanced — debits equal credits',
-                          'Imelingana — deni sawa na mkopo')
-                      : _t('Not balanced — review journal entries',
-                          'Haijalingana — kagua kumbukumbu'),
-                  style: AppTypography.bodySmall.copyWith(
-                    color: balanced ? AppColors.successDeep : AppColors.danger,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        TrialBalanceKpiMetrics(
+          totalDebit: totalDebit,
+          totalCredit: totalCredit,
+          isSwahili: _isSwahili,
         ),
         const SizedBox(height: 14),
         Row(

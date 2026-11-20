@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../models/product_item.dart';
@@ -23,7 +24,7 @@ class OrderLinesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!hasItems) {
-      return const MarketSurfaceCard(
+      return  MarketSurfaceCard(
         padding: EdgeInsets.all(24),
         child: SizedBox(
           height: 92,
@@ -34,7 +35,7 @@ class OrderLinesList extends StatelessWidget {
                   size: 36, color: Color(0xFF9CA3AF)),
               SizedBox(height: 10),
               Text(
-                'No items in this counter yet',
+                context.tr('No items in this counter yet'),
                 style: TextStyle(
                   color: AppColors.ink,
                   fontSize: 15,
@@ -102,7 +103,7 @@ class _CounterLineTile extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
-              'TSh ${formatCurrency(line.unitPrice)} each',
+              context.tr('TSh {p0} each', args: {'p0': formatCurrency(line.unitPrice)}),
               style: AppTypography.bodySmall.copyWith(
                 color: hasOverride ? AppColors.primaryDeep : AppColors.textMuted,
                 fontWeight: hasOverride ? FontWeight.w700 : FontWeight.w500,
@@ -127,7 +128,7 @@ class _CounterLineTile extends StatelessWidget {
             InkWell(
               onTap: onEditDiscount,
               borderRadius: BorderRadius.circular(4),
-              child: const Padding(
+              child:  Padding(
                 padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -135,7 +136,7 @@ class _CounterLineTile extends StatelessWidget {
                     Icon(Icons.edit_outlined, size: 13, color: AppColors.primary),
                     SizedBox(width: 3),
                     Text(
-                      'Discount / Price',
+                      context.tr('Discount / Price'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -158,7 +159,7 @@ class _CounterLineTile extends StatelessWidget {
     );
 
     final total = Text(
-      'TSh $amountText',
+      context.tr('TSh {p0}', args: {'p0': amountText}),
       style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w800),
     );
 
@@ -223,7 +224,7 @@ class _QuantityStepper extends StatelessWidget {
             icon: Icons.remove_rounded,
             color: AppColors.textBody,
             backgroundColor: AppColors.surfaceSecondary,
-            tooltip: 'Remove one',
+            tooltip: context.tr('Remove one'),
             onTap: onDecrease,
           ),
           Container(
@@ -247,7 +248,7 @@ class _QuantityStepper extends StatelessWidget {
             icon: Icons.add_rounded,
             color: AppColors.textBody,
             backgroundColor: AppColors.surfaceSecondary,
-            tooltip: 'Add one',
+            tooltip: context.tr('Add one'),
             onTap: onIncrease,
           ),
         ],

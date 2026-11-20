@@ -1,10 +1,13 @@
+import 'ui_catalog.dart';
+
 class AppStrings {
   const AppStrings._(this.languageCode);
 
   final String languageCode;
 
   static String normalize(String code) {
-    return code == 'en' ? 'en' : 'sw';
+    final language = code.trim().toLowerCase().split(RegExp('[-_]')).first;
+    return language == 'sw' ? 'sw' : 'en';
   }
 
   static AppStrings of(String code) {
@@ -12,6 +15,75 @@ class AppStrings {
   }
 
   bool get isSwahili => languageCode == 'sw';
+
+  /// Only interface text belongs here; customer and product data stay verbatim.
+  String text(String key, {Map<String, Object?> args = const {}}) {
+    final catalog = isSwahili ? swUiCatalog : enUiCatalog;
+    final template = catalog[key] ?? catalog[_canonicalKeys[key.toLowerCase()]] ?? key;
+    return template.replaceAllMapped(RegExp(r'\{(p\d+)\}'), (match) {
+      final name = match.group(1)!;
+      return args.containsKey(name) ? '${args[name] ?? ''}' : match.group(0)!;
+    });
+  }
+
+  /// Translate a composed system message, preserving its interpolated data.
+  /// Use [text] with arguments when composing new messages.
+  String message(String value) {
+    if (enUiCatalog.containsKey(value)) return text(value);
+    if (!isSwahili) {
+      for (final entry in swUiCatalog.entries) {
+        if (entry.value == value) return enUiCatalog[entry.key] ?? entry.key;
+      }
+    }
+    for (final template in isSwahili ? _englishMessages : _swahiliMessages) {
+      final match = template.pattern.firstMatch(value);
+      if (match == null) continue;
+      final args = <String, Object?>{};
+      for (var i = 0; i < template.names.length; i++) {
+        args[template.names[i]] = match.group(i + 1);
+      }
+      return text(template.key, args: args);
+    }
+    return value;
+  }
+
+  static final _englishMessages = _messageTemplates(enUiCatalog);
+  static final _swahiliMessages = _messageTemplates(swUiCatalog);
+  static final _canonicalKeys = {
+    for (final key in enUiCatalog.keys) key.toLowerCase(): key,
+  };
+
+  String paymentMethod(String method) {
+    if (!method.startsWith('Split: ')) return text(method);
+    final parts = method.substring(7).split(' + ');
+    final translated = parts.map((part) {
+      final amountAt = part.lastIndexOf(' (');
+      if (amountAt < 0) return text(part);
+      return '${text(part.substring(0, amountAt))}${part.substring(amountAt)}';
+    }).join(' + ');
+    return '${text('Split payment')}: $translated';
+  }
+
+  String paragraph(String value) {
+    if (enUiCatalog.containsKey(value)) return text(value);
+    final parts = value.split('. ');
+    return [for (var i = 0; i < parts.length; i++)
+      text(i < parts.length - 1 ? '${parts[i]}.' : parts[i])].join(' ');
+  }
+  static List<_MessageTemplate> _messageTemplates(Map<String, String> catalog) {
+    final result = <_MessageTemplate>[];
+    for (final entry in catalog.entries) {
+      final names = <String>[];
+      final parts = entry.value.split(RegExp(r'\{p\d+\}'));
+      if (parts.length < 2 || parts.join().trim().length < 8) continue;
+      for (final match in RegExp(r'\{(p\d+)\}').allMatches(entry.value)) {
+        names.add(match.group(1)!);
+      }
+      result.add(_MessageTemplate(entry.key,
+          RegExp('^${parts.map(RegExp.escape).join('([\\s\\S]*?)')}\$'), names));
+    }
+    return result;
+  }
 
   String _pick(String english, String swahili) {
     return isSwahili ? swahili : english;
@@ -470,4 +542,11 @@ class AppStrings {
   String get cashDrawer => _pick('Cash drawer', 'Droo ya pesa');
   String get cashDrawerOpenedSuccessfully =>
       _pick('Cash drawer opened successfully.', 'Droo ya pesa imefunguliwa.');
+}
+
+class _MessageTemplate {
+  const _MessageTemplate(this.key, this.pattern, this.names);
+  final String key;
+  final RegExp pattern;
+  final List<String> names;
 }

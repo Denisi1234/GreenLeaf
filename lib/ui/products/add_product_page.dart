@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/app_image.dart';
 import 'dart:io';
 
@@ -145,7 +146,7 @@ class _AddProductPageState extends State<AddProductPage> {
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(
-          'Create New Category',
+          context.tr('Create New Category'),
           style: GoogleFonts.manrope(
             fontWeight: FontWeight.w700,
             fontSize: 17,
@@ -157,7 +158,7 @@ class _AddProductPageState extends State<AddProductPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Enter category name:',
+              context.tr('Enter category name:'),
               style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF64748B)),
             ),
             const SizedBox(height: 10),
@@ -176,8 +177,8 @@ class _AddProductPageState extends State<AddProductPage> {
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF0F172A),
                 ),
-                decoration: const InputDecoration(
-                    hintText: 'e.g., Beverages, Bakery, Cosmetics',
+                decoration:  InputDecoration(
+                    hintText: context.tr('e.g., Beverages, Bakery, Cosmetics'),
                   border: InputBorder.none,
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(vertical: 12),
@@ -195,7 +196,7 @@ class _AddProductPageState extends State<AddProductPage> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
             child: Text(
-              'Cancel',
+              context.tr('Cancel'),
               style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
             ),
           ),
@@ -211,7 +212,7 @@ class _AddProductPageState extends State<AddProductPage> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
             child: Text(
-              'Add Category',
+              context.tr('Add Category'),
               style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
             ),
           ),
@@ -298,7 +299,7 @@ class _AddProductPageState extends State<AddProductPage> {
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
-          'Delete Item?',
+          context.tr('Delete Item?'),
           style: GoogleFonts.manrope(
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -306,7 +307,7 @@ class _AddProductPageState extends State<AddProductPage> {
           ),
         ),
         content: Text(
-          'Are you sure you want to remove "${product.name}"? This cannot be undone.',
+          context.tr('Are you sure you want to remove "{p0}"? This cannot be undone.', args: {'p0': product.name}),
           style: GoogleFonts.manrope(
             fontSize: 14,
             color: const Color(0xFF475569),
@@ -347,8 +348,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
     showMarketNotice(
       context,
-      title: 'Item Deleted',
-      message: '${product.name} has been removed',
+      title: context.tr('Item Deleted'),
+      message: context.tr('{p0} has been removed', args: {'p0': product.name}),
       type: MarketNoticeType.warning,
     );
     Navigator.of(context).pop();
@@ -437,7 +438,7 @@ class _AddProductPageState extends State<AddProductPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          isEdit ? 'Edit Item' : 'New Item Details',
+          isEdit ? context.tr('Edit Item') : context.tr('New Item Details'),
           style: GoogleFonts.manrope(
             fontSize: 17,
             fontWeight: FontWeight.w700,
@@ -449,7 +450,7 @@ class _AddProductPageState extends State<AddProductPage> {
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 22),
               onPressed: _deleteProduct,
-              tooltip: 'Delete Item',
+              tooltip: context.tr('Delete Item'),
             ),
           const SizedBox(width: 8),
         ],
@@ -471,13 +472,13 @@ class _AddProductPageState extends State<AddProductPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Section 1: Basic Info
-                      _SectionHeader(title: 'Item Information'),
+                      _SectionHeader(title: context.tr('Item Information')),
                       const SizedBox(height: 12),
                       MarketFormField(
-                        label: 'Item Name',
+                        label: context.tr('Item Name'),
                         isRequired: true,
                         controller: _nameController,
-                        hintText: 'e.g., White Rice 1kg, Coca-Cola 350ml',
+                        hintText: context.tr('e.g., White Rice 1kg, Coca-Cola 350ml'),
                         prefixIcon: const Icon(Icons.inventory_2_outlined, color: AppColors.textMuted, size: 20),
                         validator: (val) {
                           if (val == null || val.trim().isEmpty) {
@@ -488,7 +489,7 @@ class _AddProductPageState extends State<AddProductPage> {
                       ),
                       const SizedBox(height: 16),
                       MarketDropdownField<String>(
-                        label: 'Category',
+                        label: context.tr('Category'),
                         isRequired: true,
                         labelAction: InkWell(
                           onTap: _showCreateCategoryDialog,
@@ -499,7 +500,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                 const Icon(Icons.add_circle_outline_rounded, size: 15, color: Color(0xFF0284C7)),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '+ New Category',
+                                  context.tr('+ New Category'),
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
@@ -525,7 +526,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                 const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF0284C7), size: 18),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '+ Add New Category',
+                                  context.tr('+ Add New Category'),
                                   style: GoogleFonts.manrope(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
@@ -547,14 +548,14 @@ class _AddProductPageState extends State<AddProductPage> {
                       const SizedBox(height: 24),
 
                       // Section 2: Pricing & Stock
-                      _SectionHeader(title: 'Pricing & Stock'),
+                      _SectionHeader(title: context.tr('Pricing & Stock')),
                       const SizedBox(height: 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: MarketFormField(
-                              label: 'Sale Price',
+                              label: context.tr('Sale Price'),
                               isRequired: true,
                               controller: _sellingPriceController,
                               hintText: '0.00',
@@ -571,7 +572,7 @@ class _AddProductPageState extends State<AddProductPage> {
                           const SizedBox(width: 14),
                           Expanded(
                             child: MarketFormField(
-                              label: 'Purchase Price',
+                              label: context.tr('Purchase Price'),
                               controller: _purchasePriceController,
                               hintText: '0.00',
                               prefixText: 'Sh ',
@@ -582,7 +583,7 @@ class _AddProductPageState extends State<AddProductPage> {
                       ),
                       const SizedBox(height: 16),
                       MarketFormField(
-                        label: 'Initial Stock Quantity',
+                        label: context.tr('Initial Stock Quantity'),
                         isRequired: true,
                         controller: _stockController,
                         hintText: '1',
@@ -598,7 +599,7 @@ class _AddProductPageState extends State<AddProductPage> {
                       const SizedBox(height: 24),
 
                       // Section 3: Expiry Tracking (Optional)
-                      _SectionHeader(title: 'Expiry Tracking (Optional)'),
+                      _SectionHeader(title: context.tr('Expiry Tracking (Optional)')),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -618,7 +619,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Track expiry date',
+                                        context.tr('Track expiry date'),
                                         style: GoogleFonts.manrope(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
@@ -627,7 +628,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'Receive alerts when this item is about to expire',
+                                        context.tr('Receive alerts when this item is about to expire'),
                                         style: GoogleFonts.manrope(
                                           fontSize: 11,
                                           color: const Color(0xFF64748B),
@@ -660,7 +661,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Expiry date',
+                                          context.tr('Expiry date'),
                                           style: GoogleFonts.manrope(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
@@ -670,7 +671,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                         const SizedBox(height: 4),
                                         Text(
                                           _expiryDate == null
-                                              ? 'No date selected'
+                                              ? context.tr('No date selected')
                                               : _displayDate(_expiryDate!),
                                           style: GoogleFonts.manrope(
                                             fontSize: 14,
@@ -688,7 +689,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                       size: 16,
                                     ),
                                     label: Text(
-                                      _expiryDate == null ? 'Set date' : 'Change',
+                                      _expiryDate == null ? context.tr('Set date') : context.tr('Change'),
                                       style: GoogleFonts.manrope(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
@@ -704,7 +705,7 @@ class _AddProductPageState extends State<AddProductPage> {
                       const SizedBox(height: 24),
 
                       // Section 4: Photo (Optional)
-                      _SectionHeader(title: 'Item Photo (Optional)'),
+                      _SectionHeader(title: context.tr('Item Photo (Optional)')),
                       const SizedBox(height: 12),
                       _PhotoUploadTile(
                         imagePath: _selectedImagePath,
@@ -730,7 +731,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   Expanded(
                     flex: 2,
                     child: MarketButton.secondary(
-                      label: 'Cancel',
+                      label: context.tr('Cancel'),
                       onTap: () => Navigator.of(context).pop(),
                       height: 48,
                     ),
@@ -739,7 +740,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   Expanded(
                     flex: 3,
                     child: MarketButton(
-                      label: isEdit ? 'Update Item' : 'Save Item',
+                      label: isEdit ? context.tr('Update Item') : context.tr('Save Item'),
                       icon: isEdit ? Icons.check_circle_outline_rounded : Icons.add_circle_outline_rounded,
                       variant: MarketButtonVariant.success,
                       onTap: _saveProduct,
@@ -851,7 +852,7 @@ class _PhotoUploadTile extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Upload item photo',
+              context.tr('Upload item photo'),
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -860,7 +861,7 @@ class _PhotoUploadTile extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              'PNG, JPG up to 5MB',
+              context.tr('PNG, JPG up to 5MB'),
               style: GoogleFonts.manrope(fontSize: 11, color: const Color(0xFF94A3B8)),
             ),
           ],

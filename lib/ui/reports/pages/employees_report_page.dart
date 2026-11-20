@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -89,7 +90,7 @@ class EmployeesReportPage extends StatelessWidget {
 
     return [
       _buildEmployeePerformanceCard(context, table),
-      _buildEmployeeShiftCard(staffMembers),
+      _buildEmployeeShiftCard(context, staffMembers),
       _buildInsightsCard(context, table),
     ];
   }
@@ -109,28 +110,28 @@ class EmployeesReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Sales by Employee',
+      title: context.tr('Sales by Employee'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Sales',
+        label: context.tr('Sales'),
         color: Color(0xFF166534),
       ),
     );
   }
 
-  Widget _buildEmployeeShiftCard(List<Map<String, Object?>> staffMembers) {
+  Widget _buildEmployeeShiftCard(BuildContext context, List<Map<String, Object?>> staffMembers) {
     if (staffMembers.isEmpty) return const SizedBox.shrink();
 
     return SectionCard(
-      title: 'Team Overview',
+      title: context.tr('Team Overview'),
       child: Column(
         children: [
           Row(
             children: [
               Expanded(
                 child: _TeamStat(
-                  label: 'Total Staff',
+                  label: context.tr('Total Staff'),
                   value: NumberFormat('#,###').format(staffMembers.length),
                   icon: Icons.people,
                   color: Color(0xFF166534),
@@ -138,7 +139,7 @@ class EmployeesReportPage extends StatelessWidget {
               ),
               Expanded(
                 child: _TeamStat(
-                  label: 'Roles',
+                  label: context.tr('Roles'),
                   value: NumberFormat('#,###').format(
                     staffMembers.map((m) => m['role_id']).toSet().length,
                   ),
@@ -167,9 +168,9 @@ class EmployeesReportPage extends StatelessWidget {
         totalSales > 0 ? (topEmployeeSales / totalSales) * 100 : 0.0;
 
     insights.add(InsightCard(
-      title: 'Top Performer',
+      title: context.tr('Top Performer'),
       description:
-          '$topEmployeeName generates ${topEmployeeShare.toStringAsFixed(1)}% of total sales (TSh ${NumberFormat('#,##0').format(topEmployeeSales)})',
+          context.tr('{p0} generates {p1}% of total sales (TSh {p2})', args: {'p0': topEmployeeName, 'p1': topEmployeeShare.toStringAsFixed(1), 'p2': NumberFormat('#,##0').format(topEmployeeSales)}),
       icon: Icons.emoji_events,
       color: Color(0xFF15803D),
       severity: InsightSeverity.success,
@@ -182,9 +183,9 @@ class EmployeesReportPage extends StatelessWidget {
 
     if (lowPerformers > 0) {
       insights.add(InsightCard(
-        title: 'Underperforming Staff',
+        title: context.tr('Underperforming Staff'),
         description:
-            '$lowPerformers employees are below 50% of average sales. Consider training or schedule optimization.',
+            context.tr('{p0} employees are below 50% of average sales. Consider training or schedule optimization.', args: {'p0': lowPerformers}),
         icon: Icons.trending_down,
         color: AppColors.ink,
         severity: InsightSeverity.warning,
@@ -192,7 +193,7 @@ class EmployeesReportPage extends StatelessWidget {
     }
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }
@@ -239,7 +240,7 @@ class _TeamStat extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          label,
+          context.tr(label),
           textAlign: TextAlign.center,
           style: GoogleFonts.manrope(
             fontSize: 11,

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -57,7 +58,7 @@ class ReportDataTable extends StatelessWidget {
                     label: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 180),
                       child:
-                          Text(table.columns[index].label, maxLines: 2),
+                          Text(context.tr(table.columns[index].label), maxLines: 2),
                     ),
                     numeric: table.columns[index].money,
                     onSort: (_, ascending) => onSort(index, ascending),
@@ -73,7 +74,7 @@ class ReportDataTable extends StatelessWidget {
                       for (final index in visibleIndexes)
                         DataCell(ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 260),
-                          child: _buildCell(
+                          child: _buildCell(context,
                             index < pageRows[rowIndex].length
                                 ? pageRows[rowIndex][index]
                                 : null,
@@ -90,11 +91,11 @@ class ReportDataTable extends StatelessWidget {
     );
   }
 
-  Widget _buildCell(Object? value, ReportColumn column) {
+  Widget _buildCell(BuildContext context, Object? value, ReportColumn column) {
     if (value is num) {
-      final formatted = NumberFormat('#,##0.##').format(value);
+      final formatted = NumberFormat('#,##0.##', context.strings.languageCode).format(value);
       return Text(
-        column.money ? 'TSH $formatted' : formatted,
+        column.money ? context.tr('TSH {p0}', args: {'p0': formatted}) : formatted,
         style: AppTypography.bodySmall.copyWith(
           fontWeight: column.money ? FontWeight.w700 : FontWeight.w500,
           color: value < 0 ? AppColors.dangerDeep : AppColors.ink,
@@ -105,7 +106,7 @@ class ReportDataTable extends StatelessWidget {
       );
     }
     return Text(
-      value?.toString() ?? '—',
+      column.displayValue(value, context.strings)?.toString() ?? '—',
       style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,

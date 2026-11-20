@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/product_item.dart';
 import '../../widgets/app_design.dart';
@@ -48,12 +49,12 @@ class _LineDiscountDialogState extends State<LineDiscountDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Edit ${widget.line.product.name}'),
+      title: Text(context.tr('Edit {p0}', args: {'p0': widget.line.product.name})),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Price Override per Unit (TSh)', style: AppTypography.label),
+          Text(context.tr('Price Override per Unit (TSh)'), style: AppTypography.label),
           const SizedBox(height: 6),
           TextField(
             controller: _priceCtrl,
@@ -64,7 +65,7 @@ class _LineDiscountDialogState extends State<LineDiscountDialog> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Line Discount (%)', style: AppTypography.label),
+          Text(context.tr('Line Discount (%)'), style: AppTypography.label),
           const SizedBox(height: 6),
           TextField(
             controller: _discountCtrl,
@@ -83,11 +84,11 @@ class _LineDiscountDialogState extends State<LineDiscountDialog> {
             widget.line.discountPercent = 0.0;
             Navigator.pop(context, true);
           },
-          child: const Text('Reset', style: TextStyle(color: AppColors.danger)),
+          child:  Text(context.tr('Reset'), style: TextStyle(color: AppColors.danger)),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child:  Text(context.tr('Cancel')),
         ),
         FilledButton(
           onPressed: () {
@@ -100,7 +101,7 @@ class _LineDiscountDialogState extends State<LineDiscountDialog> {
             Navigator.pop(context, true);
           },
           style: FilledButton.styleFrom(backgroundColor: AppColors.successDeep),
-          child: const Text('Apply'),
+          child:  Text(context.tr('Apply')),
         ),
       ],
     );

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/app_design.dart';
@@ -33,7 +34,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
         .where((report) =>
             (_group == null || report.group == _group) &&
             (query.isEmpty ||
-                '${report.title} ${report.group.label}'
+                '${report.title} ${report.group.label} ${context.tr(report.title)} ${context.tr(report.group.label)}'
                     .toLowerCase()
                     .contains(query)))
         .toList();
@@ -42,7 +43,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
         .toList();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(title: const Text('Reports')),
+      appBar: AppBar(title:  Text(context.tr('Reports'))),
       body: SafeArea(
           top: false,
           child: LayoutBuilder(builder: (context, constraints) {
@@ -53,7 +54,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                   sliver: SliverList.list(children: [
                     MarketSearchField(
                       controller: _searchController,
-                      hintText: 'Find a report',
+                      hintText: context.tr('Find a report'),
                       onChanged: (value) => setState(() => _query = value),
                       onClear: () => setState(() {
                         _searchController.clear();
@@ -67,7 +68,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                           Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: ChoiceChip(
-                                  label: const Text('All reports'),
+                                  label:  Text(context.tr('All reports')),
                                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                   selected: _group == null,
                                   onSelected: (_) =>
@@ -76,7 +77,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                             Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: ChoiceChip(
-                                    label: Text(_groupTitle(group)),
+                                    label: Text(context.tr(_groupTitle(group))),
                                     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                     selected: _group == group,
                                     onSelected: (_) =>
@@ -91,11 +92,11 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                                 const Icon(Icons.search_off_rounded,
                                     color: AppColors.textMuted, size: 36),
                                 const SizedBox(height: 16),
-                                Text('No matching reports',
+                                Text(context.tr('No matching reports'),
                                     style: AppTypography.h3),
                                 const SizedBox(height: 8),
-                                const Text(
-                                    'Try another search or clear your filters.'),
+                                 Text(
+                                    context.tr('Try another search or clear your filters.')),
                                 const SizedBox(height: 16),
                                 TextButton(
                                     onPressed: () => setState(() {
@@ -105,7 +106,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                                         }),
                                     style: TextButton.styleFrom(
                                         foregroundColor: AppColors.dangerDeep),
-                                    child: const Text('Clear filters')),
+                                    child:  Text(context.tr('Clear filters'))),
                               ])))
                     else
                       LayoutBuilder(builder: (context, panelConstraints) {
@@ -172,48 +173,106 @@ IconData _groupIcon(ReportGroup group) => switch (group) {
       ReportGroup.multiStore => Icons.storefront_outlined,
     };
 
+Color _groupColor(ReportGroup group) => switch (group) {
+      ReportGroup.graphical => const Color(0xFF0369A1), // Sky
+      ReportGroup.summary => const Color(0xFF047857), // Emerald
+      ReportGroup.detailed => const Color(0xFF7E22CE), // Purple
+      ReportGroup.inventory => const Color(0xFFB45309), // Amber
+      ReportGroup.accounting => const Color(0xFF0D9488), // Teal
+      ReportGroup.operations => const Color(0xFFC2410C), // Orange
+      ReportGroup.multiStore => const Color(0xFFBE185D), // Rose
+    };
+
+Color _groupBackground(ReportGroup group) => switch (group) {
+      ReportGroup.graphical => const Color(0xFFE0F2FE),
+      ReportGroup.summary => const Color(0xFFD1FAE5),
+      ReportGroup.detailed => const Color(0xFFF3E8FF),
+      ReportGroup.inventory => const Color(0xFFFEF3C7),
+      ReportGroup.accounting => const Color(0xFFCCFBF1),
+      ReportGroup.operations => const Color(0xFFFFEDD5),
+      ReportGroup.multiStore => const Color(0xFFFCE7F3),
+    };
+
 class _ReportGroupCard extends StatelessWidget {
   const _ReportGroupCard({required this.group, required this.reports});
   final ReportGroup group;
   final List<PosReport> reports;
 
   @override
-  Widget build(BuildContext context) => WorkspacePanel(
+  Widget build(BuildContext context) {
+    final groupColor = _groupColor(group);
+    final groupBg = _groupBackground(group);
+
+    return WorkspacePanel(
       padding: EdgeInsets.zero,
-      child: Column(children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          color: AppColors.surfaceSecondary,
-          child: Row(children: [
-            Icon(_groupIcon(group), size: 20, color: AppColors.textBody),
-            const SizedBox(width: 10),
-            Expanded(
-                child: Text(_groupTitle(group),
-                    style: AppTypography.sectionHeader))
-          ]),
-        ),
-        for (var index = 0; index < reports.length; index++) ...[
-          if (index > 0) const Divider(height: 1, color: AppColors.borderLight),
-          Material(
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            color: groupBg,
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.zero,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(_groupIcon(group), size: 18, color: groupColor),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    context.tr(_groupTitle(group)),
+                    style: AppTypography.sectionHeader.copyWith(
+                      color: groupColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var index = 0; index < reports.length; index++) ...[
+            if (index > 0) const Divider(height: 1, color: AppColors.borderLight),
+            Material(
               color: Colors.transparent,
               child: InkWell(
                 key: ValueKey('report-${reports[index].title}'),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) =>
-                        EnhancedReportPage(report: reports[index]))),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => EnhancedReportPage(report: reports[index]),
+                  ),
+                ),
                 child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 16),
-                    child: Row(children: [
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
                       Expanded(
-                          child: Text(reports[index].title,
-                              style: AppTypography.bodyMedium)),
+                        child: Text(
+                          context.tr(reports[index].title),
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      const Icon(Icons.chevron_right_rounded,
-                          size: 18, color: AppColors.textMuted),
-                    ])),
-              )),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: AppColors.textMuted,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
-      ]));
+      ),
+    );
+  }
 }

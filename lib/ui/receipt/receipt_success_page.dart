@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../service/pos_local_store.dart';
@@ -21,7 +22,7 @@ class ReceiptSuccessPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final profile = context.watch<PosLocalStore>().profile;
     final receipt = ReceiptDocument(
-        order: order, storeName: profile.storeName, currency: profile.currency);
+        order: order, languageCode: context.strings.languageCode, storeName: profile.storeName, currency: profile.currency);
     return PopScope(
         canPop: false,
         child: Scaffold(
@@ -52,8 +53,8 @@ class ReceiptSuccessPage extends StatelessWidget {
                                   const SizedBox(height: 8),
                                   Text(
                                       receipt.isCredit
-                                          ? 'The sale is recorded. Payment remains due from the customer.'
-                                          : 'The sale has been saved. Your receipt is ready.',
+                                          ? context.tr('The sale is recorded. Payment remains due from the customer.')
+                                          : context.tr('The sale has been saved. Your receipt is ready.'),
                                       textAlign: TextAlign.center,
                                       style: AppTypography.bodySmall),
                                   const SizedBox(height: 24),
@@ -64,22 +65,22 @@ class ReceiptSuccessPage extends StatelessWidget {
                                               .copyWith(fontSize: 32))),
                                   const SizedBox(height: 8),
                                   Text(
-                                      '${receipt.units} units • ${order.paymentMethod}',
+                                      context.tr('{p0} units • {p1}', args: {'p0': receipt.units, 'p1': receipt.paymentLabel}),
                                       style: AppTypography.bodySmall),
                                   const Divider(height: 32),
                                   _Detail(
-                                      label: 'Receipt', value: order.receiptNo),
+                                      label: context.tr('Receipt'), value: order.receiptNo),
                                   _Detail(
-                                      label: 'Date',
+                                      label: context.tr('Date'),
                                       value:
                                           '${order.date} ${order.time}'.trim()),
                                   if (order.customerName?.isNotEmpty == true)
                                     _Detail(
-                                        label: 'Customer',
+                                        label: context.tr('Customer'),
                                         value: order.customerName!),
                                   if (receipt.isCash)
                                     _Detail(
-                                        label: 'Change due',
+                                        label: context.tr('Change due'),
                                         value: receipt.money(order.changeDue)),
                                   const SizedBox(height: 24),
                                   SizedBox(
@@ -90,7 +91,7 @@ class ReceiptSuccessPage extends StatelessWidget {
                                             backgroundColor:
                                                 AppColors.successDeep),
                                         icon: const Icon(Icons.add_rounded),
-                                        label: const Text('New sale'),
+                                        label:  Text(context.tr('New sale')),
                                       )),
                                   const SizedBox(height: 12),
                                   SizedBox(
@@ -103,7 +104,7 @@ class ReceiptSuccessPage extends StatelessWidget {
                                                         order: order))),
                                         icon: const Icon(
                                             Icons.receipt_long_outlined),
-                                        label: const Text('View receipt'),
+                                        label:  Text(context.tr('View receipt')),
                                       )),
                                 ])),
                       )))),

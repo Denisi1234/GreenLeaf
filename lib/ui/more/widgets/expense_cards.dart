@@ -269,53 +269,96 @@ class ExpenseCard extends StatelessWidget {
 }
 
 class ExpenseEmptyState extends StatelessWidget {
-  const ExpenseEmptyState({super.key, required this.strings, required this.onAdd});
+  const ExpenseEmptyState({
+    super.key,
+    required this.strings,
+    required this.onAdd,
+    this.isFiltered = false,
+    this.onClearFilter,
+  });
 
   final AppStrings strings;
   final VoidCallback onAdd;
+  final bool isFiltered;
+  final VoidCallback? onClearFilter;
 
   @override
   Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.all(28),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
-      child: Column(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
-            ),
-            child: const Icon(Icons.receipt_long_outlined,
-                color: AppColors.textMuted, size: 34),
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 76,
+                height: 76,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.surfaceSecondary,
+                  borderRadius: BorderRadius.zero,
+                ),
+                child: Icon(
+                  isFiltered
+                      ? Icons.search_off_rounded
+                      : Icons.receipt_long_outlined,
+                  color: AppColors.primary,
+                  size: 38,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                isFiltered
+                    ? expenseDual(strings, 'No matching expenses', 'Hakuna matumizi yanayolingana')
+                    : expenseDual(strings, 'No expenses recorded yet', 'Hakuna matumizi yaliyorekodiwa bado'),
+                textAlign: TextAlign.center,
+                style: AppTypography.cardHeader.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isFiltered
+                    ? expenseDual(
+                        strings,
+                        'Try searching by different title, vendor, category or clearing payment filters.',
+                        'Jaribu kutafuta kwa jina lingine, muuzaji, kundi au kuondoa vichujio vya malipo.',
+                      )
+                    : expenseDual(
+                        strings,
+                        'Track operational costs, rent, utilities, staff wages, inventory purchases, and tax deductions in one place.',
+                        'Fuatilia gharama za uendeshaji, kodi ya pango, bili, mishahara, na ununuzi wa hifadhi sehemu moja.',
+                      ),
+                textAlign: TextAlign.center,
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.textMuted,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (isFiltered)
+                MarketButton(
+                  label: expenseDual(strings, 'Clear search filter', 'Ondoa kichujio'),
+                  icon: Icons.filter_alt_off_rounded,
+                  isFullWidth: false,
+                  isPrimary: false,
+                  onTap: onClearFilter,
+                )
+              else
+                MarketButton(
+                  label: expenseDual(strings, 'Record first expense', 'Rekodi matumizi ya kwanza'),
+                  icon: Icons.add_rounded,
+                  isFullWidth: false,
+                  onTap: onAdd,
+                ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(expenseDual(strings, 'No expenses found', 'Hakuna matumizi'),
-              style: AppTypography.cardHeader),
-          const SizedBox(height: 6),
-          Text(
-            expenseDual(
-                strings,
-                'Record an expense or adjust the filters to see entries here.',
-                'Rekodi matumizi au rekebisha vichujio kuona rekodi hapa.'),
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textMuted,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 16),
-          MarketButton(
-            label: expenseDual(strings, 'Add expense', 'Ongeza matumizi'),
-            icon: Icons.add_rounded,
-            isFullWidth: false,
-            onTap: onAdd,
-          ),
-        ],
+        ),
       ),
     );
   }

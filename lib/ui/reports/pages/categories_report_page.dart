@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -115,11 +116,11 @@ class CategoriesReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Revenue by Category',
+      title: context.tr('Revenue by Category'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Revenue',
+        label: context.tr('Revenue'),
         color: Color(0xFF166534),
       ),
     );
@@ -139,9 +140,9 @@ class CategoriesReportPage extends StatelessWidget {
         totalRevenue > 0 ? (topCategoryRevenue / totalRevenue) * 100 : 0.0;
 
     insights.add(InsightCard(
-      title: 'Leading Category',
+      title: context.tr('Leading Category'),
       description:
-          '"$topCategoryName" contributes ${topCategoryShare.toStringAsFixed(1)}% of total revenue (TSh ${NumberFormat('#,##0').format(topCategoryRevenue)})',
+          context.tr('"{p0}" contributes {p1}% of total revenue (TSh {p2})', args: {'p0': topCategoryName, 'p1': topCategoryShare.toStringAsFixed(1), 'p2': NumberFormat('#,##0').format(topCategoryRevenue)}),
       icon: Icons.category,
       color: Color(0xFF166534),
       severity: InsightSeverity.success,
@@ -154,9 +155,9 @@ class CategoriesReportPage extends StatelessWidget {
 
     if (lowPerformers > 0 && table.rows.length > 3) {
       insights.add(InsightCard(
-        title: 'Underperforming Categories',
+        title: context.tr('Underperforming Categories'),
         description:
-            '$lowPerformers categories generate less than 10% of average revenue. Consider promotions or reassortment.',
+            context.tr('{p0} categories generate less than 10% of average revenue. Consider promotions or reassortment.', args: {'p0': lowPerformers}),
         icon: Icons.trending_down,
         color: AppColors.ink,
         severity: InsightSeverity.warning,
@@ -164,7 +165,7 @@ class CategoriesReportPage extends StatelessWidget {
     }
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }

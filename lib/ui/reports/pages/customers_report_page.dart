@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -90,12 +91,12 @@ class CustomersReportPage extends StatelessWidget {
         .fold<double>(0, (sum, c) => sum + c.debitBalance);
 
     return [
-      _buildCustomerSegmentCard(customers, creditCustomers, totalCreditBalance),
+      _buildCustomerSegmentCard(context, customers, creditCustomers, totalCreditBalance),
       _buildInsightsCard(context, table, creditCustomers, totalCreditBalance),
     ];
   }
 
-  Widget _buildCustomerSegmentCard(
+  Widget _buildCustomerSegmentCard(BuildContext context, 
     List<CustomerData> customers,
     int creditCustomers,
     double totalCreditBalance,
@@ -104,12 +105,12 @@ class CustomersReportPage extends StatelessWidget {
     final cashCustomers = totalCustomers - creditCustomers;
 
     return SectionCard(
-      title: 'Customer Segments',
+      title: context.tr('Customer Segments'),
       child: Row(
         children: [
           Expanded(
             child: _SegmentStat(
-              label: 'Cash Customers',
+              label: context.tr('Cash Customers'),
               value: NumberFormat('#,###').format(cashCustomers),
               percentage: totalCustomers > 0
                   ? (cashCustomers / totalCustomers) * 100
@@ -120,7 +121,7 @@ class CustomersReportPage extends StatelessWidget {
           ),
           Expanded(
             child: _SegmentStat(
-              label: 'Credit Customers',
+              label: context.tr('Credit Customers'),
               value: NumberFormat('#,###').format(creditCustomers),
               percentage: totalCustomers > 0
                   ? (creditCustomers / totalCustomers) * 100
@@ -131,7 +132,7 @@ class CustomersReportPage extends StatelessWidget {
           ),
           Expanded(
             child: _SegmentStat(
-              label: 'Outstanding Credit',
+              label: context.tr('Outstanding Credit'),
               value: 'TSh ${NumberFormat('#,##0').format(totalCreditBalance)}',
               percentage: 0,
               color: AppColors.ink,
@@ -163,9 +164,9 @@ class CustomersReportPage extends StatelessWidget {
         totalSales > 0 ? (topCustomerSales / totalSales) * 100 : 0.0;
 
     insights.add(InsightCard(
-      title: 'Top Customer',
+      title: context.tr('Top Customer'),
       description:
-          '$topCustomerName contributes ${topCustomerShare.toStringAsFixed(1)}% of customer sales (TSh ${NumberFormat('#,##0').format(topCustomerSales)})',
+          context.tr('{p0} contributes {p1}% of customer sales (TSh {p2})', args: {'p0': topCustomerName, 'p1': topCustomerShare.toStringAsFixed(1), 'p2': NumberFormat('#,##0').format(topCustomerSales)}),
       icon: Icons.person,
       color: Color(0xFF166534),
       severity: InsightSeverity.success,
@@ -173,9 +174,9 @@ class CustomersReportPage extends StatelessWidget {
 
     if (creditCustomers > 0) {
       insights.add(InsightCard(
-        title: 'Outstanding Receivables',
+        title: context.tr('Outstanding Receivables'),
         description:
-            '$creditCustomers customers owe TSh ${NumberFormat('#,##0').format(totalCreditBalance)}. Regular follow-up recommended.',
+            context.tr('{p0} customers owe TSh {p1}. Regular follow-up recommended.', args: {'p0': creditCustomers, 'p1': NumberFormat('#,##0').format(totalCreditBalance)}),
         icon: Icons.money_off,
         color: Colors.red,
         severity: totalCreditBalance > 10000
@@ -188,9 +189,9 @@ class CustomersReportPage extends StatelessWidget {
 
     if (table.rows.length < 10) {
       insights.add(InsightCard(
-        title: 'Small Customer Base',
+        title: context.tr('Small Customer Base'),
         description:
-            'Only ${table.rows.length} active customers. Focus on customer acquisition and retention.',
+            context.tr('Only {p0} active customers. Focus on customer acquisition and retention.', args: {'p0': table.rows.length}),
         icon: Icons.group_add,
         color: Color(0xFF15803D),
         severity: InsightSeverity.info,
@@ -198,7 +199,7 @@ class CustomersReportPage extends StatelessWidget {
     }
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }
@@ -255,7 +256,7 @@ class _SegmentStat extends StatelessWidget {
         ],
         const SizedBox(height: 4),
         Text(
-          label,
+          context.tr(label),
           textAlign: TextAlign.center,
           style: GoogleFonts.manrope(
             fontSize: 11,

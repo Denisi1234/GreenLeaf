@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../app_design.dart';
@@ -163,7 +164,7 @@ class _BackButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Back',
+      label: context.tr('Back'),
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,

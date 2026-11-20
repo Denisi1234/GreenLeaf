@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import '../../l10n/app_strings.dart';
 import '../../service/pos_order_models.dart';
 import '../../service/receipt_settings.dart';
 
@@ -12,6 +13,7 @@ class ReceiptDocument {
       this.storeTaxId = '',
       this.storeLogoPath,
       this.currency = 'TSh',
+      this.languageCode = 'en',
       this.settings = const ReceiptSettings()});
   final CompletedOrder order;
   final String storeName;
@@ -20,10 +22,14 @@ class ReceiptDocument {
   final String storeTaxId;
   final String? storeLogoPath;
   final String currency;
+  final String languageCode;
+  AppStrings get strings => AppStrings.of(languageCode);
+  String label(String key) => strings.text(key);
+  String get paymentLabel => strings.paymentMethod(order.paymentMethod);
   final ReceiptSettings settings;
 
   String get businessName =>
-      storeName.trim().isEmpty ? 'Store receipt' : storeName.trim();
+      storeName.trim().isEmpty ? label('Store receipt') : storeName.trim();
   String money(double value) =>
       '${currency.trim().isEmpty ? 'TSh' : currency.trim()} ${NumberFormat('#,##0.00').format(value)}';
   double get subtotal =>
@@ -34,41 +40,41 @@ class ReceiptDocument {
   bool get isVoided =>
       RegExp(r'void|cancel', caseSensitive: false).hasMatch(order.status);
   String get statusLabel => isVoided
-      ? 'Voided sale'
+      ? label('Voided sale')
       : isCredit
-          ? 'Credit sale recorded'
-          : 'Sale completed';
+          ? label('Credit sale recorded')
+          : label('Sale completed');
   String get footer => settings.footer.trim().isEmpty
-      ? 'Thank you for your business.'
+      ? label('Thank you for your business.')
       : settings.footer.trim();
 
   List<MapEntry<String, String>> get metadata => [
-        if (settings.showOrderNumber) MapEntry('Receipt', order.receiptNo),
+        if (settings.showOrderNumber) MapEntry(label('Receipt'), order.receiptNo),
         if (settings.showDateTime)
-          MapEntry('Date', '${order.date} ${order.time}'.trim()),
-        if (settings.showCashier) MapEntry('Cashier', order.cashierName),
+          MapEntry(label('Date'), '${order.date} ${order.time}'.trim()),
+        if (settings.showCashier) MapEntry(label('Cashier'), order.cashierName),
         if (settings.showCustomer &&
             order.customerName?.trim().isNotEmpty == true)
-          MapEntry('Customer', order.customerName!.trim()),
+          MapEntry(label('Customer'), order.customerName!.trim()),
         if (settings.showPaymentMethod)
-          MapEntry('Payment', order.paymentMethod),
-        if (settings.showItemCount) MapEntry('Items', '$units units'),
+          MapEntry(label('Payment'), paymentLabel),
+        if (settings.showItemCount) MapEntry(label('Items'), strings.text('{p0} units', args: {'p0': units})),
       ];
 
   List<MapEntry<String, String>> get totals => [
-        MapEntry('Subtotal', money(subtotal)),
+        MapEntry(label('Subtotal'), money(subtotal)),
         if (settings.showDiscount && (order.discountAmount ?? 0) > 0)
           MapEntry(
               order.discountLabel?.trim().isNotEmpty == true
                   ? order.discountLabel!
-                  : 'Discount',
+                  : label('Discount'),
               '- ${money(order.discountAmount!)}'),
-        MapEntry('Total', money(order.total)),
+        MapEntry(label('Total'), money(order.total)),
         if (!isVoided && isCash) ...[
-          MapEntry('Cash received', money(order.cashTendered)),
-          MapEntry('Change due', money(order.changeDue)),
+          MapEntry(label('Cash received'), money(order.cashTendered)),
+          MapEntry(label('Change due'), money(order.changeDue)),
         ] else if (!isVoided && isCredit)
-          MapEntry('Balance due', money(order.total)),
+          MapEntry(label('Balance due'), money(order.total)),
       ];
 
   String toText() {

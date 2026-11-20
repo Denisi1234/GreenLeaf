@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -30,7 +31,7 @@ class TopSellingProductsSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 MarketSectionHeader(
-                  title: 'Top Selling Products',
+                  title: context.tr('Top Selling Products'),
                   trailing: IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(

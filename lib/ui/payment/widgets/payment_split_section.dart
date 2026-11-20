@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../service/pos_suspended_sale_model.dart';
 import '../../../utils/currency_formatter.dart';
@@ -29,20 +30,20 @@ class PaymentSplitSection extends StatelessWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) => AlertDialog(
-          title: const Text('Add Payment Split'),
+          title:  Text(context.tr('Add Payment Split')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
                 value: method,
-                decoration: const InputDecoration(labelText: 'Payment method'),
-                items: const [
-                  DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                decoration:  InputDecoration(labelText: context.tr('Payment method')),
+                items:  [
+                  DropdownMenuItem(value: 'Cash', child: Text(context.tr('Cash'))),
                   DropdownMenuItem(
                       value: 'Mobile Money',
-                      child: Text('M-Pesa / Mobile Money')),
-                  DropdownMenuItem(value: 'Card', child: Text('Card / Bank')),
+                      child: Text(context.tr('M-Pesa / Mobile Money'))),
+                  DropdownMenuItem(value: 'Card', child: Text(context.tr('Card / Bank'))),
                 ],
                 onChanged: (val) => setDlgState(() => method = val ?? 'Cash'),
               ),
@@ -50,8 +51,8 @@ class PaymentSplitSection extends StatelessWidget {
               TextField(
                 controller: controller,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Amount (TSh)',
+                decoration:  InputDecoration(
+                  labelText: context.tr('Amount (TSh)'),
                   prefixText: 'TSh ',
                 ),
               ),
@@ -60,13 +61,13 @@ class PaymentSplitSection extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child:  Text(context.tr('Cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(
                   backgroundColor: AppColors.successDeep),
-              child: const Text('Add Tender'),
+              child:  Text(context.tr('Add Tender')),
             ),
           ],
         ),
@@ -88,7 +89,7 @@ class PaymentSplitSection extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Split payments (${splitPayments.length})',
+                context.tr('Split payments ({p0})', args: {'p0': splitPayments.length}),
                 style: AppTypography.sectionHeader,
               ),
             ),
@@ -97,7 +98,7 @@ class PaymentSplitSection extends StatelessWidget {
                   ? null
                   : () => _showAddSplitDialog(context),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Split'),
+              label:  Text(context.tr('Add Split')),
             ),
           ],
         ),
@@ -127,7 +128,7 @@ class PaymentSplitSection extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'TSh ${formatCurrency(p.amount)}',
+                        context.tr('TSh {p0}', args: {'p0': formatCurrency(p.amount)}),
                         style: AppTypography.bodySmall
                             .copyWith(fontWeight: FontWeight.w700),
                       ),
@@ -146,8 +147,8 @@ class PaymentSplitSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Remaining balance due',
+               Text(
+                context.tr('Remaining balance due'),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -155,7 +156,7 @@ class PaymentSplitSection extends StatelessWidget {
                 ),
               ),
               Text(
-                'TSh ${formatCurrency(remainingDue)}',
+                context.tr('TSh {p0}', args: {'p0': formatCurrency(remainingDue)}),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,

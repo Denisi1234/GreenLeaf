@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -92,8 +93,8 @@ class _PaymentPageState extends State<PaymentPage> {
     if (!didAdd) {
       showMarketNotice(
         context,
-        title: 'Out Of Stock',
-        message: '${line.product.name} has no more stock available',
+        title: context.tr('Out Of Stock'),
+        message: context.tr('{p0} has no more stock available', args: {'p0': line.product.name}),
         type: MarketNoticeType.warning,
       );
       return;
@@ -129,18 +130,18 @@ class _PaymentPageState extends State<PaymentPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear current sale?'),
+        title:  Text(context.tr('Clear current sale?')),
         content: Text(
-            'Remove all $_unitCount units and reset the payment details for this sale?'),
+            context.tr('Remove all {p0} units and reset the payment details for this sale?', args: {'p0': _unitCount})),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Keep sale')),
+              child:  Text(context.tr('Keep sale'))),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
               style:
                   FilledButton.styleFrom(backgroundColor: AppColors.dangerDeep),
-              child: const Text('Clear sale')),
+              child:  Text(context.tr('Clear sale'))),
         ],
       ),
     );
@@ -167,14 +168,14 @@ class _PaymentPageState extends State<PaymentPage> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
               leading: const Icon(Icons.people_outline),
-              title: const Text('Select existing customer'),
-              subtitle: const Text('Find a customer already in your records'),
+              title:  Text(context.tr('Select existing customer')),
+              subtitle:  Text(context.tr('Find a customer already in your records')),
               onTap: () => Navigator.pop(context, false)),
           ListTile(
               leading: const Icon(Icons.person_add_alt_outlined),
-              title: const Text('Create new customer'),
-              subtitle: const Text(
-                  'Save customer details and attach them to this sale'),
+              title:  Text(context.tr('Create new customer')),
+              subtitle:  Text(
+                  context.tr('Save customer details and attach them to this sale')),
               onTap: () => Navigator.pop(context, true)),
         ]),
       )),
@@ -293,8 +294,8 @@ class _PaymentPageState extends State<PaymentPage> {
       if (_remainingDue > 0) {
         showMarketNotice(
           context,
-          title: 'Remaining Balance',
-          message: 'Please add payment for remaining TSh${_amount(_remainingDue)}',
+          title: context.tr('Remaining Balance'),
+          message: context.tr('Please add payment for remaining TSh{p0}', args: {'p0': _amount(_remainingDue)}),
           type: MarketNoticeType.warning,
         );
         return;
@@ -334,9 +335,9 @@ class _PaymentPageState extends State<PaymentPage> {
 
       showMarketNotice(
         context,
-        title: 'Stock Changed',
+        title: context.tr('Stock Changed'),
         message:
-            'Only $availableStock unit(s) of ${line.product.name} are left. Reduce the quantity before charging.',
+            context.tr('Only {p0} unit(s) of {p1} are left. Reduce the quantity before charging.', args: {'p0': availableStock, 'p1': line.product.name}),
         type: MarketNoticeType.warning,
       );
       return false;
@@ -353,8 +354,8 @@ class _PaymentPageState extends State<PaymentPage> {
     if (!_hasItems) {
       showMarketNotice(
         context,
-        title: 'Cart Is Empty',
-        message: 'Add at least one product before charging this order',
+        title: context.tr('Cart Is Empty'),
+        message: context.tr('Add at least one product before charging this order'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -368,8 +369,8 @@ class _PaymentPageState extends State<PaymentPage> {
     if (paymentMethod == 'Cash' && tendered < _grandTotal) {
       showMarketNotice(
         context,
-        title: 'Insufficient Cash',
-        message: 'Cash received must be at least TSh${_amount(_grandTotal)}',
+        title: context.tr('Insufficient Cash'),
+        message: context.tr('Cash received must be at least TSh{p0}', args: {'p0': _amount(_grandTotal)}),
         type: MarketNoticeType.warning,
       );
       return;
@@ -413,10 +414,10 @@ class _PaymentPageState extends State<PaymentPage> {
       if (!mounted) return;
       showMarketNotice(
         context,
-        title: 'Sale Could Not Complete',
+        title: context.tr('Sale Could Not Complete'),
         message: error is StateError
             ? error.message.toString()
-            : 'The sale could not be saved. Please try again.',
+            : context.tr('The sale could not be saved. Please try again.'),
         type: MarketNoticeType.warning,
       );
     } finally {
@@ -471,8 +472,8 @@ class _PaymentPageState extends State<PaymentPage> {
                   strokeWidth: 2, color: Colors.white))
           : const Icon(Icons.check_circle_outline_rounded, size: 21),
       label: Text(_savingSale
-          ? 'Saving sale…'
-          : 'Complete sale • TSh ${_amount(_grandTotal)}'),
+          ? context.tr('Saving sale…')
+          : context.tr('Complete sale • TSh {p0}', args: {'p0': _amount(_grandTotal)})),
     );
     final customer = WorkspacePanel(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -482,15 +483,15 @@ class _PaymentPageState extends State<PaymentPage> {
         Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Customer', style: AppTypography.label),
+          Text(context.tr('Customer'), style: AppTypography.label),
           const SizedBox(height: 3),
-          Text(_selectedCustomer ?? 'Walk-in customer',
+          Text(_selectedCustomer ?? context.tr('Walk-in customer'),
               style: AppTypography.bodyMedium
                   .copyWith(fontWeight: FontWeight.w700)),
         ])),
         if (_selectedCustomer != null)
           IconButton(
-            tooltip: 'Remove customer',
+            tooltip: context.tr('Remove customer'),
             onPressed: _savingSale
                 ? null
                 : () => setState(() => _selectedCustomer = null),
@@ -498,7 +499,7 @@ class _PaymentPageState extends State<PaymentPage> {
           ),
         TextButton(
             onPressed: _savingSale ? null : _chooseCustomer,
-            child: Text(_selectedCustomer == null ? 'Select' : 'Change')),
+            child: Text(_selectedCustomer == null ? context.tr('Select') : context.tr('Change'))),
       ]),
     );
     final cart = WorkspacePanel(
@@ -509,8 +510,8 @@ class _PaymentPageState extends State<PaymentPage> {
             child: Row(children: [
               Expanded(
                   child:
-                      Text('Current sale', style: AppTypography.sectionHeader)),
-              Text('$_itemTypes items • $_unitCount units',
+                      Text(context.tr('Current sale'), style: AppTypography.sectionHeader)),
+              Text(context.tr('{p0} items • {p1} units', args: {'p0': _itemTypes, 'p1': _unitCount}),
                   style: AppTypography.label),
             ])),
         const Divider(height: 1),
@@ -613,8 +614,8 @@ class _PaymentPageState extends State<PaymentPage> {
               if (_savingSale)
                 Container(
                   color: Colors.black.withValues(alpha: 0.35),
-                  child: const MarketLoadingView(
-                    message: 'Processing Transaction…',
+                  child:  MarketLoadingView(
+                    message: context.tr('Processing Transaction…'),
                     subMessage: 'Finalizing invoice, adjusting stock, and logging payment',
                     color: AppColors.successDeep,
                   ),
@@ -645,8 +646,8 @@ class _CounterActionRow extends StatelessWidget {
               height: 54,
               alignment: Alignment.center,
               color: AppColors.surface,
-              child: const Text(
-                'Add New Item',
+              child:  Text(
+                context.tr('Add New Item'),
                 style: TextStyle(
                   color: AppColors.ink,
                   fontSize: 16,

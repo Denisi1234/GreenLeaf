@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -58,7 +59,7 @@ class PresetPeriodMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<PresetPeriod>(
-      tooltip: 'Quick date ranges',
+      tooltip: context.tr('Quick date ranges'),
       onSelected: onPresetSelected,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       itemBuilder: (context) => [
@@ -74,7 +75,7 @@ class PresetPeriodMenu extends StatelessWidget {
                   const SizedBox(width: 16),
                 const SizedBox(width: 8),
                 Text(
-                  preset.label,
+                  context.tr(preset.label),
                   style: AppTypography.bodySmall.copyWith(
                     color: selectedPreset == preset
                         ? AppColors.primary
@@ -105,7 +106,7 @@ class PresetPeriodMenu extends StatelessWidget {
             ),
             const SizedBox(width: 5),
             Text(
-              selectedPreset?.label ?? 'Quick',
+              context.tr(selectedPreset?.label ?? 'Quick'),
               style: AppTypography.label.copyWith(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,

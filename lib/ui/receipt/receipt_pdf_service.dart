@@ -31,7 +31,7 @@ class ReceiptPdfService {
       } catch (_) {/* The business name remains available without a logo. */}
     }
     final pdf = pw.Document(
-        title: 'Receipt ${receipt.order.receiptNo}',
+        title: '${receipt.label('Receipt')} ${receipt.order.receiptNo}',
         author: receipt.businessName,
         creator: 'TrackMauzo');
     pdf.addPage(pw.MultiPage(
@@ -72,7 +72,7 @@ class ReceiptPdfService {
                       style: pw.TextStyle(fontSize: 10, color: muted)),
               ])),
           pw.SizedBox(width: 12),
-          pw.Text(receipt.isVoided ? 'VOID' : 'RECEIPT',
+          pw.Text(receipt.label(receipt.isVoided ? 'VOID' : 'RECEIPT'),
               style: pw.TextStyle(
                   fontSize: 16,
                   fontWeight: pw.FontWeight.bold,
@@ -112,7 +112,7 @@ class ReceiptPdfService {
         ]),
         pw.SizedBox(height: 24),
         pw.TableHelper.fromTextArray(
-          headers: const ['Item', 'Quantity', 'Unit price', 'Amount'],
+          headers: ['Item', 'Quantity', 'Unit price', 'Amount'].map(receipt.label).toList(),
           data: [
             for (final line in receipt.order.lines)
               [
@@ -157,8 +157,8 @@ class ReceiptPdfService {
                             style: pw.TextStyle(fontSize: 11, color: muted))),
                     pw.Text(total.value,
                         style: pw.TextStyle(
-                            fontSize: total.key == 'Total' ? 16 : 11,
-                            fontWeight: total.key == 'Total'
+                            fontSize: total.key == receipt.label('Total') ? 16 : 11,
+                            fontWeight: total.key == receipt.label('Total')
                                 ? pw.FontWeight.bold
                                 : pw.FontWeight.normal,
                             color: ink)),
@@ -211,8 +211,10 @@ class ReceiptPdfService {
           bool showPaymentMethod = true,
           bool showItemCount = true,
           bool showDiscount = true,
-          String currency = 'TSh'}) =>
+          String currency = 'TSh',
+          String languageCode = 'en'}) =>
       writeReceiptPdf(ReceiptDocument(
+        languageCode: languageCode,
         order: CompletedOrder(
           id: receiptNumber,
           dateTime: '$date $time',

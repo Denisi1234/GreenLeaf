@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -59,7 +60,7 @@ class _PeriodSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<ReportPeriod>(
-      tooltip: 'Select period',
+      tooltip: context.tr('Select period'),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -71,7 +72,7 @@ class _PeriodSelector extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              currentPeriod,
+              context.tr(currentPeriod),
               style: AppTypography.label.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -91,7 +92,7 @@ class _PeriodSelector extends StatelessWidget {
           .map(
             (period) => PopupMenuItem<ReportPeriod>(
               value: period,
-              child: Text(period.label, style: AppTypography.bodySmall),
+              child: Text(context.tr(period.label), style: AppTypography.bodySmall),
             ),
           )
           .toList(),
@@ -137,7 +138,7 @@ class _DownloadButton extends StatelessWidget {
               const SizedBox(width: 6),
             ],
             Text(
-              isDownloading ? 'Preparing...' : 'PDF',
+              isDownloading ? context.tr('Preparing...') : context.tr('PDF'),
               style: AppTypography.label.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,

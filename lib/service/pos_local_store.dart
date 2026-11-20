@@ -31,8 +31,16 @@ import 'daily_sales_report_service.dart';
 import 'pos_suspended_sale_model.dart';
 import 'package:track_mauzo/ui/models/capability.dart';
 import 'models/staff_models.dart';
+import 'services/accounting_service.dart';
+import 'services/auth_service.dart';
+import 'services/inventory_service.dart';
+import 'services/sales_service.dart';
 
 export 'models/staff_models.dart';
+export 'services/accounting_service.dart';
+export 'services/auth_service.dart';
+export 'services/inventory_service.dart';
+export 'services/sales_service.dart';
 
 part 'store/pos_accounting_store.dart';
 part 'store/pos_auth_store.dart';
@@ -74,7 +82,22 @@ class PosLocalStore extends ChangeNotifier
         PosStaffStore,
         PosCustomerStore {
   PosLocalStore({PosLocalDatabase? database})
-      : _database = database ?? PosLocalDatabase.instance;
+      : _database = database ?? PosLocalDatabase.instance {
+    _authService = AuthService(this);
+    _salesService = SalesService(this);
+    _inventoryService = InventoryService(this);
+    _accountingService = AccountingService(this);
+  }
+
+  late final AuthService _authService;
+  late final SalesService _salesService;
+  late final InventoryService _inventoryService;
+  late final AccountingService _accountingService;
+
+  AuthService get authService => _authService;
+  SalesService get salesService => _salesService;
+  InventoryService get inventoryService => _inventoryService;
+  AccountingService get accountingService => _accountingService;
 
   static const _defaultStoreId = 'store-default';
   @override

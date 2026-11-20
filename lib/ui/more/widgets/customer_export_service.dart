@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -42,8 +43,7 @@ class CustomerExportService {
     required AppStrings strings,
   }) async {
     final buffer = StringBuffer();
-    buffer.writeln(
-        'Name,Phone,Email,Address,Orders,Total Spent,Points,Outstanding Debit,Joined,Tags');
+    buffer.writeln('Name,Phone,Email,Address,Orders,Total Spent,Points,Outstanding Debit,Joined,Tags'.split(',').map(strings.text).map(_csvCell).join(','));
     for (final c in rows) {
       final info = stats[c.name] ?? CustomerStats.empty;
       final cells = <String>[
@@ -91,12 +91,12 @@ class CustomerExportService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('Customer Report',
+              pw.Text(context.tr('Customer Report'),
                   style: pw.TextStyle(
                       fontSize: 18, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 4),
               pw.Text(
-                  '${rows.length} customers · Lifetime sales ${_formatMoney(totalSpent)} · Outstanding ${_formatMoney(outstanding)}',
+                  context.tr('{p0} customers · Lifetime sales {p1} · Outstanding {p2}', args: {'p0': rows.length, 'p1': _formatMoney(totalSpent), 'p2': _formatMoney(outstanding)}),
                   style: const pw.TextStyle(
                       fontSize: 10, color: PdfColors.grey700)),
             ],
@@ -104,7 +104,7 @@ class CustomerExportService {
         ),
         build: (ctx) => [
           pw.TableHelper.fromTextArray(
-            headers: const [
+            headers: [
               'Name',
               'Phone',
               'Orders',
@@ -112,7 +112,7 @@ class CustomerExportService {
               'Points',
               'Debit',
               'Joined'
-            ],
+            ].map(strings.text).toList(),
             data: rows.map((c) {
               final info = stats[c.name] ?? CustomerStats.empty;
               final spent = info.spent + c.totalSpent;

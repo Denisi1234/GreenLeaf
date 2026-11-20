@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -130,9 +131,9 @@ class _BottleArt extends StatelessWidget {
                         color: AppColors.primaryDeep,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Center(
+                      child:  Center(
                         child: Text(
-                          'Aqua',
+                          context.tr('Aqua'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 9,
@@ -206,8 +207,8 @@ class _CanArt extends StatelessWidget {
             bottom: 18,
             child: Transform.rotate(
               angle: -math.pi / 2,
-              child: const Text(
-                'Coca-Cola',
+              child:  Text(
+                context.tr('Coca-Cola'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -266,9 +267,9 @@ class _ChipsBagArt extends StatelessWidget {
                 color: AppColors.primaryDeep,
                 borderRadius: BorderRadius.circular(AppRadius.rounded),
               ),
-              child: const Center(
+              child:  Center(
                 child: Text(
-                  "Lay's",
+                  context.tr('Lay\'s'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -279,12 +280,12 @@ class _ChipsBagArt extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned(
+           Positioned(
             left: 22,
             right: 22,
             bottom: 14,
             child: Text(
-              'Classic',
+              context.tr('Classic'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Color(0xFF111111),
@@ -321,11 +322,11 @@ class _ChocolateArt extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            const Positioned(
+             Positioned(
               left: 8,
               top: 8,
               child: Text(
-                'Galaxy',
+                context.tr('Galaxy'),
                 style: TextStyle(
                   color: Color(0xFF111111),
                   fontSize: 12,
@@ -373,11 +374,11 @@ class _CerealBoxArt extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          const Positioned(
+           Positioned(
             top: 8,
             left: 10,
             child: Text(
-              "Kellogg's",
+              context.tr('Kellogg\'s'),
               style: TextStyle(
                 color: AppColors.primaryDeep,
                 fontSize: 11,
@@ -386,11 +387,11 @@ class _CerealBoxArt extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned(
+           Positioned(
             top: 30,
             left: 18,
             child: Text(
-              'CORN\nFLAKES',
+              context.tr('CORN\nFLAKES'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Color(0xFF111111),
@@ -410,9 +411,9 @@ class _CerealBoxArt extends StatelessWidget {
                 color: AppColors.primarySoft,
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: const Center(
+              child:  Center(
                 child: Text(
-                  'flakes',
+                  context.tr('flakes'),
                   style: TextStyle(
                     color: AppColors.primaryDeep,
                     fontSize: 10,
@@ -443,13 +444,13 @@ class _SoapBoxArt extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sharp),
         border: Border.all(color: const Color(0xFFF3F4F6)),
       ),
-      child: const Stack(
+      child:  Stack(
         children: [
           Positioned(
             top: 8,
             left: 12,
             child: Text(
-              'Dove',
+              context.tr('Dove'),
               style: TextStyle(
                 color: AppColors.ink,
                 fontSize: 14,
@@ -484,11 +485,11 @@ class _ToothpasteArt extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(AppRadius.sharp),
       ),
-      child: const Row(
+      child:  Row(
         children: [
           SizedBox(width: 8),
           Text(
-            'Colgate',
+            context.tr('Colgate'),
             style: TextStyle(
               color: Colors.white,
               fontSize: 13,
@@ -594,9 +595,9 @@ class _DetergentBagArt extends StatelessWidget {
             color: AppColors.primary,
             shape: BoxShape.circle,
           ),
-          child: const Center(
+          child:  Center(
             child: Text(
-              'Tide',
+              context.tr('Tide'),
               style: TextStyle(
                 color: AppColors.primaryDeep,
                 fontSize: 12,

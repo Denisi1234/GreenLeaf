@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/app_design.dart';
 
@@ -75,7 +76,7 @@ class QuickActionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    hero ? 'Run Checkout' : action.label,
+                    hero ? context.tr('Run Checkout') : action.label,
                     style: TextStyle(
                       color: hero ? const Color(0xFFF3F4F6) : labelColor,
                       fontSize: hero ? 10 : 10.5,

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../app_design.dart';
@@ -43,8 +44,8 @@ void showMarketNotice(
       right: AppSpacing.lg,
       top: MediaQuery.of(context).padding.top + AppSpacing.md,
       child: _MarketNoticeCard(
-        title: title,
-        message: message,
+        title: context.strings.message(title),
+        message: context.strings.message(message),
         accent: accent,
         iconBg: iconBg,
         icon: icon,

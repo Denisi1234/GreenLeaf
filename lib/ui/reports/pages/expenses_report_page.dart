@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -92,7 +93,7 @@ class ExpensesReportPage extends StatelessWidget {
 
     return [
       _buildExpenseTrendCard(context, expenses),
-      _buildExpenseRatioCard(expenseRatio),
+      _buildExpenseRatioCard(context, expenseRatio),
       _buildInsightsCard(context, table, expenseRatio),
     ];
   }
@@ -119,19 +120,19 @@ class ExpensesReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Daily Expense Trend',
+      title: context.tr('Daily Expense Trend'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Expenses',
+        label: context.tr('Expenses'),
         color: AppColors.danger,
       ),
     );
   }
 
-  Widget _buildExpenseRatioCard(double expenseRatio) {
+  Widget _buildExpenseRatioCard(BuildContext context, double expenseRatio) {
     return SectionCard(
-      title: 'Expense to Sales Ratio',
+      title: context.tr('Expense to Sales Ratio'),
       child: Column(
         children: [
           Row(
@@ -141,7 +142,7 @@ class ExpensesReportPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Expenses as % of Sales',
+                      context.tr('Expenses as % of Sales'),
                       style: GoogleFonts.manrope(
                         fontSize: 13,
                         color: Colors.grey.shade600,
@@ -163,10 +164,10 @@ class ExpensesReportPage extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       expenseRatio > 30
-                          ? 'High expense ratio - review cost structure'
+                          ? context.tr('High expense ratio - review cost structure')
                           : expenseRatio > 15
-                              ? 'Moderate expense ratio - monitor closely'
-                              : 'Healthy expense ratio',
+                              ? context.tr('Moderate expense ratio - monitor closely')
+                              : context.tr('Healthy expense ratio'),
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -210,9 +211,9 @@ class ExpensesReportPage extends StatelessWidget {
         totalExpenses > 0 ? (topCategoryAmount / totalExpenses) * 100 : 0.0;
 
     insights.add(InsightCard(
-      title: 'Largest Expense Category',
+      title: context.tr('Largest Expense Category'),
       description:
-          '"$topCategoryName" accounts for ${topCategoryShare.toStringAsFixed(1)}% of total expenses (TSH ${NumberFormat('#,##0').format(topCategoryAmount)})',
+          context.tr('"{p0}" accounts for {p1}% of total expenses (TSH {p2})', args: {'p0': topCategoryName, 'p1': topCategoryShare.toStringAsFixed(1), 'p2': NumberFormat('#,##0').format(topCategoryAmount)}),
       icon: Icons.category_outlined,
       color: AppColors.ink,
       severity: InsightSeverity.info,
@@ -220,9 +221,9 @@ class ExpensesReportPage extends StatelessWidget {
 
     if (expenseRatio > 30) {
       insights.add(InsightCard(
-        title: 'High Expense Ratio',
+        title: context.tr('High Expense Ratio'),
         description:
-            'Expenses exceed 30% of sales. Consider cost reduction measures or revenue growth strategies.',
+            context.tr('Expenses exceed 30% of sales. Consider cost reduction measures or revenue growth strategies.'),
         icon: Icons.warning,
         color: Colors.red,
         severity: InsightSeverity.critical,
@@ -232,7 +233,7 @@ class ExpensesReportPage extends StatelessWidget {
     }
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -115,11 +116,11 @@ class ItemsReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Top 10 Products by Revenue',
+      title: context.tr('Top 10 Products by Revenue'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Revenue',
+        label: context.tr('Revenue'),
         color: Color(0xFF166534),
       ),
     );
@@ -139,9 +140,9 @@ class ItemsReportPage extends StatelessWidget {
         totalRevenue > 0 ? (topProductRevenue / totalRevenue) * 100 : 0.0;
 
     insights.add(InsightCard(
-      title: 'Top Performer',
+      title: context.tr('Top Performer'),
       description:
-          '"$topProductName" generates ${topProductShare.toStringAsFixed(1)}% of total revenue (TSh ${NumberFormat('#,##0').format(topProductRevenue)})',
+          context.tr('"{p0}" generates {p1}% of total revenue (TSh {p2})', args: {'p0': topProductName, 'p1': topProductShare.toStringAsFixed(1), 'p2': NumberFormat('#,##0').format(topProductRevenue)}),
       icon: Icons.star,
       color: Color(0xFF15803D),
       severity: InsightSeverity.success,
@@ -159,9 +160,9 @@ class ItemsReportPage extends StatelessWidget {
 
     if (lowMarginItems > 0) {
       insights.add(InsightCard(
-        title: 'Low Margin Items',
+        title: context.tr('Low Margin Items'),
         description:
-            '$lowMarginItems items have gross margin below 15%. Review pricing or supplier costs.',
+            context.tr('{p0} items have gross margin below 15%. Review pricing or supplier costs.', args: {'p0': lowMarginItems}),
         icon: Icons.warning_amber,
         color: AppColors.ink,
         severity: InsightSeverity.warning,
@@ -173,9 +174,9 @@ class ItemsReportPage extends StatelessWidget {
     final zeroCostItems = table.rows.where((row) => row[4] == null).length;
     if (zeroCostItems > 0) {
       insights.add(InsightCard(
-        title: 'Missing Cost Data',
+        title: context.tr('Missing Cost Data'),
         description:
-            '$zeroCostItems items have no unit cost recorded. Profit calculations will be incomplete.',
+            context.tr('{p0} items have no unit cost recorded. Profit calculations will be incomplete.', args: {'p0': zeroCostItems}),
         icon: Icons.receipt_long,
         color: Color(0xFF15803D),
         severity: InsightSeverity.info,
@@ -185,7 +186,7 @@ class ItemsReportPage extends StatelessWidget {
     }
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }

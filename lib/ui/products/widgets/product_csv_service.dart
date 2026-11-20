@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -40,22 +41,22 @@ class ProductCsvService {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: const Text('Import CSV Items'),
+        title:  Text(context.tr('Import CSV Items')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Format: Name, Category, Cost, Price, Stock\n(One item per line)',
+              context.tr('Format: Name, Category, Cost, Price, Stock\n(One item per line)'),
               style: AppTypography.label,
             ),
             const SizedBox(height: 10),
             TextField(
               controller: textController,
               maxLines: 7,
-              decoration: const InputDecoration(
+              decoration:  InputDecoration(
                 hintText:
-                    'Milk 1L, Dairy, 2000, 2500, 30\nBread, Bakery, 1500, 1800, 20',
+                    context.tr('Milk 1L, Dairy, 2000, 2500, 30\nBread, Bakery, 1500, 1800, 20'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.zero),
               ),
             ),
@@ -64,7 +65,7 @@ class ProductCsvService {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child:  Text(context.tr('Cancel')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, textController.text.trim()),
@@ -72,7 +73,7 @@ class ProductCsvService {
               backgroundColor: AppColors.successDeep,
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
-            child: const Text('Import'),
+            child:  Text(context.tr('Import')),
           ),
         ],
       ),

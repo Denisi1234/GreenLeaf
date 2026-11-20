@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -78,7 +79,7 @@ class ProductItemRowCard extends StatelessWidget {
                                   size: 18, color: AppColors.primaryDeep),
                               const SizedBox(width: 8),
                               Text(
-                                'Edit Item',
+                                context.tr('Edit Item'),
                                 style: GoogleFonts.manrope(
                                     fontWeight: FontWeight.w600),
                               ),
@@ -93,7 +94,7 @@ class ProductItemRowCard extends StatelessWidget {
                                   size: 18, color: Color(0xFFEF4444)),
                               const SizedBox(width: 8),
                               Text(
-                                'Delete',
+                                context.tr('Delete'),
                                 style: GoogleFonts.manrope(
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xFFEF4444),
@@ -128,7 +129,7 @@ class ProductItemRowCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Code: ${product.code}',
+                      context.tr('Code: {p0}', args: {'p0': product.code}),
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -145,7 +146,7 @@ class ProductItemRowCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Selling Price',
+                          context.tr('Selling Price'),
                           style: GoogleFonts.manrope(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -167,7 +168,7 @@ class ProductItemRowCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'In Stock',
+                          context.tr('In Stock'),
                           style: GoogleFonts.manrope(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -193,7 +194,7 @@ class ProductItemRowCard extends StatelessWidget {
                             const SizedBox(width: 5),
                             Text(
                               isOutOfStock
-                                  ? 'Out of stock'
+                                  ? context.tr('Out of stock')
                                   : '${product.stockCount} ${product.unit}',
                               style: GoogleFonts.manrope(
                                 fontSize: 13,
@@ -258,8 +259,8 @@ class ProductEmptyState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             hasFilter
-                ? 'No items match your search'
-                : 'No items found in stock',
+                ? context.tr('No items match your search')
+                : context.tr('No items found in stock'),
             style: GoogleFonts.manrope(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -269,8 +270,8 @@ class ProductEmptyState extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             hasFilter
-                ? 'Try searching with a different name or item code.'
-                : 'Use Add item to register your first product.',
+                ? context.tr('Try searching with a different name or item code.')
+                : context.tr('Use Add item to register your first product.'),
             textAlign: TextAlign.center,
             style: GoogleFonts.manrope(
               fontSize: 13,
@@ -290,7 +291,7 @@ class ProductEmptyState extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'Clear Search',
+                context.tr('Clear Search'),
                 style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
               ),
             ),
@@ -306,7 +307,7 @@ class ProductsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MarketPageHeader(
-      title: 'Items',
+      title: context.tr('Items'),
       showBackButton: false,
       centerTitle: false,
       showBorder: false,

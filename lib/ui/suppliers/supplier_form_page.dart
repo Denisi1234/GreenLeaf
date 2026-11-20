@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -109,7 +110,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                               const SizedBox(height: 14),
                               MarketFormField(
                                 label: _t('Email', 'Barua pepe'),
-                                hintText: 'supplier@example.com',
+                                hintText: context.tr('supplier@example.com'),
                                 controller: _email,
                                 keyboardType: TextInputType.emailAddress,
                               ),

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -85,7 +86,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             Column(
               children: [
                 MarketPageHeader(
-                  title: 'Order History',
+                  title: context.tr('Order History'),
                   showBackButton: false,
                   centerTitle: false,
                   leading: Builder(
@@ -120,7 +121,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                               child: MarketSearchField(
                                 controller: _searchController,
                                 hintText:
-                                    'Search orders by ID, cashier, or payment',
+                                    context.tr('Search orders by ID, cashier, or payment'),
                                 onChanged: (value) {
                                   setState(() {
                                     _searchQuery = value;
@@ -135,9 +136,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                                 onScanTap: () {
                                   showMarketNotice(
                                     context,
-                                    title: 'Order Scanner',
+                                    title: context.tr('Order Scanner'),
                                     message:
-                                        'Scan receipt QR/Barcode to find order',
+                                        context.tr('Scan receipt QR/Barcode to find order'),
                                   );
                                 },
                                 height: 60,
@@ -148,20 +149,20 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const _OrderActionChip(
-                              label: 'Filter',
+                             _OrderActionChip(
+                              label: context.tr('Filter'),
                               icon: Icons.filter_alt_outlined,
                             ),
                             const SizedBox(width: 10),
-                            const _OrderActionChip(
-                              label: 'Date',
+                             _OrderActionChip(
+                              label: context.tr('Date'),
                               icon: Icons.calendar_today_outlined,
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
                         if (filteredOrders.isEmpty)
-                          const Padding(
+                           Padding(
                             padding: EdgeInsets.only(top: 4),
                             child: MarketSurfaceCard(
                               borderColor: Color(0xFFE3E7ED),
@@ -177,7 +178,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                                   ),
                                   SizedBox(height: 10),
                                   Text(
-                                    'No matching orders',
+                                    context.tr('No matching orders'),
                                     style: TextStyle(
                                       color: Color(0xFF111111),
                                       fontSize: 15,
@@ -186,7 +187,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                                   ),
                                   SizedBox(height: 4),
                                   Text(
-                                    'Try a different order ID, cashier name, or payment method.',
+                                    context.tr('Try a different order ID, cashier name, or payment method.'),
                                     style: TextStyle(
                                       color: Color(0xFF7E8797),
                                       fontSize: 12.5,
@@ -396,7 +397,7 @@ class _OrderCardState extends State<_OrderCard> {
                           size: 18, color: AppColors.textMuted),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
-                        'Cashier: ',
+                        context.tr('Cashier: '),
                         style: AppTypography.bodySmall
                             .copyWith(color: AppColors.textMuted),
                       ),
@@ -438,10 +439,10 @@ class _OrderCardState extends State<_OrderCard> {
                   const SizedBox(height: AppSpacing.md),
                   const _TableDivider(),
                   const SizedBox(height: AppSpacing.md),
-                  _AmountRow(label: 'Subtotal', value: order.subtotal!),
+                  _AmountRow(label: context.tr('Subtotal'), value: order.subtotal!),
                   const SizedBox(height: 4),
                   _AmountRow(
-                      label: 'Total', value: order.total!, isEmphasis: true),
+                      label: context.tr('Total'), value: order.total!, isEmphasis: true),
                   const SizedBox(height: AppSpacing.lg),
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
@@ -457,7 +458,7 @@ class _OrderCardState extends State<_OrderCard> {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
-                            'Paid via ${order.paymentMethod}',
+                            context.tr('Paid via {p0}', args: {'p0': order.paymentMethod}),
                             style: AppTypography.bodySmall
                                 .copyWith(fontWeight: FontWeight.w700),
                           ),
@@ -485,8 +486,8 @@ class _OrderCardState extends State<_OrderCard> {
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                             icon: const Icon(Icons.assignment_return_outlined, size: 18),
-                            label: const Text(
-                              'Return / Restock',
+                            label:  Text(
+                              context.tr('Return / Restock'),
                               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                             ),
                             onPressed: () {
@@ -515,19 +516,19 @@ class _OrderCardState extends State<_OrderCard> {
           builder: (context, setDialogState) {
             return AlertDialog(
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              title: Text('Process Return ${order.id}'),
+              title: Text(context.tr('Process Return {p0}', args: {'p0': order.id})),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Order total: ${order.amount}\nPayment: ${order.paymentMethod}',
+                    context.tr('Order total: {p0}\nPayment: {p1}', args: {'p0': order.amount, 'p1': order.paymentMethod}),
                     style: const TextStyle(fontSize: 14),
                   ),
                   const SizedBox(height: 16),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Return items to inventory stock', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    title:  Text(context.tr('Return items to inventory stock'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                     value: restock,
                     onChanged: (val) => setDialogState(() => restock = val ?? true),
                   ),
@@ -536,7 +537,7 @@ class _OrderCardState extends State<_OrderCard> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogCtx),
-                  child: const Text('Cancel'),
+                  child:  Text(context.tr('Cancel')),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -552,20 +553,20 @@ class _OrderCardState extends State<_OrderCard> {
                       if (!context.mounted) return;
                       showMarketNotice(
                         context,
-                        title: 'Order Returned',
-                        message: 'Sale ${order.id} was processed as return.',
+                        title: context.tr('Order Returned'),
+                        message: context.tr('Sale {p0} was processed as return.', args: {'p0': order.id}),
                       );
                     } catch (e) {
                       if (!context.mounted) return;
                       showMarketNotice(
                         context,
-                        title: 'Return Failed',
+                        title: context.tr('Return Failed'),
                         message: e.toString(),
                         type: MarketNoticeType.warning,
                       );
                     }
                   },
-                  child: const Text('Confirm Return'),
+                  child:  Text(context.tr('Confirm Return')),
                 ),
               ],
             );

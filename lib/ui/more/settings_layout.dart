@@ -43,17 +43,10 @@ class SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD6E4F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        borderRadius: BorderRadius.zero,
+        border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
       ),
       child: Padding(
         padding: padding,
@@ -115,7 +108,7 @@ class SettingsIconBox extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.zero,
       ),
       child: Icon(icon, color: color, size: size * 0.52),
     );
@@ -215,15 +208,15 @@ class SettingsSwitchTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Material(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surfaceSecondary,
+        borderRadius: BorderRadius.zero,
         child: SwitchListTile.adaptive(
           value: value,
           onChanged: onChanged,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: const BorderSide(color: Color(0xFFD6E4F0)),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
+            side: BorderSide(color: AppColors.border),
           ),
           title: Text(
             title,
@@ -306,7 +299,7 @@ class SettingsStatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        borderRadius: BorderRadius.zero,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

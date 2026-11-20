@@ -1,11 +1,12 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../../l10n/app_strings.dart';
-import '../../../service/pos_local_store.dart';
-import '../../../utils/currency_formatter.dart';
+import '../../l10n/app_strings.dart';
+import '../../service/pos_local_store.dart';
+import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
@@ -32,12 +33,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final difference = now.difference(dateTime);
 
     if (difference.inMinutes < 60) {
-      if (difference.inMinutes <= 1) return 'Just now';
-      return '${difference.inMinutes}m ago';
+      if (difference.inMinutes <= 1) return context.tr('Just now');
+      return context.tr('{p0}m ago', args: {'p0': difference.inMinutes});
     } else if (difference.inHours < 24 && dateTime.day == now.day) {
       return DateFormat('h:mm a').format(dateTime);
     } else if (difference.inDays < 2) {
-      return 'Yesterday, ${DateFormat('h:mm a').format(dateTime)}';
+      return context.tr('Yesterday, {p0}', args: {'p0': DateFormat('h:mm a', context.strings.languageCode).format(dateTime)});
     } else {
       return DateFormat('MMM d, h:mm a').format(dateTime);
     }
@@ -59,8 +60,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           icon: Icons.payments_outlined,
           iconColor: const Color(0xFF10B981),
           iconBackground: const Color(0xFFD1FAE5),
-          title: 'Sale #${order.id}',
-          message: 'Sh ${formatCurrency(order.total)} completed by ${order.cashierName}',
+          title: context.tr('Sale #{p0}', args: {'p0': order.id}),
+          message: context.tr('Sh {p0} completed by {p1}', args: {'p0': formatCurrency(order.total), 'p1': order.cashierName}),
           timeLabel: _formatTime(parsedDate),
           dateTime: parsedDate,
           unread: isUnread,
@@ -80,9 +81,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
           icon: Icons.cancel_outlined,
           iconColor: const Color(0xFFEF4444),
           iconBackground: const Color(0xFFFEE2E2),
-          title: 'Out of Stock: ${item.name}',
-          message: '${item.name} has reached 0 units in stock. Restock needed.',
-          timeLabel: 'Alert',
+          title: context.tr('Out of Stock: {p0}', args: {'p0': item.name}),
+          message: context.tr('{p0} has reached 0 units in stock. Restock needed.', args: {'p0': item.name}),
+          timeLabel: context.tr('Alert'),
           dateTime: DateTime.now().subtract(const Duration(minutes: 5)),
           unread: isUnread,
         ),
@@ -101,9 +102,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
           icon: Icons.warning_amber_rounded,
           iconColor: const Color(0xFFF59E0B),
           iconBackground: const Color(0xFFFEF3C7),
-          title: 'Low Stock: ${item.name}',
-          message: 'Only ${item.stockCount} unit(s) remaining for ${item.name}.',
-          timeLabel: 'Warning',
+          title: context.tr('Low Stock: {p0}', args: {'p0': item.name}),
+          message: context.tr('Only {p0} unit(s) remaining for {p1}.', args: {'p0': item.stockCount, 'p1': item.name}),
+          timeLabel: context.tr('Warning'),
           dateTime: DateTime.now().subtract(const Duration(minutes: 15)),
           unread: isUnread,
         ),
@@ -122,8 +123,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
           icon: Icons.account_balance_wallet_outlined,
           iconColor: const Color(0xFF0284C7),
           iconBackground: const Color(0xFFE0F2FE),
-          title: 'Pending Debt: ${customer.name}',
-          message: '${customer.name} owes Sh ${formatCurrency(customer.debitBalance)} in unpaid credit.',
+          title: context.tr('Pending Debt: {p0}', args: {'p0': customer.name}),
+          message: context.tr('{p0} owes Sh {p1} in unpaid credit.', args: {'p0': customer.name, 'p1': formatCurrency(customer.debitBalance)}),
           timeLabel: 'Pending',
           dateTime: customer.createdAt,
           unread: isUnread,
@@ -332,7 +333,7 @@ class _EmptyNotificationsState extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'All Caught Up',
+              context.tr('All Caught Up'),
               style: GoogleFonts.manrope(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -341,7 +342,7 @@ class _EmptyNotificationsState extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'No new store alerts or transactions to review right now.',
+              context.tr('No new store alerts or transactions to review right now.'),
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
                 color: const Color(0xFF64748B),

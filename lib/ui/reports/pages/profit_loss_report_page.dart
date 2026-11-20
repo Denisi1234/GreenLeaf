@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -157,8 +158,8 @@ class ProfitLossReportPage extends StatelessWidget {
     }
 
     return [
-      _buildPnLStatementCard(table),
-      _buildMarginAnalysisCard(
+      _buildPnLStatementCard(context, table),
+      _buildMarginAnalysisCard(context, 
           revenue, cogs, grossProfit, totalExpenses, operatingResult),
       _buildRevenueTrendCard(context, sales),
       _buildExpenseBreakdownCard(context, expenses),
@@ -173,9 +174,9 @@ class ProfitLossReportPage extends StatelessWidget {
     ];
   }
 
-  Widget _buildPnLStatementCard(ReportTable table) {
+  Widget _buildPnLStatementCard(BuildContext context, ReportTable table) {
     return SectionCard(
-      title: 'Profit & Loss Statement',
+      title: context.tr('Profit & Loss Statement'),
       child: Column(
         children: [
           for (final row in table.rows) ...[
@@ -193,7 +194,7 @@ class ProfitLossReportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMarginAnalysisCard(
+  Widget _buildMarginAnalysisCard(BuildContext context, 
     double revenue,
     double cogs,
     double grossProfit,
@@ -206,14 +207,14 @@ class ProfitLossReportPage extends StatelessWidget {
     final expenseRatio = revenue > 0 ? (expenses / revenue) * 100 : 0.0;
 
     return SectionCard(
-      title: 'Margin Analysis',
+      title: context.tr('Margin Analysis'),
       child: Column(
         children: [
           Row(
             children: [
               Expanded(
                 child: _MarginGauge(
-                  label: 'Gross Margin',
+                  label: context.tr('Gross Margin'),
                   value: grossMargin,
                   benchmark: 30,
                   color: Color(0xFF111111),
@@ -221,7 +222,7 @@ class ProfitLossReportPage extends StatelessWidget {
               ),
               Expanded(
                 child: _MarginGauge(
-                  label: 'Operating Margin',
+                  label: context.tr('Operating Margin'),
                   value: operatingMargin,
                   benchmark: 15,
                   color: Color(0xFF15803D),
@@ -229,7 +230,7 @@ class ProfitLossReportPage extends StatelessWidget {
               ),
               Expanded(
                 child: _MarginGauge(
-                  label: 'Expense Ratio',
+                  label: context.tr('Expense Ratio'),
                   value: expenseRatio,
                   benchmark: 20,
                   color: AppColors.ink,
@@ -258,11 +259,11 @@ class ProfitLossReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Daily Revenue Trend',
+      title: context.tr('Daily Revenue Trend'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Revenue',
+        label: context.tr('Revenue'),
         color: Color(0xFF166534),
       ),
     );
@@ -290,11 +291,11 @@ class ProfitLossReportPage extends StatelessWidget {
     final maxValue = trendPoints.isEmpty ? 0.0 : trendPoints.first.value;
 
     return SectionCard(
-      title: 'Expenses by Category',
+      title: context.tr('Expenses by Category'),
       child: TrendChart(
         points: trendPoints.take(8).toList(),
         maxValue: maxValue,
-        label: 'Amount',
+        label: context.tr('Amount'),
         color: AppColors.primary,
       ),
     );
@@ -316,9 +317,9 @@ class ProfitLossReportPage extends StatelessWidget {
 
     if (operatingResult < 0) {
       insights.add(InsightCard(
-        title: 'Operating Loss',
+        title: context.tr('Operating Loss'),
         description:
-            'Business is operating at a loss of TSh ${NumberFormat('#,##0').format(operatingResult.abs())}. Urgent review of pricing, costs, or sales strategy needed.',
+            context.tr('Business is operating at a loss of TSh {p0}. Urgent review of pricing, costs, or sales strategy needed.', args: {'p0': NumberFormat('#,##0').format(operatingResult.abs())}),
         icon: Icons.error_outline,
         color: Colors.red,
         severity: InsightSeverity.critical,
@@ -327,9 +328,9 @@ class ProfitLossReportPage extends StatelessWidget {
       ));
     } else if (operatingMargin < 10) {
       insights.add(InsightCard(
-        title: 'Thin Operating Margin',
+        title: context.tr('Thin Operating Margin'),
         description:
-            'Operating margin is ${operatingMargin.toStringAsFixed(1)}%. Focus on cost reduction or price optimization.',
+            context.tr('Operating margin is {p0}%. Focus on cost reduction or price optimization.', args: {'p0': operatingMargin.toStringAsFixed(1)}),
         icon: Icons.warning_amber,
         color: AppColors.ink,
         severity: InsightSeverity.warning,
@@ -338,9 +339,9 @@ class ProfitLossReportPage extends StatelessWidget {
 
     if (grossMargin < 20) {
       insights.add(InsightCard(
-        title: 'Low Gross Margin',
+        title: context.tr('Low Gross Margin'),
         description:
-            'Gross margin of ${grossMargin.toStringAsFixed(1)}% is below healthy threshold. Review product pricing and supplier costs.',
+            context.tr('Gross margin of {p0}% is below healthy threshold. Review product pricing and supplier costs.', args: {'p0': grossMargin.toStringAsFixed(1)}),
         icon: Icons.inventory,
         color: AppColors.ink,
         severity: InsightSeverity.warning,
@@ -352,9 +353,9 @@ class ProfitLossReportPage extends StatelessWidget {
     final expenseRatio = revenue > 0 ? (expenses / revenue) * 100 : 0.0;
     if (expenseRatio > 30) {
       insights.add(InsightCard(
-        title: 'High Expense Ratio',
+        title: context.tr('High Expense Ratio'),
         description:
-            'Expenses consume ${expenseRatio.toStringAsFixed(1)}% of revenue. Identify cost savings opportunities.',
+            context.tr('Expenses consume {p0}% of revenue. Identify cost savings opportunities.', args: {'p0': expenseRatio.toStringAsFixed(1)}),
         icon: Icons.receipt,
         color: Color(0xFF15803D),
         severity: InsightSeverity.warning,
@@ -365,9 +366,9 @@ class ProfitLossReportPage extends StatelessWidget {
 
     if (cogs == 0 && revenue > 0) {
       insights.add(InsightCard(
-        title: 'Missing Cost Data',
+        title: context.tr('Missing Cost Data'),
         description:
-            'Cost of goods sold is not recorded for some sales. Profit calculations may be inaccurate.',
+            context.tr('Cost of goods sold is not recorded for some sales. Profit calculations may be inaccurate.'),
         icon: Icons.info_outline,
         color: Color(0xFF15803D),
         severity: InsightSeverity.info,
@@ -378,9 +379,9 @@ class ProfitLossReportPage extends StatelessWidget {
 
     if (insights.isEmpty && operatingResult > 0) {
       insights.add(InsightCard(
-        title: 'Profitable Operations',
+        title: context.tr('Profitable Operations'),
         description:
-            'Business is profitable with ${operatingMargin.toStringAsFixed(1)}% operating margin. Consider reinvestment or expansion.',
+            context.tr('Business is profitable with {p0}% operating margin. Consider reinvestment or expansion.', args: {'p0': operatingMargin.toStringAsFixed(1)}),
         icon: Icons.check_circle,
         color: Color(0xFF111111),
         severity: InsightSeverity.success,
@@ -388,7 +389,7 @@ class ProfitLossReportPage extends StatelessWidget {
     }
 
     return SectionCard(
-      title: 'Financial Insights',
+      title: context.tr('Financial Insights'),
       child: Column(children: insights),
     );
   }
@@ -468,7 +469,7 @@ class _PnLRow extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              label,
+              context.tr(label),
               style: GoogleFonts.manrope(
                 fontSize: 14,
                 fontWeight: isTotal ? FontWeight.w600 : FontWeight.w400,
@@ -477,7 +478,7 @@ class _PnLRow extends StatelessWidget {
             ),
           ),
           Text(
-            'TSh ${NumberFormat('#,##0.##').format(value.abs())}',
+            context.tr('TSh {p0}', args: {'p0': NumberFormat('#,##0.##').format(value.abs())}),
             style: GoogleFonts.manrope(
               fontSize: 14,
               fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
@@ -517,7 +518,7 @@ class _MarginGauge extends StatelessWidget {
     return Column(
       children: [
         Text(
-          label,
+          context.tr(label),
           style: GoogleFonts.manrope(
             fontSize: 12,
             color: Colors.grey.shade600,
@@ -550,7 +551,7 @@ class _MarginGauge extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Target: ${lowerIsBetter ? "≤" : "≥"}${benchmark.toStringAsFixed(0)}%',
+                  context.tr('Target: {p0}{p1}%', args: {'p0': lowerIsBetter ? "≤" : "≥", 'p1': benchmark.toStringAsFixed(0)}),
                   style: GoogleFonts.manrope(
                     fontSize: 9,
                     color: Colors.grey.shade500,

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -152,10 +153,10 @@ class _MarketButtonState extends State<MarketButton> {
       if (mounted) {
         showMarketNotice(
           context,
-          title: 'Action could not complete',
+          title: context.tr('Action could not complete'),
           message: error is StateError
               ? error.message.toString()
-              : 'Please try again. Your form is still available.',
+              : context.tr('Please try again. Your form is still available.'),
           type: MarketNoticeType.error,
         );
       }

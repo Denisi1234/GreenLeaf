@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -24,19 +25,18 @@ class ExpenseExportService {
     required AppStrings strings,
   }) async {
     final buffer = StringBuffer();
-    buffer.writeln(
-        'Title,Vendor,Category,Payment Method,Date,Amount,Tax,Total,Status,Notes');
+    buffer.writeln('Title,Vendor,Category,Payment Method,Date,Amount,Tax,Total,Status,Notes'.split(',').map(strings.text).map(_csvCell).join(','));
     for (final e in expenses) {
       final cells = <String>[
         e.title,
         e.vendor,
         e.category,
-        e.paymentMethod,
+        strings.text(e.paymentMethod),
         DateFormat('yyyy-MM-dd').format(e.date),
         e.amount.toStringAsFixed(2),
         e.taxAmount.toStringAsFixed(2),
         e.totalWithTax.toStringAsFixed(2),
-        e.status.label,
+        strings.text(e.status.label),
         e.notes ?? '',
       ].map(_csvCell).join(',');
       buffer.writeln(cells);
@@ -69,12 +69,12 @@ class ExpenseExportService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('Expense Report',
+              pw.Text(context.tr('Expense Report'),
                   style: pw.TextStyle(
                       fontSize: 18, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 4),
               pw.Text(
-                  '${expenses.length} records · Total ${formatExpenseMoney(total)}',
+                  context.tr('{p0} records · Total {p1}', args: {'p0': expenses.length, 'p1': formatExpenseMoney(total)}),
                   style: const pw.TextStyle(
                       fontSize: 10, color: PdfColors.grey700)),
             ],
@@ -82,7 +82,7 @@ class ExpenseExportService {
         ),
         build: (ctx) => [
           pw.TableHelper.fromTextArray(
-            headers: const [
+            headers: [
               'Title',
               'Vendor',
               'Category',
@@ -92,18 +92,18 @@ class ExpenseExportService {
               'Tax',
               'Total',
               'Status'
-            ],
+            ].map(strings.text).toList(),
             data: expenses
                 .map((e) => [
                       e.title,
                       e.vendor,
                       e.category,
-                      e.paymentMethod,
+                      strings.text(e.paymentMethod),
                       DateFormat('yyyy-MM-dd').format(e.date),
                       formatExpenseMoney(e.amount),
                       formatExpenseMoney(e.taxAmount),
                       formatExpenseMoney(e.totalWithTax),
-                      e.status.label,
+                      strings.text(e.status.label),
                     ])
                 .toList(),
             headerStyle:

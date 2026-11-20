@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -16,7 +17,7 @@ class AboutAppPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const MarketPageHeader(title: 'About TrackMauzo'),
+             MarketPageHeader(title: context.tr('About TrackMauzo')),
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
@@ -55,7 +56,7 @@ class AboutAppPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'TrackMauzo',
+                            context.tr('TrackMauzo'),
                             style: GoogleFonts.manrope(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
@@ -64,7 +65,7 @@ class AboutAppPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Version 2.4.1',
+                            context.tr('Version 2.4.1'),
                             style: GoogleFonts.manrope(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -73,7 +74,7 @@ class AboutAppPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Smart, modern point of sale system designed to power retail shops, inventory, and sales effortlessly.',
+                            context.tr('Smart, modern point of sale system designed to power retail shops, inventory, and sales effortlessly.'),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.manrope(
                               fontSize: 13,
@@ -94,7 +95,7 @@ class AboutAppPage extends StatelessWidget {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Text(
-                                'Open Source Licenses',
+                                context.tr('Open Source Licenses'),
                                 style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -105,7 +106,7 @@ class AboutAppPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            '© 2026 TrackMauzo. All rights reserved.',
+                            context.tr('© 2026 TrackMauzo. All rights reserved.'),
                             style: GoogleFonts.manrope(
                               fontSize: 11,
                               color: const Color(0xFF94A3B8),

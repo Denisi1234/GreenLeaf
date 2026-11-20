@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -34,32 +35,32 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit role'),
+        title:  Text(context.tr('Edit role')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: titleController,
-              decoration: const InputDecoration(labelText: 'Role name'),
+              decoration:  InputDecoration(labelText: context.tr('Role name')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: subtitleController,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration:  InputDecoration(labelText: context.tr('Description')),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child:  Text(context.tr('Cancel')),
           ),
           ElevatedButton(
             onPressed: () {
               if (titleController.text.trim().isEmpty) return;
               Navigator.of(dialogContext).pop(true);
             },
-            child: const Text('Save'),
+            child:  Text(context.tr('Save')),
           ),
         ],
       ),
@@ -83,8 +84,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
       if (!mounted) return;
       showMarketNotice(
         context,
-        title: 'Role In Use',
-        message: 'Move staff to another role before deleting this one.',
+        title: context.tr('Role In Use'),
+        message: context.tr('Move staff to another role before deleting this one.'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -93,18 +94,18 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete role'),
+        title:  Text(context.tr('Delete role')),
         content:
-            Text('Delete the "${role.title}" role? This cannot be undone.'),
+            Text(context.tr('Delete the "{p0}" role? This cannot be undone.', args: {'p0': role.title})),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child:  Text(context.tr('Cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Delete'),
+            child:  Text(context.tr('Delete')),
           ),
         ],
       ),
@@ -130,12 +131,12 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
               child: Column(
                 children: [
                   MarketPageHeader(
-                    title: 'Role Not Found',
+                    title: context.tr('Role Not Found'),
                     onBack: () => Navigator.of(context).pop(),
                   ),
-                  const Expanded(
+                   Expanded(
                     child: Center(
-                      child: Text('The selected role does not exist.'),
+                      child: Text(context.tr('The selected role does not exist.')),
                     ),
                   ),
                 ],
@@ -162,20 +163,20 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                   showBorder: false,
                   actions: [
                     PopupMenuButton<String>(
-                      tooltip: 'Role actions',
+                      tooltip: context.tr('Role actions'),
                       onSelected: (value) {
                         if (value == 'rename') _renameRole(role);
                         if (value == 'delete') _deleteRole(role);
                       },
-                      itemBuilder: (context) => const [
+                      itemBuilder: (context) =>  [
                         PopupMenuItem<String>(
                           value: 'rename',
-                          child: Text('Edit role details'),
+                          child: Text(context.tr('Edit role details')),
                         ),
                         PopupMenuItem<String>(
                           value: 'delete',
                           child: Text(
-                            'Delete role',
+                            context.tr('Delete role'),
                             style: TextStyle(color: AppColors.danger),
                           ),
                         ),
@@ -190,10 +191,10 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
+                         Padding(
                           padding: EdgeInsets.only(bottom: 2),
                           child: Text(
-                            'Permissions',
+                            context.tr('Permissions'),
                             style: TextStyle(
                               color: Color(0xFF111111),
                               fontSize: 18,
@@ -242,7 +243,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Assigned Staff (${assignedStaff.length})',
+                                context.tr('Assigned Staff ({p0})', args: {'p0': assignedStaff.length}),
                                 style: const TextStyle(
                                   color: Color(0xFF111111),
                                   fontSize: 16.5,
@@ -252,8 +253,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                             ),
                             GestureDetector(
                               onTap: () => _showManageStaff(role),
-                              child: const Text(
-                                'Manage',
+                              child:  Text(
+                                context.tr('Manage'),
                                 style: TextStyle(
                                   color: AppColors.primary,
                                   fontSize: 14.5,
@@ -265,13 +266,13 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                         ),
                         const SizedBox(height: 12),
                         if (assignedStaff.isEmpty)
-                          const MarketSurfaceCard(
+                           MarketSurfaceCard(
                             padding: EdgeInsets.all(14),
                             backgroundColor: Color(0xFFF7FAFF),
                             borderColor: Color(0xFFF3F4F6),
                             radius: 8,
                             child: Text(
-                              'No staff assigned to this role yet.',
+                              context.tr('No staff assigned to this role yet.'),
                               style: TextStyle(
                                 color: Color(0xFF5C667A),
                                 fontSize: 13.5,
@@ -493,9 +494,9 @@ class _PermissionNote extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+           Expanded(
             child: Text(
-              'Changes to permissions will apply to all staff assigned to this role.',
+              context.tr('Changes to permissions will apply to all staff assigned to this role.'),
               style: TextStyle(
                 color: Color(0xFF5C667A),
                 fontSize: 13.5,
@@ -525,8 +526,8 @@ class _ManageStaffSheet extends StatelessWidget {
     if (otherRoles.isEmpty) {
       showMarketNotice(
         context,
-        title: 'No Other Roles',
-        message: 'Create another role before moving staff.',
+        title: context.tr('No Other Roles'),
+        message: context.tr('Create another role before moving staff.'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -537,7 +538,7 @@ class _ManageStaffSheet extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Move Staff Member'),
+          title:  Text(context.tr('Move Staff Member')),
           content: StatefulBuilder(
             builder: (context, setState) {
               return DropdownButtonFormField<String>(
@@ -556,14 +557,14 @@ class _ManageStaffSheet extends StatelessWidget {
                     selectedRoleId = value;
                   });
                 },
-                decoration: const InputDecoration(labelText: 'Target role'),
+                decoration:  InputDecoration(labelText: context.tr('Target role')),
               );
             },
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              child:  Text(context.tr('Cancel')),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -572,12 +573,12 @@ class _ManageStaffSheet extends StatelessWidget {
                   Navigator.of(dialogContext).pop();
                   showMarketNotice(
                     context,
-                    title: 'Staff Updated',
-                    message: '${staff.name} was moved to another role.',
+                    title: context.tr('Staff Updated'),
+                    message: context.tr('{p0} was moved to another role.', args: {'p0': staff.name}),
                   );
                 }
               },
-              child: const Text('Move'),
+              child:  Text(context.tr('Move')),
             ),
           ],
         );
@@ -599,8 +600,8 @@ class _ManageStaffSheet extends StatelessWidget {
 
     showMarketNotice(
       context,
-      title: 'Staff Added',
-      message: '${result.name} was added to $role.title.',
+      title: context.tr('Staff Added'),
+      message: context.tr('{p0} was added to {p1}.title.', args: {'p0': result.name, 'p1': role}),
     );
   }
 
@@ -638,7 +639,7 @@ class _ManageStaffSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                '${role.title} Staff',
+                context.tr('{p0} Staff', args: {'p0': role.title}),
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -647,7 +648,7 @@ class _ManageStaffSheet extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Add staff members to this role or move existing staff between roles.',
+                context.tr('Add staff members to this role or move existing staff between roles.'),
                 style: TextStyle(
                   fontSize: 14,
                   color: const Color(0xFF6B7280).withValues(alpha: 0.96),
@@ -659,7 +660,7 @@ class _ManageStaffSheet extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => _addStaff(context),
                   icon: const Icon(Icons.person_add_alt_1_rounded),
-                  label: const Text('Add Staff to Role'),
+                  label:  Text(context.tr('Add Staff to Role')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -671,8 +672,8 @@ class _ManageStaffSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Assigned Staff',
+               Text(
+                context.tr('Assigned Staff'),
                 style: TextStyle(
                   fontSize: 16.5,
                   fontWeight: FontWeight.w700,
@@ -681,13 +682,13 @@ class _ManageStaffSheet extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               if (assignedStaff.isEmpty)
-                const MarketSurfaceCard(
+                 MarketSurfaceCard(
                   padding: EdgeInsets.all(16),
                   backgroundColor: Color(0xFFF8FAFD),
                   borderColor: Color(0xFFE4E8EF),
                   radius: 8,
                   child: Text(
-                    'No staff assigned to this role yet.',
+                    context.tr('No staff assigned to this role yet.'),
                     style: TextStyle(
                       color: Color(0xFF6B7280),
                       fontSize: 14,
@@ -708,8 +709,8 @@ class _ManageStaffSheet extends StatelessWidget {
                         if (context.mounted) {
                           showMarketNotice(
                             context,
-                            title: 'Staff Removed',
-                            message: '${staff.name} was removed from staff.',
+                            title: context.tr('Staff Removed'),
+                            message: context.tr('{p0} was removed from staff.', args: {'p0': staff.name}),
                           );
                         }
                       },
@@ -719,7 +720,7 @@ class _ManageStaffSheet extends StatelessWidget {
               if (otherStaff.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'Other Staff (${otherStaff.length})',
+                  context.tr('Other Staff ({p0})', args: {'p0': otherStaff.length}),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -740,8 +741,8 @@ class _ManageStaffSheet extends StatelessWidget {
                         if (context.mounted) {
                           showMarketNotice(
                             context,
-                            title: 'Staff Removed',
-                            message: '${staff.name} was removed from staff.',
+                            title: context.tr('Staff Removed'),
+                            message: context.tr('{p0} was removed from staff.', args: {'p0': staff.name}),
                           );
                         }
                       },
@@ -835,14 +836,14 @@ class _StaffMemberTile extends StatelessWidget {
                 onDelete();
               }
             },
-            itemBuilder: (context) => const [
+            itemBuilder: (context) =>  [
               PopupMenuItem<String>(
                 value: 'move',
-                child: Text('Move to another role'),
+                child: Text(context.tr('Move to another role')),
               ),
               PopupMenuItem<String>(
                 value: 'delete',
-                child: Text('Remove staff'),
+                child: Text(context.tr('Remove staff')),
               ),
             ],
           ),

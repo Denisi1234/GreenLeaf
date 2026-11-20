@@ -85,28 +85,34 @@ class DailySalesReportService {
       }
     }
     if (ownerName.isEmpty) {
-      ownerName = 'Mkuu';
+      ownerName = store.profile.storeName.trim().isNotEmpty
+          ? store.profile.storeName.trim()
+          : 'Mkuu';
     }
+
+    final storeTitle = store.profile.storeName.trim().isNotEmpty
+        ? ' ya ${store.profile.storeName.trim()}'
+        : '';
 
     // Comparison against last week
     String comparisonText;
     if (lastWeekSales <= 0 && thisWeekSales <= 0) {
       comparisonText = '';
     } else if (lastWeekSales <= 0) {
-      comparisonText = ' (wiki iliyopita haikuwa na mauzo yaliyorekodiwa)';
+      comparisonText = '\n📈 Mauzo ya wiki hii: TSh $thisWeekFormatted (wiki iliyopita haikuwa na mauzo yaliyorekodiwa)';
     } else if (thisWeekSales >= lastWeekSales) {
       final diff =
           currencyFormat.format((thisWeekSales - lastWeekSales).round());
       comparisonText =
-          ', yameongezeka kutoka TSH $lastWeekFormatted wiki iliyopita (+TSH $diff)';
+          '\n📈 Mauzo ya wiki hii: TSh $thisWeekFormatted (yameongezeka kwa +TSh $diff kutoka wiki iliyopita: TSh $lastWeekFormatted)';
     } else {
       final diff =
           currencyFormat.format((lastWeekSales - thisWeekSales).round());
       comparisonText =
-          ', yamepungua kutoka TSH $lastWeekFormatted wiki iliyopita (-TSH $diff)';
+          '\n📉 Mauzo ya wiki hii: TSh $thisWeekFormatted (yamepungua kwa -TSh $diff kutoka wiki iliyopita: TSh $lastWeekFormatted)';
     }
 
-    return 'Habari ya jioni $ownerName, mauzo yako ya leo ni TSH $todayFormatted. Mauzo ya wiki hii ni TSH $thisWeekFormatted$comparisonText. Asante kwa kutumia TrackMauzo.';
+    return 'Habari $ownerName, muhtasari wa mauzo ya leo$storeTitle ni TSh $todayFormatted.$comparisonText\nAsante kwa kutumia TrackMauzo.';
   }
 
   /// Sends the daily SMS report to the owner's phone.
@@ -147,36 +153,32 @@ class DailySalesReportService {
     }
 
     final api = store.cloudApi;
-    if (api == null) {
-      return const DailySmsResult(
-        success: false,
-        message:
-            'Kutuma ripoti kwa SMS kunahitaji muunganisho wa mtandao na seva.',
-      );
-    }
-
+    final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
     final smsText = buildDailyReportMessage(store: store);
-    bool sent;
-    try {
-      sent = await api.sendSms(phone: phone, text: smsText);
-    } catch (_) {
-      sent = false;
+
+    // If cloud API is available, try server SMS first
+    if (api != null) {
+      try {
+        final sent = await api.sendSms(phone: cleanPhone, text: smsText);
+        if (sent) {
+          return DailySmsResult(
+            success: true,
+            message: 'Ripoti ya leo imetumwa kwa SMS kwenda $cleanPhone kwa mafanikio.',
+            smsText: smsText,
+          );
+        }
+      } catch (_) {
+        // Fall back below
+      }
     }
 
-    if (sent) {
-      return DailySmsResult(
-        success: true,
-        message: 'Ripoti ya leo imetumwa kwa SMS kwenda $phone kwa mafanikio.',
-        smsText: smsText,
-      );
-    } else {
-      return DailySmsResult(
-        success: false,
-        message:
-            'Kushindwa kutuma SMS kupitia seva. Tafadhali thibitisha salio au mtandao.',
-        smsText: smsText,
-      );
-    }
+    // Local device SMS launcher fallback
+    return DailySmsResult(
+      success: true,
+      message: 'Ujumbe wa ripoti ya leo umeandaliwa kwa $cleanPhone.',
+      smsText: smsText,
+      targetPhone: cleanPhone,
+    );
   }
 }
 
@@ -185,9 +187,11 @@ class DailySmsResult {
     required this.success,
     required this.message,
     this.smsText,
+    this.targetPhone,
   });
 
   final bool success;
   final String message;
   final String? smsText;
+  final String? targetPhone;
 }

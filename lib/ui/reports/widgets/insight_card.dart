@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -55,7 +56,7 @@ class InsightCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        title,
+                        context.tr(title),
                         style: AppTypography.bodySmall.copyWith(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -74,7 +75,7 @@ class InsightCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                       child: Text(
-                        severity.label,
+                        context.tr(severity.label),
                         style: AppTypography.helperText.copyWith(
                           fontSize: 9,
                           fontWeight: FontWeight.w800,
@@ -206,7 +207,7 @@ class InsightList extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            title,
+            context.tr(title),
             style: AppTypography.sectionHeader.copyWith(fontSize: 15),
           ),
         ),
@@ -277,7 +278,7 @@ class KPICard extends StatelessWidget {
                   ],
                   Expanded(
                     child: Text(
-                      label,
+                      context.tr(label),
                       style: AppTypography.label.copyWith(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

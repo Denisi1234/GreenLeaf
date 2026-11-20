@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../business_category_config.dart';
@@ -95,9 +96,9 @@ class _PaymentCashReceivedSheetState extends State<PaymentCashReceivedSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Cash received', style: AppTypography.h2),
+                Text(context.tr('Cash received'), style: AppTypography.h2),
                 const SizedBox(height: 6),
-                Text('Enter the amount handed to you by the customer.',
+                Text(context.tr('Enter the amount handed to you by the customer.'),
                     style: AppTypography.bodySmall),
                 const SizedBox(height: 24),
                 TextField(
@@ -109,8 +110,8 @@ class _PaymentCashReceivedSheetState extends State<PaymentCashReceivedSheet> {
                   onChanged: (value) =>
                       setState(() => _currentInput = _parseAmount(value)),
                   style: AppTypography.h2,
-                  decoration: const InputDecoration(
-                    labelText: 'Amount received',
+                  decoration:  InputDecoration(
+                    labelText: context.tr('Amount received'),
                     prefixText: 'TSh ',
                     hintText: '0',
                   ),
@@ -123,8 +124,8 @@ class _PaymentCashReceivedSheetState extends State<PaymentCashReceivedSheet> {
                     for (final amount in suggestions)
                       ActionChip(
                         label: Text(amount == widget.grandTotal
-                            ? 'Exact amount'
-                            : 'TSh ${_format(amount)}'),
+                            ? context.tr('Exact amount')
+                            : context.tr('TSh {p0}', args: {'p0': _format(amount)})),
                         onPressed: () => setState(() {
                           _currentInput = amount;
                           _controller.text = amount.toStringAsFixed(0);
@@ -134,13 +135,13 @@ class _PaymentCashReceivedSheetState extends State<PaymentCashReceivedSheet> {
                 ),
                 const SizedBox(height: 24),
                 _CashSummaryRow(
-                  label: 'Total due',
+                  label: context.tr('Total due'),
                   value: 'TSh ${_format(widget.grandTotal)}',
                   valueColor: AppColors.ink,
                 ),
                 const SizedBox(height: 16),
                 _CashSummaryRow(
-                  label: remaining > 0 ? 'Still to receive' : 'Change due',
+                  label: remaining > 0 ? context.tr('Still to receive') : context.tr('Change due'),
                   value: 'TSh ${_format(remaining > 0 ? remaining : change)}',
                   valueColor: remaining > 0
                       ? AppColors.dangerDeep
@@ -155,7 +156,7 @@ class _PaymentCashReceivedSheetState extends State<PaymentCashReceivedSheet> {
                       : null,
                   style: FilledButton.styleFrom(
                       backgroundColor: AppColors.successDeep),
-                  child: const Text('Confirm cash amount'),
+                  child:  Text(context.tr('Confirm cash amount')),
                 ),
               ],
             ),

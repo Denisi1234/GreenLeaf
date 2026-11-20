@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../service/pos_suspended_sale_model.dart';
 import '../../../utils/currency_formatter.dart';
@@ -67,27 +68,27 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Sale summary', style: AppTypography.sectionHeader),
+          Text(context.tr('Sale summary'), style: AppTypography.sectionHeader),
           const SizedBox(height: 4),
-          Text(summaryLabel(category, itemTypes, unitCount),
+          Text(context.tr('{p0} items • {p1} units', args: {'p0': itemTypes, 'p1': unitCount}),
               style: AppTypography.label),
           const SizedBox(height: 20),
           _PaymentSummaryRow(
-              label: 'Subtotal',
+              label: context.tr('Subtotal'),
               value: 'TSh $subtotal',
               valueColor: AppColors.ink),
           const SizedBox(height: 10),
           _PaymentSummaryRow(
-              label: 'Tax', value: 'TSh $tax', valueColor: AppColors.textBody),
+              label: context.tr('Tax'), value: 'TSh $tax', valueColor: AppColors.textBody),
           if (discount != null) ...[
             const SizedBox(height: 10),
             _PaymentSummaryRow(
-                label: 'Discount',
+                label: context.tr('Discount'),
                 value: '− TSh $discount',
                 valueColor: AppColors.successDeep),
           ],
           const Divider(height: 32, color: AppColors.border),
-          Text('Total due', style: AppTypography.label),
+          Text(context.tr('Total due'), style: AppTypography.label),
           const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
@@ -95,7 +96,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
-                'TSh $grandTotal',
+                context.tr('TSh {p0}', args: {'p0': grandTotal}),
                 style: AppTypography.h1.copyWith(fontSize: 30),
               ),
             ),
@@ -109,11 +110,11 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
                 onPressed: onAddDiscount,
                 icon: const Icon(Icons.discount_outlined, size: 18),
                 label:
-                    Text(discount == null ? 'Add discount' : 'Edit discount'),
+                    Text(discount == null ? context.tr('Add discount') : context.tr('Edit discount')),
               ),
               if (discount != null)
                 IconButton(
-                  tooltip: 'Remove discount',
+                  tooltip: context.tr('Remove discount'),
                   onPressed: onRemoveDiscount,
                   icon: const Icon(Icons.close_rounded,
                       color: AppColors.dangerDeep),
@@ -121,7 +122,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
             ],
           ),
           const Divider(height: 32, color: AppColors.border),
-          Text('Payment method', style: AppTypography.sectionHeader),
+          Text(context.tr('Payment method'), style: AppTypography.sectionHeader),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -129,7 +130,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
             children: [
               for (final method in ['Cash', 'Card', 'Mobile Money'])
                 ChoiceChip(
-                  label: Text(method),
+                  label: Text(context.tr(method)),
                   avatar: Icon(
                     switch (method) {
                       'Cash' => Icons.payments_outlined,
@@ -160,12 +161,12 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
               onPressed: onEnterCash,
               icon: const Icon(Icons.payments_outlined, size: 19),
               label: Text(cashReceived == null
-                  ? 'Enter cash received'
-                  : 'Cash received: TSh $cashReceived'),
+                  ? context.tr('Enter cash received')
+                  : context.tr('Cash received: TSh {p0}', args: {'p0': cashReceived})),
             ),
             TextButton(
               onPressed: onExactCash,
-              child: const Text('Use exact amount'),
+              child:  Text(context.tr('Use exact amount')),
             ),
             if (cashReceived != null)
               Container(
@@ -175,7 +176,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: _PaymentSummaryRow(
-                  label: 'Change due',
+                  label: context.tr('Change due'),
                   value: 'TSh ${changeDue ?? '0'}',
                   valueColor: AppColors.successDeep,
                   isBold: true,
@@ -183,7 +184,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
               ),
           ] else
             Text(
-              'Confirm the $paymentMethod payment on your terminal or phone before completing this sale.',
+              context.tr('Confirm the {p0} payment on your terminal or phone before completing this sale.', args: {'p0': paymentMethod}),
               style: AppTypography.bodySmall
                   .copyWith(color: AppColors.textMuted, height: 1.5),
             ),
@@ -200,7 +201,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
           TextButton.icon(
             onPressed: onRecordDebit,
             icon: const Icon(Icons.person_outline_rounded, size: 19),
-            label: const Text('Record as customer credit'),
+            label:  Text(context.tr('Record as customer credit')),
           ),
         ],
       ),

@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
@@ -379,14 +380,14 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             child: Column(
               children: [
                 MarketPageHeader(
-                  title: widget.report.title,
-                  subtitle: 'Loading all stores…',
+                  title: context.tr(widget.report.title),
+                  subtitle: context.tr('Loading all stores…'),
                   transparentBackButton: true,
                   onBack: () => Navigator.of(context).maybePop(),
                 ),
-                const Expanded(
+                 Expanded(
                   child: MarketLoadingView(
-                    message: 'Aggregating Store Analytics…',
+                    message: context.tr('Aggregating Store Analytics…'),
                     subMessage:
                         'Retrieving real-time data across all store branches',
                   ),
@@ -403,8 +404,8 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             child: Column(
               children: [
                 MarketPageHeader(
-                  title: widget.report.title,
-                  subtitle: 'Could not load stores',
+                  title: context.tr(widget.report.title),
+                  subtitle: context.tr('Could not load stores'),
                   transparentBackButton: true,
                   onBack: () => Navigator.of(context).maybePop(),
                 ),
@@ -421,7 +422,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                                   .copyWith(color: AppColors.danger)),
                           const SizedBox(height: 16),
                           MarketButton(
-                            label: 'Retry',
+                            label: context.tr('Retry'),
                             icon: Icons.refresh_rounded,
                             isFullWidth: false,
                             onTap: _loadSnapshots,
@@ -478,12 +479,12 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
           [for (final index in visible) index < row.length ? row[index] : null]
       ],
       note: table.note,
-    );
+    ).localized(context.strings);
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: Text(report.title,
+        title: Text(context.tr(report.title),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.sectionHeader),
@@ -568,7 +569,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                 const SizedBox(width: 8),
               ],
               Text(
-                'Export',
+                context.tr('Export'),
                 style: AppTypography.label.copyWith(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -595,12 +596,12 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Export report',
+                Text(context.tr('Export report'),
                     style: AppTypography.sectionHeader
                         .copyWith(fontSize: 18, color: AppColors.ink)),
                 const SizedBox(height: 4),
                 Text(
-                  '${widget.report.title} • ${table.rows.length} ${table.rows.length == 1 ? 'record' : 'records'}',
+                  '${context.tr(widget.report.title)} • ${table.rows.length} ${context.tr(table.rows.length == 1 ? 'record' : 'records')}',
                   style: AppTypography.bodySmall
                       .copyWith(color: AppColors.textMuted),
                 ),
@@ -608,8 +609,8 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                 _sheetSectionLabel('Download to device'),
                 _sheetAction(
                   icon: Icons.table_view_rounded,
-                  title: 'CSV spreadsheet',
-                  subtitle: 'Comma separated values',
+                  title: context.tr('CSV spreadsheet'),
+                  subtitle: context.tr('Comma separated values'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _triggerExport(table, ExportFormat.csv, save: true);
@@ -617,8 +618,8 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                 ),
                 _sheetAction(
                   icon: Icons.grid_on_rounded,
-                  title: 'Excel workbook',
-                  subtitle: 'Microsoft Excel (.xls)',
+                  title: context.tr('Excel workbook'),
+                  subtitle: context.tr('Microsoft Excel (.xls)'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _triggerExport(table, ExportFormat.excel, save: true);
@@ -626,15 +627,15 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                 ),
                 _sheetAction(
                   icon: Icons.picture_as_pdf_outlined,
-                  title: 'PDF document',
-                  subtitle: 'Printable, formatted report',
+                  title: context.tr('PDF document'),
+                  subtitle: context.tr('Printable, formatted report'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     _triggerExport(table, ExportFormat.pdf, save: true);
                   },
                 ),
                 const SizedBox(height: 16),
-                _sheetSectionLabel('Share'),
+                _sheetSectionLabel(context.tr('Share')),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -663,11 +664,11 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _sheetSectionLabel('More'),
+                _sheetSectionLabel(context.tr('More')),
                 _sheetAction(
                   icon: Icons.copy_all_rounded,
-                  title: 'Copy table',
-                  subtitle: 'Copy all matching rows as CSV',
+                  title: context.tr('Copy table'),
+                  subtitle: context.tr('Copy all matching rows as CSV'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     ReportExportService.copyCsv(context, table);
@@ -675,16 +676,17 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                 ),
                 _sheetAction(
                   icon: Icons.print_outlined,
-                  title: 'Print',
-                  subtitle: 'Open the system print dialog',
+                  title: context.tr('Print'),
+                  subtitle: context.tr('Open the system print dialog'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
                     Printing.layoutPdf(
                       onLayout: (_) => ReportExportService.generatePdf(
                         table,
-                        widget.report.title,
+                        context.tr(widget.report.title),
                         _range,
                         widget.report.isSnapshot,
+                        languageCode: context.strings.languageCode,
                       ),
                     );
                   },
@@ -706,7 +708,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         await ReportExportService.saveReport(
           context: context,
           table: table,
-          title: widget.report.title,
+          title: context.tr(widget.report.title),
           format: format,
           range: _range,
           isSnapshot: widget.report.isSnapshot,
@@ -715,7 +717,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         await ReportExportService.exportReport(
           context: context,
           table: table,
-          title: widget.report.title,
+          title: context.tr(widget.report.title),
           format: format,
           range: _range,
           isSnapshot: widget.report.isSnapshot,
@@ -828,7 +830,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Show columns',
+                              context.tr('Show columns'),
                               style: AppTypography.sectionHeader
                                   .copyWith(fontSize: 17, color: AppColors.ink),
                             ),
@@ -838,7 +840,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                               setSheetState(() => _hiddenColumns.clear());
                               setState(() {});
                             },
-                            child: const Text('Reset'),
+                            child:  Text(context.tr('Reset')),
                           ),
                         ],
                       ),
@@ -846,7 +848,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                     const Divider(height: 1),
                     if (_hasCostProfitColumns(table))
                       SwitchListTile(
-                        title: const Text('Show cost and profit'),
+                        title:  Text(context.tr('Show cost and profit')),
                         value: !_costProfitHidden(table),
                         onChanged: (show) {
                           setSheetState(() {
@@ -880,7 +882,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                                 setState(() {});
                               },
                               title: Text(
-                                column.label,
+                                context.tr(column.label),
                                 style: AppTypography.bodySmall
                                     .copyWith(color: AppColors.ink),
                               ),
@@ -917,13 +919,13 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
               Expanded(
                 child: Text(
                   widget.report.isSnapshot
-                      ? 'Current records'
-                      : 'Report results',
+                      ? context.tr('Current records')
+                      : context.tr('Report results'),
                   style: AppTypography.sectionHeader,
                 ),
               ),
               Text(
-                '${matchingRows.length} ${matchingRows.length == 1 ? 'record' : 'records'}',
+                '${matchingRows.length} ${context.tr(matchingRows.length == 1 ? 'record' : 'records')}',
                 style: AppTypography.label,
               ),
             ],
@@ -959,7 +961,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Key Metrics',
+                Text(context.tr('Key Metrics'),
                     style: AppTypography.sectionHeader
                         .copyWith(fontSize: 15, color: AppColors.ink)),
                 const SizedBox(height: 12),
@@ -1042,7 +1044,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
     return TrendChart(
       points: points,
       maxValue: maxValue,
-      label: table.columns[index].label,
+      label: context.tr(table.columns[index].label),
       color: AppColors.successDeep,
     );
   }
@@ -1064,13 +1066,13 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             Expanded(
               child: Text(
                 totalRows == 0
-                    ? 'No records'
-                    : '${page * _pageSize + 1}–${page * _pageSize + pageRowsCount} of $totalRows',
+                    ? context.tr('No records')
+                    : context.tr('{p0}–{p1} of {p2}', args: {'p0': page * _pageSize + 1, 'p1': page * _pageSize + pageRowsCount, 'p2': totalRows}),
                 style: AppTypography.label,
               ),
             ),
             Tooltip(
-              message: 'Rows per page',
+              message: context.tr('Rows per page'),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int>(
                   value: _pageSize,
@@ -1091,14 +1093,14 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             ),
             const SizedBox(width: 8),
             IconButton(
-              tooltip: 'Previous page',
+              tooltip: context.tr('Previous page'),
               onPressed:
                   page == 0 ? null : () => setState(() => _page = page - 1),
               icon: const Icon(Icons.chevron_left_rounded),
             ),
             Text('${page + 1}/${lastPage + 1}', style: AppTypography.label),
             IconButton(
-              tooltip: 'Next page',
+              tooltip: context.tr('Next page'),
               onPressed: page == lastPage
                   ? null
                   : () => setState(() => _page = page + 1),
@@ -1115,7 +1117,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
         child: Column(
           children: [
             MarketPageHeader(
-              title: widget.report.title,
+              title: context.tr(widget.report.title),
               transparentBackButton: true,
               onBack: () => Navigator.of(context).pop(),
             ),
@@ -1136,7 +1138,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                             size: 44, color: AppColors.warning),
                       ),
                       const SizedBox(height: 20),
-                      Text('Report Unavailable',
+                      Text(context.tr('Report Unavailable'),
                           style: AppTypography.h3.copyWith(fontSize: 20)),
                       const SizedBox(height: 10),
                       Text(
@@ -1147,7 +1149,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                       ),
                       const SizedBox(height: 20),
                       MarketButton(
-                        label: 'Back to Reports',
+                        label: context.tr('Back to Reports'),
                         icon: Icons.arrow_back_rounded,
                         isFullWidth: false,
                         onTap: () => Navigator.of(context).pop(),

@@ -2,6 +2,7 @@
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:track_mauzo/service/pos_local_store.dart';
 
 import 'ui/auth/auth_wrapper.dart';
@@ -14,6 +15,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    Intl.defaultLocale = store.languageCode;
     const baseInk = AppColors.ink;
     final baseTextTheme = Typography.material2021().black.apply(
           bodyColor: baseInk,

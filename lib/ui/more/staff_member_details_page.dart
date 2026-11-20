@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 import '../widgets/app_image.dart';
 
@@ -107,29 +108,29 @@ class StaffMemberDetailsPage extends StatelessWidget {
                           if (saved == null || !context.mounted) return;
                           showMarketNotice(
                             context,
-                            title: 'Staff Updated',
-                            message: '${saved.name} was updated successfully.',
+                            title: context.tr('Staff Updated'),
+                            message: context.tr('{p0} was updated successfully.', args: {'p0': saved.name}),
                           );
                         },
                         icon: const Icon(Icons.edit_outlined,
                             color: AppColors.ink),
                       ),
                       PopupMenuButton<String>(
-                        tooltip: 'More actions',
+                        tooltip: context.tr('More actions'),
                         onSelected: (value) async {
                           if (value == 'delete') {
                             final confirmed = await showDialog<bool>(
                               context: context,
                               builder: (dialogContext) => AlertDialog(
-                                title: const Text('Remove staff member'),
+                                title:  Text(context.tr('Remove staff member')),
                                 content: Text(
-                                  'Remove ${member.name} from this store? This cannot be undone.',
+                                  context.tr('Remove {p0} from this store? This cannot be undone.', args: {'p0': member.name}),
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.of(dialogContext).pop(false),
-                                    child: const Text('Cancel'),
+                                    child:  Text(context.tr('Cancel')),
                                   ),
                                   TextButton(
                                     onPressed: () =>
@@ -137,7 +138,7 @@ class StaffMemberDetailsPage extends StatelessWidget {
                                     style: TextButton.styleFrom(
                                       foregroundColor: AppColors.danger,
                                     ),
-                                    child: const Text('Remove'),
+                                    child:  Text(context.tr('Remove')),
                                   ),
                                 ],
                               ),
@@ -155,16 +156,16 @@ class StaffMemberDetailsPage extends StatelessWidget {
                           if (!context.mounted) return;
                           showMarketNotice(
                             context,
-                            title: 'Status Updated',
+                            title: context.tr('Status Updated'),
                             message:
-                                '${member.name} is now ${status.label.toLowerCase()}.',
+                                context.tr('{p0} is now {p1}.', args: {'p0': member.name, 'p1': context.tr(status.label).toLowerCase()}),
                           );
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem<String>(
+                           PopupMenuItem<String>(
                             enabled: false,
                             child: Text(
-                              'SET STATUS',
+                              context.tr('SET STATUS'),
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
@@ -188,16 +189,16 @@ class StaffMemberDetailsPage extends StatelessWidget {
                                         : AppColors.textLight,
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(status.label),
+                                  Text(context.tr(status.label)),
                                 ],
                               ),
                             ),
                           ),
                           const PopupMenuDivider(),
-                          const PopupMenuItem<String>(
+                           PopupMenuItem<String>(
                             value: 'delete',
                             child: Text(
-                              'Remove staff member',
+                              context.tr('Remove staff member'),
                               style: TextStyle(color: AppColors.danger),
                             ),
                           ),
@@ -249,28 +250,28 @@ class StaffMemberDetailsPage extends StatelessWidget {
                           icon: Icons.work_outline_rounded,
                           rows: [
                             _InfoRowData(
-                              label: 'Employee number',
+                              label: context.tr('Employee number'),
                               value: member.employeeNumber.isEmpty
                                   ? 'Not assigned'
                                   : member.employeeNumber,
                               icon: Icons.badge_outlined,
                             ),
                             _InfoRowData(
-                              label: 'Job title',
+                              label: context.tr('Job title'),
                               value: member.jobTitle.isEmpty
                                   ? 'Not set'
                                   : member.jobTitle,
                               icon: Icons.workspace_premium_outlined,
                             ),
                             _InfoRowData(
-                              label: 'Department',
+                              label: context.tr('Department'),
                               value: member.department.isEmpty
                                   ? 'Not set'
                                   : member.department,
                               icon: Icons.apartment_outlined,
                             ),
                             _InfoRowData(
-                              label: 'Employment type',
+                              label: context.tr('Employment type'),
                               value: EmploymentType.fromValue(
                                           member.employmentType)
                                       ?.label ??
@@ -278,14 +279,14 @@ class StaffMemberDetailsPage extends StatelessWidget {
                               icon: Icons.assignment_ind_outlined,
                             ),
                             _InfoRowData(
-                              label: 'Hire date',
+                              label: context.tr('Hire date'),
                               value: member.hireDate.isEmpty
                                   ? 'Not set'
                                   : _formatDate(member.hireDate),
                               icon: Icons.calendar_today_outlined,
                             ),
                             _InfoRowData(
-                              label: 'Hourly rate',
+                              label: context.tr('Hourly rate'),
                               value: member.hourlyRate <= 0
                                   ? 'Not set'
                                   : 'TSh ${member.hourlyRate.toStringAsFixed(0)}',
@@ -314,21 +315,21 @@ class StaffMemberDetailsPage extends StatelessWidget {
                           icon: Icons.emergency_outlined,
                           rows: [
                             _InfoRowData(
-                              label: 'Name',
+                              label: context.tr('Name'),
                               value: member.emergencyContactName.isEmpty
                                   ? 'Not provided'
                                   : member.emergencyContactName,
                               icon: Icons.person_outline_rounded,
                             ),
                             _InfoRowData(
-                              label: 'Phone',
+                              label: context.tr('Phone'),
                               value: member.emergencyContactPhone.isEmpty
                                   ? 'Not provided'
                                   : member.emergencyContactPhone,
                               icon: Icons.phone_in_talk_outlined,
                             ),
                             _InfoRowData(
-                              label: 'Relationship',
+                              label: context.tr('Relationship'),
                               value: member.emergencyContactRelation.isEmpty
                                   ? 'Not provided'
                                   : member.emergencyContactRelation,
@@ -346,19 +347,19 @@ class StaffMemberDetailsPage extends StatelessWidget {
                           icon: Icons.history_rounded,
                           rows: [
                             _InfoRowData(
-                              label: 'Joined',
+                              label: context.tr('Joined'),
                               value: _formatDate(member.createdAt),
                               icon: Icons.login_rounded,
                             ),
                             _InfoRowData(
-                              label: 'Last updated',
+                              label: context.tr('Last updated'),
                               value: member.updatedAt.isEmpty
                                   ? _formatDate(member.createdAt)
                                   : _formatDate(member.updatedAt),
                               icon: Icons.update_rounded,
                             ),
                             _InfoRowData(
-                              label: 'Staff ID',
+                              label: context.tr('Staff ID'),
                               value: member.id,
                               icon: Icons.fingerprint_rounded,
                             ),
@@ -382,9 +383,9 @@ class StaffMemberDetailsPage extends StatelessWidget {
                             if (saved == null || !context.mounted) return;
                             showMarketNotice(
                               context,
-                              title: 'Staff Updated',
+                              title: context.tr('Staff Updated'),
                               message:
-                                  '${saved.name} was updated successfully.',
+                                  context.tr('{p0} was updated successfully.', args: {'p0': saved.name}),
                             );
                           },
                         ),
@@ -462,7 +463,7 @@ class _ProfileHero extends StatelessWidget {
                                   BorderRadius.circular(AppRadius.pill),
                             ),
                             child: Text(
-                              role?.title ?? 'No role assigned',
+                              role?.title ?? context.tr('No role assigned'),
                               style: const TextStyle(
                                 color: AppColors.primaryDeep,
                                 fontSize: 12,
@@ -496,7 +497,7 @@ class _ProfileHero extends StatelessWidget {
             children: [
               Expanded(
                 child: _HeroStat(
-                  label: 'Employee No.',
+                  label: context.tr('Employee No.'),
                   value: member.employeeNumber.isEmpty
                       ? '—'
                       : member.employeeNumber,
@@ -504,13 +505,13 @@ class _ProfileHero extends StatelessWidget {
               ),
               Expanded(
                 child: _HeroStat(
-                  label: 'Department',
+                  label: context.tr('Department'),
                   value: member.department.isEmpty ? '—' : member.department,
                 ),
               ),
               Expanded(
                 child: _HeroStat(
-                  label: 'Permissions',
+                  label: context.tr('Permissions'),
                   value: '${role?.permissions.length ?? 0}',
                 ),
               ),
@@ -675,7 +676,7 @@ class _AccessSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Login & Access', style: AppTypography.cardHeader),
+                child: Text(context.tr('Login & Access'), style: AppTypography.cardHeader),
               ),
               if (onOpenRole != null)
                 TextButton(
@@ -685,7 +686,7 @@ class _AccessSection extends StatelessWidget {
                     minimumSize: const Size(0, 32),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Manage role'),
+                  child:  Text(context.tr('Manage role')),
                 ),
             ],
           ),
@@ -694,14 +695,14 @@ class _AccessSection extends StatelessWidget {
             children: [
               Expanded(
                 child: _AccessTile(
-                  label: 'Username',
+                  label: context.tr('Username'),
                   value: member.username.isEmpty ? 'Not set' : member.username,
                   icon: Icons.alternate_email_rounded,
                 ),
               ),
               Expanded(
                 child: _AccessTile(
-                  label: 'Password',
+                  label: context.tr('Password'),
                   value: member.hasPassword ? 'Set' : 'Not set',
                   icon: Icons.lock_outline_rounded,
                   valueColor: member.hasPassword
@@ -713,7 +714,7 @@ class _AccessSection extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Permissions (${permissions.length})',
+            context.tr('Permissions ({p0})', args: {'p0': permissions.length}),
             style: AppTypography.helperText.copyWith(
               color: AppColors.textMuted,
               fontWeight: FontWeight.w700,
@@ -722,7 +723,7 @@ class _AccessSection extends StatelessWidget {
           const SizedBox(height: 8),
           if (permissions.isEmpty)
             Text(
-              'No permissions granted for this role.',
+              context.tr('No permissions granted for this role.'),
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.textMuted,
               ),
@@ -743,7 +744,7 @@ class _AccessSection extends StatelessWidget {
                         borderRadius: BorderRadius.zero,
                       ),
                       child: Text(
-                        permission,
+                        context.tr(permission),
                         style: const TextStyle(
                           color: AppColors.success,
                           fontSize: 11,
@@ -833,7 +834,7 @@ class _NotesSection extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text('Notes', style: AppTypography.cardHeader),
+              Text(context.tr('Notes'), style: AppTypography.cardHeader),
             ],
           ),
           const SizedBox(height: 10),

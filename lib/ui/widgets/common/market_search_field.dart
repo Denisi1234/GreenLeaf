@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../app_design.dart';
@@ -99,7 +100,7 @@ class MarketSearchField extends StatelessWidget {
                     size: 19,
                     color: AppColors.textLight,
                   ),
-                  tooltip: 'Clear search',
+                  tooltip: context.tr('Clear search'),
                   splashRadius: 18,
                 ),
               if (onScanTap != null)
@@ -112,7 +113,7 @@ class MarketSearchField extends StatelessWidget {
                       size: 20,
                       color: AppColors.primary,
                     ),
-                    tooltip: 'Scan barcode',
+                    tooltip: context.tr('Scan barcode'),
                     splashRadius: 18,
                   ),
                 ),

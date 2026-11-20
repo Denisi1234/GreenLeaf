@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -84,7 +85,7 @@ class DiscountsReportPage extends StatelessWidget {
   ) {
     return [
       _buildDiscountBreakdownCard(context, table),
-      _buildDiscountImpactCard(table),
+      _buildDiscountImpactCard(context, table),
       _buildInsightsCard(context, table),
     ];
   }
@@ -103,17 +104,17 @@ class DiscountsReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Discounts by Type',
+      title: context.tr('Discounts by Type'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Discount Amount',
+        label: context.tr('Discount Amount'),
         color: AppColors.ink,
       ),
     );
   }
 
-  Widget _buildDiscountImpactCard(ReportTable table) {
+  Widget _buildDiscountImpactCard(BuildContext context, ReportTable table) {
     final totalDiscounts = table.rows
         .fold<double>(0, (sum, row) => sum + (row[2] as num).toDouble());
     final totalSales = table.rows
@@ -124,21 +125,21 @@ class DiscountsReportPage extends StatelessWidget {
         : 0.0;
 
     return SectionCard(
-      title: 'Discount Impact Analysis',
+      title: context.tr('Discount Impact Analysis'),
       child: Column(
         children: [
           Row(
             children: [
               Expanded(
                 child: _DiscountStat(
-                  label: 'Total Discount Value',
+                  label: context.tr('Total Discount Value'),
                   value: 'TSh ${NumberFormat('#,##0').format(totalDiscounts)}',
                   color: AppColors.ink,
                 ),
               ),
               Expanded(
                 child: _DiscountStat(
-                  label: 'Discount Rate',
+                  label: context.tr('Discount Rate'),
                   value: totalSales > 0
                       ? '${((totalDiscounts / totalSales) * 100).toStringAsFixed(1)}%'
                       : '0%',
@@ -149,7 +150,7 @@ class DiscountsReportPage extends StatelessWidget {
               ),
               Expanded(
                 child: _DiscountStat(
-                  label: 'Avg Discount/Sale',
+                  label: context.tr('Avg Discount/Sale'),
                   value:
                       'TSh ${NumberFormat('#,##0.##').format(avgDiscountPerSale)}',
                   color: Color(0xFF15803D),
@@ -171,8 +172,7 @@ class DiscountsReportPage extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Discounts reduce gross margin. Track discount effectiveness by comparing '
-                      'discounted vs non-discounted sales conversion.',
+                      context.tr('Discounts reduce gross margin. Track discount effectiveness by comparing discounted vs non-discounted sales conversion.'),
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         color: Color(0xFF14532D),
@@ -202,9 +202,9 @@ class DiscountsReportPage extends StatelessWidget {
         totalDiscounts > 0 ? (topDiscountAmount / totalDiscounts) * 100 : 0.0;
 
     insights.add(InsightCard(
-      title: 'Most Used Discount',
+      title: context.tr('Most Used Discount'),
       description:
-          '"$topDiscountName" represents ${topDiscountShare.toStringAsFixed(1)}% of all discounts (TSh ${NumberFormat('#,##0').format(topDiscountAmount)})',
+          context.tr('"{p0}" represents {p1}% of all discounts (TSh {p2})', args: {'p0': topDiscountName, 'p1': topDiscountShare.toStringAsFixed(1), 'p2': NumberFormat('#,##0').format(topDiscountAmount)}),
       icon: Icons.local_offer,
       color: AppColors.ink,
       severity: InsightSeverity.info,
@@ -217,9 +217,9 @@ class DiscountsReportPage extends StatelessWidget {
 
     if (discountRate > 20) {
       insights.add(InsightCard(
-        title: 'High Discount Rate',
+        title: context.tr('High Discount Rate'),
         description:
-            'Discounts exceed 20% of sales. Evaluate if discounts are driving volume or eroding margins.',
+            context.tr('Discounts exceed 20% of sales. Evaluate if discounts are driving volume or eroding margins.'),
         icon: Icons.trending_down,
         color: AppColors.textMuted,
         severity: InsightSeverity.warning,
@@ -227,7 +227,7 @@ class DiscountsReportPage extends StatelessWidget {
     }
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }
@@ -258,7 +258,7 @@ class _DiscountStat extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          label,
+          context.tr(label),
           textAlign: TextAlign.center,
           style: GoogleFonts.manrope(
             fontSize: 11,

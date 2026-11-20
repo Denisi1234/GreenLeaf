@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import '../../l10n/app_strings.dart';
 
 import '../../service/expense_model.dart';
 import '../../service/pos_order_models.dart';
@@ -18,6 +19,19 @@ class ReportColumn {
   const ReportColumn(this.label, {this.money = false});
   final String label;
   final bool money;
+
+  Object? displayValue(Object? value, AppStrings strings) {
+    if (value is! String) return value;
+    // Names, descriptions and categories belong to the business. Only these
+    // system-defined values are translated for presentation and exports.
+    if (const {'Payment', 'Payment method'}.contains(label)) {
+      return strings.paymentMethod(value);
+    }
+    if (const {'Status', 'Day', 'Weekday', 'Section', 'Activity'}.contains(label)) {
+      return strings.text(value);
+    }
+    return value;
+  }
 }
 
 class ReportTable {
@@ -27,6 +41,13 @@ class ReportTable {
   final List<List<Object?>> rows;
   final int? chartColumn;
   final String? note;
+
+  ReportTable localized(AppStrings strings) => ReportTable(
+    [for (final column in columns) ReportColumn(strings.text(column.label), money: column.money)],
+    [for (final row in rows) [for (var i = 0; i < columns.length; i++) i < row.length ? columns[i].displayValue(row[i], strings) : null]],
+    chartColumn: chartColumn,
+    note: note == null ? null : strings.paragraph(note!),
+  );
 }
 
 class PosReportData {

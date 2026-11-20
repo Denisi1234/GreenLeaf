@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -77,7 +78,7 @@ class _ImportStatementPageState extends State<ImportStatementPage> {
                               border: Border.all(color: AppColors.border),
                             ),
                             child: Text(
-                              '2026-01-31, M-Pesa deposit, 150000\n2026-02-01, Supplier payment, -45000',
+                              context.tr('2026-01-31, M-Pesa deposit, 150000\n2026-02-01, Supplier payment, -45000'),
                               style: AppTypography.helperText.copyWith(
                                 color: AppColors.textBody,
                                 fontWeight: FontWeight.w600,
@@ -101,8 +102,8 @@ class _ImportStatementPageState extends State<ImportStatementPage> {
                             controller: _controller,
                             maxLines: 10,
                             minLines: 6,
-                            decoration: const InputDecoration(
-                              hintText: '2026-01-31, M-Pesa deposit, 150000',
+                            decoration:  InputDecoration(
+                              hintText: context.tr('2026-01-31, M-Pesa deposit, 150000'),
                               alignLabelWithHint: true,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.zero,

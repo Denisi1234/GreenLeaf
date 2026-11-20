@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -127,11 +128,11 @@ class SalesReportPage extends StatelessWidget {
         : trendPoints.map((p) => p.value).reduce((a, b) => a > b ? a : b);
 
     return SectionCard(
-      title: 'Daily Sales Trend',
+      title: context.tr('Daily Sales Trend'),
       child: TrendChart(
         points: trendPoints,
         maxValue: maxValue,
-        label: 'Sales',
+        label: context.tr('Sales'),
         color: Color(0xFF166534),
       ),
     );
@@ -159,9 +160,9 @@ class SalesReportPage extends StatelessWidget {
         );
 
     insights.add(InsightCard(
-      title: 'Peak Sales Day',
+      title: context.tr('Peak Sales Day'),
       description:
-          'Highest sales on ${DateFormat('EEEE, MMM d').format(topDay.key)} with TSh ${NumberFormat('#,##0').format(topDay.value.fold(0.0, (sum, s) => sum + s.order.total))}',
+          context.tr('Highest sales on {p0} with TSh {p1}', args: {'p0': DateFormat('EEEE, MMM d').format(topDay.key), 'p1': NumberFormat('#,##0').format(topDay.value.fold(0.0, (sum, s) => sum + s.order.total))}),
       icon: Icons.calendar_today,
       color: Color(0xFF166534),
       severity: InsightSeverity.info,
@@ -169,9 +170,9 @@ class SalesReportPage extends StatelessWidget {
 
     if (creditRatio > 0.3) {
       insights.add(InsightCard(
-        title: 'High Credit Sales',
+        title: context.tr('High Credit Sales'),
         description:
-            '${(creditRatio * 100).toStringAsFixed(1)}% of sales are on credit. Consider follow-up on outstanding balances.',
+            context.tr('{p0}% of sales are on credit. Consider follow-up on outstanding balances.', args: {'p0': (creditRatio * 100).toStringAsFixed(1)}),
         icon: Icons.credit_card,
         color: Color(0xFF15803D),
         severity: InsightSeverity.warning,
@@ -182,9 +183,9 @@ class SalesReportPage extends StatelessWidget {
 
     if (avgOrder < 500) {
       insights.add(InsightCard(
-        title: 'Low Average Order Value',
+        title: context.tr('Low Average Order Value'),
         description:
-            'Average order is TSh ${NumberFormat('#,##0').format(avgOrder)}. Consider upselling or bundle offers.',
+            context.tr('Average order is TSh {p0}. Consider upselling or bundle offers.', args: {'p0': NumberFormat('#,##0').format(avgOrder)}),
         icon: Icons.shopping_bag,
         color: Color(0xFF15803D),
         severity: InsightSeverity.info,
@@ -196,7 +197,7 @@ class SalesReportPage extends StatelessWidget {
     if (insights.isEmpty) return const SizedBox.shrink();
 
     return SectionCard(
-      title: 'Insights',
+      title: context.tr('Insights'),
       child: Column(children: insights),
     );
   }

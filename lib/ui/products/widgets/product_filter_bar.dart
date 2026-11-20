@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -39,7 +40,7 @@ class ProductFilterBar extends StatelessWidget {
         children: [
           MarketSearchField(
             controller: searchController,
-            hintText: 'Search by name, code or barcode',
+            hintText: context.tr('Search by name, code or barcode'),
             onChanged: onSearchChanged,
             onClear: onSearchClear,
           ),
@@ -57,8 +58,8 @@ class ProductFilterBar extends StatelessWidget {
                       ? selectedCategory
                       : null,
                   isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
+                  decoration:  InputDecoration(
+                    labelText: context.tr('Category'),
                     filled: true,
                     fillColor: AppColors.surfaceSecondary,
                     contentPadding:
@@ -77,9 +78,9 @@ class ProductFilterBar extends StatelessWidget {
                     ),
                   ),
                   items: [
-                    const DropdownMenuItem<String>(
+                     DropdownMenuItem<String>(
                       value: null,
-                      child: Text('All categories',
+                      child: Text(context.tr('All categories'),
                           overflow: TextOverflow.ellipsis),
                     ),
                     ...categories.map(
@@ -99,8 +100,8 @@ class ProductFilterBar extends StatelessWidget {
                   key: ValueKey('stock-$selectedStockFilter'),
                   isExpanded: true,
                   initialValue: selectedStockFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Stock status',
+                  decoration:  InputDecoration(
+                    labelText: context.tr('Stock status'),
                     filled: true,
                     fillColor: AppColors.surfaceSecondary,
                     contentPadding:
@@ -118,20 +119,20 @@ class ProductFilterBar extends StatelessWidget {
                       borderSide: BorderSide.none,
                     ),
                   ),
-                  items: const [
+                  items:  [
                     DropdownMenuItem(
                       value: 'all',
                       child:
-                          Text('All stock', overflow: TextOverflow.ellipsis),
+                          Text(context.tr('All stock'), overflow: TextOverflow.ellipsis),
                     ),
                     DropdownMenuItem(
                       value: 'low',
                       child:
-                          Text('Low stock', overflow: TextOverflow.ellipsis),
+                          Text(context.tr('Low stock'), overflow: TextOverflow.ellipsis),
                     ),
                     DropdownMenuItem(
                       value: 'out',
-                      child: Text('Out of stock',
+                      child: Text(context.tr('Out of stock'),
                           overflow: TextOverflow.ellipsis),
                     ),
                   ],
@@ -144,7 +145,7 @@ class ProductFilterBar extends StatelessWidget {
                   style: TextButton.styleFrom(
                       foregroundColor: AppColors.dangerDeep),
                   icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
-                  label: const Text('Clear filters'),
+                  label:  Text(context.tr('Clear filters')),
                 ),
             ],
           ),

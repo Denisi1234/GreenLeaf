@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -279,7 +280,7 @@ class _BrandLockup extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'TrackMauzo',
+              context.tr('TrackMauzo'),
               style: TextStyle(
                 color: light ? Colors.white : AppColors.ink,
                 fontSize: 21,
@@ -289,7 +290,7 @@ class _BrandLockup extends StatelessWidget {
             ),
             const SizedBox(height: 1),
             Text(
-              'POINT OF SALE',
+              context.tr('POINT OF SALE'),
               style: TextStyle(
                 color: light ? AppColors.primarySoft : AppColors.textMuted,
                 fontSize: 10,

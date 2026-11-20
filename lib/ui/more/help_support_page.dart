@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,20 +15,20 @@ class HelpSupportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const supportItems = [
+    final supportItems = [
       _SupportItem(
-        title: 'Call Help Center',
-        subtitle: 'Speak directly with our support team ($_supportPhone)',
+        title: context.tr('Call Help Center'),
+        subtitle: context.tr('Speak directly with our support team ({p0})', args: {'p0': _supportPhone}),
         icon: Icons.call_rounded,
       ),
       _SupportItem(
-        title: 'Email Support',
-        subtitle: 'Send us an email ($_supportEmail)',
+        title: context.tr('Email Support'),
+        subtitle: context.tr('Send us an email ({p0})', args: {'p0': _supportEmail}),
         icon: Icons.email_rounded,
       ),
       _SupportItem(
-        title: 'Quick Start Guide',
-        subtitle: 'Overview of sales, inventory and reports',
+        title: context.tr('Quick Start Guide'),
+        subtitle: context.tr('Overview of sales, inventory and reports'),
         icon: Icons.menu_book_rounded,
       ),
     ];
@@ -39,7 +40,7 @@ class HelpSupportPage extends StatelessWidget {
           child: SafeArea(
             child: Column(
               children: [
-                const MarketPageHeader(title: 'Help & Support'),
+                 MarketPageHeader(title: context.tr('Help & Support')),
                 Expanded(
                   child: Center(
                     child: ConstrainedBox(
@@ -92,7 +93,7 @@ class HelpSupportPage extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'We are here to help',
+                                        context.tr('We are here to help'),
                                         style: AppTypography.bodyMain.copyWith(
                                           color: AppColors.primaryDeep,
                                           fontWeight: FontWeight.w700,
@@ -100,7 +101,7 @@ class HelpSupportPage extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'Support is available Monday – Saturday, 08:00 – 20:00 EAT.',
+                                        context.tr('Support is available Monday – Saturday, 08:00 – 20:00 EAT.'),
                                         style: AppTypography.bodySmall.copyWith(
                                           color: AppColors.primaryDeep,
                                         ),
@@ -149,16 +150,14 @@ class _SupportTile extends StatelessWidget {
             showDialog<void>(
               context: context,
               builder: (context) => AlertDialog(
-                title: const Text('Quick Start Guide'),
-                content: const Text(
-                  '1. Add your products and stock in the Products tab.\n'
-                  '2. Ring up customer orders from the Sales register.\n'
-                  '3. Track daily revenue, expenses, and stock alerts in Reports.',
+                title:  Text(context.tr('Quick Start Guide')),
+                content:  Text(
+                  context.tr('1. Add your products and stock in the Products tab.\n2. Ring up customer orders from the Sales register.\n3. Track daily revenue, expenses, and stock alerts in Reports.'),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
+                    child:  Text(context.tr('Close')),
                   ),
                 ],
               ),

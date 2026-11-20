@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -78,7 +79,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       if (!mounted) return;
       showMarketNotice(
         context,
-        title: 'Save Failed',
+        title: context.tr('Save Failed'),
         message: error.toString(),
         type: MarketNoticeType.warning,
       );
@@ -87,8 +88,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     if (!mounted) return;
     showMarketNotice(
       context,
-      title: 'Item Added',
-      message: '${created.name} is now in your items list',
+      title: context.tr('Item Added'),
+      message: context.tr('{p0} is now in your items list', args: {'p0': created.name}),
       type: MarketNoticeType.success,
     );
   }
@@ -112,7 +113,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       if (!mounted) return;
       showMarketNotice(
         context,
-        title: 'Update Failed',
+        title: context.tr('Update Failed'),
         message: error.toString(),
         type: MarketNoticeType.warning,
       );
@@ -121,8 +122,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     if (!mounted) return;
     showMarketNotice(
       context,
-      title: 'Item Updated',
-      message: '${updated.name} has been updated',
+      title: context.tr('Item Updated'),
+      message: context.tr('{p0} has been updated', args: {'p0': updated.name}),
       type: MarketNoticeType.success,
     );
   }
@@ -133,18 +134,18 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       builder: (context) => AlertDialog(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(
-          'Delete Item?',
+          context.tr('Delete Item?'),
           style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
         ),
         content: Text(
-          'Are you sure you want to delete ${product.name}? This will remove it from inventory.',
+          context.tr('Are you sure you want to delete {p0}? This will remove it from inventory.', args: {'p0': product.name}),
           style: GoogleFonts.manrope(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
-              'Cancel',
+              context.tr('Cancel'),
               style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
             ),
           ),
@@ -157,7 +158,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
               ),
             ),
             child: Text(
-              'Delete',
+              context.tr('Delete'),
               style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
             ),
           ),
@@ -174,7 +175,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       if (!mounted) return;
       showMarketNotice(
         context,
-        title: 'Delete Failed',
+        title: context.tr('Delete Failed'),
         message: error.toString(),
         type: MarketNoticeType.warning,
       );
@@ -183,8 +184,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     if (!mounted) return;
     showMarketNotice(
       context,
-      title: 'Item Deleted',
-      message: '${product.name} was deleted',
+      title: context.tr('Item Deleted'),
+      message: context.tr('{p0} was deleted', args: {'p0': product.name}),
       type: MarketNoticeType.success,
     );
   }
@@ -196,8 +197,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     if (count > 0) {
       showMarketNotice(
         context,
-        title: 'Import Completed',
-        message: 'Successfully added $count products into inventory.',
+        title: context.tr('Import Completed'),
+        message: context.tr('Successfully added {p0} products into inventory.', args: {'p0': count}),
         type: MarketNoticeType.success,
       );
     }
@@ -276,10 +277,10 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                         padding: EdgeInsets.all(wide ? 24 : 16),
                         sliver: SliverList.list(
                           children: [
-                            const WorkspaceHeading(
-                              title: 'Inventory',
+                             WorkspaceHeading(
+                              title: context.tr('Inventory'),
                               subtitle:
-                                  'Manage your products, pricing and stock availability.',
+                                  context.tr('Manage your products, pricing and stock availability.'),
                             ),
                             const SizedBox(height: 14),
                             Row(
@@ -296,8 +297,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                         ),
                                       ),
                                       icon: const Icon(Icons.add_rounded),
-                                      label: const Text(
-                                        'Add item',
+                                      label:  Text(
+                                        context.tr('Add item'),
                                         style: TextStyle(
                                             fontWeight: FontWeight.w700),
                                       ),
@@ -306,7 +307,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                 ),
                                 const SizedBox(width: 10),
                                 IconButton.outlined(
-                                  tooltip: 'Export CSV',
+                                  tooltip: context.tr('Export CSV'),
                                   style: OutlinedButton.styleFrom(
                                     shape: const RoundedRectangleBorder(
                                       borderRadius: BorderRadius.zero,
@@ -322,7 +323,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                 ),
                                 const SizedBox(width: 6),
                                 IconButton.outlined(
-                                  tooltip: 'Import CSV',
+                                  tooltip: context.tr('Import CSV'),
                                   style: OutlinedButton.styleFrom(
                                     shape: const RoundedRectangleBorder(
                                       borderRadius: BorderRadius.zero,
@@ -351,7 +352,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                     SizedBox(
                                       width: width,
                                       child: WorkspaceMetric(
-                                        label: 'Total items',
+                                        label: context.tr('Total items'),
                                         value: '${inventory.length}',
                                         icon: Icons.inventory_2_outlined,
                                         sharp: true,
@@ -364,7 +365,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                     SizedBox(
                                       width: width,
                                       child: WorkspaceMetric(
-                                        label: 'Stock value',
+                                        label: context.tr('Stock value'),
                                         value: formatProductPrice(stockValue),
                                         icon: Icons
                                             .account_balance_wallet_outlined,
@@ -378,7 +379,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                     SizedBox(
                                       width: width,
                                       child: WorkspaceMetric(
-                                        label: 'Low stock',
+                                        label: context.tr('Low stock'),
                                         value: '$lowCount',
                                         icon: Icons.trending_down_rounded,
                                         sharp: true,
@@ -391,7 +392,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                     SizedBox(
                                       width: width,
                                       child: WorkspaceMetric(
-                                        label: 'Out of stock',
+                                        label: context.tr('Out of stock'),
                                         value: '$outCount',
                                         icon: Icons.inventory_outlined,
                                         sharp: true,
@@ -436,27 +437,27 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    '${filtered.length} items',
+                                    context.tr('{p0} items', args: {'p0': filtered.length}),
                                     style: AppTypography.sectionHeader,
                                   ),
                                 ),
                                 if (!wide)
                                   PopupMenuButton<int>(
-                                    tooltip: 'Sort inventory',
+                                    tooltip: context.tr('Sort inventory'),
                                     onSelected: (value) => setState(() {
                                       _sortColumn = value;
                                       _page = 0;
                                     }),
-                                    itemBuilder: (_) => const [
+                                    itemBuilder: (_) =>  [
                                       PopupMenuItem(
                                           value: 0,
-                                          child: Text('Sort by name')),
+                                          child: Text(context.tr('Sort by name'))),
                                       PopupMenuItem(
                                           value: 4,
-                                          child: Text('Sort by stock')),
+                                          child: Text(context.tr('Sort by stock'))),
                                       PopupMenuItem(
                                           value: 3,
-                                          child: Text('Sort by sale price')),
+                                          child: Text(context.tr('Sort by sale price'))),
                                     ],
                                     icon: const Icon(Icons.sort_rounded),
                                   ),
@@ -514,10 +515,10 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                                 _page = 0;
                                               }),
                                             ),
-                                          const DataColumn(
-                                              label: Text('Status')),
-                                          const DataColumn(
-                                              label: Text('Actions')),
+                                           DataColumn(
+                                              label: Text(context.tr('Status'))),
+                                           DataColumn(
+                                              label: Text(context.tr('Actions'))),
                                         ],
                                         rows: rows
                                             .map(
@@ -583,7 +584,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                                           MainAxisSize.min,
                                                       children: [
                                                         IconButton(
-                                                          tooltip: 'Edit item',
+                                                          tooltip: context.tr('Edit item'),
                                                           onPressed: () =>
                                                               _editProduct(
                                                                   item),
@@ -594,7 +595,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                                         ),
                                                         IconButton(
                                                           tooltip:
-                                                              'Delete item',
+                                                              context.tr('Delete item'),
                                                           onPressed: () =>
                                                               _deleteProduct(
                                                                   item),
@@ -637,12 +638,12 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        '${page * _pageSize + 1}–${page * _pageSize + rows.length} of ${filtered.length}',
+                                        context.tr('{p0}–{p1} of {p2}', args: {'p0': page * _pageSize + 1, 'p1': page * _pageSize + rows.length, 'p2': filtered.length}),
                                         style: AppTypography.label,
                                       ),
                                     ),
                                     IconButton(
-                                      tooltip: 'Previous page',
+                                      tooltip: context.tr('Previous page'),
                                       onPressed: page > 0
                                           ? () =>
                                               setState(() => _page = page - 1)
@@ -653,7 +654,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                     Text('${page + 1}',
                                         style: AppTypography.bodySmall),
                                     IconButton(
-                                      tooltip: 'Next page',
+                                      tooltip: context.tr('Next page'),
                                       onPressed: (page + 1) * _pageSize <
                                               filtered.length
                                           ? () =>

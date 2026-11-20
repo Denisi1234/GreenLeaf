@@ -1,3 +1,4 @@
+import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -20,14 +21,14 @@ class TrendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (points.isEmpty) {
-      return _emptyState();
+      return _emptyState(context);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          context.tr(label),
           style: AppTypography.label.copyWith(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -52,12 +53,12 @@ class TrendChart extends StatelessWidget {
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(BuildContext context) {
     return Container(
       height: 180,
       alignment: Alignment.center,
       child: Text(
-        'No data for this period',
+        context.tr('No data for this period'),
         style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
       ),
     );

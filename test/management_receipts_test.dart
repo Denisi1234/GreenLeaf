@@ -1,3 +1,8 @@
+import 'package:track_mauzo/ui/accounting/journal_entry_page.dart';
+import 'package:track_mauzo/ui/accounting/account_form_page.dart';
+import 'package:track_mauzo/ui/suppliers/new_receiving_page.dart';
+import 'package:track_mauzo/ui/suppliers/supplier_form_page.dart';
+import 'package:track_mauzo/ui/suppliers/supplier_detail_page.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

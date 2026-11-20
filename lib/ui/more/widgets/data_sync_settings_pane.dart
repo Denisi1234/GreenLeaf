@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../service/daily_sales_report_service.dart';
 import '../../../service/pos_local_store.dart';
@@ -63,6 +64,25 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
     }
     if (!mounted) return;
     setState(() => _busy = false);
+
+    // If a target phone and SMS text were generated for local delivery
+    if (result.targetPhone != null && result.smsText != null) {
+      final uri = Uri(
+        scheme: 'sms',
+        path: result.targetPhone!,
+        queryParameters: <String, String>{'body': result.smsText!},
+      );
+      try {
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        } else {
+          await Share.share(result.smsText!, subject: 'Ripoti ya Mauzo ya Leo');
+        }
+      } catch (_) {
+        await Share.share(result.smsText!, subject: 'Ripoti ya Mauzo ya Leo');
+      }
+    }
+
     showSettingsResult(context, result.message, error: !result.success);
   }
 
@@ -380,12 +400,13 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                       },
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 14),
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
+              child: FilledButton.icon(
                 onPressed: _busy ? null : () => _sendTestSms(store),
-                style: OutlinedButton.styleFrom(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF047857),
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,
                   ),
@@ -394,10 +415,10 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.send_rounded, size: 18),
-                label: Text(t('Send test report now', 'Tuma ripoti sasa')),
+                label: Text(t('Send daily report via SMS', 'Tuma ripoti kwa SMS')),
               ),
             ),
           ],

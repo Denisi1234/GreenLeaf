@@ -12,6 +12,7 @@ import '../widgets/workspace_widgets.dart';
 import 'cash_movement_page.dart';
 import 'close_shift_page.dart';
 import 'shift_detail_page.dart';
+import 'widgets/register_kpi_metrics.dart';
 import 'widgets/register_models.dart';
 import 'widgets/register_row_tiles.dart';
 
@@ -84,9 +85,19 @@ class _CashRegisterPageState extends State<CashRegisterPage> {
 
   Widget _buildClosedState(PosLocalStore store) {
     final history = store.registerShifts;
+    final totalVariance = history
+        .where((s) => s.closedAt != null)
+        .fold<double>(0, (sum, s) => sum + store.cashUpFor(s).variance);
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
+        RegisterClosedKpiMetrics(
+          shifts: history,
+          totalVariance: totalVariance,
+          isSwahili: _isSwahili,
+        ),
+        const SizedBox(height: 16),
         _flatCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,8 +189,14 @@ class _CashRegisterPageState extends State<CashRegisterPage> {
     final breakdown = _paymentBreakdown(sales);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
+        RegisterKpiMetrics(
+          summary: summary,
+          salesCount: sales.length,
+          isSwahili: _isSwahili,
+        ),
+        const SizedBox(height: 16),
         _flatCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,36 +220,22 @@ class _CashRegisterPageState extends State<CashRegisterPage> {
                       ],
                     ),
                   ),
-                  Text(
-                    _t('Open', 'Wazi'),
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.success,
-                      fontWeight: FontWeight.w700,
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.successLight,
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    child: Text(
+                      _t('Open', 'Wazi'),
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 18),
-              Text(
-                _t('Expected in drawer', 'Inayotarajiwa kazini'),
-                style: AppTypography.label,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _money(summary.expected),
-                style: AppTypography.h1.copyWith(
-                  fontSize: 30,
-                  color: summary.expected >= 0
-                      ? AppColors.success
-                      : AppColors.danger,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _t('Opening float + cash sales + cash in − payouts/drops',
-                    'Pesa ya kuanzia + mauzo ya taslimu + iliyoingia − iliyotoka'),
-                style: AppTypography.helperText
-                    .copyWith(color: AppColors.textMuted),
               ),
             ],
           ),
