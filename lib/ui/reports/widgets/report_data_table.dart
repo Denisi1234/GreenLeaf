@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../widgets/app_design.dart';
 import '../../widgets/workspace_widgets.dart';
-import '../models/report_models.dart';
 import '../pos_report_data.dart';
 
 class ReportDataTable extends StatelessWidget {

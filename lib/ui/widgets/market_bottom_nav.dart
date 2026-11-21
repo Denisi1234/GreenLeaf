@@ -26,10 +26,30 @@ class MarketBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context.watch<PosLocalStore>().languageCode);
     final items = [
-      _NavItem(MarketTab.dashboard, strings.dashboard.toUpperCase(), Icons.bar_chart_outlined, Icons.bar_chart_rounded),
-      _NavItem(MarketTab.products, strings.inventory.toUpperCase(), Icons.inventory_2_outlined, Icons.inventory_2_rounded),
-      _NavItem(MarketTab.sales, strings.sales.toUpperCase(), Icons.point_of_sale_outlined, Icons.point_of_sale_rounded),
-      _NavItem(MarketTab.more, strings.more.toUpperCase(), Icons.menu_rounded, Icons.menu_open_rounded),
+      _NavItem(
+        MarketTab.dashboard,
+        strings.dashboard.toUpperCase(),
+        Icons.bar_chart_outlined,
+        Icons.bar_chart_rounded,
+      ),
+      _NavItem(
+        MarketTab.products,
+        strings.inventory.toUpperCase(),
+        Icons.inventory_2_outlined,
+        Icons.inventory_2_rounded,
+      ),
+      _NavItem(
+        MarketTab.sales,
+        strings.sales.toUpperCase(),
+        Icons.point_of_sale_outlined,
+        Icons.point_of_sale_rounded,
+      ),
+      _NavItem(
+        MarketTab.more,
+        strings.more.toUpperCase(),
+        Icons.menu_rounded,
+        Icons.menu_open_rounded,
+      ),
     ];
 
     return Container(

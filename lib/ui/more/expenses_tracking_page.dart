@@ -14,6 +14,8 @@ import 'widgets/expense_details_sheet.dart';
 import 'widgets/expense_export_service.dart';
 import 'widgets/expense_filter_widgets.dart';
 import 'widgets/expense_models.dart';
+import 'widgets/expense_kpi_metrics.dart';
+import 'widgets/expense_history_register.dart';
 
 class ExpensesTrackingPage extends StatefulWidget {
   const ExpensesTrackingPage({super.key});
@@ -111,82 +113,11 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(18, 4, 18, 96),
                       children: [
-                        LayoutBuilder(
-                          builder: (context, metricConstraints) {
-                            final columns =
-                                metricConstraints.maxWidth >= 760 ? 4 : 2;
-                            final width = (metricConstraints.maxWidth -
-                                    (columns - 1) * 12) /
-                                columns;
-                            return Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
-                              children: [
-                                SizedBox(
-                                  width: width,
-                                  child: WorkspaceMetric(
-                                    label: expenseDual(strings, 'Total spent',
-                                        'Jumla ya matumizi'),
-                                    value: formatExpenseMoney(total, compact: true),
-                                    icon: Icons.payments_outlined,
-                                    sharp: true,
-                                    borderless: true,
-                                    backgroundColor: const Color(0xFFFEE2E2),
-                                    color: const Color(0xFFB91C1C),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: width,
-                                  child: WorkspaceMetric(
-                                    label: expenseDual(strings, 'Total records',
-                                        'Idadi ya kumbukumbu'),
-                                    value: '${filtered.length}',
-                                    icon: Icons.receipt_long_outlined,
-                                    sharp: true,
-                                    borderless: true,
-                                    backgroundColor: const Color(0xFFE0F2FE),
-                                    color: const Color(0xFF0369A1),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: width,
-                                  child: WorkspaceMetric(
-                                    label: expenseDual(strings, 'Average expense',
-                                        'Wastani wa matumizi'),
-                                    value: formatExpenseMoney(
-                                      filtered.isEmpty
-                                          ? 0
-                                          : total / filtered.length,
-                                      compact: true,
-                                    ),
-                                    icon: Icons.query_stats_rounded,
-                                    sharp: true,
-                                    borderless: true,
-                                    backgroundColor: const Color(0xFFFEF3C7),
-                                    color: const Color(0xFFB45309),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: width,
-                                  child: WorkspaceMetric(
-                                    label: expenseDual(strings, 'Tax included',
-                                        'Kodi iliyojumuishwa'),
-                                    value: formatExpenseMoney(taxTotal,
-                                        compact: true),
-                                    icon: Icons.account_balance_outlined,
-                                    sharp: true,
-                                    borderless: true,
-                                    backgroundColor: taxTotal > 0
-                                        ? const Color(0xFFEDE9FE)
-                                        : const Color(0xFFF1F5F9),
-                                    color: taxTotal > 0
-                                        ? const Color(0xFF6D28D9)
-                                        : AppColors.textMuted,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                        ExpenseKpiMetrics(
+                          total: total,
+                          totalRecords: filtered.length,
+                          taxTotal: taxTotal,
+                          strings: strings,
                         ),
                         if (taxTotal > 0) ...[
                           const SizedBox(height: 10),
@@ -257,104 +188,13 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                             },
                           )
                         else
-                          WorkspaceRegister(
-                            columns: [
-                              DataColumn(
-                                  label: Text(
-                                      expenseDual(strings, 'Date', 'Tarehe'))),
-                              DataColumn(
-                                  label: Text(expenseDual(
-                                      strings, 'Expense', 'Matumizi'))),
-                              DataColumn(
-                                  label: Text(
-                                      expenseDual(strings, 'Category', 'Kundi'))),
-                              DataColumn(
-                                  label: Text(
-                                      expenseDual(strings, 'Payment', 'Malipo'))),
-                              DataColumn(
-                                  label: Text(
-                                      expenseDual(strings, 'Status', 'Hali'))),
-                              DataColumn(
-                                  label: Text(
-                                      expenseDual(strings, 'Total', 'Jumla')),
-                                  numeric: true),
-                              const DataColumn(label: Text('')),
-                            ],
-                            rows: filtered
-                                .map((expense) => DataRow(cells: [
-                                      DataCell(Text(DateFormat.yMMMd()
-                                          .format(expense.date))),
-                                      DataCell(
-                                        ConstrainedBox(
-                                          constraints: const BoxConstraints(
-                                              maxWidth: 220),
-                                          child: Text(expense.title,
-                                              overflow: TextOverflow.ellipsis),
-                                        ),
-                                        onTap: () =>
-                                            _showExpense(context, expense),
-                                      ),
-                                      DataCell(Text(expense.category)),
-                                      DataCell(Text(expense.paymentMethod)),
-                                      DataCell(WorkspaceStatus(
-                                          label: expense.status
-                                              .localized(strings.isSwahili),
-                                          color: AppColors.textBody)),
-                                      DataCell(Text(formatExpenseMoney(
-                                          expense.totalWithTax))),
-                                      DataCell(Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            tooltip: expenseDual(
-                                                strings,
-                                                'Edit expense',
-                                                'Badili matumizi'),
-                                            onPressed: () =>
-                                                _openEditExpense(expense),
-                                            icon: const Icon(
-                                                Icons.edit_outlined,
-                                                size: 19),
-                                          ),
-                                          IconButton(
-                                            tooltip: expenseDual(
-                                                strings,
-                                                'Delete expense',
-                                                'Futa matumizi'),
-                                            onPressed: expense.id == null
-                                                ? null
-                                                : () => _confirmDelete(
-                                                    context, store, expense),
-                                            icon: const Icon(
-                                              Icons.delete_outline_rounded,
-                                              size: 19,
-                                              color: AppColors.dangerDeep,
-                                            ),
-                                          ),
-                                        ],
-                                      )),
-                                    ]))
-                                .toList(),
-                            mobile: Column(
-                              children: [
-                                ...filtered.map(
-                                  (expense) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: ExpenseCard(
-                                      expense: expense,
-                                      strings: strings,
-                                      onTap: () =>
-                                          _showExpense(context, expense),
-                                      onEdit: () => _openEditExpense(expense),
-                                      onDelete: expense.id == null
-                                          ? null
-                                          : () => _confirmDelete(
-                                              context, store, expense),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          ExpenseHistoryRegister(
+                            filtered: filtered,
+                            strings: strings,
+                            store: store,
+                            onShowExpense: _showExpense,
+                            onEditExpense: _openEditExpense,
+                            onConfirmDelete: _confirmDelete,
                           ),
                       ],
                     ),

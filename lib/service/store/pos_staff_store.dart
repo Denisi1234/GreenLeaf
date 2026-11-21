@@ -7,12 +7,17 @@ mixin PosStaffStore on ChangeNotifier {
   List<StaffRoleData> get _staffRoles;
   List<StaffMemberData> get _staffMembers;
   PhpApiClient? get cloudApi;
+  bool hasPermission(String permission);
+  StaffMemberData? get currentUser;
 
   List<StaffMemberData> staffMembersForRole(String roleId) {
     return _staffMembers.where((staff) => staff.roleId == roleId).toList();
   }
 
   Future<StaffRoleData> saveStaffRole(StaffRoleData role) async {
+    if (!hasPermission('Manage Staff')) {
+      throw StateError('You do not have permission to manage staff.');
+    }
     final existingIndex = _staffRoles.indexWhere((item) => item.id == role.id);
     final nextRole = existingIndex == -1
         ? role.copyWith(sortOrder: _staffRoles.length)
@@ -24,8 +29,8 @@ mixin PosStaffStore on ChangeNotifier {
     }
     _staffRoles.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     notifyListeners();
-    await _database.replaceStaffRoles(
-      _staffRoles.map(_staffRoleToMap).toList(),
+    await _database.upsertStaffRole(
+      _staffRoleToMap(nextRole),
       _activeStoreId,
     );
     return nextRole;
@@ -35,32 +40,41 @@ mixin PosStaffStore on ChangeNotifier {
     String roleId,
     List<String> permissions,
   ) async {
+    if (!hasPermission('Manage Staff')) {
+      throw StateError('You do not have permission to manage staff.');
+    }
     final index = _staffRoles.indexWhere((role) => role.id == roleId);
     if (index == -1) return;
     _staffRoles[index] = _staffRoles[index].copyWith(
       permissions: List<String>.from(permissions),
     );
     notifyListeners();
-    await _database.replaceStaffRoles(
-      _staffRoles.map(_staffRoleToMap).toList(),
+    await _database.upsertStaffRole(
+      _staffRoleToMap(_staffRoles[index]),
       _activeStoreId,
     );
   }
 
   Future<void> deleteStaffRole(String roleId) async {
+    if (!hasPermission('Manage Staff')) {
+      throw StateError('You do not have permission to manage staff.');
+    }
     if (_staffMembers.any((staff) => staff.roleId == roleId)) return;
     _staffRoles.removeWhere((role) => role.id == roleId);
     notifyListeners();
-    await _database.replaceStaffRoles(
-      _staffRoles.map(_staffRoleToMap).toList(),
-      _activeStoreId,
-    );
+    await _database.deleteStaffRoleRecord(roleId, _activeStoreId);
   }
 
   Future<StaffMemberData> saveStaffMember(StaffMemberData staff,
       {String? cloudPassword}) async {
     final existingIndex =
         _staffMembers.indexWhere((item) => item.id == staff.id);
+    final isSelf = existingIndex != -1 &&
+        staff.id == currentUser?.id &&
+        staff.roleId == _staffMembers[existingIndex].roleId;
+    if (!isSelf && !hasPermission('Manage Staff')) {
+      throw StateError('You do not have permission to manage staff.');
+    }
     final nextStaff = existingIndex == -1
         ? staff
         : staff.copyWith(createdAt: _staffMembers[existingIndex].createdAt);
@@ -102,6 +116,9 @@ mixin PosStaffStore on ChangeNotifier {
     String? avatarPath,
     StaffStatus status = StaffStatus.active,
   }) async {
+    if (!hasPermission('Manage Staff')) {
+      throw StateError('You do not have permission to manage staff.');
+    }
     final now = DateTime.now().toIso8601String();
     final credentials = password == null || password.isEmpty
         ? (hash: '', salt: '')
@@ -154,6 +171,9 @@ mixin PosStaffStore on ChangeNotifier {
   }
 
   Future<void> setStaffStatus(String staffId, StaffStatus status) async {
+    if (!hasPermission('Manage Staff')) {
+      throw StateError('You do not have permission to manage staff.');
+    }
     final index = _staffMembers.indexWhere((staff) => staff.id == staffId);
     if (index == -1) return;
     await saveStaffMember(_staffMembers[index].copyWith(
@@ -183,20 +203,22 @@ mixin PosStaffStore on ChangeNotifier {
   }
 
   ({String hash, String salt}) _hashPassword(String password) {
-    final random = Random.secure();
-    final saltBytes = List<int>.generate(16, (_) => random.nextInt(256));
-    final salt = base64UrlEncode(saltBytes);
-    final digest = sha256.convert(utf8.encode('$salt:$password')).toString();
-    return (hash: digest, salt: salt);
+    return StaffCredentials.hashPassword(password);
   }
 
   Future<void> updateStaffMemberRole(String staffId, String roleId) async {
+    if (!hasPermission('Manage Staff')) {
+      throw StateError('You do not have permission to manage staff.');
+    }
     final index = _staffMembers.indexWhere((staff) => staff.id == staffId);
     if (index == -1) return;
     await saveStaffMember(_staffMembers[index].copyWith(roleId: roleId));
   }
 
   Future<void> deleteStaffMember(String staffId) async {
+    if (!hasPermission('Manage Staff')) {
+      throw StateError('You do not have permission to manage staff.');
+    }
     await _database.deleteStaffMember(staffId);
     _staffMembers.removeWhere((staff) => staff.id == staffId);
     notifyListeners();
@@ -280,6 +302,4 @@ mixin PosStaffStore on ChangeNotifier {
       updatedAt: map['updated_at'] as String? ?? '',
     );
   }
-
-  final List<CustomerData> _customers = <CustomerData>[];
 }

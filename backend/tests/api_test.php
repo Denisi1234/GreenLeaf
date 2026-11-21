@@ -96,8 +96,31 @@ check(callApi('GET', 'products', [], $token)['data'][0]['stock_count'] === 3, 'V
 check(callApi('GET', 'customers', [], $token)['data'][0]['debit_balance'] == 0, 'Voiding credit must reverse the debt.');
 callApi('POST', 'expenses', ['title' => 'Transport', 'amount' => 5, 'id' => null], $token);
 check(count(callApi('GET', 'expenses', [], $token)['data']) === 1, 'Expense persistence failed.');
-callApi('PUT', 'receipt-settings/1', ['footer' => 'Karibu tena', 'show_store_contact' => 0], $token);
-check(callApi('GET', 'receipt-settings', [], $token)['data'][0]['footer'] === 'Karibu tena', 'Receipt settings persistence failed.');
+callApi('PUT', 'receipt-settings/1', [
+    'footer' => 'Karibu tena',
+    'header' => 'Asante sana',
+    'show_store_contact' => 0,
+    'show_tax_id' => 0,
+    'show_discount' => 0,
+], $token);
+$savedReceipt = callApi('GET', 'receipt-settings', [], $token)['data'][0];
+check($savedReceipt['footer'] === 'Karibu tena', 'Receipt settings persistence failed.');
+check($savedReceipt['header'] === 'Asante sana', 'Receipt header persistence failed.');
+check($savedReceipt['show_tax_id'] === 0 && $savedReceipt['show_discount'] === 0, 'Receipt toggle flags persistence failed.');
+callApi('PUT', 'tax-settings/1', [
+    'enabled' => 1,
+    'rate_percent' => 18.0,
+    'prices_include_tax' => 0,
+    'tax_id' => 'TIN-999',
+    'tax_label' => 'VAT',
+    'track_expense_tax' => 1,
+], $token);
+$savedTax = callApi('GET', 'tax-settings', [], $token)['data'][0];
+check($savedTax['enabled'] === 1 && (float) $savedTax['rate_percent'] === 18.0 && $savedTax['tax_id'] === 'TIN-999', 'Tax settings persistence failed.');
+callApi('POST', 'products/stock-delta', ['deltas' => ['P1' => 5]], $token);
+check(callApi('GET', 'products', [], $token)['data'][0]['stock_count'] === 8, 'Atomic stock delta increment failed.');
+callApi('POST', 'products/stock-delta', ['deltas' => ['P1' => -5]], $token);
+check(callApi('GET', 'products', [], $token)['data'][0]['stock_count'] === 3, 'Atomic stock delta decrement failed.');
 callApi('POST', 'auth/users', ['name' => 'Cashier', 'email' => 'cashier@example.test', 'password' => 'Testing-long-password'], $token);
 $cashier = callApi('POST', 'auth/login', ['email' => 'cashier@example.test', 'password' => 'Testing-long-password'])['data']['token'];
 rejected(403, fn () => callApi('PUT', 'products/P2', $product, $cashier));

@@ -193,7 +193,9 @@ class _CustomerDetailsView extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
         title: Text(
           customerDual(strings, 'Delete customer?', 'Futa mteja?'),
           style: AppTypography.cardHeader,
@@ -211,9 +213,14 @@ class _CustomerDetailsView extends StatelessWidget {
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(strings.cancel),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.standard),
+              ),
+            ),
             child: Text(customerDual(strings, 'Delete', 'Futa')),
           ),
         ],
@@ -223,6 +230,16 @@ class _CustomerDetailsView extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     await store.deleteCustomer(customer.id);
     if (!context.mounted) return;
+    showMarketNotice(
+      context,
+      title: customerDual(strings, 'Customer Deleted', 'Mteja Amefutwa'),
+      message: customerDual(
+        strings,
+        '${customer.name} was removed from your customer list.',
+        '${customer.name} ameondolewa kwenye orodha ya wateja.',
+      ),
+      type: MarketNoticeType.success,
+    );
     Navigator.of(context).pop();
   }
 }

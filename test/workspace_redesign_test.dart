@@ -10,8 +10,11 @@ import 'support/ui_test_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:track_mauzo/service/pos_local_store.dart';
 import 'package:track_mauzo/service/pos_order_models.dart';
+import 'package:track_mauzo/service/store_preferences.dart';
 import 'package:track_mauzo/ui/models/product_item.dart';
 import 'package:track_mauzo/ui/home/sales_page.dart';
+import 'package:track_mauzo/ui/home/widgets/product_card.dart';
+import 'package:track_mauzo/ui/more/advanced_features_page.dart';
 import 'package:track_mauzo/ui/more/settings_page.dart';
 import 'package:track_mauzo/ui/more/more_page.dart';
 import 'package:track_mauzo/ui/reports/reports_catalog_page.dart';
@@ -51,6 +54,9 @@ class _ReviewStore extends PosLocalStore {
   bool get isInitialized => true;
   @override
   String get languageCode => 'en';
+  @override
+  StorePreferences get storePreferences =>
+      const StorePreferences(enableAdvancedAccounting: true);
   @override
   int availableStockForProduct(ProductItem product) =>
       inventory.firstWhere((item) => item.code == product.code).stockCount;
@@ -292,7 +298,8 @@ void main() {
       (tester) async {
     await _mount(tester, checkout, const Size(390, 900));
     await tester.tap(find.byKey(const ValueKey('complete-sale')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.byKey(const ValueKey('cash-amount')), findsOneWidget);
     expect(
         tester
@@ -300,10 +307,12 @@ void main() {
             .onPressed,
         isNull);
     await tester.enterText(find.byKey(const ValueKey('cash-amount')), '3000');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     tester.view.viewInsets = const FakeViewPadding(bottom: 300);
     addTearDown(tester.view.resetViewInsets);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     await _capture(tester, 'checkout-cash-keyboard');
     expect(
         tester
@@ -357,17 +366,9 @@ void main() {
     for (final id in [
       'customers',
       'debtors',
-      'suppliers',
-      'receiving',
-      'register',
       'expenses',
       'reports',
-      'accounts',
-      'assets',
-      'bank',
-      'tax',
-      'stores',
-      'staff',
+      'advanced',
       'settings',
     ]) {
       expect(find.byKey(ValueKey('more-$id')), findsOneWidget);
@@ -375,6 +376,28 @@ void main() {
     expect(find.text('Aza POS'), findsNothing);
     expect(find.text('Version 1.0.0'), findsNothing);
     expect(find.text('Rate this app'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('more-advanced')));
+    await tester.pumpAndSettle();
+    expect(find.byType(AdvancedFeaturesPage), findsOneWidget);
+    for (final label in [
+      'Suppliers',
+      'Goods received',
+      'Cash register',
+      'Accounts & ledger',
+      'Tax settings',
+      'Stores',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(label),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(label), findsOneWidget);
+    }
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
     await tester.enterText(find.byType(TextField), 'Reports');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('more-reports')));

@@ -39,6 +39,19 @@ class PhpApiClient {
   Map<String, dynamic> user = {};
   void Function()? onSignedOut;
 
+  /// Fail-fast circuit breaker so an unreachable server never hangs the POS.
+  static const Duration defaultTimeout = Duration(seconds: 10);
+  int _consecutiveFailures = 0;
+  DateTime? _circuitOpenUntil;
+
+  bool get isCircuitOpen =>
+      _circuitOpenUntil != null && DateTime.now().isBefore(_circuitOpenUntil!);
+
+  void resetCircuit() {
+    _consecutiveFailures = 0;
+    _circuitOpenUntil = null;
+  }
+
   String? get token => _token;
 
   void restoreSession({
@@ -58,7 +71,17 @@ class PhpApiClient {
     String path, {
     Map<String, Object?>? body,
     String? versionResource,
+    String? idempotencyKey,
+    bool bypassCircuit = false,
   }) {
+    if (!bypassCircuit && isCircuitOpen) {
+      return Future<Map<String, dynamic>>.error(
+        const ApiException(
+          'Server temporarily unreachable. Working offline.',
+          503,
+        ),
+      );
+    }
     final operation = _pending.then((_) async {
       final request = http.Request(method, Uri.parse('$baseUrl/$path'));
       request.headers['Content-Type'] = 'application/json';
@@ -66,10 +89,23 @@ class PhpApiClient {
       if (versionResource != null) {
         request.headers['If-Match'] = '${_versions[versionResource] ?? 0}';
       }
+      if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
+        request.headers['X-Idempotency-Key'] = idempotencyKey;
+      }
       if (body != null) request.body = jsonEncode(body);
-      final response = await http.Response.fromStream(
-        await _http.send(request).timeout(const Duration(seconds: 25)),
-      ).timeout(const Duration(seconds: 25));
+      final http.Response response;
+      try {
+        response = await http.Response.fromStream(
+          await _http.send(request).timeout(defaultTimeout),
+        ).timeout(defaultTimeout);
+        resetCircuit();
+      } catch (e) {
+        _consecutiveFailures++;
+        if (_consecutiveFailures >= 3) {
+          _circuitOpenUntil = DateTime.now().add(const Duration(seconds: 30));
+        }
+        rethrow;
+      }
       Map<String, dynamic> result;
       try {
         result = jsonDecode(response.body) as Map<String, dynamic>;
@@ -129,17 +165,43 @@ class PhpApiClient {
   }
 
   Future<void> replace(
-      String resource, List<Map<String, Object?>> items) async {
-    await request('PUT', resource,
-        body: {'items': items}, versionResource: resource);
+    String resource,
+    List<Map<String, Object?>> items, {
+    String? idempotencyKey,
+  }) async {
+    await request(
+      'PUT',
+      resource,
+      body: {'items': items},
+      versionResource: resource,
+      idempotencyKey: idempotencyKey,
+    );
   }
 
-  Future<void> put(String resource, String id, Map<String, Object?> row) async {
-    await request('PUT', '$resource/${Uri.encodeComponent(id)}', body: row);
+  Future<void> put(
+    String resource,
+    String id,
+    Map<String, Object?> row, {
+    String? idempotencyKey,
+  }) async {
+    await request(
+      'PUT',
+      '$resource/${Uri.encodeComponent(id)}',
+      body: row,
+      idempotencyKey: idempotencyKey,
+    );
   }
 
-  Future<void> delete(String resource, String id) async {
-    await request('DELETE', '$resource/${Uri.encodeComponent(id)}');
+  Future<void> delete(
+    String resource,
+    String id, {
+    String? idempotencyKey,
+  }) async {
+    await request(
+      'DELETE',
+      '$resource/${Uri.encodeComponent(id)}',
+      idempotencyKey: idempotencyKey,
+    );
   }
 
   Future<void> logout() async {

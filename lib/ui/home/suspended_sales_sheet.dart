@@ -8,6 +8,7 @@ import '../../service/pos_local_store.dart';
 import '../../service/pos_suspended_sale_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
+import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
 
 /// Modal bottom sheet for viewing and resuming held sales (OSPOS Suspended Sales)
@@ -206,13 +207,30 @@ class SuspendedSalesSheet extends StatelessWidget {
                               size: 20, color: AppColors.danger),
                           onPressed: () {
                             store.deleteSuspendedSale(sale.id);
+                            showMarketNotice(
+                              context,
+                              title: context.tr('Held Sale Removed'),
+                              message: context.tr('Held sale {p0} was removed.',
+                                  args: {'p0': sale.id}),
+                              type: MarketNoticeType.info,
+                            );
                           },
                         ),
                         const SizedBox(width: 4),
                         FilledButton(
                           onPressed: () async {
                             await store.resumeSuspendedSale(sale.id);
-                            if (context.mounted) Navigator.of(context).pop();
+                            if (context.mounted) {
+                              showMarketNotice(
+                                context,
+                                title: context.tr('Sale Resumed'),
+                                message: context.tr(
+                                    'Resumed held sale {p0}.',
+                                    args: {'p0': sale.id}),
+                                type: MarketNoticeType.success,
+                              );
+                              Navigator.of(context).pop();
+                            }
                           },
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.successDeep,

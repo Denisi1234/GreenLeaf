@@ -1,7 +1,9 @@
+import '../../../l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../service/pos_local_store.dart';
+import '../../auth/auth_wrapper.dart';
 import '../app_design.dart';
 
 /// Shows a professional, unified logout confirmation dialog matching the app's clean flat theme.
@@ -11,7 +13,6 @@ Future<bool> showLogoutConfirmationDialog(
   String? username,
 }) async {
   final store = context.read<PosLocalStore>();
-  final isSwahili = store.languageCode == 'sw';
   final effectiveUser = username ?? store.currentUser?.name ?? store.profile.ownerName;
 
   final confirmed = await showDialog<bool>(
@@ -60,7 +61,7 @@ Future<bool> showLogoutConfirmationDialog(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isSwahili ? 'Kutoka Kwenye Akaunti' : 'Sign Out',
+                            context.tr('Sign Out'),
                             style: AppTypography.sectionHeader.copyWith(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
@@ -69,8 +70,8 @@ Future<bool> showLogoutConfirmationDialog(
                           const SizedBox(height: 2),
                           Text(
                             effectiveUser.isNotEmpty
-                                ? '${isSwahili ? 'Kikao cha' : 'Active session'}: $effectiveUser'
-                                : (isSwahili ? 'Kikao kinaendelea' : 'Active session'),
+                                ? '${context.tr('Active session')}: $effectiveUser'
+                                : (context.tr('Active session')),
                             style: AppTypography.bodySmall.copyWith(
                               color: AppColors.textMuted,
                               fontWeight: FontWeight.w500,
@@ -90,9 +91,7 @@ Future<bool> showLogoutConfirmationDialog(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isSwahili
-                          ? 'Je, una uhakika unataka kutoka kwenye mfumo? Utahitaji kuingia tena ili kuendelea kusimamia mauzo na hesabu.'
-                          : 'Are you sure you want to end your session? You will need your login credentials to sign in again.',
+                      context.tr('Are you sure you want to end your session? You will need your login credentials to sign in again.'),
                       style: AppTypography.bodyMain.copyWith(
                         color: AppColors.textBody,
                         height: 1.5,
@@ -117,7 +116,7 @@ Future<bool> showLogoutConfirmationDialog(
                           foregroundColor: AppColors.textBody,
                         ),
                         child: Text(
-                          isSwahili ? 'Ghairi' : 'Cancel',
+                          context.tr('Cancel'),
                           style: AppTypography.label.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -134,7 +133,7 @@ Future<bool> showLogoutConfirmationDialog(
                           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                         ),
                         child: Text(
-                          isSwahili ? 'Ndio, Ondoka' : 'Sign Out',
+                          context.tr('Sign Out'),
                           style: AppTypography.label.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
@@ -155,6 +154,12 @@ Future<bool> showLogoutConfirmationDialog(
   if (confirmed == true && context.mounted) {
     try {
       await store.logout();
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+          MaterialPageRoute<void>(builder: (_) => const AuthWrapper()),
+          (_) => false,
+        );
+      }
       return true;
     } catch (e) {
       debugPrint('Logout failed: $e');

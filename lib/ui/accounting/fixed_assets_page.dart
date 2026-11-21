@@ -223,7 +223,9 @@ class FixedAssetsPage extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
         title: Text(isSwahili ? 'Futa mali?' : 'Delete asset?'),
         content: Text(
           isSwahili
@@ -236,7 +238,12 @@ class FixedAssetsPage extends StatelessWidget {
             child: Text(isSwahili ? 'Ghairi' : 'Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.standard),
+              ),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(isSwahili ? 'Futa' : 'Delete'),
           ),
@@ -246,14 +253,13 @@ class FixedAssetsPage extends StatelessWidget {
     if (confirmed != true) return;
     await store.deleteFixedAsset(asset.id!);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isSwahili ? 'Mali imefutwa kikamilifu' : 'Asset deleted successfully',
-        ),
-        backgroundColor: AppColors.ink,
-        duration: const Duration(seconds: 2),
-      ),
+    showMarketNotice(
+      context,
+      title: isSwahili ? 'Mali Imefutwa' : 'Asset Deleted',
+      message: isSwahili
+          ? 'Mali imefutwa kikamilifu'
+          : 'Asset deleted successfully',
+      type: MarketNoticeType.success,
     );
   }
 }

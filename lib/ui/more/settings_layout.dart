@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:track_mauzo/l10n/app_localization.dart';
 
 import '../widgets/app_design.dart';
+import '../widgets/common/market_notice.dart';
 
 /// Shared building blocks for the Settings area, styled after the OSPOS
 /// configuration screens (grouped cards, label/field rows, sticky save bar).
@@ -437,22 +439,12 @@ class SettingsSaveBar extends StatelessWidget {
 
 void showSettingsResult(BuildContext context, String message,
     {bool error = false}) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        backgroundColor: error ? AppColors.danger : AppColors.ink,
-        content: Row(
-          children: [
-            Icon(
-              error ? Icons.error_outline_rounded : Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-      ),
-    );
+  showMarketNotice(
+    context,
+    title: error
+        ? context.tr('Save Failed')
+        : context.tr('Settings Updated'),
+    message: message,
+    type: error ? MarketNoticeType.error : MarketNoticeType.success,
+  );
 }

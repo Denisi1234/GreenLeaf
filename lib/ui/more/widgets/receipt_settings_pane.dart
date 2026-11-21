@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../service/esc_pos_receipt_builder.dart';
 import '../../../service/pos_local_store.dart';
 import '../../../service/receipt_settings.dart';
+import '../../../service/thermal_printer_service.dart';
+import '../../receipt/thermal_printer_picker_sheet.dart';
 import '../settings_layout.dart';
 
 /// Receipt configuration pane.
@@ -36,6 +39,55 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
 
   void _update(ReceiptSettings settings) {
     setState(() => _draft = settings);
+  }
+
+  Future<void> _selectThermalPrinter(PosLocalStore store) async {
+    final lang = store.languageCode;
+    final selected = await showThermalPrinterPicker(context);
+    if (selected == null || !mounted) return;
+    await store.setStorePreferences(
+      store.storePreferences.copyWith(
+        thermalPrinterName: selected.name,
+        thermalPrinterAddress: selected.address,
+      ),
+    );
+    if (!mounted) return;
+    showSettingsResult(
+      context,
+      settingsText(
+        lang,
+        'Printer saved: ${selected.name}',
+        'Printa imehifadhiwa: ${selected.name}',
+      ),
+    );
+  }
+
+  Future<void> _testThermalPrinter(PosLocalStore store) async {
+    final lang = store.languageCode;
+    final prefs = store.storePreferences;
+    if (prefs.thermalPrinterAddress.trim().isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      await ThermalPrinterService.instance.printTestTicket(
+        address: prefs.thermalPrinterAddress,
+        storeName: store.activeStoreName,
+        paperWidth: ThermalPaperWidth.fromMm(prefs.thermalPaperWidthMm),
+      );
+      if (!mounted) return;
+      showSettingsResult(
+        context,
+        settingsText(
+          lang,
+          'Test receipt sent to printer',
+          'Risiti ya majaribio imetumwa',
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      showSettingsResult(context, error.toString(), error: true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _save(PosLocalStore store) async {
@@ -229,6 +281,77 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
       ],
     );
 
+    final prefs = store.storePreferences;
+    final hasPrinter = prefs.thermalPrinterAddress.trim().isNotEmpty;
+    final printerLabel = hasPrinter
+        ? '${prefs.thermalPrinterName.isEmpty ? 'Bluetooth' : prefs.thermalPrinterName} (${prefs.thermalPrinterAddress})'
+        : t('Not configured', 'Haijawekwa');
+
+    final printerCard = SettingsCard(
+      icon: Icons.print_outlined,
+      title: t('Bluetooth thermal printer', 'Printa ya Bluetooth (58mm / 80mm)'),
+      description: t(
+        'Print receipts directly to a paired 58mm or 80mm ESC/POS printer.',
+        'Chapisha risiti moja kwa moja kwenda printa ya Bluetooth (58mm au 80mm).',
+      ),
+      children: [
+        SettingsField(
+          label: t('Selected printer', 'Printa iliyochaguliwa'),
+          hint: printerLabel,
+          child: const SizedBox.shrink(),
+        ),
+        SettingsField(
+          label: t('Paper width', 'Upana wa karatasi'),
+          child: DropdownButtonFormField<int>(
+            initialValue: prefs.thermalPaperWidthMm >= 80 ? 80 : 58,
+            items: const [
+              DropdownMenuItem(value: 58, child: Text('58mm (32 columns)')),
+              DropdownMenuItem(value: 80, child: Text('80mm (48 columns)')),
+            ],
+            onChanged: _saving
+                ? null
+                : (value) {
+                    if (value == null) return;
+                    store.setStorePreferences(
+                      prefs.copyWith(thermalPaperWidthMm: value),
+                    );
+                  },
+          ),
+        ),
+        SettingsSwitchTile(
+          title: t('Open cash drawer on print', 'Fungua droo ya pesa'),
+          subtitle: t(
+            'Send drawer kick pulse after receipt cut',
+            'Tuma amri ya kufungua droo baada ya kuchapisha',
+          ),
+          value: prefs.openCashDrawerOnPrint,
+          onChanged: _saving
+              ? null
+              : (value) => store.setStorePreferences(
+                    prefs.copyWith(openCashDrawerOnPrint: value),
+                  ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _saving ? null : () => _selectThermalPrinter(store),
+              icon: const Icon(Icons.bluetooth_searching_rounded, size: 18),
+              label: Text(t('Select printer', 'Chagua printa')),
+            ),
+            FilledButton.icon(
+              onPressed:
+                  _saving || !hasPrinter ? null : () => _testThermalPrinter(store),
+              icon: const Icon(Icons.print_rounded, size: 18),
+              label: Text(t('Test print', 'Jaribu kuchapisha')),
+            ),
+          ],
+        ),
+      ],
+    );
+
     return Column(
       children: [
         Expanded(
@@ -237,6 +360,7 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
             children: [
               contentCard,
               messageCard,
+              printerCard,
             ],
           ),
         ),

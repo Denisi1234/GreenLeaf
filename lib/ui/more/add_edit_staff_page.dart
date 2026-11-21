@@ -12,6 +12,8 @@ import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'widgets/staff_credentials_share_dialog.dart';
 import 'widgets/staff_form_widgets.dart';
+import 'widgets/staff_form_tabs.dart';
+
 
 class AddEditStaffPage extends StatefulWidget {
   const AddEditStaffPage({
@@ -432,377 +434,58 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
   Widget _buildTab(int index) {
     switch (index) {
       case 1:
-        return _buildEmploymentTab();
+        return StaffEmploymentTab(
+          employeeNumberController: _employeeNumberController,
+          jobTitleController: _jobTitleController,
+          departmentController: _departmentController,
+          hourlyRateController: _hourlyRateController,
+          emergencyNameController: _emergencyNameController,
+          emergencyPhoneController: _emergencyPhoneController,
+          emergencyRelationController: _emergencyRelationController,
+          employmentType: _employmentType,
+          hireDate: _hireDate,
+          errors: _errors,
+          onPickHireDate: _pickHireDate,
+          onClearHireDate: () => setState(() => _hireDate = ''),
+          onEmploymentTypeChanged: (type) => setState(() => _employmentType = type),
+          onClearError: (field) => setState(() => _errors.remove(field)),
+        );
       case 2:
-        return _buildLoginTab();
+        return StaffLoginTab(
+          usernameController: _usernameController,
+          passwordController: _passwordController,
+          confirmPasswordController: _confirmPasswordController,
+          isEditing: widget.isEditing,
+          obscurePassword: _obscurePassword,
+          obscureConfirm: _obscureConfirm,
+          errors: _errors,
+          onToggleObscurePassword: () => setState(() => _obscurePassword = !_obscurePassword),
+          onToggleObscureConfirm: () => setState(() => _obscureConfirm = !_obscureConfirm),
+          onClearError: (field) => setState(() => _errors.remove(field)),
+        );
       case 3:
-        return _buildAccessTab();
+        return StaffAccessTab(
+          roles: widget.roles,
+          selectedRoleId: _selectedRoleId,
+          selectedRole: _selectedRole,
+          errors: _errors,
+          onRoleChanged: (roleId) => setState(() => _selectedRoleId = roleId),
+        );
       default:
-        return _buildBasicTab();
+        return StaffBasicInfoTab(
+          nameController: _nameController,
+          phoneController: _phoneController,
+          emailController: _emailController,
+          addressController: _addressController,
+          notesController: _notesController,
+          avatarPath: _avatarPath,
+          status: _status,
+          errors: _errors,
+          onPickAvatar: _pickAvatar,
+          onClearError: (field) => setState(() => _errors.remove(field)),
+          onStatusChanged: (status) => setState(() => _status = status),
+        );
     }
-  }
-
-  Widget _buildBasicTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Center(
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              GestureDetector(
-                onTap: _pickAvatar,
-                child: Container(
-                  width: 112,
-                  height: 112,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceSecondary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.border),
-                    image: _avatarPath == null
-                        ? null
-                        : DecorationImage(
-                            image: appImageProvider(context, _avatarPath!),
-                            fit: BoxFit.cover,
-                          ),
-                  ),
-                  child: _avatarPath == null
-                      ? const Icon(
-                          Icons.person_rounded,
-                          color: AppColors.primary,
-                          size: 54,
-                        )
-                      : null,
-                ),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 4,
-                child: GestureDetector(
-                  onTap: _pickAvatar,
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: const Icon(
-                      Icons.photo_camera_outlined,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 22),
-        StaffFormSection(
-          title: context.tr('Personal Information'),
-          description: context.tr('Core contact details used across the POS.'),
-          children: [
-            StaffAppTextField(
-              controller: _nameController,
-              label: context.tr('Full name'),
-              hint: context.tr('e.g. Amina Joseph'),
-              icon: Icons.person_outline_rounded,
-              errorText: _errors['name'],
-              textCapitalization: TextCapitalization.words,
-              onChanged: (_) => _clearError('name'),
-            ),
-            StaffAppTextField(
-              controller: _phoneController,
-              label: context.tr('Phone number'),
-              hint: 'e.g. +255 712 345 678',
-              icon: Icons.call_outlined,
-              keyboardType: TextInputType.phone,
-              errorText: _errors['phone'],
-              onChanged: (_) => _clearError('phone'),
-            ),
-            StaffAppTextField(
-              controller: _emailController,
-              label: context.tr('Email (optional)'),
-              hint: context.tr('staff@store.co.tz'),
-              icon: Icons.mail_outline_rounded,
-              keyboardType: TextInputType.emailAddress,
-              errorText: _errors['email'],
-              onChanged: (_) => _clearError('email'),
-            ),
-            StaffAppTextField(
-              controller: _addressController,
-              label: context.tr('Address (optional)'),
-              hint: context.tr('Street, city'),
-              icon: Icons.location_on_outlined,
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 4),
-            const StaffFieldLabel('Account status'),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: StaffStatus.values.map((status) {
-                final selected = status == _status;
-                return StaffFormChoicePill(
-                  label: status.label,
-                  selected: selected,
-                  onTap: () => setState(() => _status = status),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 18),
-            StaffAppTextField(
-              controller: _notesController,
-              label: context.tr('Notes (optional)'),
-              hint: context.tr('Internal notes about this staff member'),
-              icon: Icons.sticky_note_2_outlined,
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmploymentTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        StaffFormSection(
-          title: context.tr('Employment Details'),
-          description: context.tr('HR information kept private to store administrators.'),
-          children: [
-            StaffAppTextField(
-              controller: _employeeNumberController,
-              label: context.tr('Employee number (optional)'),
-              hint: context.tr('e.g. EMP-0042'),
-              icon: Icons.badge_outlined,
-              errorText: _errors['employeeNumber'],
-              onChanged: (_) => _clearError('employeeNumber'),
-            ),
-            StaffAppTextField(
-              controller: _jobTitleController,
-              label: context.tr('Job title'),
-              hint: context.tr('e.g. Head Cashier'),
-              icon: Icons.work_outline_rounded,
-              textCapitalization: TextCapitalization.words,
-            ),
-            StaffAppTextField(
-              controller: _departmentController,
-              label: context.tr('Department'),
-              hint: context.tr('e.g. Front counter'),
-              icon: Icons.apartment_outlined,
-              textCapitalization: TextCapitalization.words,
-            ),
-            const StaffFieldLabel('Hire date'),
-            const SizedBox(height: 10),
-            StaffDateField(
-              value: _hireDate,
-              onTap: _pickHireDate,
-              onClear: _hireDate.isEmpty
-                  ? null
-                  : () => setState(() => _hireDate = ''),
-            ),
-            const SizedBox(height: 18),
-            StaffAppDropdown<EmploymentType>(
-              label: context.tr('Employment type'),
-              value: _employmentType,
-              hint: context.tr('Select employment type'),
-              items: EmploymentType.values
-                  .map(
-                    (type) => DropdownMenuItem<EmploymentType>(
-                      value: type,
-                      child: Text(context.tr(type.label)),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) => setState(() => _employmentType = value),
-            ),
-            StaffAppTextField(
-              controller: _hourlyRateController,
-              label: context.tr('Hourly rate (TSh)'),
-              hint: '0',
-              icon: Icons.payments_outlined,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              errorText: _errors['hourlyRate'],
-              onChanged: (_) => _clearError('hourlyRate'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        StaffFormSection(
-          title: context.tr('Emergency Contact'),
-          description: context.tr('Who to reach if something happens at work.'),
-          children: [
-            StaffAppTextField(
-              controller: _emergencyNameController,
-              label: context.tr('Contact name'),
-              hint: context.tr('Full name'),
-              icon: Icons.contact_emergency_outlined,
-              textCapitalization: TextCapitalization.words,
-            ),
-            StaffAppTextField(
-              controller: _emergencyPhoneController,
-              label: context.tr('Contact phone'),
-              hint: context.tr('Phone number'),
-              icon: Icons.phone_in_talk_outlined,
-              keyboardType: TextInputType.phone,
-            ),
-            StaffAppTextField(
-              controller: _emergencyRelationController,
-              label: context.tr('Relationship'),
-              hint: context.tr('e.g. Spouse, Sibling'),
-              icon: Icons.people_outline_rounded,
-              textCapitalization: TextCapitalization.words,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoginTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        StaffFormSection(
-          title: context.tr('Login Credentials'),
-          description: widget.isEditing
-              ? context.tr('Leave the password blank to keep the current one.')
-              : context.tr('Required for staff to sign in at the register.'),
-          children: [
-            StaffAppTextField(
-              controller: _usernameController,
-              label: context.tr('Username'),
-              hint: context.tr('At least 5 characters'),
-              icon: Icons.alternate_email_rounded,
-              errorText: _errors['username'],
-              onChanged: (_) => _clearError('username'),
-            ),
-            StaffAppTextField(
-              controller: _passwordController,
-              label: widget.isEditing ? context.tr('New password (optional)') : context.tr('Password'),
-              hint: context.tr('At least 8 characters'),
-              icon: Icons.lock_outline_rounded,
-              obscureText: _obscurePassword,
-              errorText: _errors['password'],
-              onChanged: (_) => _clearError('password'),
-              suffix: IconButton(
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: AppColors.textMuted,
-                  size: 22,
-                ),
-              ),
-            ),
-            StaffAppTextField(
-              controller: _confirmPasswordController,
-              label: context.tr('Confirm password'),
-              hint: context.tr('Repeat the password'),
-              icon: Icons.lock_reset_rounded,
-              obscureText: _obscureConfirm,
-              errorText: _errors['confirm'],
-              onChanged: (_) => _clearError('confirm'),
-              suffix: IconButton(
-                onPressed: () =>
-                    setState(() => _obscureConfirm = !_obscureConfirm),
-                icon: Icon(
-                  _obscureConfirm
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: AppColors.textMuted,
-                  size: 22,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-         StaffInfoCard(
-          icon: Icons.shield_outlined,
-          title: context.tr('Secure by design'),
-          message:
-              context.tr('Passwords are salted and hashed before they are saved. Only the staff member should know their own password.'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAccessTab() {
-    final role = _selectedRole;
-    final permissions = role?.permissions ?? const <String>[];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        StaffFormSection(
-          title: context.tr('Role & Permissions'),
-          description:
-              context.tr('Permissions are managed by role so access stays consistent across the team.'),
-          children: [
-            StaffAppDropdown<String>(
-              label: context.tr('Assigned role'),
-              value: _selectedRoleId,
-              hint: context.tr('Select a role'),
-              errorText: _errors['role'],
-              items: widget.roles
-                  .map(
-                    (item) => DropdownMenuItem<String>(
-                      value: item.id,
-                      child: Text(item.title),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                _clearError('role');
-                setState(() => _selectedRoleId = value);
-              },
-            ),
-            if (role != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                role.subtitle,
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
-            const SizedBox(height: 18),
-            const StaffFieldLabel('Inherited permissions'),
-            const SizedBox(height: 10),
-            if (permissions.isEmpty)
-               StaffInfoCard(
-                icon: Icons.info_outline_rounded,
-                title: context.tr('No permissions yet'),
-                message:
-                    context.tr('This role has no permissions. Open role details to grant access.'),
-              )
-            else
-              ...permissions.map(
-                (permission) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: StaffPermissionRow(label: permission),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-         StaffInfoCard(
-          icon: Icons.admin_panel_settings_outlined,
-          title: context.tr('Least privilege'),
-          message:
-              context.tr('Grant only what each role needs. Access changes apply instantly to every staff member in the role.'),
-        ),
-      ],
-    );
   }
 
   static String _trimAmount(double value) {

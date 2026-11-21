@@ -20,7 +20,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
     required this.itemTypes,
     required this.unitCount,
     required this.onEnterCash,
-    required this.onAddDiscount,
+    this.onAddDiscount,
     required this.onRecordDebit,
     required this.paymentMethod,
     required this.onMethodChanged,
@@ -42,7 +42,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
   final int itemTypes;
   final int unitCount;
   final VoidCallback onEnterCash;
-  final VoidCallback onAddDiscount;
+  final VoidCallback? onAddDiscount;
   final VoidCallback onRecordDebit;
   final String paymentMethod;
   final ValueChanged<String> onMethodChanged;
@@ -102,25 +102,28 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onAddDiscount,
-                icon: const Icon(Icons.discount_outlined, size: 18),
-                label:
-                    Text(discount == null ? context.tr('Add discount') : context.tr('Edit discount')),
-              ),
-              if (discount != null)
-                IconButton(
-                  tooltip: context.tr('Remove discount'),
-                  onPressed: onRemoveDiscount,
-                  icon: const Icon(Icons.close_rounded,
-                      color: AppColors.dangerDeep),
-                ),
-            ],
-          ),
+          if (onAddDiscount != null || discount != null)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (onAddDiscount != null)
+                  OutlinedButton.icon(
+                    onPressed: onAddDiscount,
+                    icon: const Icon(Icons.discount_outlined, size: 18),
+                    label: Text(discount == null
+                        ? context.tr('Add discount')
+                        : context.tr('Edit discount')),
+                  ),
+                if (discount != null)
+                  IconButton(
+                    tooltip: context.tr('Remove discount'),
+                    onPressed: onRemoveDiscount,
+                    icon: const Icon(Icons.close_rounded,
+                        color: AppColors.dangerDeep),
+                  ),
+              ],
+            ),
           const Divider(height: 32, color: AppColors.border),
           Text(context.tr('Payment method'), style: AppTypography.sectionHeader),
           const SizedBox(height: 12),

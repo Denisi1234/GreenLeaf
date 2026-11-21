@@ -10,6 +10,8 @@ import '../widgets/workspace_widgets.dart';
 import 'add_product_page.dart';
 import 'inventory_product_item.dart';
 import 'widgets/product_cards.dart';
+import 'widgets/inventory_kpi_metrics.dart';
+import 'widgets/inventory_data_table.dart';
 import 'widgets/product_csv_service.dart';
 import 'widgets/product_filter_bar.dart';
 
@@ -43,18 +45,6 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
         _page = 0;
       });
 
-  String _status(InventoryProductItem item) => item.stockCount <= 0
-      ? 'Out of stock'
-      : item.stockCount <= 5
-          ? 'Low stock'
-          : 'In stock';
-
-  Color _statusColor(InventoryProductItem item) => item.stockCount <= 0
-      ? AppColors.dangerDeep
-      : item.stockCount <= 5
-          ? AppColors.warningDeep
-          : AppColors.successDeep;
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -63,6 +53,15 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
 
   Future<void> _openAddProductPage() async {
     final store = context.read<PosLocalStore>();
+    if (!store.hasPermission('Manage Inventory')) {
+      showMarketNotice(
+        context,
+        title: context.tr('Permission Required'),
+        message: context.tr('You do not have permission to manage inventory.'),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
     final nextCode =
         'P${(store.inventory.length + 1).toString().padLeft(3, '0')}';
     final created = await Navigator.of(context).push<InventoryProductItem>(
@@ -96,6 +95,15 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
 
   Future<void> _editProduct(InventoryProductItem product) async {
     final store = context.read<PosLocalStore>();
+    if (!store.hasPermission('Manage Inventory')) {
+      showMarketNotice(
+        context,
+        title: context.tr('Permission Required'),
+        message: context.tr('You do not have permission to manage inventory.'),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
     final updated = await Navigator.of(context).push<InventoryProductItem>(
       MaterialPageRoute<InventoryProductItem>(
         builder: (context) => AddProductPage(
@@ -129,10 +137,22 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
   }
 
   Future<void> _deleteProduct(InventoryProductItem product) async {
+    final store = context.read<PosLocalStore>();
+    if (!store.hasPermission('Manage Inventory')) {
+      showMarketNotice(
+        context,
+        title: context.tr('Permission Required'),
+        message: context.tr('You do not have permission to manage inventory.'),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
         title: Text(
           context.tr('Delete Item?'),
           style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
@@ -153,8 +173,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.standard),
               ),
             ),
             child: Text(
@@ -168,7 +188,6 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
 
     if (shouldDelete != true || !mounted) return;
 
-    final store = context.read<PosLocalStore>();
     try {
       await store.removeProduct(product.code);
     } catch (error) {
@@ -192,6 +211,15 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
 
   Future<void> _handleImportCsv() async {
     final store = context.read<PosLocalStore>();
+    if (!store.hasPermission('Manage Inventory')) {
+      showMarketNotice(
+        context,
+        title: context.tr('Permission Required'),
+        message: context.tr('You do not have permission to manage inventory.'),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
     final count = await ProductCsvService.showImportCsvDialog(context, store);
     if (!mounted) return;
     if (count > 0) {
@@ -206,7 +234,9 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    final inventory = context.watch<PosLocalStore>().inventory;
+    final store = context.watch<PosLocalStore>();
+    final inventory = store.inventory;
+    final canManageInventory = store.hasPermission('Manage Inventory');
     final categories = inventory.map((item) => item.category).toSet().toList()
       ..sort();
     final query = _searchQuery.trim().toLowerCase();
@@ -277,35 +307,42 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                         padding: EdgeInsets.all(wide ? 24 : 16),
                         sliver: SliverList.list(
                           children: [
-                             WorkspaceHeading(
-                              title: context.tr('Inventory'),
-                              subtitle:
-                                  context.tr('Manage your products, pricing and stock availability.'),
-                            ),
-                            const SizedBox(height: 14),
+                            if (!widget.useSharedShell) ...[
+                              WorkspaceHeading(
+                                title: context.tr('Inventory'),
+                                subtitle: context.tr(
+                                  'Manage your products, pricing and stock availability.',
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                            ],
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 46,
-                                    child: FilledButton.icon(
-                                      onPressed: _openAddProductPage,
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: AppColors.successDeep,
-                                        shape: const RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.zero,
+                                if (canManageInventory) ...[
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 46,
+                                      child: FilledButton.icon(
+                                        onPressed: _openAddProductPage,
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor:
+                                              AppColors.successDeep,
+                                          shape: const RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.zero,
+                                          ),
                                         ),
-                                      ),
-                                      icon: const Icon(Icons.add_rounded),
-                                      label:  Text(
-                                        context.tr('Add item'),
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w700),
+                                        icon: const Icon(Icons.add_rounded),
+                                        label: Text(
+                                          context.tr('Add item'),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w700),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
+                                  const SizedBox(width: 10),
+                                ],
                                 IconButton.outlined(
                                   tooltip: context.tr('Export CSV'),
                                   style: OutlinedButton.styleFrom(
@@ -321,90 +358,30 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                   icon: const Icon(Icons.download_rounded,
                                       color: AppColors.ink),
                                 ),
-                                const SizedBox(width: 6),
-                                IconButton.outlined(
-                                  tooltip: context.tr('Import CSV'),
-                                  style: OutlinedButton.styleFrom(
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.zero,
+                                if (canManageInventory) ...[
+                                  const SizedBox(width: 6),
+                                  IconButton.outlined(
+                                    tooltip: context.tr('Import CSV'),
+                                    style: OutlinedButton.styleFrom(
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.zero,
+                                      ),
+                                      side: const BorderSide(
+                                          color: AppColors.border),
                                     ),
-                                    side: const BorderSide(
-                                        color: AppColors.border),
+                                    onPressed: _handleImportCsv,
+                                    icon: const Icon(Icons.upload_file_rounded,
+                                        color: AppColors.ink),
                                   ),
-                                  onPressed: _handleImportCsv,
-                                  icon: const Icon(Icons.upload_file_rounded,
-                                      color: AppColors.ink),
-                                ),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 20),
-                            LayoutBuilder(
-                              builder: (context, metricConstraints) {
-                                final columns =
-                                    metricConstraints.maxWidth >= 760 ? 4 : 2;
-                                final width = (metricConstraints.maxWidth -
-                                        (columns - 1) * 12) /
-                                    columns;
-                                return Wrap(
-                                  spacing: 12,
-                                  runSpacing: 12,
-                                  children: [
-                                    SizedBox(
-                                      width: width,
-                                      child: WorkspaceMetric(
-                                        label: context.tr('Total items'),
-                                        value: '${inventory.length}',
-                                        icon: Icons.inventory_2_outlined,
-                                        sharp: true,
-                                        borderless: true,
-                                        backgroundColor:
-                                            const Color(0xFFFCE7F3),
-                                        color: const Color(0xFFBE185D),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: width,
-                                      child: WorkspaceMetric(
-                                        label: context.tr('Stock value'),
-                                        value: formatProductPrice(stockValue),
-                                        icon: Icons
-                                            .account_balance_wallet_outlined,
-                                        sharp: true,
-                                        borderless: true,
-                                        backgroundColor:
-                                            const Color(0xFFE0F2FE),
-                                        color: const Color(0xFF0369A1),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: width,
-                                      child: WorkspaceMetric(
-                                        label: context.tr('Low stock'),
-                                        value: '$lowCount',
-                                        icon: Icons.trending_down_rounded,
-                                        sharp: true,
-                                        borderless: true,
-                                        backgroundColor:
-                                            const Color(0xFFFEF3C7),
-                                        color: const Color(0xFFB45309),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: width,
-                                      child: WorkspaceMetric(
-                                        label: context.tr('Out of stock'),
-                                        value: '$outCount',
-                                        icon: Icons.inventory_outlined,
-                                        sharp: true,
-                                        borderless: true,
-                                        backgroundColor:
-                                            const Color(0xFFFEE2E2),
-                                        color: const Color(0xFFB91C1C),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
+                            InventoryKpiMetrics(
+                              totalItems: inventory.length,
+                              stockValue: stockValue,
+                              lowCount: lowCount,
+                              outCount: outCount,
                             ),
                             const SizedBox(height: 20),
                             ProductFilterBar(
@@ -473,151 +450,19 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                 ),
                               )
                             else if (wide)
-                              WorkspacePanel(
-                                padding: EdgeInsets.zero,
-                                child: LayoutBuilder(
-                                  builder: (context, tableConstraints) =>
-                                      SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        minWidth: tableConstraints.maxWidth,
-                                      ),
-                                      child: DataTable(
-                                        headingRowColor:
-                                            const WidgetStatePropertyAll(
-                                                AppColors.surfaceSecondary),
-                                        headingTextStyle:
-                                            AppTypography.tableHeader,
-                                        dataTextStyle:
-                                            AppTypography.bodySmall,
-                                        horizontalMargin: 20,
-                                        columnSpacing: 24,
-                                        dataRowMinHeight: 64,
-                                        dataRowMaxHeight: 72,
-                                        sortColumnIndex: _sortColumn,
-                                        sortAscending: _sortAscending,
-                                        columns: [
-                                          for (final entry in [
-                                            'Item',
-                                            'Category',
-                                            'Cost price',
-                                            'Sale price',
-                                            'Quantity'
-                                          ].asMap().entries)
-                                            DataColumn(
-                                              label: Text(entry.value),
-                                              numeric: entry.key >= 2,
-                                              onSort: (index, ascending) =>
-                                                  setState(() {
-                                                _sortColumn = index;
-                                                _sortAscending = ascending;
-                                                _page = 0;
-                                              }),
-                                            ),
-                                           DataColumn(
-                                              label: Text(context.tr('Status'))),
-                                           DataColumn(
-                                              label: Text(context.tr('Actions'))),
-                                        ],
-                                        rows: rows
-                                            .map(
-                                              (item) => DataRow(
-                                                cells: [
-                                                  DataCell(
-                                                    ConstrainedBox(
-                                                      constraints:
-                                                          const BoxConstraints(
-                                                              maxWidth: 240),
-                                                      child: Column(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            item.name,
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                            style: AppTypography
-                                                                .bodySmall
-                                                                .copyWith(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w700,
-                                                            ),
-                                                          ),
-                                                          Text(item.code,
-                                                              style:
-                                                                  AppTypography
-                                                                      .label),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    onTap: () =>
-                                                        _editProduct(item),
-                                                  ),
-                                                  DataCell(
-                                                      Text(item.category)),
-                                                  DataCell(Text(
-                                                      formatProductPrice(
-                                                          item.purchasePrice))),
-                                                  DataCell(Text(
-                                                      formatProductPrice(
-                                                          item.sellingPrice))),
-                                                  DataCell(Text(
-                                                      '${item.stockCount}')),
-                                                  DataCell(
-                                                    WorkspaceStatus(
-                                                      label: _status(item),
-                                                      color:
-                                                          _statusColor(item),
-                                                    ),
-                                                  ),
-                                                  DataCell(
-                                                    Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        IconButton(
-                                                          tooltip: context.tr('Edit item'),
-                                                          onPressed: () =>
-                                                              _editProduct(
-                                                                  item),
-                                                          icon: const Icon(
-                                                              Icons
-                                                                  .edit_outlined,
-                                                              size: 19),
-                                                        ),
-                                                        IconButton(
-                                                          tooltip:
-                                                              context.tr('Delete item'),
-                                                          onPressed: () =>
-                                                              _deleteProduct(
-                                                                  item),
-                                                          icon: const Icon(
-                                                            Icons
-                                                                .delete_outline_rounded,
-                                                            color: AppColors
-                                                                .dangerDeep,
-                                                            size: 19,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              InventoryDataTable(
+                                items: rows,
+                                sortColumn: _sortColumn,
+                                sortAscending: _sortAscending,
+                                onSort: (index, ascending) => setState(() {
+                                  _sortColumn = index;
+                                  _sortAscending = ascending;
+                                  _page = 0;
+                                }),
+                                onEdit:
+                                    canManageInventory ? _editProduct : null,
+                                onDelete:
+                                    canManageInventory ? _deleteProduct : null,
                               )
                             else
                               ...rows.map(
@@ -625,8 +470,12 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                   padding: const EdgeInsets.only(bottom: 10),
                                   child: ProductItemRowCard(
                                     product: item,
-                                    onTap: () => _editProduct(item),
-                                    onDelete: () => _deleteProduct(item),
+                                    onTap: canManageInventory
+                                        ? () => _editProduct(item)
+                                        : null,
+                                    onDelete: canManageInventory
+                                        ? () => _deleteProduct(item)
+                                        : null,
                                   ),
                                 ),
                               ),

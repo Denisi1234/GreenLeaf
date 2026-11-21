@@ -14,11 +14,13 @@ import '../more/create_customer_page.dart';
 import '../receipt/receipt_success_page.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../more/customers_page.dart';
+import 'payment_view_model.dart';
 import 'record_debit_bottom_sheet.dart';
 import '../../utils/currency_formatter.dart';
 import '../../service/app_notification_service.dart';
 import 'widgets/line_discount_dialog.dart';
-import 'widgets/order_lines_list.dart';
+import 'widgets/payment_cart_panel.dart';
+import 'widgets/payment_customer_selector.dart';
 import 'widgets/payment_cash_received_sheet.dart';
 import 'widgets/payment_discount_sheet.dart';
 import 'widgets/payment_totals_summary_panel.dart';
@@ -36,51 +38,51 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  late final List<OrderLineItem> _orderLines;
-  String? _selectedCustomer;
-  double _discountAmount = 0;
-  String? _discountLabel;
-  double? _cashReceived;
-  String _paymentMethod = 'Cash';
-  final List<SplitPaymentEntry> _splitPayments = [];
-  bool _savingSale = false;
-  bool _saleCompleted = false;
+  late final PaymentViewModel _vm;
 
   @override
   void initState() {
     super.initState();
-    final byKey = <String, OrderLineItem>{};
-    for (final item in widget.items) {
-      final key = '${item.name}|${item.size}|${item.price}|${item.type.name}';
-      final existing = byKey[key];
-      if (existing == null) {
-        byKey[key] = OrderLineItem(product: item, quantity: 1);
-      } else {
-        existing.quantity += 1;
-      }
-    }
-    _orderLines = byKey.values.toList();
+    _vm = PaymentViewModel(
+      store: context.read<PosLocalStore>(),
+      initialItems: widget.items,
+    );
   }
 
-  double get _subtotal =>
-      _orderLines.fold(0, (sum, line) => sum + line.totalPrice);
-  double get _tax => 0;
-  double get _appliedDiscount => _discountAmount.clamp(0, _subtotal);
-  double get _grandTotal =>
-      (_subtotal + _tax - _appliedDiscount).clamp(0, double.infinity);
-  double get _totalSplitPaid =>
-      _splitPayments.fold<double>(0.0, (sum, p) => sum + p.amount);
-  double get _remainingDue =>
-      (_grandTotal - _totalSplitPaid).clamp(0, double.infinity);
-  double get _changeDue =>
-      (_cashReceived != null && _cashReceived! > _grandTotal)
-          ? _cashReceived! - _grandTotal
-          : 0;
-  int get _itemTypes => _orderLines.length;
-  int get _unitCount => _orderLines.fold(0, (sum, line) => sum + line.quantity);
-  bool get _hasItems => _orderLines.isNotEmpty;
-  BusinessCategoryConfig get _config =>
-      context.read<PosLocalStore>().businessCategoryConfig;
+  @override
+  void dispose() {
+    _vm.dispose();
+    super.dispose();
+  }
+
+  List<OrderLineItem> get _orderLines => _vm.orderLines;
+  String? get _selectedCustomer => _vm.selectedCustomer;
+  set _selectedCustomer(String? value) => _vm.setCustomer(value);
+  double get _discountAmount => _vm.discountAmount;
+  set _discountAmount(double value) => _vm.setDiscount(value, _vm.discountLabel);
+  String? get _discountLabel => _vm.discountLabel;
+  set _discountLabel(String? value) => _vm.setDiscount(_vm.discountAmount, value);
+  double? get _cashReceived => _vm.cashReceived;
+  set _cashReceived(double? value) => _vm.setCashReceived(value);
+  String get _paymentMethod => _vm.paymentMethod;
+  set _paymentMethod(String value) => _vm.setPaymentMethod(value);
+  List<SplitPaymentEntry> get _splitPayments => _vm.splitPayments;
+  bool get _savingSale => _vm.savingSale;
+  set _savingSale(bool value) => _vm.setSavingSale(value);
+  bool get _saleCompleted => _vm.saleCompleted;
+  set _saleCompleted(bool value) {
+    if (value) _vm.markSaleCompleted();
+  }
+
+  double get _subtotal => _vm.subtotal;
+  double get _appliedDiscount => _vm.appliedDiscount;
+  double get _tax => _vm.tax;
+  double get _grandTotal => _vm.grandTotal;
+  double get _remainingDue => _vm.remainingDue;
+  double get _changeDue => _vm.changeDue;
+  int get _itemTypes => _vm.itemTypes;
+  int get _unitCount => _vm.unitCount;
+  bool get _hasItems => _vm.hasItems;
   String get _paymentTitle => 'Counter';
   String get _paymentSubtitle =>
       'Manage the cart, discounts, and payment with ease.';
@@ -119,6 +121,15 @@ class _PaymentPageState extends State<PaymentPage> {
 
   Future<void> _editLineDiscount(OrderLineItem line) async {
     if (_savingSale) return;
+    if (!context.read<PosLocalStore>().hasPermission('Discounts')) {
+      showMarketNotice(
+        context,
+        title: context.tr('Permission Required'),
+        message: context.tr('You do not have permission to apply discounts.'),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
     final updated = await LineDiscountDialog.show(context, line);
     if (updated == true && mounted) {
       setState(() {});
@@ -149,12 +160,7 @@ class _PaymentPageState extends State<PaymentPage> {
     await context.read<PosLocalStore>().clearCart();
     if (!mounted) return;
     setState(() {
-      _orderLines.clear();
-      _discountAmount = 0;
-      _discountLabel = null;
-      _cashReceived = null;
-      _selectedCustomer = null;
-      _paymentMethod = 'Cash';
+      _vm.clearAll();
     });
   }
 
@@ -214,8 +220,17 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future<void> _applyDiscount() async {
-    final category =
-        context.read<PosLocalStore>().businessCategoryConfig.category;
+    final store = context.read<PosLocalStore>();
+    if (!store.hasPermission('Discounts')) {
+      showMarketNotice(
+        context,
+        title: context.tr('Permission Required'),
+        message: context.tr('You do not have permission to apply discounts.'),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+    final category = store.businessCategoryConfig.category;
     final result = await PaymentDiscountSheet.show(
       context,
       subtotal: _subtotal,
@@ -225,8 +240,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
     if (result != null && mounted) {
       setState(() {
-        _discountAmount = result['amount'] as double;
-        _discountLabel = result['label'] as String;
+        _vm.setDiscount(result['amount'] as double, result['label'] as String);
       });
     }
   }
@@ -278,13 +292,13 @@ class _PaymentPageState extends State<PaymentPage> {
   Future<void> _addSplitPayment(String method, double amount) async {
     if (amount <= 0) return;
     setState(() {
-      _splitPayments.add(SplitPaymentEntry(method: method, amount: amount));
+      _vm.addSplitPayment(SplitPaymentEntry(method: method, amount: amount));
     });
   }
 
   void _removeSplitPayment(int index) {
     setState(() {
-      _splitPayments.removeAt(index);
+      _vm.removeSplitPaymentAt(index);
     });
   }
 
@@ -303,10 +317,6 @@ class _PaymentPageState extends State<PaymentPage> {
       final methodsSummary = _splitPayments.map((p) => '${p.method} (${_amount(p.amount)})').join(' + ');
       await _completeSale(paymentMethod: 'Split: $methodsSummary');
       return;
-    }
-    if (_paymentMethod == 'Cash' && _cashReceived == null) {
-      await _enterCashReceived();
-      if (!mounted || _cashReceived == null) return;
     }
     await _completeSale(paymentMethod: _paymentMethod);
   }
@@ -410,14 +420,15 @@ class _PaymentPageState extends State<PaymentPage> {
           builder: (context) => ReceiptSuccessPage(order: completedOrder),
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('Sale save error: $error\n$stackTrace');
       if (!mounted) return;
       showMarketNotice(
         context,
         title: context.tr('Sale Could Not Complete'),
         message: error is StateError
             ? error.message.toString()
-            : context.tr('The sale could not be saved. Please try again.'),
+            : '${context.tr('The sale could not be saved.')} ($error)',
         type: MarketNoticeType.warning,
       );
     } finally {
@@ -427,7 +438,9 @@ class _PaymentPageState extends State<PaymentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final config = context.watch<PosLocalStore>().businessCategoryConfig;
+    final store = context.watch<PosLocalStore>();
+    final config = store.businessCategoryConfig;
+    final canDiscount = store.hasPermission('Discounts');
     final totals = PaymentTotalsSummaryPanel(
       category: config.category,
       subtotal: _amount(_subtotal),
@@ -443,7 +456,7 @@ class _PaymentPageState extends State<PaymentPage> {
       itemTypes: _itemTypes,
       unitCount: _unitCount,
       onEnterCash: _enterCashReceived,
-      onAddDiscount: _applyDiscount,
+      onAddDiscount: canDiscount ? _applyDiscount : null,
       onRecordDebit: _recordDebit,
       paymentMethod: _paymentMethod,
       onMethodChanged: (method) => setState(() => _paymentMethod = method),
@@ -462,8 +475,10 @@ class _PaymentPageState extends State<PaymentPage> {
       onPressed:
           !_hasItems || _savingSale || _saleCompleted ? null : _confirmPayment,
       style: FilledButton.styleFrom(
-          backgroundColor: AppColors.successDeep,
-          minimumSize: const Size(double.infinity, 54)),
+        backgroundColor: AppColors.successDeep,
+        minimumSize: const Size(double.infinity, 54),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      ),
       icon: _savingSale
           ? const SizedBox(
               width: 18,
@@ -475,59 +490,24 @@ class _PaymentPageState extends State<PaymentPage> {
           ? context.tr('Saving sale…')
           : context.tr('Complete sale • TSh {p0}', args: {'p0': _amount(_grandTotal)})),
     );
-    final customer = WorkspacePanel(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(children: [
-        const Icon(Icons.person_outline_rounded, color: AppColors.textMuted),
-        const SizedBox(width: 12),
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(context.tr('Customer'), style: AppTypography.label),
-          const SizedBox(height: 3),
-          Text(_selectedCustomer ?? context.tr('Walk-in customer'),
-              style: AppTypography.bodyMedium
-                  .copyWith(fontWeight: FontWeight.w700)),
-        ])),
-        if (_selectedCustomer != null)
-          IconButton(
-            tooltip: context.tr('Remove customer'),
-            onPressed: _savingSale
-                ? null
-                : () => setState(() => _selectedCustomer = null),
-            icon: const Icon(Icons.close_rounded, size: 18),
-          ),
-        TextButton(
-            onPressed: _savingSale ? null : _chooseCustomer,
-            child: Text(_selectedCustomer == null ? context.tr('Select') : context.tr('Change'))),
-      ]),
+    final customer = PaymentCustomerSelector(
+      selectedCustomer: _selectedCustomer,
+      savingSale: _savingSale,
+      onSelectCustomer: _chooseCustomer,
+      onClearCustomer: () => setState(() => _selectedCustomer = null),
     );
-    final cart = WorkspacePanel(
-      padding: EdgeInsets.zero,
-      child: Column(children: [
-        Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              Expanded(
-                  child:
-                      Text(context.tr('Current sale'), style: AppTypography.sectionHeader)),
-              Text(context.tr('{p0} items • {p1} units', args: {'p0': _itemTypes, 'p1': _unitCount}),
-                  style: AppTypography.label),
-            ])),
-        const Divider(height: 1),
-        OrderLinesList(
-          orderLines: _orderLines,
-          hasItems: _hasItems,
-          onIncrease: _increaseQuantity,
-          onDecrease: _decreaseQuantity,
-          onEditDiscount: _editLineDiscount,
-        ),
-        Padding(
-            padding: const EdgeInsets.all(12),
-            child: _CounterActionRow(onAddItem: () {
-              if (!_savingSale) Navigator.of(context).pop();
-            })),
-      ]),
+    final cart = PaymentCartPanel(
+      orderLines: _orderLines,
+      hasItems: _hasItems,
+      itemTypes: _itemTypes,
+      unitCount: _unitCount,
+      savingSale: _savingSale,
+      onIncrease: _increaseQuantity,
+      onDecrease: _decreaseQuantity,
+      onEditDiscount: canDiscount ? _editLineDiscount : null,
+      onAddItem: () {
+        if (!_savingSale) Navigator.of(context).pop();
+      },
     );
     final clear = Align(
         alignment: Alignment.centerRight,
@@ -588,24 +568,33 @@ class _PaymentPageState extends State<PaymentPage> {
                   }
                   return Column(children: [
                     Expanded(
-                        child:
-                            ListView(padding: const EdgeInsets.all(16), children: [
-                      customer,
-                      const SizedBox(height: 16),
-                      cart,
-                      const SizedBox(height: 16),
-                      WorkspacePanel(
-                          padding: const EdgeInsets.all(4),
-                          child:
-                              AbsorbPointer(absorbing: _savingSale, child: totals)),
-                      const SizedBox(height: 8),
-                      clear,
-                    ])),
+                        child: ListView(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            children: [
+                          customer,
+                          const SizedBox(height: 12),
+                          cart,
+                          const SizedBox(height: 12),
+                          Material(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.zero,
+                            child: AbsorbPointer(
+                              absorbing: _savingSale,
+                              child: totals,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: clear,
+                          ),
+                        ])),
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       decoration: const BoxDecoration(
                           color: AppColors.surface,
-                          border: Border(top: BorderSide(color: AppColors.border))),
+                          border: Border(
+                              top: BorderSide(color: AppColors.divider))),
                       child: charge,
                     ),
                   ]);
@@ -627,48 +616,3 @@ class _PaymentPageState extends State<PaymentPage> {
 }
 
 String _clearLabel(BusinessCategory category) => 'Clear';
-
-class _CounterActionRow extends StatelessWidget {
-  const _CounterActionRow({
-    required this.onAddItem,
-  });
-
-  final VoidCallback onAddItem;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: onAddItem,
-            child: Container(
-              height: 54,
-              alignment: Alignment.center,
-              color: AppColors.surface,
-              child:  Text(
-                context.tr('Add New Item'),
-                style: TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-
-
-
-
-
-
-
-
-
-

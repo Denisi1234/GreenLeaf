@@ -7,8 +7,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../service/esc_pos_receipt_builder.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
+import '../../service/thermal_printer_service.dart';
 import '../shell/app_shell.dart';
 import '../widgets/app_design.dart';
 import '../widgets/app_image.dart';
@@ -17,6 +19,7 @@ import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
 import 'receipt_document.dart';
 import 'receipt_pdf_service.dart';
+import 'thermal_printer_picker_sheet.dart';
 
 class ReceiptPreviewPage extends StatefulWidget {
   const ReceiptPreviewPage({super.key, required this.order});
@@ -84,6 +87,36 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
   Future<void> _print() async {
     final bytes = await _bytes();
     await Printing.layoutPdf(name: _fileName, onLayout: (_) async => bytes);
+  }
+
+  Future<void> _thermalPrint() async {
+    final store = context.read<PosLocalStore>();
+    var prefs = store.storePreferences;
+    var address = prefs.thermalPrinterAddress.trim();
+    if (address.isEmpty) {
+      final picked = await showThermalPrinterPicker(context);
+      if (picked == null || !mounted) return;
+      address = picked.address;
+      prefs = prefs.copyWith(
+        thermalPrinterName: picked.name,
+        thermalPrinterAddress: picked.address,
+      );
+      await store.setStorePreferences(prefs);
+    }
+    await ThermalPrinterService.instance.printReceipt(
+      receipt: _receipt,
+      address: address,
+      paperWidth: ThermalPaperWidth.fromMm(prefs.thermalPaperWidthMm),
+      openCashDrawer: prefs.openCashDrawerOnPrint,
+    );
+    if (mounted) {
+      showMarketNotice(
+        context,
+        title: context.tr('Receipt sent'),
+        message: context.tr('Printed on Bluetooth thermal printer.'),
+        type: MarketNoticeType.success,
+      );
+    }
   }
 
   Future<void> _download() async {
@@ -195,7 +228,8 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                PopupMenuItem(value: 'sms', child: Text(context.tr('Open in SMS'))),
                PopupMenuItem(
                   value: 'whatsapp', child: Text(context.tr('Open in WhatsApp'))),
-              if (!_receipt.isVoided) ...[
+              if (!_receipt.isVoided &&
+                  context.read<PosLocalStore>().hasPermission('Process Returns')) ...[
                 const PopupMenuDivider(),
                  PopupMenuItem(
                     value: 'edit', child: Text(context.tr('Reopen for editing'))),
@@ -232,8 +266,14 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                         builder: (context, constraints) =>
                             Wrap(spacing: 12, runSpacing: 10, children: [
                               OutlinedButton.icon(
+                                  onPressed:
+                                      _busy ? null : () => _run(_thermalPrint),
+                                  icon: const Icon(Icons.print_rounded,
+                                      size: 19),
+                                  label: Text(context.tr('Thermal print'))),
+                              OutlinedButton.icon(
                                   onPressed: _busy ? null : () => _run(_print),
-                                  icon: const Icon(Icons.print_outlined,
+                                  icon: const Icon(Icons.picture_as_pdf_outlined,
                                       size: 19),
                                   label:  Text(context.tr('Print'))),
                               OutlinedButton.icon(

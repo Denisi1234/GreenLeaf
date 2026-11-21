@@ -9,12 +9,25 @@ import '../pos_local_store.dart';
 /// Can be injected directly via `Provider<SalesService>` or accessed through `store.salesService`.
 class SalesService extends ChangeNotifier {
   SalesService(this._store) {
+    _snapshot = _captureSnapshot();
     _store.addListener(_onStoreUpdate);
   }
 
   final PosLocalStore _store;
+  late (int, double, int, String?, int) _snapshot;
+
+  (int, double, int, String?, int) _captureSnapshot() => (
+        _store.cartCount,
+        _store.cartTotal,
+        _store.orders.length,
+        _store.orders.isEmpty ? null : _store.orders.first.id,
+        _store.suspendedSales.length,
+      );
 
   void _onStoreUpdate() {
+    final next = _captureSnapshot();
+    if (next == _snapshot) return;
+    _snapshot = next;
     notifyListeners();
   }
 
@@ -27,17 +40,16 @@ class SalesService extends ChangeNotifier {
   List<ProductItem> get cartItems => _store.cartItems;
   List<CompletedOrder> get orders => _store.orders;
   List<SuspendedSale> get suspendedSales => _store.suspendedSales;
-  double get cartSubtotal => _store.cartSubtotal;
-  double get cartTax => _store.cartTax;
   double get cartTotal => _store.cartTotal;
   int get cartCount => _store.cartCount;
 
-  void addToCart(ProductItem product) => _store.addToCart(product);
+  bool addToCart(ProductItem product) => _store.addToCart(product);
 
-  void addToCartQuantity(ProductItem product, int quantity) =>
+  bool addToCartQuantity(ProductItem product, int quantity) =>
       _store.addToCartQuantity(product, quantity);
 
-  void removeSingleFromCart(int index) => _store.removeSingleFromCart(index);
+  bool removeSingleFromCart(ProductItem product) =>
+      _store.removeSingleFromCart(product);
 
   void removeFromCart(int index) => _store.removeFromCart(index);
 
@@ -56,7 +68,7 @@ class SalesService extends ChangeNotifier {
   void deleteSuspendedSale(String id) => _store.deleteSuspendedSale(id);
 
   Future<CompletedOrder> completeCashSale({
-    required List<ProductItem> items,
+    required List<OrderLineItem> items,
     required double cashTendered,
     required String cashierName,
     required String registerName,

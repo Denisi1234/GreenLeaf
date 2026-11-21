@@ -42,7 +42,9 @@ class ReceivingPage extends StatefulWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
         title: Text(sw ? 'Futa upokeaji?' : 'Delete receiving record?'),
         content: Text(
           sw
@@ -55,7 +57,12 @@ class ReceivingPage extends StatefulWidget {
             child: Text(sw ? 'Ghairi' : 'Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.standard),
+              ),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(sw ? 'Futa' : 'Delete'),
           ),
@@ -65,16 +72,13 @@ class ReceivingPage extends StatefulWidget {
     if (confirmed != true) return;
     await store.deleteReceiving(receiving.id!);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          sw
-              ? 'Rekodi ya upokeaji imefutwa'
-              : 'Receiving record deleted successfully',
-        ),
-        backgroundColor: AppColors.ink,
-        duration: const Duration(seconds: 2),
-      ),
+    showMarketNotice(
+      context,
+      title: sw ? 'Upokeaji Umefutwa' : 'Receiving Deleted',
+      message: sw
+          ? 'Rekodi ya upokeaji imefutwa'
+          : 'Receiving record deleted successfully',
+      type: MarketNoticeType.success,
     );
   }
 

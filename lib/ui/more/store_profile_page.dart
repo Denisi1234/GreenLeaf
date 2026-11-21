@@ -88,9 +88,7 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
       });
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(strings.logoUnavailable)),
-      );
+      showSettingsResult(context, strings.logoUnavailable, error: true);
     }
   }
 
@@ -121,15 +119,11 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
         _logoFile = null;
         _dirty = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(strings.settingsSaved)),
-      );
+      showSettingsResult(context, strings.settingsSaved);
       widget.onSaved?.call();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(strings.settingsSaveFailed)),
-      );
+      showSettingsResult(context, strings.settingsSaveFailed, error: true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -304,6 +298,38 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
                   keyboardType: TextInputType.number,
                   onChanged: (_) => _markDirty(),
                 ),
+              ),
+            ],
+          ),
+          SettingsCard(
+            icon: Icons.account_balance_wallet_outlined,
+            title: t('Advanced Accounting', 'Uhasibu wa Kina'),
+            description: t(
+              'Show double-entry ledger, bank reconciliation and fixed assets.',
+              'Onyesha daftari la hesabu, upatanishi wa benki na mali za kudumu.',
+            ),
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  t('Enable Advanced Accounting', 'Washa Uhasibu wa Kina'),
+                  style: AppTypography.bodyMain.copyWith(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  t(
+                    'Keep disabled for a fast, simple retail POS experience.',
+                    'Acha imezimwa kwa matumizi mepesi na ya haraka ya duka.',
+                  ),
+                  style: AppTypography.label,
+                ),
+                value: store.preferences.enableAdvancedAccounting,
+                onChanged: _saving
+                    ? null
+                    : (value) async {
+                        await store.setStorePreferences(
+                          store.preferences.copyWith(enableAdvancedAccounting: value),
+                        );
+                      },
               ),
             ],
           ),

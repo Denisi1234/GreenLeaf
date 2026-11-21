@@ -359,6 +359,18 @@ class _AccountsPageState extends State<AccountsPage>
     );
     if (result == null) return;
     await store.saveAccount(result);
+    if (!context.mounted) return;
+    showMarketNotice(
+      context,
+      title: account == null
+          ? _t('Account Added', 'Akaunti Imeongezwa')
+          : _t('Account Updated', 'Akaunti Imesasishwa'),
+      message: _t(
+        '${result.name} has been saved to your chart of accounts.',
+        '${result.name} imehifadhiwa kwenye orodha ya akaunti.',
+      ),
+      type: MarketNoticeType.success,
+    );
   }
 
   void _openJournalForm(BuildContext context) {
@@ -376,7 +388,9 @@ class _AccountsPageState extends State<AccountsPage>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
         title: Text(_t('Delete entry?', 'Futa kumbukumbu?')),
         content: Text(
           _t('This cannot be undone.', 'Hili haliwezi kurejeshwa.'),
@@ -387,7 +401,12 @@ class _AccountsPageState extends State<AccountsPage>
             child: Text(_t('Cancel', 'Ghairi')),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.standard),
+              ),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(_t('Delete', 'Futa')),
           ),
@@ -396,6 +415,13 @@ class _AccountsPageState extends State<AccountsPage>
     );
     if (confirmed != true) return;
     await store.deleteJournalEntry(entry.id!);
+    if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: _t('Entry Deleted', 'Kumbukumbu Imefutwa'),
+      message: _t('Journal entry was removed.', 'Kumbukumbu ya daftari imeondolewa.'),
+      type: MarketNoticeType.success,
+    );
   }
 
   static String _money(double value) {

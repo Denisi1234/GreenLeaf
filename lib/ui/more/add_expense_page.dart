@@ -209,7 +209,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
     );
 
     final store = context.read<PosLocalStore>();
-    final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     final strings = AppStrings.of(store.languageCode);
 
@@ -219,25 +218,27 @@ class _AddExpensePageState extends State<AddExpensePage> {
       } else {
         await store.updateExpense(expense);
       }
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(_dual(
-              strings,
-              '${expense.title} has been recorded successfully.',
-              '${expense.title} imerekodiwa kikamilifu.')),
-          backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 2),
-        ),
+      if (!mounted) return;
+      showMarketNotice(
+        context,
+        title: base == null
+            ? _dual(strings, 'Expense Recorded', 'Matumizi Yamerekodiwa')
+            : _dual(strings, 'Expense Updated', 'Matumizi Yamesasishwa'),
+        message: _dual(
+            strings,
+            '${expense.title} has been recorded successfully.',
+            '${expense.title} imerekodiwa kikamilifu.'),
+        type: MarketNoticeType.success,
       );
       nav.pop();
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(error.toString()),
-          backgroundColor: AppColors.danger,
-        ),
+      showMarketNotice(
+        context,
+        title: _dual(strings, 'Save Failed', 'Imeshindikana Kuhifadhi'),
+        message: error.toString(),
+        type: MarketNoticeType.error,
       );
     }
   }

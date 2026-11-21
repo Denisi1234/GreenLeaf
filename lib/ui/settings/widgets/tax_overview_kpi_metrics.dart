@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../utils/currency_formatter.dart';
-import '../../widgets/app_design.dart';
 import '../../widgets/workspace_widgets.dart';
 
 /// Clean operational KPI metrics for the Tax Settings & Overview screen.

@@ -108,6 +108,8 @@ class StaffRoleData {
   final List<String> permissions;
   final int sortOrder;
 
+  bool get isOwnerAdmin => id == 'role-owner' || id == 'role-admin' || title.toLowerCase() == 'owner' || title.toLowerCase() == 'admin';
+
   StaffRoleData copyWith({
     String? id,
     String? title,

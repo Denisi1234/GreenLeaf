@@ -9,6 +9,7 @@ import 'php_api_client.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
 import 'receipt_settings.dart';
+import 'tax_settings.dart';
 
 /// Local-first database used in cloud mode.
 ///
@@ -60,12 +61,12 @@ class PosHybridDatabase extends PosLocalDatabase {
     _prepared = true;
   }
 
-  void startAutoSync() {
+  void startAutoSync({Duration interval = const Duration(minutes: 5)}) {
     _retryTimer?.cancel();
-    // Professional real-time live sync for remote store monitoring:
-    // Pull fresh changes every 5 seconds so a store owner in Mwanza sees sales made in Dodoma almost instantaneously.
+    // Battery-optimized background sync interval (5 minutes) while immediate local
+    // changes (sales, refunds, inventory) trigger push flush within 300ms.
     _retryTimer = Timer.periodic(
-      const Duration(seconds: 5),
+      interval,
       (_) => syncNow(pull: true),
     );
     _scheduleFlush();
@@ -230,8 +231,30 @@ class PosHybridDatabase extends PosLocalDatabase {
               event['kind'] == 'replace' &&
               event['resource'] is String) {
             try {
-              await api.rows(event['resource']! as String);
-              await _applyEvent(event);
+              final res = event['resource']! as String;
+              final remoteRows = await api.rows(res);
+              final raw = event['payload'] as String?;
+              if (raw != null) {
+                final localRows = (jsonDecode(raw) as List)
+                    .map((row) => Map<String, Object?>.from(row as Map))
+                    .toList();
+                final keyField = res == 'products' ? 'code' : 'id';
+                final mergedByKey = <String, Map<String, Object?>>{
+                  for (final r in remoteRows)
+                    if (r[keyField] != null) '${r[keyField]}': r,
+                };
+                for (final l in localRows) {
+                  final k = l[keyField]?.toString();
+                  if (k != null) {
+                    mergedByKey[k] = l;
+                  }
+                }
+                final mergedEvent = Map<String, Object?>.from(event)
+                  ..['payload'] = jsonEncode(mergedByKey.values.toList());
+                await _applyEvent(mergedEvent);
+              } else {
+                await _applyEvent(event);
+              }
               await _deleteEvent(event['id']);
               continue;
             } on ApiException {
@@ -267,6 +290,8 @@ class PosHybridDatabase extends PosLocalDatabase {
     final recordId = event['record_id'] as String?;
     final raw = event['payload'] as String?;
     final payload = raw == null ? null : jsonDecode(raw);
+    final idempotencyKey =
+        'tm-${event['id']}-$kind-${recordId ?? resource ?? 'batch'}';
 
     switch (kind) {
       case 'checkout':
@@ -274,22 +299,78 @@ class PosHybridDatabase extends PosLocalDatabase {
           'POST',
           'checkout',
           body: Map<String, Object?>.from(payload as Map),
+          idempotencyKey: idempotencyKey,
         );
       case 'void':
         await api.request(
           'POST',
           'orders/${Uri.encodeComponent(recordId ?? '')}/void',
+          idempotencyKey: idempotencyKey,
         );
       case 'replace':
         final rows = (payload as List)
             .map((row) => Map<String, Object?>.from(row as Map))
             .toList();
-        await api.replace(resource!, await _uploadRows(rows));
+        await api.replace(
+          resource!,
+          await _uploadRows(rows),
+          idempotencyKey: idempotencyKey,
+        );
       case 'put':
         final row = Map<String, Object?>.from(payload as Map);
-        await api.put(resource!, recordId!, await _uploadImages(row));
+        await api.put(
+          resource!,
+          recordId!,
+          await _uploadImages(row),
+          idempotencyKey: idempotencyKey,
+        );
       case 'delete':
-        await api.delete(resource!, recordId!);
+        await api.delete(
+          resource!,
+          recordId!,
+          idempotencyKey: idempotencyKey,
+        );
+      case 'stock-delta':
+        final payloadMap = Map<String, Object?>.from(payload as Map);
+        final rawDeltas =
+            Map<String, Object?>.from(payloadMap['deltas'] as Map);
+        final threshold =
+            (payloadMap['low_stock_threshold'] as num?)?.toInt() ?? 20;
+        try {
+          await api.request(
+            'POST',
+            'products/stock-delta',
+            body: <String, Object?>{'deltas': rawDeltas},
+            idempotencyKey: idempotencyKey,
+          );
+          break;
+        } on ApiException catch (error) {
+          if (error.status != 404 && error.status != 405) rethrow;
+        }
+        final remoteRows = await api.rows('products');
+        final byCode = <String, Map<String, Object?>>{
+          for (final row in remoteRows)
+            if (row['code'] != null) '${row['code']}': row,
+        };
+        for (final entry in rawDeltas.entries) {
+          final delta = (entry.value as num).toInt();
+          if (delta == 0) continue;
+          final remote = byCode[entry.key];
+          if (remote == null) continue;
+          final current = (remote['stock_count'] as num?)?.toInt() ?? 0;
+          final next = (current + delta).clamp(0, 1 << 31).toInt();
+          final state = next <= 0
+              ? InventoryStockState.outOfStock
+              : next <= threshold
+                  ? InventoryStockState.lowStock
+                  : InventoryStockState.inStock;
+          final updated = <String, Object?>{
+            ...remote,
+            'stock_count': next,
+            'stock_state': state.name,
+          };
+          await api.put('products', entry.key, await _uploadImages(updated));
+        }
       case 'staff-account':
         final row = Map<String, Object?>.from(
           (payload as Map)['staff'] as Map,
@@ -364,12 +445,41 @@ class PosHybridDatabase extends PosLocalDatabase {
 
     final receipt = await api.rows('receipt-settings');
     if (receipt.isNotEmpty) {
+      final row = receipt.first;
+      bool flag(String key) => row[key] == null || row[key] != 0;
       await super.saveReceiptSettings(ReceiptSettings(
-        showStoreContact: receipt.first['show_store_contact'] != 0,
-        footer: receipt.first['footer'] as String? ?? '',
+        showStoreContact: flag('show_store_contact'),
+        showTaxId: flag('show_tax_id'),
+        showOrderNumber: flag('show_order_number'),
+        showDateTime: flag('show_date_time'),
+        showCashier: flag('show_cashier'),
+        showCustomer: flag('show_customer'),
+        showPaymentMethod: flag('show_payment_method'),
+        showItemCount: flag('show_item_count'),
+        showDiscount: flag('show_discount'),
+        header: row['header'] as String? ?? '',
+        footer: row['footer'] as String? ?? '',
       ));
     } else {
       await super.saveReceiptSettings(const ReceiptSettings());
+    }
+
+    try {
+      final tax = await api.rows('tax-settings');
+      if (tax.isNotEmpty) {
+        await super.saveTaxSettings(TaxSettings.fromJson(tax.first));
+      }
+    } on ApiException catch (error) {
+      if (error.status != 404 && error.status != 403) rethrow;
+    }
+
+    try {
+      final debitRows = await api.rows('debit-entries');
+      if (debitRows.isNotEmpty) {
+        await super.replaceDebitEntries(debitRows, storeId);
+      }
+    } on ApiException catch (error) {
+      if (error.status != 404 && error.status != 403) rethrow;
     }
   }
 
@@ -479,6 +589,52 @@ class PosHybridDatabase extends PosLocalDatabase {
     );
   }
 
+  @override
+  Future<void> upsertInventoryItem(
+    InventoryProductItem item,
+    String storeId,
+  ) async {
+    await super.upsertInventoryItem(item, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'products',
+      recordId: item.code,
+      payload: inventoryToMap(item, storeId),
+    );
+  }
+
+  @override
+  Future<void> deleteInventoryItem(String code, String storeId) async {
+    await super.deleteInventoryItem(code, storeId);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'products',
+      recordId: code,
+    );
+  }
+
+  @override
+  Future<void> adjustInventoryStock(
+    Map<String, int> deltas,
+    String storeId, {
+    int lowStockThreshold = 20,
+  }) async {
+    if (deltas.isEmpty) return;
+    await super.adjustInventoryStock(
+      deltas,
+      storeId,
+      lowStockThreshold: lowStockThreshold,
+    );
+    await _enqueue(
+      kind: 'stock-delta',
+      resource: 'products',
+      payload: <String, Object?>{
+        'deltas': deltas,
+        'low_stock_threshold': lowStockThreshold,
+      },
+    );
+  }
+
   /// Persists inventory without queueing a cloud replace. Used after a void,
   /// where the server already restores stock from the voided sale.
   Future<void> replaceInventoryLocal(
@@ -539,6 +695,30 @@ class PosHybridDatabase extends PosLocalDatabase {
   }
 
   @override
+  Future<void> upsertStaffRole(
+    Map<String, Object?> role,
+    String storeId,
+  ) async {
+    await super.upsertStaffRole(role, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'roles',
+      recordId: '${role['id']}',
+      payload: role,
+    );
+  }
+
+  @override
+  Future<void> deleteStaffRoleRecord(String roleId, String storeId) async {
+    await super.deleteStaffRoleRecord(roleId, storeId);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'roles',
+      recordId: roleId,
+    );
+  }
+
+  @override
   Future<void> replaceStaffMembers(
     List<Map<String, Object?>> members,
     String storeId,
@@ -549,7 +729,8 @@ class PosHybridDatabase extends PosLocalDatabase {
 
   @override
   Future<void> saveStaffMember(Map<String, Object?> member) async {
-    await super.saveStaffMember(member);
+    final row = <String, Object?>{'store_id': storeId, ...member};
+    await super.saveStaffMember(row);
     await _enqueue(
       kind: 'put',
       resource: 'staff',
@@ -569,7 +750,8 @@ class PosHybridDatabase extends PosLocalDatabase {
     Map<String, Object?> staff,
     String? password,
   ) async {
-    await super.saveStaffMember(staff);
+    final row = <String, Object?>{'store_id': storeId, ...staff};
+    await super.saveStaffMember(row);
     if (password != null && password.isNotEmpty) {
       await _enqueue(
         kind: 'staff-account',
@@ -597,6 +779,184 @@ class PosHybridDatabase extends PosLocalDatabase {
       kind: 'replace',
       resource: 'customers',
       payload: customers,
+    );
+  }
+
+  @override
+  Future<void> upsertCustomer(
+    Map<String, Object?> customer,
+    String storeId,
+  ) async {
+    await super.upsertCustomer(customer, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'customers',
+      recordId: '${customer['id']}',
+      payload: {...customer, 'store_id': storeId},
+    );
+  }
+
+  @override
+  Future<void> deleteCustomerRecord(String customerId, String storeId) async {
+    await super.deleteCustomerRecord(customerId, storeId);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'customers',
+      recordId: customerId,
+    );
+  }
+
+  @override
+  Future<void> insertDebitEntry(
+    Map<String, Object?> entry,
+    String storeId,
+  ) async {
+    await super.insertDebitEntry(entry, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'debit-entries',
+      recordId: '${entry['id']}',
+      payload: {...entry, 'store_id': storeId},
+    );
+  }
+
+  @override
+  Future<void> replaceDebitEntries(
+    List<Map<String, Object?>> entries,
+    String storeId,
+  ) async {
+    await super.replaceDebitEntries(entries, storeId);
+    await _enqueue(
+      kind: 'replace',
+      resource: 'debit-entries',
+      payload: entries,
+    );
+  }
+
+  @override
+  Future<void> deleteDebitEntryRecord(String entryId, String storeId) async {
+    await super.deleteDebitEntryRecord(entryId, storeId);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'debit-entries',
+      recordId: entryId,
+    );
+  }
+
+  @override
+  Future<int> insertRegisterShift(
+    Map<String, Object?> shift,
+    String storeId,
+  ) async {
+    final id = await super.insertRegisterShift(shift, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'register-shifts',
+      recordId: '$id',
+      payload: {...shift, 'id': id, 'store_id': storeId},
+    );
+    return id;
+  }
+
+  @override
+  Future<void> updateRegisterShift(int id, Map<String, Object?> shift) async {
+    await super.updateRegisterShift(id, shift);
+    final rows = await super.loadRegisterShifts(storeId);
+    final updated = rows.firstWhere(
+      (row) => row['id'] == id,
+      orElse: () => <String, Object?>{...shift, 'id': id, 'store_id': storeId},
+    );
+    await _enqueue(
+      kind: 'put',
+      resource: 'register-shifts',
+      recordId: '$id',
+      payload: updated,
+    );
+  }
+
+  @override
+  Future<void> insertCashMovement(
+    Map<String, Object?> movement,
+    String storeId,
+  ) async {
+    final db = await database;
+    final id = await db.insert('cash_movements', {...movement, 'store_id': storeId});
+    await _enqueue(
+      kind: 'put',
+      resource: 'cash-movements',
+      recordId: '$id',
+      payload: {...movement, 'id': id, 'store_id': storeId},
+    );
+  }
+
+  @override
+  Future<void> deleteCashMovement(int id) async {
+    await super.deleteCashMovement(id);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'cash-movements',
+      recordId: '$id',
+    );
+  }
+
+  @override
+  Future<int> insertSupplier(
+    Map<String, Object?> supplier,
+    String storeId,
+  ) async {
+    final id = await super.insertSupplier(supplier, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'suppliers',
+      recordId: '$id',
+      payload: {...supplier, 'id': id, 'store_id': storeId},
+    );
+    return id;
+  }
+
+  @override
+  Future<void> updateSupplier(int id, Map<String, Object?> supplier) async {
+    await super.updateSupplier(id, supplier);
+    await _enqueue(
+      kind: 'put',
+      resource: 'suppliers',
+      recordId: '$id',
+      payload: {...supplier, 'id': id, 'store_id': storeId},
+    );
+  }
+
+  @override
+  Future<void> deleteSupplier(int id) async {
+    await super.deleteSupplier(id);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'suppliers',
+      recordId: '$id',
+    );
+  }
+
+  @override
+  Future<int> insertReceiving(
+    Map<String, Object?> receiving,
+    String storeId,
+  ) async {
+    final id = await super.insertReceiving(receiving, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'receivings',
+      recordId: '$id',
+      payload: {...receiving, 'id': id, 'store_id': storeId},
+    );
+    return id;
+  }
+
+  @override
+  Future<void> deleteReceiving(int id) async {
+    await super.deleteReceiving(id);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'receivings',
+      recordId: '$id',
     );
   }
 
@@ -670,7 +1030,34 @@ class PosHybridDatabase extends PosLocalDatabase {
       recordId: '1',
       payload: {
         'show_store_contact': settings.showStoreContact ? 1 : 0,
+        'show_tax_id': settings.showTaxId ? 1 : 0,
+        'show_order_number': settings.showOrderNumber ? 1 : 0,
+        'show_date_time': settings.showDateTime ? 1 : 0,
+        'show_cashier': settings.showCashier ? 1 : 0,
+        'show_customer': settings.showCustomer ? 1 : 0,
+        'show_payment_method': settings.showPaymentMethod ? 1 : 0,
+        'show_item_count': settings.showItemCount ? 1 : 0,
+        'show_discount': settings.showDiscount ? 1 : 0,
+        'header': settings.header,
         'footer': settings.footer,
+      },
+    );
+  }
+
+  @override
+  Future<void> saveTaxSettings(TaxSettings settings) async {
+    await super.saveTaxSettings(settings);
+    await _enqueue(
+      kind: 'put',
+      resource: 'tax-settings',
+      recordId: '1',
+      payload: {
+        'enabled': settings.enabled ? 1 : 0,
+        'rate_percent': settings.ratePercent,
+        'prices_include_tax': settings.pricesIncludeTax ? 1 : 0,
+        'tax_id': settings.taxId,
+        'tax_label': settings.taxLabel,
+        'track_expense_tax': settings.trackExpenseTax ? 1 : 0,
       },
     );
   }

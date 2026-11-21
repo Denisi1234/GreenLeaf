@@ -63,6 +63,7 @@ void main() {
   testWidgets('catalog search opens live reports and empty-state guidance',
       (tester) async {
     final store = PosLocalStore();
+    await tester.runAsync(() => store.setLanguageCode('en'));
     addTearDown(store.dispose);
     await tester.pumpWidget(ChangeNotifierProvider.value(
       value: store,

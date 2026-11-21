@@ -2,7 +2,6 @@ import '../../../l10n/app_strings.dart';
 import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,12 +9,9 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
-import '../models/report_models.dart';
 import '../pos_report_data.dart';
 
 class ExportPayload {
@@ -66,10 +62,15 @@ class ReportExportService {
         isSnapshot: isSnapshot,
         languageCode: context.strings.languageCode,
       );
+      final dir = await getTemporaryDirectory();
+      final safeName =
+          export.fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+      final file = File('${dir.path}/$safeName');
+      await file.writeAsBytes(export.bytes, flush: true);
       await SharePlus.instance.share(
         ShareParams(
-          files: [XFile.fromData(export.bytes, mimeType: export.mimeType)],
-          fileNameOverrides: [export.fileName],
+          files: [XFile(file.path, mimeType: export.mimeType)],
+          text: title,
         ),
       );
     } catch (e) {

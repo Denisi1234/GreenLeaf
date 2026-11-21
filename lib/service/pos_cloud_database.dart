@@ -4,6 +4,7 @@ import 'php_api_client.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
 import 'receipt_settings.dart';
+import 'tax_settings.dart';
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
 
@@ -59,6 +60,63 @@ class PosCloudDatabase extends PosLocalDatabase {
               items.map((item) => inventoryToMap(item, storeId)).toList()));
 
   @override
+  Future<void> upsertInventoryItem(
+    InventoryProductItem item,
+    String storeId,
+  ) async =>
+      api.put(
+        'products',
+        item.code,
+        await _images(inventoryToMap(item, storeId)),
+      );
+
+  @override
+  Future<void> deleteInventoryItem(String code, String storeId) =>
+      api.delete('products', code);
+
+  @override
+  Future<void> adjustInventoryStock(
+    Map<String, int> deltas,
+    String storeId, {
+    int lowStockThreshold = 20,
+  }) async {
+    if (deltas.isEmpty) return;
+    try {
+      await api.request(
+        'POST',
+        'products/stock-delta',
+        body: <String, Object?>{'deltas': deltas},
+      );
+      return;
+    } on ApiException catch (error) {
+      if (error.status != 404 && error.status != 405) rethrow;
+    }
+    final remoteRows = await api.rows('products');
+    final byCode = <String, Map<String, Object?>>{
+      for (final row in remoteRows)
+        if (row['code'] != null) '${row['code']}': row,
+    };
+    for (final entry in deltas.entries) {
+      if (entry.value == 0) continue;
+      final remote = byCode[entry.key];
+      if (remote == null) continue;
+      final current = (remote['stock_count'] as num?)?.toInt() ?? 0;
+      final next = (current + entry.value).clamp(0, 1 << 31).toInt();
+      final state = next <= 0
+          ? InventoryStockState.outOfStock
+          : next <= lowStockThreshold
+              ? InventoryStockState.lowStock
+              : InventoryStockState.inStock;
+      final updated = <String, Object?>{
+        ...remote,
+        'stock_count': next,
+        'stock_state': state.name,
+      };
+      await api.put('products', entry.key, await _images(updated));
+    }
+  }
+
+  @override
   Future<List<ProductItem>> loadCart(String storeId) async =>
       (await api.rows('cart')).map(productFromMap).toList();
 
@@ -74,9 +132,20 @@ class PosCloudDatabase extends PosLocalDatabase {
   Future<ReceiptSettings> loadReceiptSettings() async {
     final rows = await api.rows('receipt-settings');
     if (rows.isEmpty) return const ReceiptSettings();
+    final row = rows.first;
+    bool flag(String key) => row[key] == null || row[key] != 0;
     return ReceiptSettings(
-      showStoreContact: rows.first['show_store_contact'] != 0,
-      footer: rows.first['footer'] as String? ?? '',
+      showStoreContact: flag('show_store_contact'),
+      showTaxId: flag('show_tax_id'),
+      showOrderNumber: flag('show_order_number'),
+      showDateTime: flag('show_date_time'),
+      showCashier: flag('show_cashier'),
+      showCustomer: flag('show_customer'),
+      showPaymentMethod: flag('show_payment_method'),
+      showItemCount: flag('show_item_count'),
+      showDiscount: flag('show_discount'),
+      header: row['header'] as String? ?? '',
+      footer: row['footer'] as String? ?? '',
     );
   }
 
@@ -84,7 +153,34 @@ class PosCloudDatabase extends PosLocalDatabase {
   Future<void> saveReceiptSettings(ReceiptSettings settings) =>
       api.put('receipt-settings', '1', {
         'show_store_contact': settings.showStoreContact ? 1 : 0,
+        'show_tax_id': settings.showTaxId ? 1 : 0,
+        'show_order_number': settings.showOrderNumber ? 1 : 0,
+        'show_date_time': settings.showDateTime ? 1 : 0,
+        'show_cashier': settings.showCashier ? 1 : 0,
+        'show_customer': settings.showCustomer ? 1 : 0,
+        'show_payment_method': settings.showPaymentMethod ? 1 : 0,
+        'show_item_count': settings.showItemCount ? 1 : 0,
+        'show_discount': settings.showDiscount ? 1 : 0,
+        'header': settings.header,
         'footer': settings.footer,
+      });
+
+  @override
+  Future<TaxSettings> loadTaxSettings() async {
+    final rows = await api.rows('tax-settings');
+    if (rows.isEmpty) return const TaxSettings();
+    return TaxSettings.fromJson(rows.first);
+  }
+
+  @override
+  Future<void> saveTaxSettings(TaxSettings settings) =>
+      api.put('tax-settings', '1', {
+        'enabled': settings.enabled ? 1 : 0,
+        'rate_percent': settings.ratePercent,
+        'prices_include_tax': settings.pricesIncludeTax ? 1 : 0,
+        'tax_id': settings.taxId,
+        'tax_label': settings.taxLabel,
+        'track_expense_tax': settings.trackExpenseTax ? 1 : 0,
       });
 
   @override
@@ -105,6 +201,17 @@ class PosCloudDatabase extends PosLocalDatabase {
   Future<void> replaceStaffRoles(
           List<Map<String, Object?>> roles, String storeId) =>
       api.replace('roles', roles);
+
+  @override
+  Future<void> upsertStaffRole(
+    Map<String, Object?> role,
+    String storeId,
+  ) =>
+      api.put('roles', '${role['id']}', role);
+
+  @override
+  Future<void> deleteStaffRoleRecord(String roleId, String storeId) =>
+      api.delete('roles', roleId);
 
   @override
   Future<List<Map<String, Object?>>> loadStaffMembers(String storeId) =>
@@ -145,6 +252,21 @@ class PosCloudDatabase extends PosLocalDatabase {
   Future<void> replaceCustomers(
           List<Map<String, Object?>> customers, String storeId) =>
       api.replace('customers', customers);
+
+  @override
+  Future<void> upsertCustomer(
+    Map<String, Object?> customer,
+    String storeId,
+  ) =>
+      api.put(
+        'customers',
+        '${customer['id']}',
+        {...customer, 'store_id': storeId},
+      );
+
+  @override
+  Future<void> deleteCustomerRecord(String customerId, String storeId) =>
+      api.delete('customers', customerId);
 
   @override
   Future<List<Map<String, Object?>>> loadExpenses(String storeId) =>

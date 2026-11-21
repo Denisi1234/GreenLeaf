@@ -279,6 +279,16 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
     titleController.dispose();
     subtitleController.dispose();
     if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: staffDual(strings, 'Role Created', 'Nafasi Imeundwa'),
+      message: staffDual(
+        strings,
+        '${role.title} role created successfully.',
+        'Nafasi ya ${role.title} imeundwa kwa mafanikio.',
+      ),
+      type: MarketNoticeType.success,
+    );
     _openRole(role);
   }
 

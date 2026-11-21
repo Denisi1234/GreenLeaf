@@ -93,8 +93,8 @@ mixin PosCustomerStore on ChangeNotifier {
       debitBalance: customer.debitBalance - applied,
     );
     _customers[index] = updated;
-    await _database.replaceCustomers(
-      _customers.map(_customerToMap).toList(),
+    await _database.upsertCustomer(
+      _customerToMap(updated),
       _activeStoreId,
     );
 
@@ -114,8 +114,8 @@ mixin PosCustomerStore on ChangeNotifier {
   }
 
   Future<void> addCustomer(CustomerData customer) async {
-    await _database.replaceCustomers(
-      [..._customers, customer].map(_customerToMap).toList(),
+    await _database.upsertCustomer(
+      _customerToMap(customer),
       _activeStoreId,
     );
     _customers.add(customer);
@@ -155,19 +155,16 @@ mixin PosCustomerStore on ChangeNotifier {
   Future<void> updateCustomer(CustomerData customer) async {
     final index = _customers.indexWhere((c) => c.id == customer.id);
     if (index == -1) return;
-    final next = List<CustomerData>.from(_customers);
-    next[index] = customer;
-    await _database.replaceCustomers(
-        next.map(_customerToMap).toList(), _activeStoreId);
+    await _database.upsertCustomer(
+      _customerToMap(customer),
+      _activeStoreId,
+    );
     _customers[index] = customer;
     notifyListeners();
   }
 
   Future<void> deleteCustomer(String customerId) async {
-    await _database.replaceCustomers(
-      _customers.where((c) => c.id != customerId).map(_customerToMap).toList(),
-      _activeStoreId,
-    );
+    await _database.deleteCustomerRecord(customerId, _activeStoreId);
     _customers.removeWhere((c) => c.id == customerId);
     _debitEntries.removeWhere((entry) => entry.customerId == customerId);
     await _persistDebitEntries();
@@ -189,8 +186,8 @@ mixin PosCustomerStore on ChangeNotifier {
       final next = customer.debitBalance - entry.signedAmount;
       _customers[customerIndex] =
           customer.copyWith(debitBalance: next > 0 ? next : 0);
-      await _database.replaceCustomers(
-        _customers.map(_customerToMap).toList(),
+      await _database.upsertCustomer(
+        _customerToMap(_customers[customerIndex]),
         _activeStoreId,
       );
     }
@@ -205,12 +202,12 @@ mixin PosCustomerStore on ChangeNotifier {
     for (var i = 0; i < _customers.length; i++) {
       if (_customers[i].debitBalance > 0) {
         _customers[i] = _customers[i].copyWith(debitBalance: 0);
+        await _database.upsertCustomer(
+          _customerToMap(_customers[i]),
+          _activeStoreId,
+        );
       }
     }
-    await _database.replaceCustomers(
-      _customers.map(_customerToMap).toList(),
-      _activeStoreId,
-    );
     await _persistDebitEntries();
     notifyListeners();
   }

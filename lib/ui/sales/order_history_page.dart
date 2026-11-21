@@ -2,12 +2,18 @@ import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../service/barcode_scan_service.dart';
 import '../../service/pos_local_store.dart';
+import '../../service/pos_order_models.dart';
+import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
+import 'widgets/order_history_card.dart';
 import '../widgets/market_shared_widgets.dart';
 
 class OrderHistoryPage extends StatefulWidget {
-  const OrderHistoryPage({super.key});
+  const OrderHistoryPage({super.key, this.useSharedShell = false});
+
+  final bool useSharedShell;
 
   @override
   State<OrderHistoryPage> createState() => _OrderHistoryPageState();
@@ -15,202 +21,525 @@ class OrderHistoryPage extends StatefulWidget {
 
 class _OrderHistoryPageState extends State<OrderHistoryPage> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
+  String _filterOption = 'all';
+  DateTime? _selectedDate;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
-  List<_OrderHistoryItem> get _orders => context
-      .watch<PosLocalStore>()
-      .orders
-      .map(
-        (o) => _OrderHistoryItem(
-          id: '#${o.id}',
-          dateTime: '${o.date} • ${o.time}',
-          amount: 'TSH ${o.total.toStringAsFixed(0)}',
-          status: o.status,
-          statusColor: const Color(0xFF111111),
-          statusBg: const Color(0xFFF3F4F6),
-          accentColor: AppColors.primary,
-          customerName: o.cashierName,
-          customerPhone: '',
-          paymentMethod: o.paymentMethod,
-          paidAmount: 'TSH ${o.cashTendered.toStringAsFixed(0)}',
-          isExpanded: false,
-          lines: o.lines
-              .map(
-                (l) => _OrderLine(
-                  l.itemName,
-                  l.quantity,
-                  'TSH ${l.unitPriceValue.toStringAsFixed(0)}',
-                  'TSH ${l.lineTotal.toStringAsFixed(0)}',
+  Future<void> _scanOrderBarcode() async {
+    final scanned = await BarcodeScanService.instance.scan(context);
+    if (scanned == null || !mounted) return;
+    setState(() {
+      _searchController.text = scanned;
+      _searchQuery = scanned;
+    });
+  }
+
+  Future<void> _pickFilter() async {
+    final options = <String>[
+      'all',
+      'Completed',
+      'Voided',
+      'Cash',
+      'Card',
+      'Mobile Money',
+      'Credit',
+    ];
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Text(
+                context.tr('Filter orders'),
+                style: AppTypography.sectionHeader,
+              ),
+            ),
+            for (final option in options)
+              ListTile(
+                leading: Icon(
+                  _filterOption == option
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_off_rounded,
+                  color: _filterOption == option
+                      ? AppColors.primary
+                      : AppColors.textMuted,
                 ),
-              )
-              .toList(),
-          subtotal: 'TSH ${o.total.toStringAsFixed(0)}',
-          tax: 'TSH 0',
-          total: 'TSH ${o.total.toStringAsFixed(0)}',
+                title: Text(
+                  option == 'all'
+                      ? context.tr('All orders')
+                      : context.tr(option),
+                ),
+                onTap: () => Navigator.of(sheetCtx).pop(option),
+              ),
+          ],
         ),
-      )
-      .toList();
+      ),
+    );
+    if (chosen != null && mounted) {
+      setState(() => _filterOption = chosen);
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final result = await Navigator.of(context).push<DateTime?>(
+      MaterialPageRoute<DateTime?>(
+        builder: (pageCtx) => Scaffold(
+          backgroundColor: AppColors.pageBackground,
+          appBar: AppBar(
+            title: Text(
+              context.tr('Select date'),
+              style: AppTypography.cardHeader.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.ink,
+              ),
+            ),
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.ink,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            actions: [
+              if (_selectedDate != null)
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(pageCtx).pop(DateTime(1970, 1, 1)),
+                  child: Text(
+                    context.tr('Clear'),
+                    style: const TextStyle(
+                      color: AppColors.dangerDeep,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+            bottom: const PreferredSize(
+              preferredSize: Size.fromHeight(1),
+              child: Divider(height: 1, color: AppColors.divider),
+            ),
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                Material(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _SharpFilterCard(
+                            label: context.tr('Today'),
+                            icon: Icons.today_rounded,
+                            active: _selectedDate != null &&
+                                _selectedDate!.year == today.year &&
+                                _selectedDate!.month == today.month &&
+                                _selectedDate!.day == today.day,
+                            onTap: () => Navigator.of(pageCtx).pop(today),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _SharpFilterCard(
+                            label: context.tr('Yesterday'),
+                            icon: Icons.history_rounded,
+                            active: false,
+                            onTap: () => Navigator.of(pageCtx)
+                                .pop(today.subtract(const Duration(days: 1))),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Divider(height: 1, color: AppColors.divider),
+                Expanded(
+                  child: Material(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.zero,
+                    child: CalendarDatePicker(
+                      initialDate: _selectedDate ?? today,
+                      firstDate: DateTime(now.year - 5),
+                      lastDate: DateTime(now.year + 1),
+                      onDateChanged: (picked) =>
+                          Navigator.of(pageCtx).pop(picked),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (!mounted || result == null) return;
+    setState(() {
+      _selectedDate = result.year == 1970 ? null : result;
+    });
+  }
+
+  OrderHistoryItem _toItem(CompletedOrder o) {
+    final lower = o.status.trim().toLowerCase();
+    final isReversed =
+        lower == 'voided' || lower == 'returned' || lower == 'cancelled';
+    return OrderHistoryItem(
+      id: '#${o.id}',
+      dateTime: '${o.date} • ${o.time}',
+      amount: 'TSH ${o.total.toStringAsFixed(0)}',
+      status: o.status,
+      statusColor:
+          isReversed ? AppColors.dangerDeep : AppColors.successDeep,
+      statusBg: isReversed ? AppColors.dangerLight : AppColors.successLight,
+      accentColor: isReversed ? AppColors.danger : AppColors.primary,
+      completedOrder: o,
+      customerName: o.cashierName,
+      customerPhone: '',
+      paymentMethod: o.paymentMethod,
+      paidAmount: 'TSH ${o.cashTendered.toStringAsFixed(0)}',
+      isExpanded: false,
+      lines: o.lines
+          .map(
+            (l) => OrderHistoryLine(
+              l.itemName,
+              l.quantity,
+              'TSH ${l.unitPriceValue.toStringAsFixed(0)}',
+              'TSH ${l.lineTotal.toStringAsFixed(0)}',
+            ),
+          )
+          .toList(),
+      subtotal: 'TSH ${o.total.toStringAsFixed(0)}',
+      tax: 'TSH 0',
+      total: 'TSH ${o.total.toStringAsFixed(0)}',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final orders = _orders;
+    final rawOrders = context.watch<PosLocalStore>().orders;
     final query = _searchQuery.trim().toLowerCase();
-    final filteredOrders = orders.where((order) {
-      if (query.isEmpty) return true;
-      final searchableValues = <String>[
-        order.id,
-        order.dateTime,
-        order.amount,
-        order.status,
-        order.customerName ?? '',
-        order.paymentMethod ?? '',
-        order.paidAmount ?? '',
-      ];
-      return searchableValues.any(
-        (value) => value.toLowerCase().contains(query),
-      );
-    }).toList();
+    final filteredOrders = rawOrders
+        .where((o) {
+          if (_selectedDate != null) {
+            final parsed = DateTime.tryParse(o.dateTime);
+            if (parsed == null ||
+                parsed.year != _selectedDate!.year ||
+                parsed.month != _selectedDate!.month ||
+                parsed.day != _selectedDate!.day) {
+              return false;
+            }
+          }
+          if (_filterOption != 'all') {
+            final matchesStatus =
+                o.status.toLowerCase() == _filterOption.toLowerCase();
+            final matchesPayment = o.paymentMethod
+                .toLowerCase()
+                .contains(_filterOption.toLowerCase());
+            if (!matchesStatus && !matchesPayment) return false;
+          }
+          if (query.isEmpty) return true;
+          final searchableValues = <String>[
+            '#${o.id}',
+            o.id,
+            '${o.date} ${o.time}',
+            o.total.toStringAsFixed(0),
+            o.status,
+            o.cashierName,
+            o.customerName ?? '',
+            o.paymentMethod,
+          ];
+          return searchableValues.any(
+            (value) => value.toLowerCase().contains(query),
+          );
+        })
+        .map(_toItem)
+        .toList();
+    final completedTotal = filteredOrders
+        .where((o) {
+          final s = o.status.trim().toLowerCase();
+          return s != 'voided' && s != 'returned' && s != 'cancelled';
+        })
+        .fold<double>(0.0, (sum, o) => sum + (o.completedOrder?.total ?? 0.0));
+    final completedCount = filteredOrders.where((o) {
+      final s = o.status.trim().toLowerCase();
+      return s != 'voided' && s != 'returned' && s != 'cancelled';
+    }).length;
+    final voidedCount = filteredOrders.where((o) {
+      final s = o.status.trim().toLowerCase();
+      return s == 'voided' || s == 'returned' || s == 'cancelled';
+    }).length;
+
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      drawer: const MarketAppDrawer(selectedItem: 'Sales'),
+      appBar: widget.useSharedShell
+          ? null
+          : AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.chevron_left_rounded, size: 28),
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+              title: Text(
+                context.tr('Orders & receipts'),
+                style: AppTypography.cardHeader.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
+              backgroundColor: AppColors.surface,
+              foregroundColor: AppColors.ink,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              bottom: const PreferredSize(
+                preferredSize: Size.fromHeight(1),
+                child: Divider(height: 1, color: AppColors.divider),
+              ),
+            ),
       body: SafeArea(
-        child: Stack(
+        top: !widget.useSharedShell,
+        child: Column(
           children: [
-            const Positioned.fill(child: BackdropGlow()),
-            Column(
-              children: [
-                MarketPageHeader(
-                  title: context.tr('Order History'),
-                  showBackButton: false,
-                  centerTitle: false,
-                  leading: Builder(
-                    builder: (context) => GestureDetector(
-                      onTap: () => Scaffold.of(context).openDrawer(),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: const Icon(
-                          Icons.menu_rounded,
-                          color: AppColors.ink,
-                          size: 22,
-                        ),
+            // Full-width sharp borderless ERP search & filter bar
+            Container(
+              color: AppColors.surface,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                    textInputAction: TextInputAction.search,
+                    style: AppTypography.bodyMain,
+                    decoration: InputDecoration(
+                      hintText: context.tr(
+                        'Search by ID, cashier, customer or payment...',
+                      ),
+                      hintStyle: AppTypography.label,
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: AppColors.textMuted,
+                      ),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_searchQuery.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            ),
+                          IconButton(
+                            tooltip: context.tr('Scan receipt barcode'),
+                            icon: const Icon(
+                              Icons.qr_code_scanner_rounded,
+                              size: 19,
+                              color: AppColors.ink,
+                            ),
+                            onPressed: _scanOrderBarcode,
+                          ),
+                        ],
+                      ),
+                      filled: true,
+                      fillColor: AppColors.pageBackground,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 11,
+                      ),
+                      border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(color: AppColors.ink, width: 1),
                       ),
                     ),
                   ),
-                  actions: const [_SalesMetricButton()],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SharpFilterCard(
+                          label: _filterOption == 'all'
+                              ? context.tr('Filter: All')
+                              : context.tr(_filterOption),
+                          icon: Icons.filter_alt_outlined,
+                          active: _filterOption != 'all',
+                          onTap: _pickFilter,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _SharpFilterCard(
+                          label: _selectedDate == null
+                              ? context.tr('All dates')
+                              : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                          icon: Icons.calendar_today_outlined,
+                          active: _selectedDate != null,
+                          onTap: _pickDate,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: AppColors.divider),
+            // Sharp ERP KPI summary strip
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    color: const Color(0xFFE0F2FE),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.tr('SALES TOTAL').toUpperCase(),
+                          style: AppTypography.label.copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0369A1),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'TSh ${formatCurrency(completedTotal)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodyMain.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0C4A6E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
+                  child: Container(
+                    color: const Color(0xFFECFDF5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: MarketSearchField(
-                                controller: _searchController,
-                                hintText:
-                                    context.tr('Search orders by ID, cashier, or payment'),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _searchQuery = value;
-                                  });
-                                },
-                                onClear: () {
-                                  setState(() {
-                                    _searchController.clear();
-                                    _searchQuery = '';
-                                  });
-                                },
-                                onScanTap: () {
-                                  showMarketNotice(
-                                    context,
-                                    title: context.tr('Order Scanner'),
-                                    message:
-                                        context.tr('Scan receipt QR/Barcode to find order'),
-                                  );
-                                },
-                                height: 60,
-                                radius: 30,
-                                backgroundColor: Colors.white,
-                                borderColor: const Color(0xFFF1F5F9),
-                                showShadow: true,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                             _OrderActionChip(
-                              label: context.tr('Filter'),
-                              icon: Icons.filter_alt_outlined,
-                            ),
-                            const SizedBox(width: 10),
-                             _OrderActionChip(
-                              label: context.tr('Date'),
-                              icon: Icons.calendar_today_outlined,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        if (filteredOrders.isEmpty)
-                           Padding(
-                            padding: EdgeInsets.only(top: 4),
-                            child: MarketSurfaceCard(
-                              borderColor: Color(0xFFE3E7ED),
-                              radius: 4,
-                              padding: EdgeInsets.all(18),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.search_off_rounded,
-                                    color: Color(0xFF98A1AF),
-                                    size: 28,
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    context.tr('No matching orders'),
-                                    style: TextStyle(
-                                      color: Color(0xFF111111),
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    context.tr('Try a different order ID, cashier name, or payment method.'),
-                                    style: TextStyle(
-                                      color: Color(0xFF7E8797),
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w500,
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        else
-                          ...filteredOrders.map(
-                            (order) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _OrderCard(order: order),
-                            ),
+                        Text(
+                          context.tr('ORDERS').toUpperCase(),
+                          style: AppTypography.label.copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F766E),
                           ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$completedCount',
+                          style: AppTypography.bodyMain.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F766E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    color: const Color(0xFFFEE2E2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.tr('VOIDED').toUpperCase(),
+                          style: AppTypography.label.copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFFB91C1C),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$voidedCount',
+                          style: AppTypography.bodyMain.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFFB91C1C),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ],
+            ),
+            const Divider(height: 1, color: AppColors.divider),
+            Expanded(
+              child: filteredOrders.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.receipt_long_outlined,
+                              color: AppColors.textMuted,
+                              size: 36,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              context.tr('No matching orders'),
+                              style: AppTypography.bodyMain.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      itemCount: filteredOrders.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          OrderCard(order: filteredOrders[index]),
+                    ),
             ),
           ],
         ),
@@ -219,39 +548,45 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   }
 }
 
-class _OrderActionChip extends StatelessWidget {
-  const _OrderActionChip({
+class _SharpFilterCard extends StatelessWidget {
+  const _SharpFilterCard({
     required this.label,
     required this.icon,
+    required this.active,
+    required this.onTap,
   });
 
   final String label;
   final IconData icon;
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 100,
-      height: 60,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.standard),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.soft,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {},
-          borderRadius: BorderRadius.circular(AppRadius.standard),
-          child: Column(
+    final bg = active ? const Color(0xFFEFF6FF) : AppColors.pageBackground;
+    final fg = active ? const Color(0xFF1D4ED8) : AppColors.ink;
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.zero,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: AppColors.textMain, size: 20),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: AppTypography.label.copyWith(color: AppColors.textMain),
+              Icon(icon, size: 17, color: fg),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: fg,
+                  ),
+                ),
               ),
             ],
           ),
@@ -261,411 +596,3 @@ class _OrderActionChip extends StatelessWidget {
   }
 }
 
-class _SalesMetricButton extends StatelessWidget {
-  const _SalesMetricButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return HeaderActionButton(
-      icon: Icons.bar_chart_rounded,
-      background: AppColors.surface,
-      foreground: AppColors.textMain,
-      borderColor: AppColors.border,
-      onTap: () {},
-    );
-  }
-}
-
-class _OrderCard extends StatefulWidget {
-  const _OrderCard({required this.order});
-
-  final _OrderHistoryItem order;
-
-  @override
-  State<_OrderCard> createState() => _OrderCardState();
-}
-
-class _OrderCardState extends State<_OrderCard> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final order = widget.order;
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.standard),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.soft,
-      ),
-      child: Column(
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => setState(() => _expanded = !_expanded),
-              borderRadius: BorderRadius.circular(AppRadius.standard),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(AppRadius.sharp),
-                      ),
-                      child: const Icon(
-                        Icons.shopping_bag_outlined,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            order.id,
-                            style: AppTypography.bodySmall.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            order.dateTime,
-                            style: AppTypography.helperText.copyWith(
-                              color: AppColors.textLight,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          order.amount,
-                          style: AppTypography.bodySmall.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.successLight,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Text(
-                            order.status,
-                            style: AppTypography.helperText.copyWith(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Icon(
-                      _expanded
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.textLight,
-                      size: 24,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (_expanded) ...[
-            const Divider(height: 1, color: AppColors.borderLight),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.person_outline_rounded,
-                          size: 18, color: AppColors.textMuted),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        context.tr('Cashier: '),
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textMuted),
-                      ),
-                      Text(
-                        order.customerName ?? 'N/A',
-                        style: AppTypography.bodySmall
-                            .copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const _TableDivider(),
-                  const SizedBox(height: AppSpacing.md),
-                  ...order.lines!.map((line) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 4,
-                              child: Text(line.item,
-                                  style: AppTypography.bodySmall),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Text('x${line.qty}',
-                                  textAlign: TextAlign.center,
-                                  style: AppTypography.bodySmall),
-                            ),
-                            Expanded(
-                              flex: 3,
-                              child: Text(line.total,
-                                  textAlign: TextAlign.right,
-                                  style: AppTypography.bodySmall
-                                      .copyWith(fontWeight: FontWeight.w700)),
-                            ),
-                          ],
-                        ),
-                      )),
-                  const SizedBox(height: AppSpacing.md),
-                  const _TableDivider(),
-                  const SizedBox(height: AppSpacing.md),
-                  _AmountRow(label: context.tr('Subtotal'), value: order.subtotal!),
-                  const SizedBox(height: 4),
-                  _AmountRow(
-                      label: context.tr('Total'), value: order.total!, isEmphasis: true),
-                  const SizedBox(height: AppSpacing.lg),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceSecondary,
-                      borderRadius: BorderRadius.zero,
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.payments_outlined,
-                            size: 20, color: AppColors.primary),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            context.tr('Paid via {p0}', args: {'p0': order.paymentMethod}),
-                            style: AppTypography.bodySmall
-                                .copyWith(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        Text(
-                          order.paidAmount ?? '',
-                          style: AppTypography.bodySmall
-                              .copyWith(fontWeight: FontWeight.w800),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (order.status != 'Voided' && order.status != 'Returned') ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFEF4444),
-                              side: const BorderSide(color: Color(0xFFEF4444)),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            icon: const Icon(Icons.assignment_return_outlined, size: 18),
-                            label:  Text(
-                              context.tr('Return / Restock'),
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                            ),
-                            onPressed: () {
-                              _showReturnDialog(context, order);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-  void _showReturnDialog(BuildContext context, _OrderHistoryItem order) {
-    final rawId = order.id.replaceFirst('#', '');
-    showDialog<void>(
-      context: context,
-      builder: (dialogCtx) {
-        bool restock = true;
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-              title: Text(context.tr('Process Return {p0}', args: {'p0': order.id})),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.tr('Order total: {p0}\nPayment: {p1}', args: {'p0': order.amount, 'p1': order.paymentMethod}),
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 16),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title:  Text(context.tr('Return items to inventory stock'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                    value: restock,
-                    onChanged: (val) => setDialogState(() => restock = val ?? true),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogCtx),
-                  child:  Text(context.tr('Cancel')),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEF4444),
-                    foregroundColor: Colors.white,
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                  ),
-                  onPressed: () async {
-                    Navigator.pop(dialogCtx);
-                    final store = context.read<PosLocalStore>();
-                    try {
-                      await store.voidOrder(rawId);
-                      if (!context.mounted) return;
-                      showMarketNotice(
-                        context,
-                        title: context.tr('Order Returned'),
-                        message: context.tr('Sale {p0} was processed as return.', args: {'p0': order.id}),
-                      );
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      showMarketNotice(
-                        context,
-                        title: context.tr('Return Failed'),
-                        message: e.toString(),
-                        type: MarketNoticeType.warning,
-                      );
-                    }
-                  },
-                  child:  Text(context.tr('Confirm Return')),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _TableDivider extends StatelessWidget {
-  const _TableDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 1,
-      color: AppColors.borderLight,
-    );
-  }
-}
-
-class _AmountRow extends StatelessWidget {
-  const _AmountRow({
-    required this.label,
-    required this.value,
-    this.isEmphasis = false,
-  });
-
-  final String label;
-  final String value;
-  final bool isEmphasis;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: isEmphasis
-              ? AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w800)
-              : AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-        ),
-        Text(
-          value,
-          style: isEmphasis
-              ? AppTypography.bodySmall.copyWith(
-                  fontWeight: FontWeight.w800, color: AppColors.primary)
-              : AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
-        ),
-      ],
-    );
-  }
-}
-
-class _OrderHistoryItem {
-  const _OrderHistoryItem({
-    required this.id,
-    required this.dateTime,
-    required this.amount,
-    required this.status,
-    required this.statusColor,
-    required this.statusBg,
-    required this.accentColor,
-    this.customerName,
-    this.customerPhone,
-    this.paymentMethod,
-    this.paidAmount,
-    this.isExpanded = false,
-    this.lines,
-    this.subtotal,
-    this.tax,
-    this.total,
-  });
-
-  final String id;
-  final String dateTime;
-  final String amount;
-  final String status;
-  final Color statusColor;
-  final Color statusBg;
-  final Color accentColor;
-  final String? customerName;
-  final String? customerPhone;
-  final String? paymentMethod;
-  final String? paidAmount;
-  final bool isExpanded;
-  final List<_OrderLine>? lines;
-  final String? subtotal;
-  final String? tax;
-  final String? total;
-}
-
-class _OrderLine {
-  const _OrderLine(this.item, this.qty, this.unitPrice, this.total);
-
-  final String item;
-  final int qty;
-  final String unitPrice;
-  final String total;
-}

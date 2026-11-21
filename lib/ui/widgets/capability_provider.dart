@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
 import 'package:track_mauzo/ui/models/capability.dart';
 
 class CapabilityProvider extends InheritedWidget {

@@ -185,21 +185,22 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
       notes: _notes.text.trim(),
     );
 
-    final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     final isEdit = _isEdit;
+    final successTitle = isEdit
+        ? _t('Supplier Updated', 'Msambazaji Amesasishwa')
+        : _t('Supplier Added', 'Msambazaji Ameongezwa');
     final successMsg = isEdit
         ? _t('Supplier updated successfully', 'Msambazaji amesasishwa kikamilifu')
         : _t('Supplier added successfully', 'Msambazaji ameongezwa kikamilifu');
 
     final saved = await store.saveSupplier(supplier);
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(successMsg),
-        backgroundColor: AppColors.success,
-        duration: const Duration(seconds: 2),
-      ),
+    if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: successTitle,
+      message: successMsg,
+      type: MarketNoticeType.success,
     );
     nav.pop(saved);
   }
@@ -209,7 +210,9 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
         title: Text(_t('Delete supplier?', 'Futa msambazaji?')),
         content: Text(
           _t(
@@ -223,7 +226,12 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
             child: Text(_t('Cancel', 'Ghairi')),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.standard),
+              ),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(_t('Delete', 'Futa')),
           ),
@@ -231,17 +239,16 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
+    final deleteTitle = _t('Supplier Deleted', 'Msambazaji Amefutwa');
     final deleteMsg = _t('Supplier deleted successfully', 'Msambazaji amefutwa kikamilifu');
     await context.read<PosLocalStore>().deleteSupplier(widget.supplier!.id!);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(deleteMsg),
-        backgroundColor: AppColors.ink,
-        duration: const Duration(seconds: 2),
-      ),
-    );
     if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: deleteTitle,
+      message: deleteMsg,
+      type: MarketNoticeType.success,
+    );
     Navigator.of(context).maybePop();
   }
 }

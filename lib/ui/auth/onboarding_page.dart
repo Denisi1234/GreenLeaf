@@ -1,3 +1,4 @@
+import '../../l10n/app_localization.dart';
 import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/app_design.dart';
 import 'package:flutter/material.dart';
@@ -242,7 +243,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                     ? (isSwahili
                                         ? 'Anza Sasa'
                                         : 'Access Your Account')
-                                    : (isSwahili ? 'Endelea' : 'Continue'),
+                                    : (context.tr('Continue')),
                                 style: GoogleFonts.manrope(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -278,7 +279,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             onTap: widget.onSignIn,
                             behavior: HitTestBehavior.opaque,
                             child: Text(
-                              isSwahili ? 'Ingia' : 'Sign in',
+                              context.tr('Sign in'),
                               style: GoogleFonts.manrope(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,

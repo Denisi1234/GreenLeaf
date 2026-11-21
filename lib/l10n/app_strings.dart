@@ -1,4 +1,7 @@
-import 'ui_catalog.dart';
+import 'generated/en_catalog.g.dart';
+import 'generated/sw_catalog.g.dart';
+
+import 'package:flutter/widgets.dart';
 
 class AppStrings {
   const AppStrings._(this.languageCode);
@@ -10,8 +13,15 @@ class AppStrings {
     return language == 'sw' ? 'sw' : 'en';
   }
 
-  static AppStrings of(String code) {
-    return AppStrings._(normalize(code));
+  static AppStrings of(Object codeOrContext) {
+    if (codeOrContext is String) {
+      return AppStrings._(normalize(codeOrContext));
+    }
+    if (codeOrContext is BuildContext) {
+      final locale = Localizations.maybeLocaleOf(codeOrContext);
+      return AppStrings._(normalize(locale?.languageCode ?? 'en'));
+    }
+    return AppStrings._('en');
   }
 
   bool get isSwahili => languageCode == 'sw';
@@ -291,8 +301,6 @@ class AppStrings {
   String get currentStore => _pick('Current Store', 'Duka la Sasa');
   String get notSet => _pick('Not set', 'Haijawekwa');
   String get loggedOut => _pick('Logged Out', 'Umetoka');
-  String get authNext => _pick('You can connect the real auth flow next',
-      'Unaweza kuunganisha mfumo halisi wa kuingia baadaye');
 
   // Auth
   String get welcome =>

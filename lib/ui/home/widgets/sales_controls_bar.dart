@@ -95,12 +95,14 @@ class SearchBox extends StatelessWidget {
     required this.controller,
     required this.hintText,
     required this.onChanged,
+    this.onSubmitted,
     this.onScanTap,
   });
 
   final TextEditingController controller;
   final String hintText;
   final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onSubmitted;
   final VoidCallback? onScanTap;
 
   @override
@@ -108,9 +110,31 @@ class SearchBox extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: hintText,
-        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        hintStyle: AppTypography.label,
+        filled: true,
+        fillColor: AppColors.surface,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
+        border: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: AppColors.ink, width: 1),
+        ),
+        prefixIcon: const Icon(Icons.search_rounded, size: 19),
         suffixIcon: controller.text.isNotEmpty
             ? IconButton(
                 icon: const Icon(Icons.clear_rounded, size: 18),

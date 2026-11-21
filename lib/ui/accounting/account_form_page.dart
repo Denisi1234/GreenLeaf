@@ -166,8 +166,18 @@ class _AccountFormPageState extends State<AccountFormPage> {
                           onTap: () async {
                             final store = context.read<PosLocalStore>();
                             final navigator = Navigator.of(context);
+                            final deletedName = widget.account!.name;
                             await store.deleteAccount(widget.account!.id!);
                             if (!mounted) return;
+                            showMarketNotice(
+                              context,
+                              title: _t('Account Deleted', 'Akaunti Imefutwa'),
+                              message: _t(
+                                '$deletedName was removed.',
+                                '$deletedName imeondolewa.',
+                              ),
+                              type: MarketNoticeType.success,
+                            );
                             navigator.maybePop();
                           },
                         ),

@@ -6,8 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:track_mauzo/l10n/app_localization.dart';
 
-import '../../models/product_item.dart';
-import '../../payment/payment_page.dart';
+import '../models/product_item.dart';
+import '../payment/payment_page.dart';
+import '../../service/barcode_scan_service.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -158,7 +159,6 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
     HapticFeedback.lightImpact();
     store.addToCart(product);
     _triggerFlyToCartAnimation(product, details.globalPosition);
-
     _viewModel.setSuccessMessage(
       context.tr('Added {p0} to cart', args: {'p0': product.name}),
     );
@@ -166,6 +166,54 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
     _successTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) _viewModel.setSuccessMessage(null);
     });
+  }
+
+  Future<void> _handleBarcodeValue(String rawCode) async {
+    final code = rawCode.trim();
+    if (code.isEmpty) return;
+    final store = context.read<PosLocalStore>();
+    final matched = store.findProductByBarcode(code);
+    if (matched == null) {
+      _searchController.text = code;
+      _viewModel.setSearchQuery(code);
+      showMarketNotice(
+        context,
+        title: context.tr('Barcode not found'),
+        message: context.tr('No product matched barcode {p0}', args: {'p0': code}),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+
+    final added = store.addToCart(matched);
+    if (!added) {
+      showMarketNotice(
+        context,
+        title: context.tr('Out Of Stock'),
+        message: context.tr(
+          '{p0} has no more stock available',
+          args: {'p0': matched.name},
+        ),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+
+    HapticFeedback.mediumImpact();
+    _searchController.clear();
+    _viewModel.setSearchQuery('');
+    showMarketNotice(
+      context,
+      title: context.tr('Added to cart'),
+      message: matched.name,
+      type: MarketNoticeType.success,
+    );
+  }
+
+  Future<void> _scanBarcode() async {
+    final scanned = await BarcodeScanService.instance.scan(context);
+    if (scanned == null || !mounted) return;
+    await _handleBarcodeValue(scanned);
   }
 
   void _openPaymentScreen() {
@@ -198,104 +246,125 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 1100;
 
+                final holdActions = Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (store.cartItems.isNotEmpty) ...[
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final sale = await store.suspendCurrentSale();
+                          if (sale != null && context.mounted) {
+                            showMarketNotice(
+                              context,
+                              title: context.tr('Sale Held'),
+                              message: context.tr(
+                                'Sale {p0} parked/held successfully.',
+                                args: {'p0': sale.id},
+                              ),
+                              type: MarketNoticeType.info,
+                            );
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          foregroundColor: AppColors.ink,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.standard),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.pause_circle_outline_rounded,
+                          size: 18,
+                        ),
+                        label: Text(context.tr('Hold Sale')),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: () => SuspendedSalesSheet.show(context),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.ink,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.standard),
+                            ),
+                          ),
+                          icon: const Icon(
+                            Icons.history_toggle_off_rounded,
+                            size: 18,
+                          ),
+                          label: Text(context.tr('Held Sales')),
+                        ),
+                        if (store.suspendedSales.isNotEmpty)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5.5,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Text(
+                                '${store.suspendedSales.length}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+
                 final browser = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    WorkspaceHeading(
-                      title: context.tr('Make a sale'),
-                      subtitle: context.tr(
-                        'Choose products, review the cart and continue to payment.',
+                    if (widget.useSharedShell)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: holdActions,
+                      )
+                    else
+                      WorkspaceHeading(
+                        title: context.tr('Make a sale'),
+                        subtitle: context.tr(
+                          'Choose products, review the cart and continue to payment.',
+                        ),
+                        action: holdActions,
                       ),
-                      action: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (store.cartItems.isNotEmpty)
-                            OutlinedButton.icon(
-                              onPressed: () async {
-                                final sale = await store.suspendCurrentSale();
-                                if (sale != null && context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        context.tr(
-                                          'Sale {p0} parked/held successfully.',
-                                          args: {'p0': sale.id},
-                                        ),
-                                      ),
-                                      backgroundColor: const Color(0xFF0F172A),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: AppColors.border),
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.zero,
-                                ),
-                              ),
-                              icon: const Icon(
-                                Icons.pause_circle_outline_rounded,
-                                size: 18,
-                              ),
-                              label: Text(context.tr('Hold Sale')),
-                            ),
-                          const SizedBox(width: 8),
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              FilledButton.icon(
-                                onPressed: () =>
-                                    SuspendedSalesSheet.show(context),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.zero,
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.history_toggle_off_rounded,
-                                  size: 18,
-                                ),
-                                label: Text(context.tr('Held Sales')),
-                              ),
-                              if (store.suspendedSales.isNotEmpty)
-                                Positioned(
-                                  top: -4,
-                                  right: -4,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 5.5,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEF4444),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '${store.suspendedSales.length}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: widget.useSharedShell ? 12 : 16),
                     SearchBox(
                       controller: _searchController,
                       hintText: context.tr('Search products or barcode'),
                       onChanged: (val) => _viewModel.setSearchQuery(val),
+                      onSubmitted: (val) {
+                        if (store.findProductByBarcode(val) != null) {
+                          _handleBarcodeValue(val);
+                        }
+                      },
+                      onScanTap: _scanBarcode,
                     ),
                     const SizedBox(height: 12),
                     SalesCategoryStrip(
@@ -309,6 +378,9 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                         FilterChip(
                           label: Text(context.tr('In stock')),
                           selected: _viewModel.inStockOnly,
+                          side: BorderSide.none,
+                          backgroundColor: AppColors.surface,
+                          selectedColor: const Color(0xFFEFF6FF),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
                           ),

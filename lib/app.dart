@@ -12,10 +12,10 @@ import 'ui/widgets/app_theme.dart';
 class App extends StatelessWidget {
   const App({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final store = context.watch<PosLocalStore>();
-    Intl.defaultLocale = store.languageCode;
+  static ThemeData? _cachedTheme;
+
+  static ThemeData _getTheme() {
+    if (_cachedTheme != null) return _cachedTheme!;
     const baseInk = AppColors.ink;
     final baseTextTheme = Typography.material2021().black.apply(
           bodyColor: baseInk,
@@ -83,11 +83,20 @@ class App extends StatelessWidget {
         fontWeight: FontWeight.w600,
       ),
     );
+    _cachedTheme = buildOsposTheme(appTextTheme);
+    return _cachedTheme!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final languageCode =
+        context.select<PosLocalStore, String>((s) => s.languageCode);
+    Intl.defaultLocale = languageCode;
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'AZA POS',
-      locale: Locale(store.languageCode),
+      title: 'TrackMauzo POS',
+      locale: Locale(languageCode),
       supportedLocales: const [
         Locale('sw'),
         Locale('en'),
@@ -98,7 +107,7 @@ class App extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       themeAnimationDuration: Duration.zero,
-      theme: buildOsposTheme(appTextTheme),
+      theme: _getTheme(),
       home: const AuthWrapper(),
     );
   }

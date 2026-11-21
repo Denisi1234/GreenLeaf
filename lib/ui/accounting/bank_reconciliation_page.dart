@@ -149,6 +149,7 @@ class BankReconciliationPage extends StatelessWidget {
                             MarketButton(
                               label: t('Auto match', 'Oanisha'),
                               icon: Icons.auto_fix_high_rounded,
+                              isFullWidth: false,
                               radius: 0,
                               onTap: () => _autoMatch(context),
                             ),

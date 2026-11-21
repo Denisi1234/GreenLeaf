@@ -16,13 +16,13 @@ class ProductItemRowCard extends StatelessWidget {
   const ProductItemRowCard({
     super.key,
     required this.product,
-    required this.onTap,
-    required this.onDelete,
+    this.onTap,
+    this.onDelete,
   });
 
   final InventoryProductItem product;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -58,53 +58,56 @@ class ProductItemRowCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    PopupMenuButton<String>(
-                      onSelected: (val) {
-                        if (val == 'edit') onTap();
-                        if (val == 'delete') onDelete();
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(
-                        Icons.more_horiz_rounded,
-                        color: Color(0xFF94A3B8),
-                        size: 20,
+                    if (onTap != null || onDelete != null)
+                      PopupMenuButton<String>(
+                        onSelected: (val) {
+                          if (val == 'edit') onTap?.call();
+                          if (val == 'delete') onDelete?.call();
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(
+                          Icons.more_horiz_rounded,
+                          color: Color(0xFF94A3B8),
+                          size: 20,
+                        ),
+                        itemBuilder: (context) => [
+                          if (onTap != null)
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.edit_outlined,
+                                      size: 18, color: AppColors.primaryDeep),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    context.tr('Edit Item'),
+                                    style: GoogleFonts.manrope(
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (onDelete != null)
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.delete_outline_rounded,
+                                      size: 18, color: Color(0xFFEF4444)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    context.tr('Delete'),
+                                    style: GoogleFonts.manrope(
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFFEF4444),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.edit_outlined,
-                                  size: 18, color: AppColors.primaryDeep),
-                              const SizedBox(width: 8),
-                              Text(
-                                context.tr('Edit Item'),
-                                style: GoogleFonts.manrope(
-                                    fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.delete_outline_rounded,
-                                  size: 18, color: Color(0xFFEF4444)),
-                              const SizedBox(width: 8),
-                              Text(
-                                context.tr('Delete'),
-                                style: GoogleFonts.manrope(
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFFEF4444),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
                 const SizedBox(height: 6),

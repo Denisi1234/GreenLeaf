@@ -96,7 +96,7 @@ class MarketPageHeader extends StatelessWidget {
                 isGradient: hasGradient,
                 transparent: transparentBackButton,
               )
-            else
+            else if (centerTitle)
               const SizedBox(width: 48),
             Expanded(
               child: Column(
@@ -138,7 +138,7 @@ class MarketPageHeader extends StatelessWidget {
               trailing!
             else if (actions != null)
               Row(mainAxisSize: MainAxisSize.min, children: actions!)
-            else
+            else if (centerTitle)
               const SizedBox(width: 48),
           ],
         ),

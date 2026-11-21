@@ -1,14 +1,18 @@
 import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../service/esc_pos_receipt_builder.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
+import '../../service/thermal_printer_service.dart';
 import '../shell/app_shell.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_bottom_nav.dart';
+import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
 import 'receipt_document.dart';
 import 'receipt_preview_page.dart';
+import 'thermal_printer_picker_sheet.dart';
 
 class ReceiptSuccessPage extends StatelessWidget {
   const ReceiptSuccessPage({super.key, required this.order});
@@ -18,11 +22,63 @@ class ReceiptSuccessPage extends StatelessWidget {
           MaterialPageRoute<void>(
               builder: (_) => const AppShell(initialTab: MarketTab.sales)),
           (_) => false);
+
+  Future<void> _thermalPrint(
+    BuildContext context,
+    ReceiptDocument receipt,
+  ) async {
+    final store = context.read<PosLocalStore>();
+    var prefs = store.storePreferences;
+    var address = prefs.thermalPrinterAddress.trim();
+    if (address.isEmpty) {
+      final picked = await showThermalPrinterPicker(context);
+      if (picked == null || !context.mounted) return;
+      address = picked.address;
+      prefs = prefs.copyWith(
+        thermalPrinterName: picked.name,
+        thermalPrinterAddress: picked.address,
+      );
+      await store.setStorePreferences(prefs);
+    }
+    try {
+      await ThermalPrinterService.instance.printReceipt(
+        receipt: receipt,
+        address: address,
+        paperWidth: ThermalPaperWidth.fromMm(prefs.thermalPaperWidthMm),
+        openCashDrawer: prefs.openCashDrawerOnPrint,
+      );
+      if (!context.mounted) return;
+      showMarketNotice(
+        context,
+        title: context.tr('Receipt sent'),
+        message: context.tr('Printed on Bluetooth thermal printer.'),
+        type: MarketNoticeType.success,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      showMarketNotice(
+        context,
+        title: context.tr('Print failed'),
+        message: error.toString(),
+        type: MarketNoticeType.warning,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final profile = context.watch<PosLocalStore>().profile;
+    final store = context.watch<PosLocalStore>();
+    final profile = store.profile;
     final receipt = ReceiptDocument(
-        order: order, languageCode: context.strings.languageCode, storeName: profile.storeName, currency: profile.currency);
+        order: order,
+        languageCode: context.strings.languageCode,
+        storeName: profile.storeName,
+        storeAddress: profile.physicalAddress,
+        storePhone: profile.contactNumber,
+        storeTaxId: profile.taxId,
+        storeLogoPath: profile.logoPath,
+        currency: profile.currency,
+        settings: store.receiptSettings);
     return PopScope(
         canPop: false,
         child: Scaffold(
@@ -92,6 +148,15 @@ class ReceiptSuccessPage extends StatelessWidget {
                                                 AppColors.successDeep),
                                         icon: const Icon(Icons.add_rounded),
                                         label:  Text(context.tr('New sale')),
+                                      )),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: () =>
+                                            _thermalPrint(context, receipt),
+                                        icon: const Icon(Icons.print_rounded),
+                                        label: Text(context.tr('Thermal print')),
                                       )),
                                   const SizedBox(height: 12),
                                   SizedBox(

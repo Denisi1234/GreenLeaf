@@ -32,6 +32,7 @@ import 'package:track_mauzo/ui/more/staff_member_details_page.dart';
 import 'package:track_mauzo/ui/more/role_details_page.dart';
 import 'package:track_mauzo/ui/more/add_edit_staff_page.dart';
 import 'package:track_mauzo/ui/more/stores_page.dart';
+import 'package:track_mauzo/ui/more/store_form_page.dart';
 import 'package:track_mauzo/ui/more/settings_page.dart';
 import 'package:track_mauzo/ui/more/change_password_page.dart';
 import 'package:track_mauzo/ui/more/help_support_page.dart';

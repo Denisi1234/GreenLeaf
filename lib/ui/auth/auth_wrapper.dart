@@ -62,19 +62,32 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<PosLocalStore>();
-    final strings = AppStrings.of(store.languageCode);
+    final authState = context.select<
+        PosLocalStore,
+        ({
+          bool isLoggedIn,
+          bool hasCompletedOnboarding,
+          String languageCode,
+        })>(
+      (s) => (
+        isLoggedIn: s.isLoggedIn,
+        hasCompletedOnboarding: s.hasCompletedOnboarding,
+        languageCode: s.languageCode,
+      ),
+    );
+    final store = context.read<PosLocalStore>();
+    final strings = AppStrings.of(authState.languageCode);
 
     // Always land on the sign-in screen after a logout, even if the user was
     // last on the register or reset-password step.
-    if (_wasLoggedIn && !store.isLoggedIn) {
+    if (_wasLoggedIn && !authState.isLoggedIn) {
       _step = 1;
     }
-    _wasLoggedIn = store.isLoggedIn;
+    _wasLoggedIn = authState.isLoggedIn;
 
     // Show onboarding only on first launch. After that, skip straight to
     // login/register regardless of auth state.
-    if (!store.hasCompletedOnboarding) {
+    if (!authState.hasCompletedOnboarding) {
       return OnboardingPage(
         onGetStarted: () {
           store.markOnboardingComplete();
@@ -87,7 +100,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     }
 
-    if (!store.isLoggedIn) {
+    if (!authState.isLoggedIn) {
       return AuthShell(
         strings: strings,
         onBack: _onBack,

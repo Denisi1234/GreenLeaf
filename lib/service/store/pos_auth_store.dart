@@ -49,9 +49,8 @@ mixin PosAuthStore on ChangeNotifier {
   Future<void> reloadFromLocal();
 
   bool _verifyPassword(String password, String salt, String hash) {
-      final digest = sha256.convert(utf8.encode('$salt:$password')).toString();
-      return digest == hash;
-    }
+    return StaffCredentials.verifyPassword(password, salt: salt, hash: hash);
+  }
 
     Future<bool> login(String identifier, String password) async {
       _lastAuthError = null;
@@ -138,6 +137,24 @@ mixin PosAuthStore on ChangeNotifier {
       if (!valid) {
         _lastAuthError = 'invalid_password';
         return false;
+      }
+
+      if (!member.passwordHash.startsWith(r'pbkdf2_sha256$')) {
+        final upgradedCredentials = _hashPassword(password);
+        final upgradedMember = member.copyWith(
+          passwordHash: upgradedCredentials.hash,
+          passwordSalt: upgradedCredentials.salt,
+          updatedAt: DateTime.now().toIso8601String(),
+        );
+        final memberIndex =
+            _staffMembers.indexWhere((s) => s.id == upgradedMember.id);
+        if (memberIndex != -1) {
+          _staffMembers[memberIndex] = upgradedMember;
+        }
+        await _database.saveStaffMember({
+          ..._staffMemberToMap(upgradedMember),
+          'store_id': _activeStoreId,
+        });
       }
 
       _isLoggedIn = true;
@@ -266,10 +283,10 @@ mixin PosAuthStore on ChangeNotifier {
           final idx = _staffMembers.indexWhere((s) => s.id == updatedOwner.id);
           if (idx != -1) {
             _staffMembers[idx] = updatedOwner;
-            await _database.replaceStaffMembers(
-              _staffMembers.map(_staffMemberToMap).toList(),
-              _activeStoreId,
-            );
+            await _database.saveStaffMember({
+              ..._staffMemberToMap(updatedOwner),
+              'store_id': _activeStoreId,
+            });
           }
           _currentUserId = updatedOwner.id;
         } else {

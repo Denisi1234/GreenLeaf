@@ -12,14 +12,14 @@ class OrderLinesList extends StatelessWidget {
     required this.hasItems,
     required this.onIncrease,
     required this.onDecrease,
-    required this.onEditDiscount,
+    this.onEditDiscount,
   });
 
   final List<OrderLineItem> orderLines;
   final bool hasItems;
   final void Function(OrderLineItem line) onIncrease;
   final void Function(OrderLineItem line) onDecrease;
-  final void Function(OrderLineItem line) onEditDiscount;
+  final void Function(OrderLineItem line)? onEditDiscount;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +56,8 @@ class OrderLinesList extends StatelessWidget {
             amountText: formatCurrency(line.totalPrice),
             onIncrease: () => onIncrease(line),
             onDecrease: () => onDecrease(line),
-            onEditDiscount: () => onEditDiscount(line),
+            onEditDiscount:
+                onEditDiscount == null ? null : () => onEditDiscount!(line),
           ),
       ],
     );
@@ -69,14 +70,14 @@ class _CounterLineTile extends StatelessWidget {
     required this.amountText,
     required this.onIncrease,
     required this.onDecrease,
-    required this.onEditDiscount,
+    this.onEditDiscount,
   });
 
   final OrderLineItem line;
   final String amountText;
   final VoidCallback onIncrease;
   final VoidCallback onDecrease;
-  final VoidCallback onEditDiscount;
+  final VoidCallback? onEditDiscount;
 
   @override
   Widget build(BuildContext context) {
@@ -125,28 +126,31 @@ class _CounterLineTile extends StatelessWidget {
                   ),
                 ),
               ),
-            InkWell(
-              onTap: onEditDiscount,
-              borderRadius: BorderRadius.circular(4),
-              child:  Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.edit_outlined, size: 13, color: AppColors.primary),
-                    SizedBox(width: 3),
-                    Text(
-                      context.tr('Discount / Price'),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+            if (onEditDiscount != null)
+              InkWell(
+                onTap: onEditDiscount,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit_outlined,
+                          size: 13, color: AppColors.primary),
+                      const SizedBox(width: 3),
+                      Text(
+                        context.tr('Discount / Price'),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ],

@@ -18,6 +18,10 @@ import java.io.File
 class MainActivity: FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        val messenger = flutterEngine.dartExecutor.binaryMessenger
+        SecureTokenChannel.register(messenger, this)
+        ThermalPrinterChannel.register(messenger, this)
+        BarcodeScannerChannel.register(messenger, this)
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -252,5 +256,16 @@ class MainActivity: FlutterFragmentActivity() {
             Log.e("ReportShare", "Unable to share report PDF", error)
             result.error("share_failed", error.message, null)
         }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (ThermalPrinterChannel.onRequestPermissionsResult(requestCode, grantResults)) {
+            return
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 }

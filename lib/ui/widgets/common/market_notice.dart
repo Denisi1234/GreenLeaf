@@ -10,13 +10,24 @@ enum MarketNoticeType {
   error,
 }
 
+OverlayEntry? _activeMarketNoticeEntry;
+int _marketNoticeTicket = 0;
+
 void showMarketNotice(
   BuildContext context, {
   required String title,
   required String message,
   MarketNoticeType type = MarketNoticeType.success,
 }) {
-  final overlay = Overlay.of(context);
+  final overlay = Overlay.maybeOf(context, rootOverlay: true) ??
+      Overlay.maybeOf(context);
+  if (overlay == null) return;
+
+  try {
+    _activeMarketNoticeEntry?.remove();
+  } catch (_) {}
+  _activeMarketNoticeEntry = null;
+  final ticket = ++_marketNoticeTicket;
   late final OverlayEntry entry;
 
   final accent = switch (type) {
@@ -53,9 +64,15 @@ void showMarketNotice(
     ),
   );
 
+  _activeMarketNoticeEntry = entry;
   overlay.insert(entry);
   Future<void>.delayed(const Duration(milliseconds: 2500)).then((_) {
-    entry.remove();
+    if (_marketNoticeTicket == ticket && _activeMarketNoticeEntry == entry) {
+      try {
+        entry.remove();
+      } catch (_) {}
+      _activeMarketNoticeEntry = null;
+    }
   });
 }
 

@@ -389,14 +389,14 @@ class _AssetFormPageState extends State<AssetFormPage> {
       return;
     }
     final store = context.read<PosLocalStore>();
-    final messenger = ScaffoldMessenger.of(context);
     final nav = Navigator.of(context);
     final isNew = widget.asset == null;
+    final assetName = _name.text.trim();
 
     await store.saveFixedAsset(
       FixedAsset(
         id: widget.asset?.id,
-        name: _name.text.trim(),
+        name: assetName,
         category: _category.text.trim(),
         purchaseDate: _purchaseDate,
         cost: double.tryParse(_cost.text.trim()) ?? 0,
@@ -405,16 +405,16 @@ class _AssetFormPageState extends State<AssetFormPage> {
       ),
     );
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          isNew
-              ? _t('Asset added successfully', 'Mali imeongezwa kikamilifu')
-              : _t('Asset updated successfully', 'Mali imesasishwa kikamilifu'),
-        ),
-        backgroundColor: AppColors.success,
-        duration: const Duration(seconds: 2),
-      ),
+    if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: isNew
+          ? _t('Asset Added', 'Mali Imeongezwa')
+          : _t('Asset Updated', 'Mali Imesasishwa'),
+      message: isNew
+          ? _t('$assetName added successfully', '$assetName imeongezwa kikamilifu')
+          : _t('$assetName updated successfully', '$assetName imesasishwa kikamilifu'),
+      type: MarketNoticeType.success,
     );
     nav.maybePop();
   }

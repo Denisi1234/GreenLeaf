@@ -72,6 +72,15 @@ class _LanguageSettingsPaneState extends State<LanguageSettingsPane> {
     }
   }
 
+  String _formatSampleDate(String format, String lang) {
+    final sample = DateTime(2026, 11, 13);
+    try {
+      return DateFormat(format, lang).format(sample);
+    } catch (_) {
+      return DateFormat(format).format(sample);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
@@ -124,7 +133,7 @@ class _LanguageSettingsPaneState extends State<LanguageSettingsPane> {
                   for (final format in StorePreferences.dateFormatOptions)
                     DropdownMenuItem(
                       value: format,
-                      child: Text(DateFormat(format, lang).format(DateTime(2026, 11, 13))),
+                      child: Text(_formatSampleDate(format, lang)),
                     ),
                 ],
                 onChanged: _savingPreferences
