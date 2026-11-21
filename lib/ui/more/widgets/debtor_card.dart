@@ -55,31 +55,31 @@ class DebtorCard extends StatelessWidget {
 
     switch (agingCategory) {
       case DebtAgingCategory.critical:
-        agingBadgeBg = const Color(0xFFFEE2E2);
-        agingBadgeText = const Color(0xFFB91C1C);
+        agingBadgeBg = AppColors.kpiDangerBg;
+        agingBadgeText = AppColors.kpiDanger;
         agingBadgeLabel = _dual(strings, '$agingDays days (Critical)', 'Siku $agingDays (Hatari)');
         break;
       case DebtAgingCategory.overdue:
-        agingBadgeBg = const Color(0xFFFEF3C7);
-        agingBadgeText = const Color(0xFFB45309);
+        agingBadgeBg = AppColors.kpiAmberBg;
+        agingBadgeText = AppColors.kpiAmber;
         agingBadgeLabel = _dual(strings, '$agingDays days (Overdue)', 'Siku $agingDays (Imechelewa)');
         break;
       case DebtAgingCategory.attention:
-        agingBadgeBg = const Color(0xFFE0F2FE);
-        agingBadgeText = const Color(0xFF0369A1);
+        agingBadgeBg = AppColors.kpiSkyBg;
+        agingBadgeText = AppColors.kpiSky;
         agingBadgeLabel = _dual(strings, '$agingDays days', 'Siku $agingDays');
         break;
       case DebtAgingCategory.current:
       case DebtAgingCategory.settled:
-        agingBadgeBg = const Color(0xFFD1FAE5);
-        agingBadgeText = const Color(0xFF047857);
+        agingBadgeBg = AppColors.kpiSuccessBg;
+        agingBadgeText = AppColors.kpiSuccess;
         agingBadgeLabel = _dual(strings, 'Recent (<7 days)', 'Mpya (<7d)');
         break;
     }
 
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
-      borderColor: const Color(0xFFD6E4F0),
+      borderColor: AppColors.border,
       radius: 0,
       showShadow: false,
       child: InkWell(
@@ -97,7 +97,7 @@ class DebtorCard extends StatelessWidget {
                     height: 42,
                     alignment: Alignment.center,
                     decoration: const BoxDecoration(
-                      color: Color(0xFFF1F5F9),
+                      color: AppColors.surfaceSecondary,
                       borderRadius: BorderRadius.zero,
                     ),
                     child: Text(
@@ -243,7 +243,7 @@ class DebtorCard extends StatelessWidget {
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primaryDeep,
-                      side: const BorderSide(color: Color(0xFFD6E4F0)),
+                      side: const BorderSide(color: AppColors.border),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.zero,
@@ -257,7 +257,7 @@ class DebtorCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.ink,
-                        side: const BorderSide(color: Color(0xFFD6E4F0)),
+                        side: const BorderSide(color: AppColors.border),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.zero,
@@ -271,7 +271,7 @@ class DebtorCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Material(
-                      color: const Color(0xFF0F172A),
+                      color: AppColors.ink,
                       borderRadius: BorderRadius.zero,
                       child: InkWell(
                         borderRadius: BorderRadius.zero,

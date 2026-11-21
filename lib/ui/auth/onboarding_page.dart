@@ -1,5 +1,4 @@
 import '../../l10n/app_localization.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -350,7 +349,7 @@ class _TopBar extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: AppColors.border,

@@ -1,17 +1,5 @@
 part of '../pdf_report_service.dart';
 
-String _trendDirectionWord(
-  TrendPoint? firstPoint,
-  TrendPoint? lastPoint,
-) {
-  if (firstPoint == null || lastPoint == null) {
-    return 'limited movement';
-  }
-  if (lastPoint.value > firstPoint.value) return 'a positive momentum';
-  if (lastPoint.value < firstPoint.value) return 'a softer finish';
-  return 'steady movement';
-}
-
 String _buildPdfExecutiveSummary({
   required ReportSnapshot report,
   required PdfReportStats stats,
@@ -19,13 +7,11 @@ String _buildPdfExecutiveSummary({
   required AppProfileData profile,
   required int lowStockCount,
 }) {
-  final storeName = profile.storeName.trim().isEmpty
-      ? 'The store'
-      : profile.storeName.trim();
+  final storeName =
+      profile.storeName.trim().isEmpty ? 'The store' : profile.storeName.trim();
   final focus = _categoryFocusSentence(report.category);
   final revenueChange = _changeLabel(stats.revenue, previousStats.revenue);
-  final orderChange =
-      _changeLabel(stats.orderCount, previousStats.orderCount);
+  final orderChange = _changeLabel(stats.orderCount, previousStats.orderCount);
   final margin = stats.revenue - stats.totalExpenses;
   final expenseRatio =
       stats.revenue <= 0 ? 0.0 : (stats.totalExpenses / stats.revenue) * 100;
@@ -222,24 +208,6 @@ String _changeLabel(num current, num previous) {
   return '$sign${change.abs().toStringAsFixed(change.abs() >= 10 ? 0 : 1)}% vs previous';
 }
 
-String _monthYearLabel(DateTime date) {
-  const monthNames = <String>[
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  return '${monthNames[date.month - 1]} ${date.year}';
-}
-
 String _dateLabel(DateTime date) {
   const monthNames = <String>[
     'Jan',
@@ -256,28 +224,6 @@ String _dateLabel(DateTime date) {
     'Dec',
   ];
   return '${monthNames[date.month - 1]} ${date.day}, ${date.year}';
-}
-
-String _formatPdfDateTime(DateTime dateTime) {
-  const monthNames = <String>[
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  final hour = dateTime.hour % 12 == 0 ? 12 : dateTime.hour % 12;
-  final minute = dateTime.minute.toString().padLeft(2, '0');
-  final amPm = dateTime.hour >= 12 ? 'PM' : 'AM';
-  return '${monthNames[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year} '
-      '$hour:$minute $amPm';
 }
 
 String _moneyLabel(double amount) {

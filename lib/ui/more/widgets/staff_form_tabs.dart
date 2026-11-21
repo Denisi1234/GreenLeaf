@@ -5,7 +5,6 @@ import '../../../service/models/staff_models.dart';
 import '../../widgets/app_design.dart';
 import '../../widgets/app_image.dart';
 import 'staff_form_widgets.dart';
-import 'staff_models.dart';
 
 class StaffBasicInfoTab extends StatelessWidget {
   const StaffBasicInfoTab({
@@ -78,7 +77,7 @@ class StaffBasicInfoTab extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.border),
                     ),

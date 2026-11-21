@@ -226,7 +226,7 @@ class StaffActionSheet {
                             horizontal: 12,
                             vertical: 8,
                           ),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.surfaceSecondary,
                             borderRadius: BorderRadius.zero,
                           ),

@@ -79,12 +79,15 @@ class ReceiptDocument {
 
   String toText() {
     final text = StringBuffer()..writeln(businessName);
-    if (settings.showStoreContact && storeAddress.trim().isNotEmpty)
+    if (settings.showStoreContact && storeAddress.trim().isNotEmpty) {
       text.writeln(storeAddress.trim());
-    if (settings.showStoreContact && storePhone.trim().isNotEmpty)
+    }
+    if (settings.showStoreContact && storePhone.trim().isNotEmpty) {
       text.writeln(storePhone.trim());
-    if (settings.showTaxId && storeTaxId.trim().isNotEmpty)
+    }
+    if (settings.showTaxId && storeTaxId.trim().isNotEmpty) {
       text.writeln('TIN: ${storeTaxId.trim()}');
+    }
     if (settings.header.trim().isNotEmpty) text.writeln(settings.header.trim());
     text.writeln(statusLabel);
     for (final item in metadata) {

@@ -63,8 +63,8 @@ class _MorePageState extends State<MorePage> {
         _Tool(
           'orders',
           Icons.receipt_outlined,
-          const Color(0xFF0369A1), // Sky
-          const Color(0xFFE0F2FE),
+          AppColors.kpiSky, // Sky
+          AppColors.kpiSkyBg,
           t('Orders & receipts', 'Oda na risiti'),
           t('Sales history, receipts and returns',
               'Historia ya mauzo, risiti na marejesho'),
@@ -73,8 +73,8 @@ class _MorePageState extends State<MorePage> {
         _Tool(
           'customers',
           Icons.people_outline_rounded,
-          const Color(0xFF1D4ED8), // Blue
-          const Color(0xFFEFF6FF),
+          AppColors.kpiSky, // Blue
+          AppColors.kpiSkyBg,
           strings.customers,
           t('Customer details and purchase history',
               'Taarifa za wateja na historia ya manunuzi'),
@@ -83,8 +83,8 @@ class _MorePageState extends State<MorePage> {
         _Tool(
           'debtors',
           Icons.account_balance_wallet_outlined,
-          const Color(0xFFB45309), // Amber
-          const Color(0xFFFFFBEB),
+          AppColors.kpiAmber, // Amber
+          AppColors.kpiAmberBg,
           strings.debitLedger,
           t('Outstanding balances and repayments',
               'Madeni na malipo ya wateja'),
@@ -94,8 +94,8 @@ class _MorePageState extends State<MorePage> {
         _Tool(
           'expenses',
           Icons.receipt_long_outlined,
-          const Color(0xFFBE123C), // Rose
-          const Color(0xFFFFF1F2),
+          AppColors.kpiRose, // Rose
+          AppColors.kpiRoseBg,
           strings.expensesTracking,
           t('Record and review business spending',
               'Rekodi na kagua matumizi ya biashara'),
@@ -105,8 +105,8 @@ class _MorePageState extends State<MorePage> {
         _Tool(
           'reports',
           Icons.analytics_outlined,
-          const Color(0xFF0F766E), // Teal
-          const Color(0xFFECFDF5),
+          AppColors.kpiSuccess, // Teal
+          AppColors.kpiSuccessBg,
           strings.reports,
           t('Sales, stock and financial reports',
               'Ripoti za mauzo, hifadhi na fedha'),
@@ -119,8 +119,8 @@ class _MorePageState extends State<MorePage> {
           _Tool(
             'advanced',
             Icons.tune_rounded,
-            const Color(0xFF4338CA), // Indigo
-            const Color(0xFFEEF2FF),
+            AppColors.kpiSky, // Indigo
+            AppColors.kpiSkyBg,
             t('Advanced features', 'Vipengele vya juu'),
             t('Suppliers, register, accounting, stores & staff',
                 'Wasambazaji, kasha, uhasibu, maduka na wafanyakazi'),
@@ -129,8 +129,8 @@ class _MorePageState extends State<MorePage> {
         _Tool(
           'settings',
           Icons.settings_outlined,
-          const Color(0xFF334155), // Slate
-          const Color(0xFFF1F5F9),
+          AppColors.textBody, // Slate
+          AppColors.surfaceSecondary,
           strings.settings,
           t('Business, receipt and account preferences',
               'Mapendeleo ya biashara, risiti na akaunti'),
@@ -186,15 +186,15 @@ class _MorePageState extends State<MorePage> {
                     vertical: 11,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.standard),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.standard),
+                    borderRadius: BorderRadius.zero,
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.standard),
+                    borderRadius: BorderRadius.zero,
                     borderSide:
                         const BorderSide(color: AppColors.ink, width: 1),
                   ),
@@ -254,46 +254,53 @@ class _MorePageState extends State<MorePage> {
                         ],
                       const SizedBox(height: 24),
                       // Full-width Sign Out row
-                      Material(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.zero,
-                        child: InkWell(
-                          key: const ValueKey('more-sign-out'),
-                          onTap: _signingOut ? null : _signOut,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFEE2E2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    Icons.logout_rounded,
-                                    color: AppColors.dangerDeep,
-                                    size: 19,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Text(
-                                    _signingOut
-                                        ? t('Signing out…', 'Inaondoka…')
-                                        : strings.logout,
-                                    style: AppTypography.bodyMain.copyWith(
-                                      fontWeight: FontWeight.w700,
+                      Container(
+                        decoration: const BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        child: Material(
+                          color: AppColors.sectionSurface,
+                          borderRadius: BorderRadius.zero,
+                          child: InkWell(
+                            key: const ValueKey('more-sign-out'),
+                            onTap: _signingOut ? null : _signOut,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.kpiDangerBg,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.logout_rounded,
                                       color: AppColors.dangerDeep,
+                                      size: 19,
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Text(
+                                      _signingOut
+                                          ? t('Signing out…', 'Inaondoka…')
+                                          : strings.logout,
+                                      style: AppTypography.bodyMain.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.dangerDeep,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -347,18 +354,24 @@ class _FullWidthToolSection extends StatelessWidget {
             ],
           ),
         ),
-        Material(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.zero,
-          child: Column(
-            children: [
-              for (var i = 0; i < section.tools.length; i++) ...[
-                if (i > 0)
-                  const Divider(
-                    height: 1,
-                    indent: 68,
-                    color: AppColors.divider,
-                  ),
+        Container(
+          decoration: const BoxDecoration(
+            border: Border.symmetric(
+              horizontal: BorderSide(color: AppColors.border),
+            ),
+          ),
+          child: Material(
+            color: AppColors.sectionSurface,
+            borderRadius: BorderRadius.zero,
+            child: Column(
+              children: [
+                for (var i = 0; i < section.tools.length; i++) ...[
+                  if (i > 0)
+                    const Divider(
+                      height: 1,
+                      indent: 68,
+                      color: AppColors.border,
+                    ),
                 InkWell(
                   key: ValueKey('more-${section.tools[i].id}'),
                   onTap: () {
@@ -423,6 +436,7 @@ class _FullWidthToolSection extends StatelessWidget {
               ],
             ],
           ),
+        ),
         ),
       ],
     );

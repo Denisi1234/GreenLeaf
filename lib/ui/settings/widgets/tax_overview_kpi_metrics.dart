@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'package:flutter/material.dart';
 
 import '../../../utils/currency_formatter.dart';
@@ -48,8 +49,8 @@ class TaxOverviewKpiMetrics extends StatelessWidget {
                 icon: Icons.receipt_long_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFE0F2FE),
-                color: const Color(0xFF0369A1),
+                backgroundColor: AppColors.kpiSkyBg,
+                color: AppColors.kpiSky,
               ),
             ),
             SizedBox(
@@ -60,8 +61,8 @@ class TaxOverviewKpiMetrics extends StatelessWidget {
                 icon: Icons.account_balance_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFD1FAE5),
-                color: const Color(0xFF047857),
+                backgroundColor: AppColors.kpiSuccessBg,
+                color: AppColors.kpiSuccess,
               ),
             ),
             SizedBox(
@@ -74,8 +75,8 @@ class TaxOverviewKpiMetrics extends StatelessWidget {
                 icon: isEnabled ? Icons.percent_rounded : Icons.block_flipped,
                 sharp: true,
                 borderless: true,
-                backgroundColor: isEnabled ? const Color(0xFFFEF3C7) : const Color(0xFFF3F4F6),
-                color: isEnabled ? const Color(0xFFB45309) : const Color(0xFF6B7280),
+                backgroundColor: isEnabled ? AppColors.kpiAmberBg : AppColors.surfaceSecondary,
+                color: isEnabled ? AppColors.kpiAmber : AppColors.textMuted,
               ),
             ),
           ],

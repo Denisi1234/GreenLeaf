@@ -53,11 +53,11 @@ class MarketBottomNav extends StatelessWidget {
     ];
 
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+      decoration: const BoxDecoration(
+        color: AppColors.headerSurface,
         border: Border(
           top: BorderSide(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: AppColors.border,
             width: 1,
           ),
         ),
@@ -99,8 +99,8 @@ class _NavItemButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // In screenshot: active item has dark teal/forest green icon with dot indicator, inactive has grey icon and bold black label
-    const primaryTabColor = Color(0xFF0F766E); // Dark teal green from reference
-    const inactiveIconColor = Color(0xFF64748B);
+    const primaryTabColor = AppColors.kpiSuccess; // Dark teal green from reference
+    const inactiveIconColor = AppColors.textMuted;
     const labelColor = AppColors.textBody;
 
     return InkWell(

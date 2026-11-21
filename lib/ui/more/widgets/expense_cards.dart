@@ -90,7 +90,7 @@ class ExpenseCard extends StatelessWidget {
         expense.receiptPath != null && expense.receiptPath!.isNotEmpty;
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
-      borderColor: const Color(0xFFD6E4F0),
+      borderColor: AppColors.border,
       radius: 0,
       showShadow: false,
       child: InkWell(

@@ -90,14 +90,14 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: _draft.enabled
-                                  ? const Color(0xFFD1FAE5)
+                                  ? AppColors.kpiSuccessBg
                                   : AppColors.surfaceSecondary,
                               borderRadius: BorderRadius.zero,
                             ),
                             child: Icon(
                               Icons.receipt_long_rounded,
                               color: _draft.enabled
-                                  ? const Color(0xFF047857)
+                                  ? AppColors.kpiSuccess
                                   : AppColors.textMuted,
                             ),
                           ),
@@ -126,7 +126,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                           ),
                           Switch(
                             value: _draft.enabled,
-                            activeColor: AppColors.primary,
+                            activeThumbColor: AppColors.primary,
                             onChanged: (value) => setState(() =>
                                 _draft = _draft.copyWith(enabled: value)),
                           ),
@@ -205,7 +205,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                             SwitchListTile(
                               contentPadding: EdgeInsets.zero,
                               value: _draft.pricesIncludeTax,
-                              activeColor: AppColors.primary,
+                              activeThumbColor: AppColors.primary,
                               onChanged: (value) => setState(() => _draft =
                                   _draft.copyWith(pricesIncludeTax: value)),
                               title: Text(
@@ -232,7 +232,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                             SwitchListTile(
                               contentPadding: EdgeInsets.zero,
                               value: _draft.trackExpenseTax,
-                              activeColor: AppColors.primary,
+                              activeThumbColor: AppColors.primary,
                               onChanged: (value) => setState(() => _draft =
                                   _draft.copyWith(trackExpenseTax: value)),
                               title: Text(

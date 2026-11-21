@@ -43,7 +43,7 @@ class _OnboardingArtPainter extends CustomPainter {
 
     // Soft ground shadow / base platform
     final shadowPaint = Paint()
-      ..color = const Color(0xFFF0FDF4).withValues(alpha: 0.55)
+      ..color = AppColors.kpiSuccessBg.withValues(alpha: 0.55)
       ..style = PaintingStyle.fill;
     canvas.drawOval(
       Rect.fromCenter(
@@ -81,7 +81,7 @@ class _OnboardingArtPainter extends CustomPainter {
           height: h * 0.52),
       const Radius.circular(18),
     );
-    final cardPaint = Paint()..color = const Color(0xFFF1F5F9);
+    final cardPaint = Paint()..color = AppColors.surfaceSecondary;
     final cardStroke = Paint()
       ..color = AppColors.border
       ..style = PaintingStyle.stroke
@@ -91,7 +91,7 @@ class _OnboardingArtPainter extends CustomPainter {
 
     // Screen content lines & graph
     final linePaint = Paint()
-      ..color = const Color(0xFF94A3B8)
+      ..color = AppColors.textLight
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 3.5;
     canvas.drawLine(
@@ -124,7 +124,7 @@ class _OnboardingArtPainter extends CustomPainter {
       Rect.fromLTWH(w * 0.60, h * 0.24, w * 0.22, h * 0.10),
       const Radius.circular(10),
     );
-    final tagPaint = Paint()..color = const Color(0xFF111111);
+    final tagPaint = Paint()..color = AppColors.ink;
     canvas.drawRRect(tagRRect, tagPaint);
 
     final tagLine = Paint()
@@ -201,7 +201,7 @@ class _OnboardingArtPainter extends CustomPainter {
           height: h * 0.50),
       const Radius.circular(20),
     );
-    canvas.drawRRect(rect, Paint()..color = const Color(0xFFF8FAFC));
+    canvas.drawRRect(rect, Paint()..color = AppColors.pageBackground);
     canvas.drawRRect(
       rect,
       Paint()
@@ -258,7 +258,7 @@ class _OnboardingArtPainter extends CustomPainter {
     canvas.translate(cx, cy);
     canvas.scale(scale);
 
-    final skinPaint = Paint()..color = const Color(0xFFC9D9E2);
+    final skinPaint = Paint()..color = AppColors.border;
     final hairPaint = Paint()..color = AppColors.ink;
     final shirtPaint = Paint()..color = AppColors.primaryDeep;
     final pantsPaint = Paint()..color = AppColors.ink;
@@ -332,7 +332,7 @@ class _OnboardingArtPainter extends CustomPainter {
     canvas.translate(cx, cy);
     canvas.scale(scale);
 
-    final skinPaint = Paint()..color = const Color(0xFFD8E5EC);
+    final skinPaint = Paint()..color = AppColors.borderLight;
     final hairPaint = Paint()..color = AppColors.ink;
     final shirtPaint = Paint()..color = AppColors.primary;
     final skirtPaint = Paint()..color = AppColors.primaryDeep;
@@ -340,7 +340,7 @@ class _OnboardingArtPainter extends CustomPainter {
 
     // Legs
     final legPaint = Paint()
-      ..color = const Color(0xFFD8E5EC)
+      ..color = AppColors.borderLight
       ..strokeWidth = 7
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(const Offset(-8, 38), const Offset(-8, 80), legPaint);

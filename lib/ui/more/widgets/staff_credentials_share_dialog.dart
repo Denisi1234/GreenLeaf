@@ -111,14 +111,14 @@ Please keep your login credentials secure.''';
             // Header
             Container(
               padding: const EdgeInsets.fromLTRB(20, 18, 16, 16),
-              color: const Color(0xFFD1FAE5),
+              color: AppColors.kpiSuccessBg,
               child: Row(
                 children: [
                   Container(
                     width: 40,
                     height: 40,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF047857),
+                      color: AppColors.kpiSuccess,
                       borderRadius: BorderRadius.zero,
                     ),
                     child: const Icon(Icons.sms_outlined, color: Colors.white, size: 22),
@@ -131,7 +131,7 @@ Please keep your login credentials secure.''';
                         Text(
                           _t('Staff credentials created', 'Taarifa za mfanyakazi zimeundwa'),
                           style: AppTypography.h3.copyWith(
-                            color: const Color(0xFF065F46),
+                            color: AppColors.kpiSuccess,
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
                           ),
@@ -143,14 +143,14 @@ Please keep your login credentials secure.''';
                             'Mtumie taarifa za kuingia kupitia SMS au WhatsApp',
                           ),
                           style: AppTypography.helperText.copyWith(
-                            color: const Color(0xFF047857),
+                            color: AppColors.kpiSuccess,
                           ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF065F46)),
+                    icon: const Icon(Icons.close_rounded, color: AppColors.kpiSuccess),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],

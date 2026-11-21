@@ -1,6 +1,5 @@
 import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -67,11 +66,12 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     try {
       await action();
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         showMarketNotice(context,
             title: context.tr('Receipt action failed'),
             message: context.tr('Please try again. The saved sale has not been removed.'),
             type: MarketNoticeType.error);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -128,15 +128,17 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
     await directory.create(recursive: true);
     final file = File('${directory.path}${Platform.pathSeparator}$_fileName');
     await file.writeAsBytes(await _bytes(), flush: true);
-    if (mounted)
+    if (mounted) {
       showMarketNotice(context, title: context.tr('Receipt saved'), message: file.path);
+    }
   }
 
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: _receipt.toText()));
-    if (mounted)
+    if (mounted) {
       showMarketNotice(context,
           title: context.tr('Copied'), message: context.tr('Receipt details copied to clipboard.'));
+    }
   }
 
   Future<void> _sms() async {
@@ -152,15 +154,17 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
         scheme: 'sms',
         path: phone,
         query: 'body=${Uri.encodeComponent(_receipt.toText())}');
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication))
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw StateError('SMS unavailable');
+    }
   }
 
   Future<void> _whatsApp() async {
     final uri = Uri.parse(
         'https://wa.me/?text=${Uri.encodeComponent(_receipt.toText())}');
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication))
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw StateError('WhatsApp unavailable');
+    }
   }
 
   Future<void> _changeSale({required bool edit}) async {
@@ -236,7 +240,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                  PopupMenuItem(
                     value: 'void',
                     child: Text(context.tr('Void sale'),
-                        style: TextStyle(color: AppColors.dangerDeep))),
+                        style: const TextStyle(color: AppColors.dangerDeep))),
               ],
             ],
           ),

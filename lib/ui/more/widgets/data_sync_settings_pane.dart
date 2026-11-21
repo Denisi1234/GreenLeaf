@@ -218,8 +218,8 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
           icon: Icons.cloud_sync_outlined,
           title: t('Storage & sync', 'Hifadhi na usawazishaji'),
           description: connected
-              ? t('Your data is saved to your TrackMauzo server.',
-                  'Data yako inahifadhiwa kwenye seva ya TrackMauzo.')
+              ? t('Your data is safely backed up online with TrackMauzo.',
+                  'Data yako inahifadhiwa mtandaoni kwa usalama na TrackMauzo.')
               : t('Your data is saved on this device only.',
                   'Data yako inahifadhiwa kwenye kifaa hiki pekee.'),
           trailing: SettingsStatusPill(
@@ -232,7 +232,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
             SettingsInfoRow(
               label: t('Storage mode', 'Aina ya hifadhi'),
               value: connected
-                  ? t('Cloud server', 'Seva ya mtandaoni')
+                  ? t('Online backup', 'Hifadhi ya mtandaoni')
                   : t('This device', 'Kifaa hiki'),
             ),
             const Divider(height: 1),
@@ -406,7 +406,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
               child: FilledButton.icon(
                 onPressed: _busy ? null : () => _sendTestSms(store),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF047857),
+                  backgroundColor: AppColors.kpiSuccess,
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,
                   ),
@@ -474,8 +474,8 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
           icon: Icons.backup_outlined,
           title: t('Backup & export', 'Hifadhi nakala na hamisha'),
           description: t(
-            'Download a snapshot of this device data as a JSON file.',
-            'Pakua nakala ya data ya kifaa hiki kama faili la JSON.',
+            'Save a backup copy of your shop data to this device.',
+            'Pakua nakala ya akiba ya data ya duka lako.',
           ),
           children: [
             SettingsInfoRow(
@@ -504,7 +504,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                   ),
                 ),
                 icon: const Icon(Icons.ios_share_rounded, size: 18),
-                label: Text(t('Export backup (JSON)', 'Hamisha nakala (JSON)')),
+                label: Text(t('Export backup', 'Hamisha nakala')),
               ),
             ),
           ],

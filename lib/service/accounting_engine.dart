@@ -1,6 +1,5 @@
 import 'accounting_model.dart';
 import 'expense_model.dart';
-import 'expense_model.dart';
 import 'pos_order_models.dart';
 import 'register_shift_model.dart';
 import 'supplier_model.dart';

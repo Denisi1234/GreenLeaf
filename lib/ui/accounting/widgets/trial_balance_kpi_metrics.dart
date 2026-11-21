@@ -44,8 +44,8 @@ class TrialBalanceKpiMetrics extends StatelessWidget {
                 icon: Icons.account_balance_wallet_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFE0F2FE),
-                color: const Color(0xFF0369A1),
+                backgroundColor: AppColors.kpiSkyBg,
+                color: AppColors.kpiSky,
               ),
             ),
             SizedBox(
@@ -56,8 +56,8 @@ class TrialBalanceKpiMetrics extends StatelessWidget {
                 icon: Icons.credit_score_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFFEF3C7),
-                color: const Color(0xFFB45309),
+                backgroundColor: AppColors.kpiAmberBg,
+                color: AppColors.kpiAmber,
               ),
             ),
             SizedBox(
@@ -73,11 +73,11 @@ class TrialBalanceKpiMetrics extends StatelessWidget {
                 sharp: true,
                 borderless: true,
                 backgroundColor: balanced
-                    ? const Color(0xFFD1FAE5)
-                    : const Color(0xFFFEE2E2),
+                    ? AppColors.kpiSuccessBg
+                    : AppColors.kpiDangerBg,
                 color: balanced
-                    ? const Color(0xFF047857)
-                    : const Color(0xFFB91C1C),
+                    ? AppColors.kpiSuccess
+                    : AppColors.kpiDanger,
               ),
             ),
           ],

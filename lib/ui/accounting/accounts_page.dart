@@ -384,36 +384,16 @@ class _AccountsPageState extends State<AccountsPage>
   Future<void> _confirmDeleteJournal(JournalEntry entry) async {
     if (entry.id == null) return;
     final store = context.read<PosLocalStore>();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.modal),
-        ),
-        title: Text(_t('Delete entry?', 'Futa kumbukumbu?')),
-        content: Text(
-          _t('This cannot be undone.', 'Hili haliwezi kurejeshwa.'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(_t('Cancel', 'Ghairi')),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-              ),
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(_t('Delete', 'Futa')),
-          ),
-        ],
-      ),
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: _t('Delete entry?', 'Futa kumbukumbu?'),
+      message: _t('This cannot be undone.', 'Hili haliwezi kurejeshwa.'),
+      confirmLabel: _t('Delete', 'Futa'),
+      cancelLabel: _t('Cancel', 'Ghairi'),
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await store.deleteJournalEntry(entry.id!);
     if (!mounted) return;
     showMarketNotice(

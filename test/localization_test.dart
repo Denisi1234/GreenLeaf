@@ -5,7 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:track_mauzo/l10n/app_strings.dart';
-import 'package:track_mauzo/l10n/ui_catalog.dart';
+import 'package:track_mauzo/l10n/generated/en_catalog.g.dart';
+import 'package:track_mauzo/l10n/generated/sw_catalog.g.dart';
 import 'package:track_mauzo/service/pos_local_store.dart';
 import 'package:track_mauzo/service/pos_order_models.dart';
 import 'package:track_mauzo/service/receipt_settings.dart';
@@ -30,11 +31,11 @@ class _LanguageStore extends PosLocalStore {
   bool get isInitialized => true;
 }
 
-CompletedOrder _sale() => CompletedOrder(
+CompletedOrder _sale() => const CompletedOrder(
   id: 'R-001', dateTime: '2026-11-20T10:30:00', date: '2026-11-20',
   time: '10:30', total: 4000, status: 'Completed', cashierName: 'Jane Cashier',
   register: 'Register 1', paymentMethod: 'Cash', cashTendered: 5000,
-  changeDue: 1000, customerName: 'Amina Trading', lines: const [
+  changeDue: 1000, customerName: 'Amina Trading', lines: [
     OrderLine(itemCode: 'P-001', itemCategory: 'General', itemName: 'Cash',
       itemSize: 'Each', quantity: 2, unitPrice: '2000', unitPriceValue: 2000,
       unitCost: 1000, artType: ProductArtType.aquafina, imagePath: null),

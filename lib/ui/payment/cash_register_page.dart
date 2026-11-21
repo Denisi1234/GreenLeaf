@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
-import '../../service/pos_order_models.dart';
 import '../../service/register_shift_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
@@ -12,9 +10,6 @@ import '../widgets/workspace_widgets.dart';
 import 'cash_movement_page.dart';
 import 'close_shift_page.dart';
 import 'shift_detail_page.dart';
-import 'widgets/register_kpi_metrics.dart';
-import 'widgets/register_models.dart';
-import 'widgets/register_row_tiles.dart';
 import 'widgets/cash_register_closed_view.dart';
 import 'widgets/cash_register_open_view.dart';
 
@@ -206,29 +201,19 @@ class _CashRegisterPageState extends State<CashRegisterPage> {
   Future<void> _deleteMovement(
       PosLocalStore store, CashMovement movement) async {
     if (movement.id == null) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text(_t('Remove movement?', 'Ondoa mienendo?')),
-        content: Text(
-          _t('Remove this recorded cash movement from the open shift.',
-              'Ondoa rekodi hii ya pesa kwenye zamu iliyo wazi.'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(_t('Cancel', 'Ghairi')),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(_t('Remove', 'Ondoa')),
-          ),
-        ],
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: _t('Remove movement?', 'Ondoa mienendo?'),
+      message: _t(
+        'Remove this recorded cash movement from the open shift.',
+        'Ondoa rekodi hii ya pesa kwenye zamu iliyo wazi.',
       ),
+      confirmLabel: _t('Remove', 'Ondoa'),
+      cancelLabel: _t('Cancel', 'Ghairi'),
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await store.deleteCashMovement(movement.id!);
     if (!mounted) return;
     _notify(_t('Cash movement removed', 'Mienendo ya pesa imeondolewa'));

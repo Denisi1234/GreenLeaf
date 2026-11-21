@@ -12,7 +12,7 @@ class CheckoutBar extends StatelessWidget {
     required this.total,
     required this.onCheckout,
     required this.label,
-    this.accentColor = const Color(0xFF0F172A),
+    this.accentColor = AppColors.ink,
   });
 
   final GlobalKey cartKey;

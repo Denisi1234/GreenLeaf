@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../models/product_item.dart';
 import '../../widgets/app_design.dart';
-import '../../widgets/workspace_widgets.dart';
 import 'order_lines_list.dart';
 
 class PaymentCartPanel extends StatelessWidget {

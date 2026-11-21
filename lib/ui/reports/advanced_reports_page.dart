@@ -153,44 +153,44 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
       case ReportGroup.graphical:
         return (
           Icons.bar_chart_rounded,
-          const Color(0xFF1D4ED8),
-          const Color(0xFFEFF6FF),
+          AppColors.kpiSky,
+          AppColors.kpiSkyBg,
         );
       case ReportGroup.summary:
         return (
           Icons.summarize_outlined,
-          const Color(0xFF0F766E),
-          const Color(0xFFECFDF5),
+          AppColors.kpiSuccess,
+          AppColors.kpiSuccessBg,
         );
       case ReportGroup.detailed:
         return (
           Icons.receipt_long_outlined,
-          const Color(0xFF0369A1),
-          const Color(0xFFF0F9FF),
+          AppColors.kpiSky,
+          AppColors.kpiSkyBg,
         );
       case ReportGroup.inventory:
         return (
           Icons.inventory_2_outlined,
-          const Color(0xFFB45309),
-          const Color(0xFFFFFBEB),
+          AppColors.kpiAmber,
+          AppColors.kpiAmberBg,
         );
       case ReportGroup.accounting:
         return (
           Icons.account_balance_outlined,
-          const Color(0xFF4338CA),
-          const Color(0xFFEEF2FF),
+          AppColors.kpiSky,
+          AppColors.kpiSkyBg,
         );
       case ReportGroup.operations:
         return (
           Icons.insights_rounded,
-          const Color(0xFF7C3AED),
-          const Color(0xFFF5F3FF),
+          AppColors.kpiViolet,
+          AppColors.kpiVioletBg,
         );
       case ReportGroup.multiStore:
         return (
           Icons.storefront_outlined,
-          const Color(0xFF15803D),
-          const Color(0xFFF0FDF4),
+          AppColors.kpiSuccess,
+          AppColors.kpiSuccessBg,
         );
     }
   }
@@ -207,7 +207,7 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
             color: AppColors.ink,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.headerSurface,
         foregroundColor: AppColors.ink,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -335,7 +335,7 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
                             ),
                           ),
                           Material(
-                            color: AppColors.surface,
+                            color: AppColors.sectionSurface,
                             borderRadius: BorderRadius.zero,
                             child: Column(
                               children: [

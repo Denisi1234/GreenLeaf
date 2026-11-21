@@ -41,7 +41,7 @@ class CustomerCard extends StatelessWidget {
 
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
-      borderColor: const Color(0xFFD6E4F0),
+      borderColor: AppColors.border,
       radius: 0,
       showShadow: false,
       child: InkWell(
@@ -56,7 +56,7 @@ class CustomerCard extends StatelessWidget {
                 height: 46,
                 alignment: Alignment.center,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
+                  color: AppColors.surfaceSecondary,
                   borderRadius: BorderRadius.zero,
                 ),
                 child: Text(

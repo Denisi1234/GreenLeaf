@@ -15,6 +15,7 @@ import 'package:track_mauzo/ui/products/inventory_product_item.dart';
 import 'package:track_mauzo/ui/reports/enhanced_report_page.dart';
 import 'package:track_mauzo/ui/reports/models/report_models.dart';
 import 'package:track_mauzo/ui/reports/pos_report_catalog.dart';
+import 'package:track_mauzo/ui/reports/advanced_reports_page.dart';
 import 'package:track_mauzo/ui/reports/reports_catalog_page.dart';
 import 'package:track_mauzo/ui/reports/widgets/trend_chart.dart';
 import 'package:track_mauzo/ui/widgets/app_theme.dart';
@@ -124,18 +125,22 @@ void main() {
 
   testWidgets('directory lists all 79 reports once without decorative badges',
       (tester) async {
-    await _mount(tester, const ReportsCatalogPage(), 1440);
+    await _mount(tester, const AdvancedReportsPage(), 1440);
     expect(posReports, hasLength(79));
+    expect(posReports.map((report) => report.title).toSet(), hasLength(79));
     for (final report in posReports) {
-      expect(find.byKey(ValueKey('report-${report.title}')), findsOneWidget,
-          reason: report.title);
+      await tester.enterText(find.byType(TextField), report.title);
+      await tester.pumpAndSettle();
+      expect(find.text(report.title), findsOneWidget, reason: report.title);
     }
+    await tester.enterText(find.byType(TextField), '');
+    await tester.pumpAndSettle();
     expect(find.byIcon(Icons.workspace_premium_rounded), findsNothing);
     await _capture(tester, 'reports-directory-desktop');
     await tester.enterText(find.byType(TextField), 'Detailed Sales');
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('report-Detailed Sales')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('report-Detailed Sales')));
+    expect(find.text('Detailed Sales'), findsOneWidget);
+    await tester.tap(find.text('Detailed Sales'));
     await tester.pumpAndSettle();
     expect(find.byType(EnhancedReportPage), findsOneWidget);
     expect(tester.takeException(), isNull);

@@ -198,10 +198,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           final tab = filtered[index];
                           final active = wide && tab.section == selected;
                           const palettes = [
-                            (Color(0xFFFCE7F3), Color(0xFFBE185D)),
-                            (Color(0xFFE0F2FE), Color(0xFF0369A1)),
-                            (Color(0xFFFEF3C7), Color(0xFFB45309)),
-                            (Color(0xFFFEE2E2), Color(0xFFB91C1C)),
+                            (AppColors.kpiRoseBg, AppColors.kpiRose),
+                            (AppColors.kpiSkyBg, AppColors.kpiSky),
+                            (AppColors.kpiAmberBg, AppColors.kpiAmber),
+                            (AppColors.kpiDangerBg, AppColors.kpiDanger),
                           ];
                           final palette = palettes[index % palettes.length];
                           return Material(

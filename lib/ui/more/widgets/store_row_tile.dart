@@ -63,13 +63,13 @@ class StoreRowTile extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 3),
                             decoration: const BoxDecoration(
-                              color: Color(0xFFDCFCE7),
+                              color: AppColors.kpiSuccessBg,
                               borderRadius: BorderRadius.zero,
                             ),
                             child: Text(
                               _t('ACTIVE', 'INATUMIKA'),
                               style: AppTypography.helperText.copyWith(
-                                color: const Color(0xFF15803D),
+                                color: AppColors.kpiSuccess,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 11,
                               ),
@@ -179,7 +179,7 @@ class StoreRowTile extends StatelessWidget {
         title: Text(_t('Delete store?', 'Futa duka?')),
         content: Text(
           _t(
-            'Remove this store from the list. Its local data remains in the database but will no longer be selectable.',
+            'Remove this store from the list. Its records stay saved on this device, but it will no longer appear in your list.',
             'Ondoa duka hili kwenye orodha. Data yake ya ndani itabaki lakini halitachaguliwa tena.',
           ),
         ),

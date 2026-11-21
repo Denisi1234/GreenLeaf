@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../../l10n/app_strings.dart';
 import '../../../service/debit_entry_model.dart';
-import '../../../utils/currency_formatter.dart';
 import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
 
@@ -32,7 +31,7 @@ class LedgerTile extends StatelessWidget {
 
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      borderColor: const Color(0xFFD6E4F0),
+      borderColor: AppColors.border,
       radius: 0,
       showShadow: false,
       child: Row(

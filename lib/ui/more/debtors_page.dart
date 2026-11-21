@@ -123,8 +123,8 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                           Icons.account_balance_wallet_outlined,
                                       sharp: true,
                                       borderless: true,
-                                      backgroundColor: const Color(0xFFFEE2E2),
-                                      color: const Color(0xFFB91C1C),
+                                      backgroundColor: AppColors.kpiDangerBg,
+                                      color: AppColors.kpiDanger,
                                     ),
                                   ),
                                   SizedBox(
@@ -136,8 +136,8 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                       icon: Icons.people_alt_outlined,
                                       sharp: true,
                                       borderless: true,
-                                      backgroundColor: const Color(0xFFE0F2FE),
-                                      color: const Color(0xFF0369A1),
+                                      backgroundColor: AppColors.kpiSkyBg,
+                                      color: AppColors.kpiSky,
                                     ),
                                   ),
                                   SizedBox(
@@ -151,8 +151,8 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                       icon: Icons.savings_outlined,
                                       sharp: true,
                                       borderless: true,
-                                      backgroundColor: const Color(0xFFD1FAE5),
-                                      color: const Color(0xFF047857),
+                                      backgroundColor: AppColors.kpiSuccessBg,
+                                      color: AppColors.kpiSuccess,
                                     ),
                                   ),
                                   SizedBox(
@@ -166,8 +166,8 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                       icon: Icons.warning_amber_rounded,
                                       sharp: true,
                                       borderless: true,
-                                      backgroundColor: const Color(0xFFFEF3C7),
-                                      color: const Color(0xFFB45309),
+                                      backgroundColor: AppColors.kpiAmberBg,
+                                      color: AppColors.kpiAmber,
                                     ),
                                   ),
                                 ],
@@ -251,10 +251,10 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: days > 30
-                                                    ? const Color(0xFFFEE2E2)
+                                                    ? AppColors.kpiDangerBg
                                                     : (days > 15
-                                                        ? const Color(0xFFFEF3C7)
-                                                        : const Color(0xFFE0F2FE)),
+                                                        ? AppColors.kpiAmberBg
+                                                        : AppColors.kpiSkyBg),
                                               ),
                                               child: Text(
                                                 '$days d',
@@ -262,10 +262,10 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                   color: days > 30
-                                                      ? const Color(0xFFB91C1C)
+                                                      ? AppColors.kpiDanger
                                                       : (days > 15
-                                                          ? const Color(0xFFB45309)
-                                                          : const Color(0xFF0369A1)),
+                                                          ? AppColors.kpiAmber
+                                                          : AppColors.kpiSky),
                                                 ),
                                               ),
                                             ),

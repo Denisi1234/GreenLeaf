@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -113,14 +114,14 @@ class AddProductController {
     final newCategory = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(
           context.tr('Create New Category'),
           style: GoogleFonts.manrope(
             fontWeight: FontWeight.w700,
             fontSize: 17,
-            color: const Color(0xFF0F172A),
+            color: AppColors.ink,
           ),
         ),
         content: Column(
@@ -129,14 +130,14 @@ class AddProductController {
           children: [
             Text(
               context.tr('Enter category name:'),
-              style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF64748B)),
+              style: GoogleFonts.manrope(fontSize: 13, color: AppColors.textMuted),
             ),
             const SizedBox(height: 10),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.zero,
-                border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
+                border: Border.all(color: AppColors.border, width: 1),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: TextField(
@@ -145,7 +146,7 @@ class AddProductController {
                 style: GoogleFonts.manrope(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF0F172A),
+                  color: AppColors.ink,
                 ),
                 decoration: InputDecoration(
                   hintText: context.tr('e.g., Beverages, Bakery, Cosmetics'),
@@ -161,8 +162,8 @@ class AddProductController {
           OutlinedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF64748B),
-              side: const BorderSide(color: Color(0xFFCBD5E1)),
+              foregroundColor: AppColors.textMuted,
+              side: const BorderSide(color: AppColors.borderInput),
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
             child: Text(
@@ -178,7 +179,7 @@ class AddProductController {
               }
             },
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF0284C7),
+              backgroundColor: AppColors.kpiSky,
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
             child: Text(

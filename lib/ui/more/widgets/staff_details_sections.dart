@@ -6,16 +6,15 @@ import '../../widgets/app_design.dart';
 import '../../widgets/app_image.dart';
 import '../../widgets/market_shared_widgets.dart';
 import '../../../service/models/staff_models.dart';
-import 'staff_models.dart';
 
 Color avatarColorForName(String name) {
   final palette = <Color>[
-    const Color(0xFFFDE68A),
-    const Color(0xFFBAE6FD),
-    const Color(0xFFA7F3D0),
-    const Color(0xFFFBCFE8),
-    const Color(0xFFDDD6FE),
-    const Color(0xFFFED7AA),
+    AppColors.kpiAmberBg,
+    AppColors.kpiSkyBg,
+    AppColors.kpiSuccessBg,
+    AppColors.kpiRoseBg,
+    AppColors.kpiVioletBg,
+    AppColors.kpiAmberBg,
   ];
   if (name.trim().isEmpty) return palette.first;
   final code = name.codeUnits.fold<int>(0, (acc, item) => acc + item);
@@ -83,7 +82,7 @@ class StaffProfileHero extends StatelessWidget {
                         StaffStatusPill(status: member.status, strings: strings),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.surfaceSecondary,
                             borderRadius: BorderRadius.zero,
                           ),

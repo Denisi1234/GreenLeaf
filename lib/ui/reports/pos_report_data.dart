@@ -21,9 +21,11 @@ part 'data/pos_report_multistore_tables.dart';
 part 'data/pos_report_helpers.dart';
 
 class ReportColumn {
-  const ReportColumn(this.label, {this.money = false});
+  const ReportColumn(this.label, {this.money = false, this.systemLabels = false});
   final String label;
   final bool money;
+  /// Generated labels that PDF renderers may translate, never business names.
+  final bool systemLabels;
 
   Object? displayValue(Object? value, AppStrings strings) {
     if (value is! String) return value;
@@ -48,7 +50,7 @@ class ReportTable {
   final String? note;
 
   ReportTable localized(AppStrings strings) => ReportTable(
-    [for (final column in columns) ReportColumn(strings.text(column.label), money: column.money)],
+    [for (final column in columns) ReportColumn(strings.text(column.label), money: column.money, systemLabels: column.systemLabels)],
     [for (final row in rows) [for (var i = 0; i < columns.length; i++) i < row.length ? columns[i].displayValue(row[i], strings) : null]],
     chartColumn: chartColumn,
     note: note == null ? null : strings.paragraph(note!),

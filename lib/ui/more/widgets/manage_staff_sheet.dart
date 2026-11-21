@@ -4,9 +4,7 @@ import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../../service/pos_local_store.dart';
 import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
-import 'role_details_widgets.dart';
 import 'staff_details_sections.dart';
-import 'staff_models.dart';
 
 class ManageStaffSheet {
   static void show(BuildContext context, PosLocalStore store, StaffRoleData role) {
@@ -32,7 +30,7 @@ class _ManageStaffSheetContent extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(
           context.tr('Move {p0}', args: {'p0': staff.name}),
@@ -71,7 +69,7 @@ class _ManageStaffSheetContent extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.zero,
       ),
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),

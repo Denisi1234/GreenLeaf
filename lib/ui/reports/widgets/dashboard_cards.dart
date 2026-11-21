@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:track_mauzo/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 class TodaySaleOverviewCard extends StatelessWidget {
-  const TodaySaleOverviewCard({
+  const TodaySaleOverviewCard({super.key, 
     required this.formattedSale,
     required this.growthText,
     required this.hasGrowth,
@@ -31,9 +31,9 @@ class TodaySaleOverviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
+        border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -50,7 +50,7 @@ class TodaySaleOverviewCard extends StatelessWidget {
             style: GoogleFonts.manrope(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
+              color: AppColors.ink,
               letterSpacing: -0.1,
             ),
           ),
@@ -63,7 +63,7 @@ class TodaySaleOverviewCard extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
+                    color: AppColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -72,7 +72,7 @@ class TodaySaleOverviewCard extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0F172A),
+                    color: AppColors.ink,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -83,12 +83,12 @@ class TodaySaleOverviewCard extends StatelessWidget {
                       width: 18,
                       height: 18,
                       decoration: BoxDecoration(
-                        color: hasGrowth ? const Color(0xFFD1FAE5) : const Color(0xFFFEE2E2),
+                        color: hasGrowth ? AppColors.kpiSuccessBg : AppColors.kpiDangerBg,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         hasGrowth ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                        color: hasGrowth ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        color: hasGrowth ? AppColors.success : AppColors.danger,
                         size: 13,
                       ),
                     ),
@@ -98,7 +98,7 @@ class TodaySaleOverviewCard extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: hasGrowth ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        color: hasGrowth ? AppColors.success : AppColors.danger,
                       ),
                     ),
                   ],
@@ -129,7 +129,7 @@ class TodaySaleOverviewCard extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF64748B),
+                  color: AppColors.textMuted,
                 ),
               ),
               Text(
@@ -137,7 +137,7 @@ class TodaySaleOverviewCard extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF64748B),
+                  color: AppColors.textMuted,
                 ),
               ),
               Text(
@@ -145,7 +145,7 @@ class TodaySaleOverviewCard extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF64748B),
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
@@ -178,7 +178,7 @@ class SaleOverviewChartPainter extends CustomPainter {
 
     // Dashed base line
     final dashPaint = Paint()
-      ..color = const Color(0xFFE2E8F0)
+      ..color = AppColors.borderLight
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
@@ -213,8 +213,8 @@ class SaleOverviewChartPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF0284C7).withValues(alpha: 0.16),
-            const Color(0xFF0284C7).withValues(alpha: 0.0),
+            AppColors.kpiSky.withValues(alpha: 0.16),
+            AppColors.kpiSky.withValues(alpha: 0.0),
           ],
         ).createShader(Rect.fromLTWH(0, 0, size.width, baselineY));
       canvas.drawPath(fillPath, fillPaint);
@@ -222,7 +222,7 @@ class SaleOverviewChartPainter extends CustomPainter {
 
     // Blue Line
     final linePaint = Paint()
-      ..color = hasData ? const Color(0xFF0284C7) : const Color(0xFFCBD5E1)
+      ..color = hasData ? AppColors.kpiSky : AppColors.borderInput
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -236,7 +236,7 @@ class SaleOverviewChartPainter extends CustomPainter {
 
     // Dots & live value labels
     final dotPaint = Paint()
-      ..color = hasData ? const Color(0xFF0284C7) : const Color(0xFF94A3B8);
+      ..color = hasData ? AppColors.kpiSky : AppColors.textLight;
     final innerWhite = Paint()..color = Colors.white;
     final pts = [p0, p1, p2];
 
@@ -251,7 +251,7 @@ class SaleOverviewChartPainter extends CustomPainter {
           style: const TextStyle(
             fontSize: 10.5,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF475569),
+            color: AppColors.textSecondary,
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -272,7 +272,7 @@ class SaleOverviewChartPainter extends CustomPainter {
 // Card 2: Expenses (Today)
 // ---------------------------------------------------------------------------
 class ExpensesSummaryCard extends StatelessWidget {
-  const ExpensesSummaryCard({
+  const ExpensesSummaryCard({super.key, 
     required this.formattedAmount,
     this.onAddExpense,
   });
@@ -286,7 +286,7 @@ class ExpensesSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: const BoxDecoration(
-        color: Color(0xFFFEE2E2),
+        color: AppColors.kpiDangerBg,
         borderRadius: BorderRadius.zero,
       ),
       child: Column(
@@ -299,7 +299,7 @@ class ExpensesSummaryCard extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  color: AppColors.ink,
                 ),
               ),
               const Spacer(),
@@ -317,7 +317,7 @@ class ExpensesSummaryCard extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0284C7),
+                        color: AppColors.kpiSky,
                       ),
                     ),
                   ),
@@ -330,7 +330,7 @@ class ExpensesSummaryCard extends StatelessWidget {
             style: GoogleFonts.manrope(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFFB91C1C),
+              color: AppColors.kpiDanger,
             ),
           ),
         ],
@@ -343,7 +343,7 @@ class ExpensesSummaryCard extends StatelessWidget {
 // Card 3: Most Used Reports
 // ---------------------------------------------------------------------------
 class MostUsedReportsCard extends StatelessWidget {
-  const MostUsedReportsCard({
+  const MostUsedReportsCard({super.key, 
     required this.onSalesTap,
     required this.onPurchasesTap,
     required this.onBalSheetTap,
@@ -362,7 +362,7 @@ class MostUsedReportsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.standard),
         border: Border.all(color: AppColors.border, width: 1),
       ),
@@ -376,7 +376,7 @@ class MostUsedReportsCard extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  color: AppColors.ink,
                   letterSpacing: -0.1,
                 ),
               ),
@@ -387,7 +387,7 @@ class MostUsedReportsCard extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0284C7),
+                    color: AppColors.kpiSky,
                   ),
                 ),
               ),
@@ -401,17 +401,17 @@ class MostUsedReportsCard extends StatelessWidget {
                 label: context.tr('Sales'),
                 icon: Icons.receipt_long_rounded,
                 badgeSymbol: '%',
-                badgeColor: const Color(0xFFF472B6),
-                bgColor: const Color(0xFFFCE7F3),
-                iconColor: const Color(0xFFBE185D),
+                badgeColor: AppColors.kpiRose,
+                bgColor: AppColors.kpiRoseBg,
+                iconColor: AppColors.kpiRose,
                 onTap: onSalesTap,
               ),
               ReportIconItem(
                 label: context.tr('Purchases'),
                 icon: Icons.assignment_outlined,
                 badgeSymbol: null,
-                bgColor: const Color(0xFFE0F2FE),
-                iconColor: const Color(0xFF0369A1),
+                bgColor: AppColors.kpiSkyBg,
+                iconColor: AppColors.kpiSky,
                 onTap: onPurchasesTap,
               ),
               ReportIconItem(
@@ -419,18 +419,18 @@ class MostUsedReportsCard extends StatelessWidget {
                 icon: Icons.receipt_outlined,
                 badgeSymbol: '₹',
                 hasCrown: true,
-                badgeColor: const Color(0xFFF59E0B),
-                bgColor: const Color(0xFFFEF3C7),
-                iconColor: const Color(0xFFB45309),
+                badgeColor: AppColors.warning,
+                bgColor: AppColors.kpiAmberBg,
+                iconColor: AppColors.kpiAmber,
                 onTap: onBalSheetTap,
               ),
               ReportIconItem(
                 label: context.tr('Profit & Loss'),
                 icon: Icons.description_outlined,
                 badgeSymbol: '1L',
-                badgeColor: const Color(0xFFEF4444),
-                bgColor: const Color(0xFFFEE2E2),
-                iconColor: const Color(0xFFB91C1C),
+                badgeColor: AppColors.danger,
+                bgColor: AppColors.kpiDangerBg,
+                iconColor: AppColors.kpiDanger,
                 onTap: onProfitLossTap,
               ),
             ],
@@ -442,14 +442,14 @@ class MostUsedReportsCard extends StatelessWidget {
 }
 
 class ReportIconItem extends StatelessWidget {
-  const ReportIconItem({
+  const ReportIconItem({super.key, 
     required this.label,
     required this.icon,
     this.badgeSymbol,
     this.hasCrown = false,
-    this.badgeColor = const Color(0xFFF472B6),
-    this.bgColor = const Color(0xFFFCE7F3),
-    this.iconColor = const Color(0xFF1E293B),
+    this.badgeColor = AppColors.kpiRose,
+    this.bgColor = AppColors.kpiRoseBg,
+    this.iconColor = AppColors.ink,
     required this.onTap,
   });
 
@@ -496,7 +496,7 @@ class ReportIconItem extends StatelessWidget {
                       width: 14,
                       height: 14,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFA855F7),
+                        color: AppColors.kpiViolet,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
@@ -510,16 +510,16 @@ class ReportIconItem extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: AppColors.borderLight),
                       ),
                       child: Text(
                         badgeSymbol!,
                         style: const TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.ink,
                         ),
                       ),
                     ),
@@ -532,7 +532,7 @@ class ReportIconItem extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF0F172A),
+                color: AppColors.ink,
               ),
             ),
           ],
@@ -546,7 +546,7 @@ class ReportIconItem extends StatelessWidget {
 // Card 4: Store Alerts (Always shows all real-time alerts)
 // ---------------------------------------------------------------------------
 class StoreAlertsCard extends StatelessWidget {
-  const StoreAlertsCard({
+  const StoreAlertsCard({super.key, 
     required this.outOfStockCount,
     required this.lowStockCount,
     required this.pendingCreditCount,
@@ -568,9 +568,9 @@ class StoreAlertsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
+        border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -590,14 +590,14 @@ class StoreAlertsCard extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  color: AppColors.ink,
                   letterSpacing: -0.1,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: totalAlerts > 0 ? const Color(0xFFFEE2E2) : const Color(0xFFD1FAE5),
+                  color: totalAlerts > 0 ? AppColors.kpiDangerBg : AppColors.kpiSuccessBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -605,7 +605,7 @@ class StoreAlertsCard extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: totalAlerts > 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                    color: totalAlerts > 0 ? AppColors.danger : AppColors.success,
                   ),
                 ),
               ),
@@ -619,8 +619,8 @@ class StoreAlertsCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 10),
               child: AlertRow(
                 icon: Icons.cancel_rounded,
-                color: const Color(0xFFEF4444),
-                bgColor: const Color(0xFFFEE2E2),
+                color: AppColors.danger,
+                bgColor: AppColors.kpiDangerBg,
                 title: context.tr('{p0} items are completely Out of Stock', args: {'p0': outOfStockCount}),
                 subtitle: outOfStockItems.take(2).map((p) => p.name).join(', '),
               ),
@@ -632,8 +632,8 @@ class StoreAlertsCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 10),
               child: AlertRow(
                 icon: Icons.warning_amber_rounded,
-                color: const Color(0xFFF59E0B),
-                bgColor: const Color(0xFFFEF3C7),
+                color: AppColors.warning,
+                bgColor: AppColors.kpiAmberBg,
                 title: context.tr('{p0} items are Low on Stock', args: {'p0': lowStockCount}),
                 subtitle: lowStockItems.take(2).map((p) => '${p.name} (${p.stockCount} left)').join(', '),
               ),
@@ -645,8 +645,8 @@ class StoreAlertsCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 6),
               child: AlertRow(
                 icon: Icons.account_balance_wallet_outlined,
-                color: const Color(0xFF0284C7),
-                bgColor: const Color(0xFFE0F2FE),
+                color: AppColors.kpiSky,
+                bgColor: AppColors.kpiSkyBg,
                 title: context.tr('{p0} customers have outstanding debt', args: {'p0': pendingCreditCount}),
                 subtitle: context.tr('Tap to review debtor ledger and collect payments'),
               ),
@@ -658,8 +658,8 @@ class StoreAlertsCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: AlertRow(
                 icon: Icons.check_circle_outline_rounded,
-                color: const Color(0xFF10B981),
-                bgColor: const Color(0xFFD1FAE5),
+                color: AppColors.success,
+                bgColor: AppColors.kpiSuccessBg,
                 title: context.tr('All store inventory levels and ledgers healthy'),
                 subtitle: context.tr('No low stock warnings or urgent pending actions.'),
               ),
@@ -671,7 +671,7 @@ class StoreAlertsCard extends StatelessWidget {
 }
 
 class AlertRow extends StatelessWidget {
-  const AlertRow({
+  const AlertRow({super.key, 
     required this.icon,
     required this.color,
     required this.bgColor,
@@ -710,7 +710,7 @@ class AlertRow extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
+                  color: AppColors.ink,
                 ),
               ),
               const SizedBox(height: 2),
@@ -721,7 +721,7 @@ class AlertRow extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xFF64748B),
+                  color: AppColors.textMuted,
                 ),
               ),
             ],

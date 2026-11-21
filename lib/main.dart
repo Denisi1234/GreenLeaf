@@ -54,7 +54,7 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
             supportedLocales: const [Locale('sw'), Locale('en')],
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
             debugShowCheckedModeBanner: false,
-            home: _BootstrapScreen(),
+            home: const _BootstrapScreen(),
           );
         }
 
@@ -135,7 +135,7 @@ class _BootstrapErrorScreen extends StatelessWidget {
                Text(
                 context.tr('TrackMauzo haikuweza kuanza'),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.ink,
                   fontSize: 18,
                   fontWeight: FontWeight.w800,

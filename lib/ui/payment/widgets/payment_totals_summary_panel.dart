@@ -1,9 +1,7 @@
 import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../service/pos_suspended_sale_model.dart';
-import '../../../utils/currency_formatter.dart';
 import '../../business_category_config.dart';
-import '../../models/product_item.dart';
 import '../../widgets/app_design.dart';
 import 'payment_split_section.dart';
 
@@ -236,7 +234,7 @@ class _PaymentSummaryRow extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF64748B),
+              color: AppColors.textMuted,
             ),
           ),
         ),

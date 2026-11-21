@@ -189,45 +189,21 @@ class _CustomerDetailsView extends StatelessWidget {
     PosLocalStore store,
   ) async {
     final strings = AppStrings.of(store.languageCode);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.modal),
-        ),
-        title: Text(
-          customerDual(strings, 'Delete customer?', 'Futa mteja?'),
-          style: AppTypography.cardHeader,
-        ),
-        content: Text(
-          customerDual(
-            strings,
-            'Remove ${customer.name} from your customer list. Past orders are kept.',
-            'Ondoa ${customer.name} kwenye orodha ya wateja. Oda za zamani zitabaki.',
-          ),
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(strings.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-              ),
-            ),
-            child: Text(customerDual(strings, 'Delete', 'Futa')),
-          ),
-        ],
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: customerDual(strings, 'Delete customer?', 'Futa mteja?'),
+      message: customerDual(
+        strings,
+        'Remove ${customer.name} from your customer list. Past orders are kept.',
+        'Ondoa ${customer.name} kwenye orodha ya wateja. Oda za zamani zitabaki.',
       ),
+      confirmLabel: customerDual(strings, 'Delete', 'Futa'),
+      cancelLabel: strings.cancel,
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
     await store.deleteCustomer(customer.id);
     if (!context.mounted) return;
     showMarketNotice(

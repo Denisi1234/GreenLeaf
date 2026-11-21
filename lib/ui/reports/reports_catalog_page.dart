@@ -45,64 +45,64 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
     final essentialReports = <_EssentialReportItem>[
       _EssentialReportItem(
         Icons.point_of_sale_outlined,
-        const Color(0xFF1D4ED8), // Blue
-        const Color(0xFFEFF6FF),
+        AppColors.kpiSky, // Blue
+        AppColors.kpiSkyBg,
         context.tr('Sales Summary'),
         context.tr('Daily revenue, volume and net sales'),
         _findReport(ReportData.sales),
       ),
       _EssentialReportItem(
         Icons.trending_up_rounded,
-        const Color(0xFF0F766E), // Teal
-        const Color(0xFFECFDF5),
+        AppColors.kpiSuccess, // Teal
+        AppColors.kpiSuccessBg,
         context.tr('Profit & Loss'),
         context.tr('Gross profit, expenses and net margin'),
         _findReport(ReportData.profitLoss),
       ),
       _EssentialReportItem(
         Icons.inventory_2_outlined,
-        const Color(0xFF0369A1), // Sky
-        const Color(0xFFF0F9FF),
+        AppColors.kpiSky, // Sky
+        AppColors.kpiSkyBg,
         context.tr('Inventory Summary'),
         context.tr('Current stock counts and stock valuation'),
         _findReport(ReportData.inventory),
       ),
       _EssentialReportItem(
         Icons.warning_amber_rounded,
-        const Color(0xFFB45309), // Amber
-        const Color(0xFFFFFBEB),
+        AppColors.kpiAmber, // Amber
+        AppColors.kpiAmberBg,
         context.tr('Low Inventory'),
         context.tr('Items running low and needing restock'),
         _findReport(ReportData.lowInventory),
       ),
       _EssentialReportItem(
         Icons.shopping_bag_outlined,
-        const Color(0xFF7C3AED), // Violet
-        const Color(0xFFF5F3FF),
+        AppColors.kpiViolet, // Violet
+        AppColors.kpiVioletBg,
         context.tr('Best Selling Items'),
         context.tr('Top-performing products by quantity and value'),
         _findReport(ReportData.items),
       ),
       _EssentialReportItem(
         Icons.receipt_long_outlined,
-        const Color(0xFFBE123C), // Rose
-        const Color(0xFFFFF1F2),
+        AppColors.kpiRose, // Rose
+        AppColors.kpiRoseBg,
         context.tr('Expenses Summary'),
         context.tr('Business spending breakdown by category'),
         _findReport(ReportData.expenses),
       ),
       _EssentialReportItem(
         Icons.payments_outlined,
-        const Color(0xFF15803D), // Green
-        const Color(0xFFF0FDF4),
+        AppColors.kpiSuccess, // Green
+        AppColors.kpiSuccessBg,
         context.tr('Payments Summary'),
         context.tr('Cash, mobile money, card and credit totals'),
         _findReport(ReportData.payments),
       ),
       _EssentialReportItem(
         Icons.people_outline_rounded,
-        const Color(0xFF334155), // Slate
-        const Color(0xFFF1F5F9),
+        AppColors.textBody, // Slate
+        AppColors.surfaceSecondary,
         context.tr('Customers Summary'),
         context.tr('Top buyers and customer purchase history'),
         _findReport(ReportData.customers),
@@ -119,7 +119,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
             color: AppColors.ink,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.headerSurface,
         foregroundColor: AppColors.ink,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -227,7 +227,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                           ),
                         ),
                         Material(
-                          color: AppColors.surface,
+                          color: AppColors.sectionSurface,
                           borderRadius: BorderRadius.zero,
                           child: Column(
                             children: [
@@ -334,7 +334,7 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                         ),
                       ),
                       Material(
-                        color: AppColors.surface,
+                        color: AppColors.sectionSurface,
                         borderRadius: BorderRadius.zero,
                         child: InkWell(
                           onTap: () {
@@ -356,13 +356,13 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                                   width: 38,
                                   height: 38,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEEF2FF),
+                                    color: AppColors.kpiSkyBg,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   alignment: Alignment.center,
                                   child: const Icon(
                                     Icons.analytics_outlined,
-                                    color: Color(0xFF4338CA),
+                                    color: AppColors.kpiSky,
                                     size: 19,
                                   ),
                                 ),

@@ -63,7 +63,7 @@ class OrderActionChip extends StatelessWidget {
 }
 
 class SalesMetricButton extends StatelessWidget {
-  const SalesMetricButton();
+  const SalesMetricButton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +78,7 @@ class SalesMetricButton extends StatelessWidget {
 }
 
 class OrderCard extends StatefulWidget {
-  const OrderCard({required this.order});
+  const OrderCard({super.key, required this.order});
 
   final OrderHistoryItem order;
 
@@ -321,8 +321,8 @@ class OrderCardState extends State<OrderCard> {
                         Expanded(
                           child: OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFEF4444),
-                              side: const BorderSide(color: Color(0xFFEF4444)),
+                              foregroundColor: AppColors.danger,
+                              side: const BorderSide(color: AppColors.danger),
                               shape: RoundedRectangleBorder(
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.standard),
@@ -382,7 +382,7 @@ class OrderCardState extends State<OrderCard> {
                   const SizedBox(height: 16),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
-                    title:  Text(context.tr('Return items to inventory stock'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    title:  Text(context.tr('Return items to inventory stock'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                     value: restock,
                     onChanged: (val) => setDialogState(() => restock = val ?? true),
                   ),
@@ -395,7 +395,7 @@ class OrderCardState extends State<OrderCard> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEF4444),
+                    backgroundColor: AppColors.danger,
                     foregroundColor: Colors.white,
                     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                   ),
@@ -432,7 +432,7 @@ class OrderCardState extends State<OrderCard> {
 }
 
 class OrderTableDivider extends StatelessWidget {
-  const OrderTableDivider();
+  const OrderTableDivider({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -444,7 +444,7 @@ class OrderTableDivider extends StatelessWidget {
 }
 
 class OrderAmountRow extends StatelessWidget {
-  const OrderAmountRow({
+  const OrderAmountRow({super.key, 
     required this.label,
     required this.value,
     this.isEmphasis = false,

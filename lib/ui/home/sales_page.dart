@@ -265,15 +265,16 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                             );
                           }
                         },
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color(0xFFF1F5F9),
-                          foregroundColor: AppColors.ink,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: AppColors.kpiAmberBg,
+                          foregroundColor: AppColors.kpiAmber,
+                          side: const BorderSide(color: AppColors.kpiAmber),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 10,
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.standard),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
                           ),
                         ),
                         icon: const Icon(
@@ -287,17 +288,18 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        FilledButton.icon(
+                        OutlinedButton.icon(
                           onPressed: () => SuspendedSalesSheet.show(context),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.ink,
-                            foregroundColor: Colors.white,
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: AppColors.kpiSkyBg,
+                            foregroundColor: AppColors.kpiSky,
+                            side: const BorderSide(color: AppColors.kpiSky),
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.standard),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
                             ),
                           ),
                           icon: const Icon(
@@ -316,10 +318,10 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444),
+                                color: AppColors.kpiDanger,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: Colors.white,
+                                  color: AppColors.surface,
                                   width: 1.5,
                                 ),
                               ),
@@ -380,7 +382,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                           selected: _viewModel.inStockOnly,
                           side: BorderSide.none,
                           backgroundColor: AppColors.surface,
-                          selectedColor: const Color(0xFFEFF6FF),
+                          selectedColor: AppColors.kpiSkyBg,
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
                           ),

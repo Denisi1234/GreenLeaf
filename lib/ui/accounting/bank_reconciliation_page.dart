@@ -78,10 +78,10 @@ class BankReconciliationPage extends StatelessWidget {
                             height: 48,
                             decoration: BoxDecoration(
                               color: unmatched.isEmpty && entries.isNotEmpty
-                                  ? const Color(0xFFDCFCE7)
+                                  ? AppColors.kpiSuccessBg
                                   : (entries.isEmpty
                                       ? AppColors.surfaceSecondary
-                                      : const Color(0xFFFEE2E2)),
+                                      : AppColors.kpiDangerBg),
                               borderRadius: BorderRadius.zero,
                             ),
                             child: Icon(
@@ -91,10 +91,10 @@ class BankReconciliationPage extends StatelessWidget {
                                       ? Icons.account_balance_outlined
                                       : Icons.warning_amber_rounded),
                               color: unmatched.isEmpty && entries.isNotEmpty
-                                  ? const Color(0xFF15803D)
+                                  ? AppColors.kpiSuccess
                                   : (entries.isEmpty
                                       ? AppColors.textMuted
-                                      : const Color(0xFFB91C1C)),
+                                      : AppColors.kpiDanger),
                             ),
                           ),
                           const SizedBox(width: 14),

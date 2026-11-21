@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -26,8 +25,9 @@ class ReceiptPdfService {
         !logoPath.startsWith('http')) {
       try {
         final file = File(logoPath);
-        if (await file.exists())
+        if (await file.exists()) {
           logo = pw.MemoryImage(await file.readAsBytes());
+        }
       } catch (_) {/* The business name remains available without a logo. */}
     }
     final pdf = pw.Document(

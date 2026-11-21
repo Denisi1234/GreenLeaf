@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../models/staff_models.dart';
 import '../pos_local_store.dart';
 
 /// Focused, injectable Authentication Service.

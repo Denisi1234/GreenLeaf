@@ -1,3 +1,4 @@
+import '../../service/report_pdf/report_pdf_context.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -343,6 +344,16 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
           context: context,
           expenses: currentItems,
           strings: strings,
+          pdfContext: ReportPdfContext.fromStore(context.read<PosLocalStore>(),
+            languageCode: strings.languageCode,
+            period: _range == ExpenseRange.custom && _customRange != null
+                ? '${DateFormat('yyyy-MM-dd').format(_customRange!.start)} - ${DateFormat('yyyy-MM-dd').format(_customRange!.end)}'
+                : _range.label(strings),
+            filterSummary: [
+              if (_search.trim().isNotEmpty) '${strings.text('Search')}: ${_search.trim()}',
+              if (_paymentFilter != 'All') strings.paymentMethod(_paymentFilter),
+              '${strings.text('Sort')}: ${_sort.label(strings)}',
+            ].join(' | ')),
         );
       }
     } finally {
@@ -475,32 +486,20 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
       BuildContext ctx, PosLocalStore store, Expense expense) async {
     if (expense.id == null) return;
     final strings = AppStrings.of(store.languageCode);
-    final ok = await showDialog<bool>(
-      context: ctx,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text(expenseDual(strings, 'Delete expense?', 'Futa matumizi?'),
-            style: AppTypography.cardHeader),
-        content: Text(
-            expenseDual(
-                strings,
-                'This will remove "${expense.title}" from recorded expenses.',
-                'Hili litaondoa "${expense.title}" kwenye matumizi yaliyorekodiwa.'),
-            style:
-                AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(strings.cancel)),
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-              child: Text(expenseDual(strings, 'Delete', 'Futa'))),
-        ],
+    final ok = await showMarketConfirmDialog(
+      ctx,
+      title: expenseDual(strings, 'Delete expense?', 'Futa matumizi?'),
+      message: expenseDual(
+        strings,
+        'This will remove "${expense.title}" from recorded expenses.',
+        'Hili litaondoa "${expense.title}" kwenye matumizi yaliyorekodiwa.',
       ),
+      confirmLabel: expenseDual(strings, 'Delete', 'Futa'),
+      cancelLabel: strings.cancel,
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
-    if (ok != true) return;
+    if (!ok) return;
     await store.deleteExpense(expense.id!);
     if (!mounted) return;
     showMarketNotice(context,

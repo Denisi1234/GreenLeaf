@@ -5,7 +5,6 @@ import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
 import '../../../service/models/staff_models.dart';
 import 'staff_details_sections.dart';
-import 'staff_models.dart';
 
 class PermissionData {
   const PermissionData({
@@ -144,7 +143,7 @@ class RolePermissionNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
-      backgroundColor: const Color(0xFFF7FAFF),
+      backgroundColor: AppColors.pageBackground,
       borderColor: AppColors.border,
       radius: 0,
       showShadow: false,
@@ -155,7 +154,7 @@ class RolePermissionNote extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: const BoxDecoration(
-              color: Color(0xFFE0F2FE),
+              color: AppColors.kpiSkyBg,
               borderRadius: BorderRadius.zero,
             ),
             child: const Icon(

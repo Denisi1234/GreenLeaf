@@ -27,7 +27,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.modal),
         ),
@@ -97,35 +97,20 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
       return;
     }
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.modal),
-        ),
-        title: Text(context.tr('Delete role')),
-        content: Text(context.tr('Delete the "{p0}" role? This cannot be undone.', args: {'p0': role.title})),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(context.tr('Cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-              ),
-            ),
-            child: Text(context.tr('Delete')),
-          ),
-        ],
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: context.tr('Delete role'),
+      message: context.tr(
+        'Delete the "{p0}" role? This cannot be undone.',
+        args: {'p0': role.title},
       ),
+      confirmLabel: context.tr('Delete'),
+      cancelLabel: context.tr('Cancel'),
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     await store.deleteStaffRole(role.id);
     if (!mounted) return;
     showMarketNotice(
@@ -282,7 +267,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                       if (assignedStaff.isEmpty)
                         MarketSurfaceCard(
                           padding: const EdgeInsets.all(14),
-                          backgroundColor: const Color(0xFFF7FAFF),
+                          backgroundColor: AppColors.pageBackground,
                           borderColor: AppColors.border,
                           radius: 0,
                           showShadow: false,

@@ -45,8 +45,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
       _AdvSection(t('Stock & register', 'Hifadhi na kasha'), [
         _AdvTool(
           Icons.local_shipping_outlined,
-          const Color(0xFF1D4ED8), // Blue
-          const Color(0xFFEFF6FF),
+          AppColors.kpiSky, // Blue
+          AppColors.kpiSkyBg,
           t('Suppliers', 'Wasambazaji'),
           t('Supplier contacts and purchase records',
               'Mawasiliano na rekodi za manunuzi'),
@@ -55,8 +55,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
         ),
         _AdvTool(
           Icons.move_to_inbox_outlined,
-          const Color(0xFF0F766E), // Teal
-          const Color(0xFFECFDF5),
+          AppColors.kpiSuccess, // Teal
+          AppColors.kpiSuccessBg,
           t('Goods received', 'Bidhaa zilizopokelewa'),
           t('Record deliveries and update stock',
               'Rekodi usambazaji na sasisha hifadhi'),
@@ -65,8 +65,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
         ),
         _AdvTool(
           Icons.point_of_sale_outlined,
-          const Color(0xFFB45309), // Amber
-          const Color(0xFFFFFBEB),
+          AppColors.kpiAmber, // Amber
+          AppColors.kpiAmberBg,
           t('Cash register', 'Kasha la pesa'),
           t('Open shifts, cash movements and closing',
               'Zamu, miamala na kufunga kasha'),
@@ -77,8 +77,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
       _AdvSection(t('Accounting & tax', 'Uhasibu na kodi'), [
         _AdvTool(
           Icons.account_balance_outlined,
-          const Color(0xFF4338CA), // Indigo
-          const Color(0xFFEEF2FF),
+          AppColors.kpiSky, // Indigo
+          AppColors.kpiSkyBg,
           t('Accounts & ledger', 'Akaunti na daftari'),
           t('Accounts, entries and balances', 'Akaunti, miamala na salio'),
           () => const AccountsPage(),
@@ -86,8 +86,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
         ),
         _AdvTool(
           Icons.chair_outlined,
-          const Color(0xFF7C3AED), // Violet
-          const Color(0xFFF5F3FF),
+          AppColors.kpiViolet, // Violet
+          AppColors.kpiVioletBg,
           t('Fixed assets', 'Mali za kudumu'),
           t('Business assets and depreciation',
               'Mali za biashara na uchakavu'),
@@ -96,8 +96,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
         ),
         _AdvTool(
           Icons.fact_check_outlined,
-          const Color(0xFF0369A1), // Sky
-          const Color(0xFFF0F9FF),
+          AppColors.kpiSky, // Sky
+          AppColors.kpiSkyBg,
           t('Bank reconciliation', 'Upatanishi wa benki'),
           t('Match statements with recorded payments',
               'Linganisha taarifa za benki na malipo'),
@@ -106,8 +106,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
         ),
         _AdvTool(
           Icons.percent_rounded,
-          const Color(0xFFBE123C), // Rose
-          const Color(0xFFFFF1F2),
+          AppColors.kpiRose, // Rose
+          AppColors.kpiRoseBg,
           t('Tax settings', 'Mipangilio ya kodi'),
           t('Tax rates and reporting preferences',
               'Viwango vya kodi na mapendeleo ya ripoti'),
@@ -118,8 +118,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
       _AdvSection(t('Multi-store & team', 'Maduka na timu'), [
         _AdvTool(
           Icons.storefront_outlined,
-          const Color(0xFF15803D), // Green
-          const Color(0xFFF0FDF4),
+          AppColors.kpiSuccess, // Green
+          AppColors.kpiSuccessBg,
           t('Stores', 'Maduka'),
           t('Manage locations and switch stores',
               'Dhibiti maeneo na badilisha duka'),
@@ -128,8 +128,8 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
         ),
         _AdvTool(
           Icons.badge_outlined,
-          const Color(0xFF334155), // Slate
-          const Color(0xFFF1F5F9),
+          AppColors.textBody, // Slate
+          AppColors.surfaceSecondary,
           strings.staffManagement,
           t('Team members, roles and permissions',
               'Wafanyakazi, majukumu na ruhusa'),
@@ -149,7 +149,7 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
             color: AppColors.ink,
           ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.headerSurface,
         foregroundColor: AppColors.ink,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -281,7 +281,7 @@ class _AdvancedFeaturesPageState extends State<AdvancedFeaturesPage> {
                           ),
                           // Sharp borderless ERP card surface
                           Material(
-                            color: AppColors.surface,
+                            color: AppColors.sectionSurface,
                             borderRadius: BorderRadius.zero,
                             child: Column(
                               children: [

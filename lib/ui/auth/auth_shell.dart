@@ -133,7 +133,7 @@ class _BrandPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF111111), Color(0xFF111111)],
+          colors: [AppColors.ink, AppColors.ink],
         ),
       ),
       child: Stack(
@@ -179,7 +179,7 @@ class _BrandPanel extends StatelessWidget {
                       child: Text(
                         strings.authHeroSubtitle,
                         style: const TextStyle(
-                          color: Color(0xFFD1D5DB),
+                          color: AppColors.borderInput,
                           fontSize: 15,
                           height: 1.6,
                           fontWeight: FontWeight.w500,
@@ -375,7 +375,7 @@ class _BrandFeature extends StatelessWidget {
           child: Text(
             text,
             style: const TextStyle(
-              color: Color(0xFFF0FDF4),
+              color: AppColors.kpiSuccessBg,
               fontSize: 14,
               height: 1.4,
               fontWeight: FontWeight.w500,
@@ -530,10 +530,10 @@ class AuthSubmitButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: busy ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF191C1F),
+          backgroundColor: AppColors.ink,
           foregroundColor: Colors.white,
           disabledBackgroundColor:
-              const Color(0xFF191C1F).withValues(alpha: 0.6),
+              AppColors.ink.withValues(alpha: 0.6),
           disabledForegroundColor: Colors.white70,
           elevation: 0,
           shadowColor: Colors.transparent,

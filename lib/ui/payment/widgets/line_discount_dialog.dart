@@ -84,7 +84,7 @@ class _LineDiscountDialogState extends State<LineDiscountDialog> {
             widget.line.discountPercent = 0.0;
             Navigator.pop(context, true);
           },
-          child:  Text(context.tr('Reset'), style: TextStyle(color: AppColors.danger)),
+          child:  Text(context.tr('Reset'), style: const TextStyle(color: AppColors.danger)),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, false),

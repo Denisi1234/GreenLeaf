@@ -1,6 +1,16 @@
 part of '../enhanced_report_page.dart';
 
 extension _EnhancedReportSheets on _EnhancedReportPageState {
+  ReportPdfContext _pdfContext() => ReportPdfContext.fromStore(
+        context.read<PosLocalStore>(),
+        languageCode: context.strings.languageCode,
+        filterSummary: [
+          if (_searchQuery.trim().isNotEmpty)
+            '${context.tr('Search')}: ${_searchQuery.trim()}',
+          if (_selection != null) '${context.tr('Selection')}: $_selection',
+        ].join(' | '),
+      );
+
   Widget _buildExportButton(ReportTable table) => InkWell(
         onTap: _exporting
             ? null
@@ -198,15 +208,7 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
                   subtitle: context.tr('Open the system print dialog'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    Printing.layoutPdf(
-                      onLayout: (_) => ReportExportService.generatePdf(
-                        table,
-                        context.tr(widget.report.title),
-                        _range,
-                        widget.report.isSnapshot,
-                        languageCode: context.strings.languageCode,
-                      ),
-                    );
+                    _printReport(table);
                   },
                 ),
               ],
@@ -215,6 +217,33 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
         );
       },
     );
+  }
+
+  Future<void> _printReport(ReportTable table) async {
+    if (_exporting) return;
+    final reportContext = _pdfContext();
+    final title = context.tr(widget.report.title);
+    _updateState(() => _exporting = true);
+    try {
+      final bytes = await ReportExportService.generatePdf(
+          table, title, _range, widget.report.isSnapshot,
+          pdfContext: reportContext);
+      if (!mounted) return;
+      await Printing.layoutPdf(
+          name: ReportExportService.exportFileName(title, 'pdf'),
+          format: ReportPdfLayout.pageFormatFor(table.columns.length),
+          dynamicLayout: false,
+          onLayout: (_) async => bytes);
+    } catch (error) {
+      if (mounted) {
+        showMarketNotice(context,
+            title: context.tr('Print failed'),
+            message: error.toString(),
+            type: MarketNoticeType.error);
+      }
+    } finally {
+      if (mounted) _updateState(() => _exporting = false);
+    }
   }
 
   Future<void> _triggerExport(ReportTable table, ExportFormat format,
@@ -230,6 +259,7 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
           format: format,
           range: _range,
           isSnapshot: widget.report.isSnapshot,
+          pdfContext: format == ExportFormat.pdf ? _pdfContext() : null,
         );
       } else {
         await ReportExportService.exportReport(
@@ -239,6 +269,7 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
           format: format,
           range: _range,
           isSnapshot: widget.report.isSnapshot,
+          pdfContext: format == ExportFormat.pdf ? _pdfContext() : null,
         );
       }
     } finally {

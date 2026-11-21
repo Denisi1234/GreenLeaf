@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:track_mauzo/l10n/app_localization.dart';
+import '../../widgets/app_design.dart';
 import '../../widgets/workspace_widgets.dart';
 import 'product_cards.dart';
 
@@ -31,12 +32,12 @@ class InventoryKpiMetrics extends StatelessWidget {
               width: width,
               child: WorkspaceMetric(
                 label: context.tr('Total items'),
-                value: '',
+                value: '$totalItems',
                 icon: Icons.inventory_2_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFFCE7F3),
-                color: const Color(0xFFBE185D),
+                backgroundColor: AppColors.kpiRoseBg,
+                color: AppColors.kpiRose,
               ),
             ),
             SizedBox(
@@ -47,32 +48,32 @@ class InventoryKpiMetrics extends StatelessWidget {
                 icon: Icons.account_balance_wallet_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFE0F2FE),
-                color: const Color(0xFF0369A1),
+                backgroundColor: AppColors.kpiSkyBg,
+                color: AppColors.kpiSky,
               ),
             ),
             SizedBox(
               width: width,
               child: WorkspaceMetric(
                 label: context.tr('Low stock'),
-                value: '',
+                value: '$lowCount',
                 icon: Icons.trending_down_rounded,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFFEF3C7),
-                color: const Color(0xFFB45309),
+                backgroundColor: AppColors.kpiAmberBg,
+                color: AppColors.kpiAmber,
               ),
             ),
             SizedBox(
               width: width,
               child: WorkspaceMetric(
                 label: context.tr('Out of stock'),
-                value: '',
+                value: '$outCount',
                 icon: Icons.inventory_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFFEE2E2),
-                color: const Color(0xFFB91C1C),
+                backgroundColor: AppColors.kpiDangerBg,
+                color: AppColors.kpiDanger,
               ),
             ),
           ],

@@ -165,7 +165,7 @@ class EscPosReceiptBuilder {
   static String _columns(String left, String right, int cols) {
     final l = _sanitizeAscii(left).trimRight();
     final r = _sanitizeAscii(right).trim();
-    final minGap = 1;
+    const minGap = 1;
     if (l.length + r.length + minGap <= cols) {
       final spaces = cols - l.length - r.length;
       return '$l${' ' * spaces}$r';

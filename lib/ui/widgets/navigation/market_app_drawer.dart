@@ -103,7 +103,7 @@ class _DrawerProfileHeader extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: 44,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             child: profile.logoPath == null
                 ? const Icon(
                     Icons.storefront_rounded,

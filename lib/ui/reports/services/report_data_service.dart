@@ -14,8 +14,8 @@ import '../pos_report_data.dart';
 
 class ReportDataService {
   static const Color _blue = AppColors.primary;
-  static const Color _bg = Color(0xFFF6F8FC);
-  static const Color _ink = Color(0xFF111111);
+  static const Color _bg = AppColors.pageBackground;
+  static const Color _ink = AppColors.ink;
 
   static ReportSnapshot buildReportSnapshot({
     required PosLocalStore store,
@@ -828,11 +828,11 @@ class ReportDataService {
       case ProductArtType.kelloggs:
         return const [AppColors.ink, AppColors.textLight];
       case ProductArtType.dove:
-        return const [Color(0xFF111111), Color(0xFF111111)];
+        return const [AppColors.ink, AppColors.ink];
       case ProductArtType.colgate:
         return const [AppColors.textBody, AppColors.border];
       case ProductArtType.dettol:
-        return const [Color(0xFF111111), Color(0xFF111111)];
+        return const [AppColors.ink, AppColors.ink];
       case ProductArtType.tide:
         return const [AppColors.ink, AppColors.textLight];
     }

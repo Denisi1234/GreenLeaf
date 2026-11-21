@@ -1,3 +1,6 @@
+import 'package:provider/provider.dart';
+import '../../../service/pos_local_store.dart';
+import '../../../service/report_pdf/report_pdf_layout.dart';
 import '../../../l10n/app_strings.dart';
 import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:convert';
@@ -7,8 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import '../../widgets/market_shared_widgets.dart';
@@ -52,6 +53,7 @@ class ReportExportService {
     required ExportFormat format,
     DateTimeRange? range,
     bool isSnapshot = false,
+    ReportPdfContext? pdfContext,
   }) async {
     try {
       final export = await buildExport(
@@ -61,6 +63,10 @@ class ReportExportService {
         range: range,
         isSnapshot: isSnapshot,
         languageCode: context.strings.languageCode,
+        pdfContext: format == ExportFormat.pdf
+            ? (pdfContext ??
+                ReportPdfContext.fromStore(context.read<PosLocalStore>()))
+            : null,
       );
       final dir = await getTemporaryDirectory();
       final safeName =
@@ -92,6 +98,7 @@ class ReportExportService {
     required ExportFormat format,
     DateTimeRange? range,
     bool isSnapshot = false,
+    ReportPdfContext? pdfContext,
   }) async {
     try {
       final export = await buildExport(
@@ -101,6 +108,10 @@ class ReportExportService {
         range: range,
         isSnapshot: isSnapshot,
         languageCode: context.strings.languageCode,
+        pdfContext: format == ExportFormat.pdf
+            ? (pdfContext ??
+                ReportPdfContext.fromStore(context.read<PosLocalStore>()))
+            : null,
       );
       final directory = await _downloadDirectory();
       await directory.create(recursive: true);
@@ -168,6 +179,7 @@ class ReportExportService {
     required ExportFormat format,
     DateTimeRange? range,
     bool isSnapshot = false,
+    ReportPdfContext? pdfContext,
     String languageCode = 'en',
   }) async {
     final strings = AppStrings.of(languageCode);
@@ -194,7 +206,8 @@ class ReportExportService {
         );
       case ExportFormat.txt:
         return ExportPayload(
-          generateTxt(table, title, range, isSnapshot, languageCode: languageCode),
+          generateTxt(table, title, range, isSnapshot,
+              languageCode: languageCode),
           exportFileName(title, 'txt'),
           'text/plain',
         );
@@ -212,7 +225,8 @@ class ReportExportService {
         );
       case ExportFormat.pdf:
         return ExportPayload(
-          await generatePdf(table, title, range, isSnapshot, languageCode: languageCode),
+          await generatePdf(table, title, range, isSnapshot,
+              languageCode: languageCode, pdfContext: pdfContext),
           exportFileName(title, 'pdf'),
           'application/pdf',
         );
@@ -280,8 +294,9 @@ class ReportExportService {
     return Uint8List.fromList(utf8.encode('\uFEFF$content'));
   }
 
-  static Uint8List generateTxt(ReportTable table, String title,
-      DateTimeRange? range, bool isSnapshot, {String languageCode = 'en'}) {
+  static Uint8List generateTxt(
+      ReportTable table, String title, DateTimeRange? range, bool isSnapshot,
+      {String languageCode = 'en'}) {
     final strings = AppStrings.of(languageCode);
     final headers = table.columns.map((c) => c.label).toList();
     final lines = <String>[
@@ -303,8 +318,8 @@ class ReportExportService {
   }
 
   static Uint8List generateSql(ReportTable table, String title) {
-    final tableName =
-        _sqlIdentifier(baseFileName(title).isEmpty ? 'report' : baseFileName(title));
+    final tableName = _sqlIdentifier(
+        baseFileName(title).isEmpty ? 'report' : baseFileName(title));
     final cols = [
       for (var i = 0; i < table.columns.length; i++)
         _sqlIdentifier(table.columns[i].label, fallback: 'col_$i')
@@ -369,106 +384,21 @@ class ReportExportService {
     DateTimeRange? range,
     bool isSnapshot, {
     String languageCode = 'en',
+    ReportPdfContext? pdfContext,
   }) async {
-    final strings = AppStrings.of(languageCode);
-    table = table.localized(strings);
-    title = strings.text(title);
-    final pdf = pw.Document();
-    final font = pw.Font.ttf(await rootBundle.load('assets/fonts/Roboto-Regular.ttf'));
-    final fontBold = pw.Font.ttf(await rootBundle.load('assets/fonts/Roboto-Bold.ttf'));
-    final primary = PdfColor.fromHex('#2C3E50');
-    final headerBg = PdfColor.fromHex('#ECF0F1');
-    final border = PdfColor.fromHex('#DCE4EC');
-    final rangeLabel = isSnapshot
-        ? strings.text('Current snapshot')
-        : range != null
-            ? '${DateFormat('MMM d, yyyy', strings.languageCode).format(range.start)} – ${DateFormat('MMM d, yyyy', strings.languageCode).format(range.end)}'
-            : strings.text('All Time');
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(24),
-        header: (context) => pw.Container(
-          padding: const pw.EdgeInsets.only(bottom: 12),
-          decoration: pw.BoxDecoration(
-            border: pw.Border(bottom: pw.BorderSide(width: 1, color: border)),
-          ),
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(title,
-                      style: pw.TextStyle(
-                          font: fontBold, fontSize: 18, color: primary)),
-                  pw.SizedBox(height: 2),
-                  pw.Text(rangeLabel,
-                      style: pw.TextStyle(
-                          font: font, fontSize: 10, color: PdfColors.grey700)),
-                ],
-              ),
-              pw.Text(
-                  '${strings.text('Generated')} ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
-                  style: pw.TextStyle(
-                      font: font, fontSize: 9, color: PdfColors.grey600)),
-            ],
-          ),
-        ),
-        build: (context) => [
-          if (table.rows.isEmpty)
-            pw.Padding(
-              padding: const pw.EdgeInsets.all(24),
-              child: pw.Text(strings.text('No records available for the selected filters.'),
-                  style: pw.TextStyle(font: font, fontSize: 11)),
-            )
-          else
-            pw.TableHelper.fromTextArray(
-              headers: table.columns.map((c) => c.label).toList(),
-              data: table.rows
-                  .map((row) => [
-                        for (var i = 0; i < table.columns.length; i++)
-                          i < row.length
-                              ? exportCell(row[i], table.columns[i])
-                              : ''
-                      ])
-                  .toList(),
-              headerStyle:
-                  pw.TextStyle(font: fontBold, fontSize: 9, color: primary),
-              headerDecoration: pw.BoxDecoration(color: headerBg),
-              cellStyle: pw.TextStyle(font: font, fontSize: 8),
-              cellAlignments: {
-                for (var i = 0; i < table.columns.length; i++)
-                  i: table.columns[i].money
-                      ? pw.Alignment.centerRight
-                      : pw.Alignment.centerLeft,
-              },
-              headerAlignments: {
-                for (var i = 0; i < table.columns.length; i++)
-                  i: table.columns[i].money
-                      ? pw.Alignment.centerRight
-                      : pw.Alignment.centerLeft,
-              },
-              border: pw.TableBorder.all(color: border, width: 0.5),
-              headerPadding:
-                  const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-              cellPadding:
-                  const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-            ),
-        ],
-        footer: (context) => pw.Container(
-          alignment: pw.Alignment.centerRight,
-          margin: const pw.EdgeInsets.only(top: 12),
-          child: pw.Text(
-              '${strings.text('Page')} ${context.pageNumber} / ${context.pagesCount}',
-              style: pw.TextStyle(
-                  font: font, fontSize: 8, color: PdfColors.grey600)),
-        ),
-      ),
+    final reportContext =
+        pdfContext ?? ReportPdfContext(languageCode: languageCode);
+    final period = isSnapshot
+        ? reportContext.label('Current snapshot')
+        : range == null
+            ? reportContext.label('All dates')
+            : '${DateFormat('yyyy-MM-dd').format(range.start)} - ${DateFormat('yyyy-MM-dd').format(range.end)}';
+    return ReportPdfLayout.tableDocument(
+      title: title,
+      table: table,
+      context: reportContext.withPeriod(period),
+      subtitle: reportContext.label('Report results'),
     );
-    return pdf.save();
   }
 
   static String exportCell(Object? value, ReportColumn column) {

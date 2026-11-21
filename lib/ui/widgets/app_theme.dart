@@ -43,7 +43,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
 
   OutlineInputBorder inputBorder(Color color, [double width = 1]) =>
       OutlineInputBorder(
-        borderRadius: controlRadius,
+        borderRadius: BorderRadius.zero,
         borderSide: BorderSide(color: color, width: width),
       );
 
@@ -95,9 +95,9 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
     iconTheme: const IconThemeData(color: AppColors.textMuted, size: 22),
     primaryIconTheme: const IconThemeData(color: AppColors.ink, size: 22),
 
-    // Top bar – white header with slate brand text (mobile .navbar-header)
+    // Top bar – soft cyan-tinted header using AppColors.headerSurface
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.headerSurface,
       foregroundColor: AppColors.ink,
       surfaceTintColor: Colors.transparent,
       elevation: 0,

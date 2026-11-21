@@ -1,8 +1,7 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -185,6 +184,7 @@ class PosLocalStore extends ChangeNotifier
 
   String get languageCode => _languageCode;
   ReceiptSettings get receiptSettings => _receiptSettings;
+  @override
   StorePreferences get storePreferences => _storePreferences;
   @override
   PhpApiClient? get cloudApi {

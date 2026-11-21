@@ -16,7 +16,7 @@ class MarketSearchField extends StatelessWidget {
     this.onScanTap,
     this.height = 46,
     this.radius = 0, // Crisp modern flat design
-    this.backgroundColor = Colors.white,
+    this.backgroundColor = AppColors.surface,
     this.borderColor = AppColors.border,
     this.iconColor = AppColors.textMuted,
     this.hintColor = AppColors.textLight,

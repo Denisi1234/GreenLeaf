@@ -34,17 +34,37 @@ and the brand guide in `opensourcepos/branding/STYLE_GUIDE.md`.
   `AppSpacing`, `AppRadius`, `AppShadows`, `AppDecorations`)
 - Global Material theme: `lib/ui/widgets/app_theme.dart` (`buildOsposTheme`)
 
-Key OSPOS rules to follow:
+Key TrackMauzo / OSPOS design rules to follow:
 
-- Slate text scale (`#0F172A` ink → `#64748B` muted), page background `#F6F6FB`, borders `#E2E8F0`
-- Blue primary actions / active navigation (`#1D4ED8` on `#EFF6FF`)
-- Teal active tabs & positive trends (`#14B8A6`, `#0F766E` on `#ECFDF5`)
-- KPI cards on `#F4F2FB` with tone icons (violet, indigo, teal, lime)
+- **No stark white (`#FFFFFF`) on any section, card, dialog, or header**:
+  - Page background: `AppColors.pageBackground` (`#EAF2F9`)
+  - Section / card / dialog surfaces: `AppColors.surface` & `AppColors.sectionSurface` (`#F0F9FB`)
+  - Top headers, bottom nav & desktop rail: `AppColors.headerSurface` (`#E0F4F8`)
+  - Borders & dividers: `AppColors.border` (`#D6E4F0`)
+- Neutral text scale (`#111827` ink → `#1F2937` main → `#6B7280` muted)
+- Cyan-Teal primary brand & active actions (`#22B8C4`, deep `#1396A1`, soft `#F0F9FB`, light `#E0F4F8`)
+- Semantic KPI pastel surfaces & deep accents (`AppColors.kpi*`):
+  - **Rose**: `#FCE7F3` bg / `#BE185D` accent (`kpiRoseBg` / `kpiRose`)
+  - **Sky**: `#E0F2FE` bg / `#0369A1` accent (`kpiSkyBg` / `kpiSky`)
+  - **Amber**: `#FEF3C7` bg / `#B45309` accent (`kpiAmberBg` / `kpiAmber`)
+  - **Danger**: `#FEE2E2` bg / `#B91C1C` accent (`kpiDangerBg` / `kpiDanger`)
+  - **Violet**: `#EDE9FE` bg / `#6D28D9` accent (`kpiVioletBg` / `kpiViolet`)
+  - **Success**: `#D1FAE5` bg / `#047857` accent (`kpiSuccessBg` / `kpiSuccess`)
+  - **Neutral**: `#F1F5F9` bg / `#6B7280` accent (`kpiNeutralBg` / `kpiNeutral`)
 - Radii: controls 10px, dialogs 12px, tiles 14px, KPI cards 16px, dashboard cards 18px
 - Minimum touch targets 42–44px
 
 When adding new screens, use these tokens instead of hard-coded colors so TrackMauzo stays
 visually consistent with OSPOS.
+
+## Architecture & Localization
+
+- **State & Domain Services**: Offline-first SQLite + cloud sync via `PosLocalStore`, exposed through selective domain-scoped services (`AuthService`, `SalesService`, `InventoryService`, `AccountingService`) in `lib/service/services/`.
+- **Modular PHP Backend**: `backend/src/Api.php` acts as a thin router delegating to focused services (`AuthService`, `OrderService`, `ResourceRepository`, `SmsService`, `UploadService`, `NotificationService`, and `ApiError`/`ApiValidator`). Verify with `php backend/tests/api_test.php`.
+- **Localization (`.arb`)**: Source translations live in `lib/l10n/arb/app_en.arb` and `lib/l10n/arb/app_sw.arb`. Regenerate the per-locale Dart catalogs with:
+  ```bash
+  dart run tool/generate_l10n.dart
+  ```
 
 ## Getting Started
 

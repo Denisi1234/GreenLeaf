@@ -1,3 +1,4 @@
+import '../app_design.dart';
 import 'package:flutter/material.dart';
 
 class MarketSurfaceCard extends StatelessWidget {
@@ -6,7 +7,7 @@ class MarketSurfaceCard extends StatelessWidget {
     required this.child,
     this.padding = EdgeInsets.zero,
     this.backgroundColor = Colors.white,
-    this.borderColor = const Color(0xFFD6E4F0),
+    this.borderColor = AppColors.border,
     this.radius = 0,
     this.showShadow = false,
   });

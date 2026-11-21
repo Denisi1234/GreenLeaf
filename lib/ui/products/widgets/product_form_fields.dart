@@ -1,3 +1,4 @@
+import '../../widgets/app_design.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -16,7 +17,7 @@ class SectionHeader extends StatelessWidget {
       style: GoogleFonts.manrope(
         fontSize: 14,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFF0F172A),
+        color: AppColors.ink,
         letterSpacing: -0.1,
       ),
     );
@@ -45,7 +46,7 @@ class PhotoUploadTile extends StatelessWidget {
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.zero,
-          border: Border.all(color: const Color(0xFFD6E4F0)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Stack(
           fit: StackFit.expand,
@@ -81,19 +82,19 @@ class PhotoUploadTile extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.zero,
-          border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: const BoxDecoration(
-                color: Color(0xFFE0F2FE),
+                color: AppColors.kpiSkyBg,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add_a_photo_outlined, color: Color(0xFF0284C7), size: 22),
+              child: const Icon(Icons.add_a_photo_outlined, color: AppColors.kpiSky, size: 22),
             ),
             const SizedBox(height: 8),
             Text(
@@ -101,13 +102,13 @@ class PhotoUploadTile extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF0284C7),
+                color: AppColors.kpiSky,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               context.tr('PNG, JPG up to 5MB'),
-              style: GoogleFonts.manrope(fontSize: 11, color: const Color(0xFF94A3B8)),
+              style: GoogleFonts.manrope(fontSize: 11, color: AppColors.textLight),
             ),
           ],
         ),
@@ -144,8 +145,8 @@ class ExpiryTrackingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         children: [
@@ -154,7 +155,7 @@ class ExpiryTrackingCard extends StatelessWidget {
               const Icon(
                 Icons.event_busy_rounded,
                 size: 20,
-                color: Color(0xFF0284C7),
+                color: AppColors.kpiSky,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -166,7 +167,7 @@ class ExpiryTrackingCard extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
+                        color: AppColors.ink,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -174,7 +175,7 @@ class ExpiryTrackingCard extends StatelessWidget {
                       context.tr('Receive alerts when this item is about to expire'),
                       style: GoogleFonts.manrope(
                         fontSize: 11,
-                        color: const Color(0xFF64748B),
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -188,7 +189,7 @@ class ExpiryTrackingCard extends StatelessWidget {
           ),
           if (trackExpiry) ...[
             const SizedBox(height: 10),
-            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            const Divider(height: 1, color: AppColors.borderLight),
             const SizedBox(height: 10),
             Row(
               children: [
@@ -201,7 +202,7 @@ class ExpiryTrackingCard extends StatelessWidget {
                         style: GoogleFonts.manrope(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF475569),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -212,7 +213,7 @@ class ExpiryTrackingCard extends StatelessWidget {
                         style: GoogleFonts.manrope(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
+                          color: AppColors.ink,
                         ),
                       ),
                     ],

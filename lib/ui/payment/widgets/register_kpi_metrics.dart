@@ -46,11 +46,11 @@ class RegisterKpiMetrics extends StatelessWidget {
                 sharp: true,
                 borderless: true,
                 backgroundColor: summary.expected >= 0
-                    ? const Color(0xFFD1FAE5)
-                    : const Color(0xFFFEE2E2),
+                    ? AppColors.kpiSuccessBg
+                    : AppColors.kpiDangerBg,
                 color: summary.expected >= 0
-                    ? const Color(0xFF047857)
-                    : const Color(0xFFB91C1C),
+                    ? AppColors.kpiSuccess
+                    : AppColors.kpiDanger,
               ),
             ),
             SizedBox(
@@ -61,8 +61,8 @@ class RegisterKpiMetrics extends StatelessWidget {
                 icon: Icons.payments_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFE0F2FE),
-                color: const Color(0xFF0369A1),
+                backgroundColor: AppColors.kpiSkyBg,
+                color: AppColors.kpiSky,
               ),
             ),
             SizedBox(
@@ -73,8 +73,8 @@ class RegisterKpiMetrics extends StatelessWidget {
                 icon: Icons.point_of_sale_rounded,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFFEF3C7),
-                color: const Color(0xFFB45309),
+                backgroundColor: AppColors.kpiAmberBg,
+                color: AppColors.kpiAmber,
               ),
             ),
             SizedBox(
@@ -85,8 +85,8 @@ class RegisterKpiMetrics extends StatelessWidget {
                 icon: Icons.receipt_long_outlined,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFF3E8FF),
-                color: const Color(0xFF7E22CE),
+                backgroundColor: AppColors.kpiVioletBg,
+                color: AppColors.kpiViolet,
               ),
             ),
           ],
@@ -138,7 +138,7 @@ class RegisterClosedKpiMetrics extends StatelessWidget {
                 icon: Icons.lock_outline_rounded,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFF1F5F9),
+                backgroundColor: AppColors.surfaceSecondary,
                 color: AppColors.ink,
               ),
             ),
@@ -150,8 +150,8 @@ class RegisterClosedKpiMetrics extends StatelessWidget {
                 icon: Icons.history_rounded,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFE0F2FE),
-                color: const Color(0xFF0369A1),
+                backgroundColor: AppColors.kpiSkyBg,
+                color: AppColors.kpiSky,
               ),
             ),
             SizedBox(
@@ -163,15 +163,15 @@ class RegisterClosedKpiMetrics extends StatelessWidget {
                 sharp: true,
                 borderless: true,
                 backgroundColor: totalVariance == 0
-                    ? const Color(0xFFD1FAE5)
+                    ? AppColors.kpiSuccessBg
                     : (totalVariance > 0
-                        ? const Color(0xFFFEF3C7)
-                        : const Color(0xFFFEE2E2)),
+                        ? AppColors.kpiAmberBg
+                        : AppColors.kpiDangerBg),
                 color: totalVariance == 0
-                    ? const Color(0xFF047857)
+                    ? AppColors.kpiSuccess
                     : (totalVariance > 0
-                        ? const Color(0xFFB45309)
-                        : const Color(0xFFB91C1C)),
+                        ? AppColors.kpiAmber
+                        : AppColors.kpiDanger),
               ),
             ),
           ],

@@ -48,9 +48,10 @@ class ProductCard extends StatelessWidget {
       child: Material(
         color: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.tile),
           side: BorderSide(
-            color: inCart > 0 ? AppColors.successDeep : AppColors.border,
+            color: inCart > 0 ? AppColors.primary : AppColors.border,
+            width: inCart > 0 ? 1.6 : 1,
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -73,8 +74,13 @@ class ProductCard extends StatelessWidget {
               SizedBox(
                 height: 104,
                 width: double.infinity,
-                child: ColoredBox(
-                  color: AppColors.surfaceSecondary,
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    color: AppColors.headerSurface,
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border),
+                    ),
+                  ),
                   child: Stack(
                     children: [
                       Positioned.fill(child: DashboardTileArt(product: product)),
@@ -82,22 +88,55 @@ class ProductCard extends StatelessWidget {
                         Positioned(
                           top: 8,
                           left: 8,
-                          child: WorkspaceStatus(
-                            label: remaining == 0
-                                ? (inCart > 0 ? context.tr('All in cart') : context.tr('Out of stock'))
-                                : context.tr('{p0} left', args: {'p0': remaining}),
-                            color: remaining == 0 && inCart == 0
-                                ? AppColors.dangerDeep
-                                : AppColors.warningDeep,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: remaining == 0 && inCart == 0
+                                  ? AppColors.kpiDangerBg
+                                  : AppColors.kpiAmberBg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: remaining == 0 && inCart == 0
+                                    ? AppColors.kpiDanger.withValues(alpha: 0.35)
+                                    : AppColors.kpiAmber.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            child: Text(
+                              remaining == 0
+                                  ? (inCart > 0 ? context.tr('All in cart') : context.tr('Out of stock'))
+                                  : context.tr('{p0} left', args: {'p0': remaining}),
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: remaining == 0 && inCart == 0
+                                    ? AppColors.kpiDanger
+                                    : AppColors.kpiAmber,
+                              ),
+                            ),
                           ),
                         ),
                       if (inCart > 0)
                         Positioned(
                           bottom: 8,
                           right: 8,
-                          child: WorkspaceStatus(
-                            label: context.tr('{p0} in cart', args: {'p0': inCart}),
-                            color: AppColors.successDeep,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              context.tr('{p0} in cart', args: {'p0': inCart}),
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                     ],
@@ -138,6 +177,7 @@ class ProductCard extends StatelessWidget {
                               child: Text(
                                 _money(product.priceValue),
                                 style: AppTypography.bodyMedium.copyWith(
+                                  color: AppColors.primaryDeep,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -148,8 +188,8 @@ class ProductCard extends StatelessWidget {
                             width: 34,
                             height: 34,
                             decoration: BoxDecoration(
-                              color: remaining > 0 ? AppColors.ink : AppColors.surfaceSecondary,
-                              borderRadius: BorderRadius.circular(8),
+                              color: remaining > 0 ? AppColors.primary : AppColors.surfaceSecondary,
+                              borderRadius: BorderRadius.circular(AppRadius.standard),
                             ),
                             child: Icon(
                               remaining > 0 ? Icons.add_rounded : Icons.remove_rounded,
@@ -201,15 +241,15 @@ class DashboardFallbackArt extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.zero,
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AppColors.borderLight),
         ),
         alignment: Alignment.center,
         child: Text(
           initials,
           style: GoogleFonts.manrope(
-            color: const Color(0xFF64748B),
+            color: AppColors.textMuted,
             fontSize: 18,
             fontWeight: FontWeight.w800,
           ),

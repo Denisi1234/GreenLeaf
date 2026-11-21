@@ -23,11 +23,11 @@ enum StaffStatusFilter {
 
 Color avatarColorForStaffName(String name) {
   const colors = <Color>[
-    Color(0xFFF2D9D2),
-    Color(0xFFF3F4F6),
-    Color(0xFFF3F4F6),
-    Color(0xFFF3F4F6),
-    Color(0xFFF3F4F6),
+    AppColors.kpiDangerBg,
+    AppColors.surfaceSecondary,
+    AppColors.surfaceSecondary,
+    AppColors.surfaceSecondary,
+    AppColors.surfaceSecondary,
   ];
   final index = name.hashCode.abs() % colors.length;
   return colors[index];

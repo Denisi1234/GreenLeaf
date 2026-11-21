@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
             fontSize: 28,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.6,
-            color: const Color(0xFF111111),
+            color: AppColors.ink,
           ),
         ),
         const SizedBox(height: 8),
@@ -93,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14.5,
             height: 1.5,
-            color: const Color(0xFF64748B),
+            color: AppColors.textMuted,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -148,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF111111),
+                              color: AppColors.ink,
                             ),
                           ),
                         ),

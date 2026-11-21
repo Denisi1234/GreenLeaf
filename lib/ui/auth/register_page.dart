@@ -1,3 +1,4 @@
+import '../widgets/app_design.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -60,6 +61,41 @@ class _RegisterPageState extends State<RegisterPage> {
     if (_error != null) setState(() => _error = null);
   }
 
+  String _friendlyApiError(ApiException e, AppStrings strings) {
+    final sw = strings.isSwahili;
+    switch (e.status) {
+      case 409:
+        return strings.phoneTaken;
+      case 429:
+        return sw
+            ? 'Majaribio mengi sana. Tafadhali subiri dakika chache na ujaribu tena.'
+            : 'Too many attempts. Please wait a few minutes and try again.';
+      case 401:
+      case 404:
+        return sw
+            ? 'Namba ya uthibitisho imeisha muda. Bonyeza kutuma namba mpya.'
+            : 'Verification code has expired. Tap resend to get a new code.';
+      case 422:
+        if (_step == _RegisterStep.verifyOtp) {
+          return sw
+              ? 'Namba ya uthibitisho si sahihi. Hakikisha na ujaribu tena.'
+              : 'Incorrect verification code. Please check and try again.';
+        }
+        return sw
+            ? 'Tafadhali hakikisha taarifa zako zote ni sahihi.'
+            : 'Please check that your details are entered correctly.';
+      case 502:
+      case 503:
+        return sw
+            ? 'Huduma haipatikani kwa sasa. Tafadhali jaribu tena baada ya muda mfupi.'
+            : 'Service is temporarily unavailable. Please try again in a moment.';
+      default:
+        return sw
+            ? 'Imeshindwa kukamilisha usajili. Tafadhali jaribu tena.'
+            : 'Could not complete registration. Please try again.';
+    }
+  }
+
   void _startResendTimer() {
     _countdownTimer?.cancel();
     setState(() => _resendCountdown = 60);
@@ -102,8 +138,8 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() {
         _busy = false;
         _error = strings.isSwahili
-            ? 'Usajili unahitaji muunganisho wa mtandao na seva.'
-            : 'Registration requires an active server connection.';
+            ? 'Usajili unahitaji muunganisho wa intaneti.'
+            : 'Registration requires an internet connection.';
       });
       return;
     }
@@ -126,23 +162,23 @@ class _RegisterPageState extends State<RegisterPage> {
       } else {
         setState(() {
           _error = strings.isSwahili
-              ? 'Imeshindwa kutuma SMS ya OTP. Hakikisha namba yako ya simu.'
-              : 'Failed to deliver OTP SMS. Please check your phone number.';
+              ? 'Imeshindwa kutuma namba ya uthibitisho. Hakikisha namba yako ya simu.'
+              : 'Could not send the verification code. Please check your phone number.';
         });
       }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = e.status == 409 ? strings.phoneTaken : e.message;
+        _error = _friendlyApiError(e, strings);
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _busy = false;
         _error = strings.isSwahili
-            ? 'Imeshindwa kuwasiliana na seva. Hakikisha una intaneti na ujaribu tena.'
-            : 'Could not reach the server. Check your internet connection and try again.';
+            ? 'Hakuna muunganisho wa intaneti. Tafadhali jaribu tena.'
+            : 'No internet connection. Please check your connection and try again.';
       });
     }
   }
@@ -155,8 +191,8 @@ class _RegisterPageState extends State<RegisterPage> {
     if (code.length != 6) {
       setState(() {
         _error = strings.isSwahili
-            ? 'Ingiza namba ya uthibitisho (OTP) yenye tarakimu 6.'
-            : 'Enter the 6-digit verification code (OTP).';
+            ? 'Ingiza namba ya uthibitisho yenye tarakimu 6.'
+            : 'Enter the 6-digit verification code.';
       });
       return;
     }
@@ -172,8 +208,8 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() {
         _busy = false;
         _error = strings.isSwahili
-            ? 'Usajili unahitaji muunganisho wa mtandao na seva.'
-            : 'Registration requires an active server connection.';
+            ? 'Usajili unahitaji muunganisho wa intaneti.'
+            : 'Registration requires an internet connection.';
       });
       return;
     }
@@ -210,15 +246,15 @@ class _RegisterPageState extends State<RegisterPage> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = e.message;
+        _error = _friendlyApiError(e, strings);
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _busy = false;
         _error = strings.isSwahili
-            ? 'Imeshindwa kuthibitisha OTP. Hakikisha una intaneti na ujaribu tena.'
-            : 'Could not verify OTP. Check your internet connection and try again.';
+            ? 'Imeshindwa kuthibitisha namba. Hakikisha una intaneti na ujaribu tena.'
+            : 'Could not verify the code. Check your internet connection and try again.';
       });
     }
   }
@@ -244,18 +280,18 @@ class _RegisterPageState extends State<RegisterPage> {
             fontSize: 28,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.6,
-            color: const Color(0xFF111111),
+            color: AppColors.ink,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           strings.isSwahili
-              ? 'Sajili duka lako moja kwa moja kwenye seva. Tutakutumia namba ya uthibitisho (OTP) kwa SMS.'
-              : 'Register your business live on the server. We will send a real SMS verification code (OTP).',
+              ? 'Fungua akaunti ya duka lako. Tutakutumia namba ya uthibitisho yenye tarakimu 6 kwa SMS.'
+              : 'Create your shop account. We will send a 6-digit verification code by SMS.',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14.5,
             height: 1.5,
-            color: const Color(0xFF64748B),
+            color: AppColors.textMuted,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -402,8 +438,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 // Submit Button
                 AuthSubmitButton(
                   label: strings.isSwahili
-                      ? 'Endelea na Tuma OTP'
-                      : 'Continue & Send OTP',
+                      ? 'Endelea na Tuma Namba'
+                      : 'Continue & Send Code',
                   busy: _busy,
                   onPressed: _requestRegistrationOtp,
                 ),
@@ -433,7 +469,7 @@ class _RegisterPageState extends State<RegisterPage> {
             fontSize: 26,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
-            color: const Color(0xFF111111),
+            color: AppColors.ink,
           ),
         ),
         const SizedBox(height: 8),
@@ -444,7 +480,7 @@ class _RegisterPageState extends State<RegisterPage> {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14.5,
             height: 1.5,
-            color: const Color(0xFF64748B),
+            color: AppColors.textMuted,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -455,8 +491,8 @@ class _RegisterPageState extends State<RegisterPage> {
         ],
         AuthFieldLabel(
           text: strings.isSwahili
-              ? 'Namba ya Uthibitisho (OTP)'
-              : 'Verification Code (OTP)',
+              ? 'Namba ya Uthibitisho'
+              : 'Verification Code',
         ),
         TextFormField(
           controller: _otpController,
@@ -472,7 +508,7 @@ class _RegisterPageState extends State<RegisterPage> {
             fontSize: 22,
             fontWeight: FontWeight.w800,
             letterSpacing: 10,
-            color: const Color(0xFF0F172A),
+            color: AppColors.ink,
           ),
           decoration: const InputDecoration(
             hintText: '000000',
@@ -503,7 +539,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 strings.isSwahili ? 'Badili namba' : 'Change number',
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF64748B),
+                  color: AppColors.textMuted,
                 ),
               ),
             ),

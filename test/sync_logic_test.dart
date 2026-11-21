@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:track_mauzo/service/pos_local_database.dart';
 import 'package:track_mauzo/service/pos_order_models.dart';
 import 'package:track_mauzo/ui/models/product_item.dart';
 import 'package:track_mauzo/ui/products/inventory_product_item.dart';

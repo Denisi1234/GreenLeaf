@@ -31,9 +31,9 @@ class ProductItemRowCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.zero,
-        border: Border.all(color: const Color(0xFFD6E4F0), width: 1),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -68,7 +68,7 @@ class ProductItemRowCard extends StatelessWidget {
                         constraints: const BoxConstraints(),
                         icon: const Icon(
                           Icons.more_horiz_rounded,
-                          color: Color(0xFF94A3B8),
+                          color: AppColors.textLight,
                           size: 20,
                         ),
                         itemBuilder: (context) => [
@@ -94,13 +94,13 @@ class ProductItemRowCard extends StatelessWidget {
                               child: Row(
                                 children: [
                                   const Icon(Icons.delete_outline_rounded,
-                                      size: 18, color: Color(0xFFEF4444)),
+                                      size: 18, color: AppColors.danger),
                                   const SizedBox(width: 8),
                                   Text(
                                     context.tr('Delete'),
                                     style: GoogleFonts.manrope(
                                       fontWeight: FontWeight.w600,
-                                      color: const Color(0xFFEF4444),
+                                      color: AppColors.danger,
                                     ),
                                   ),
                                 ],
@@ -118,7 +118,7 @@ class ProductItemRowCard extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF64748B),
+                        color: AppColors.textMuted,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -126,7 +126,7 @@ class ProductItemRowCard extends StatelessWidget {
                       width: 4,
                       height: 4,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFCBD5E1),
+                        color: AppColors.borderInput,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -136,7 +136,7 @@ class ProductItemRowCard extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF94A3B8),
+                        color: AppColors.textLight,
                       ),
                     ),
                   ],
@@ -153,7 +153,7 @@ class ProductItemRowCard extends StatelessWidget {
                           style: GoogleFonts.manrope(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF94A3B8),
+                            color: AppColors.textLight,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -175,7 +175,7 @@ class ProductItemRowCard extends StatelessWidget {
                           style: GoogleFonts.manrope(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF94A3B8),
+                            color: AppColors.textLight,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -188,10 +188,10 @@ class ProductItemRowCard extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: isOutOfStock
-                                    ? const Color(0xFFEF4444)
+                                    ? AppColors.danger
                                     : isLowStock
-                                        ? const Color(0xFFF59E0B)
-                                        : const Color(0xFF10B981),
+                                        ? AppColors.warning
+                                        : AppColors.success,
                               ),
                             ),
                             const SizedBox(width: 5),
@@ -203,9 +203,9 @@ class ProductItemRowCard extends StatelessWidget {
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: isOutOfStock
-                                    ? const Color(0xFFEF4444)
+                                    ? AppColors.danger
                                     : isLowStock
-                                        ? const Color(0xFFB45309)
+                                        ? AppColors.kpiAmber
                                         : AppColors.textMain,
                               ),
                             ),
@@ -249,14 +249,14 @@ class ProductEmptyState extends StatelessWidget {
             height: 64,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.zero,
-              color: const Color(0xFFE2E8F0),
-              border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+              color: AppColors.borderLight,
+              border: Border.all(color: AppColors.borderInput, width: 1),
             ),
             alignment: Alignment.center,
             child: const Icon(
               Icons.inventory_2_outlined,
               size: 32,
-              color: Color(0xFF64748B),
+              color: AppColors.textMuted,
             ),
           ),
           const SizedBox(height: 16),
@@ -318,8 +318,8 @@ class ProductsHeader extends StatelessWidget {
       titleWeight: FontWeight.w800,
       actions: [
         MarketHeaderActionButtons(
-          notificationBackground: const Color(0xFFF8FAFC),
-          notificationBorderColor: const Color(0xFFE5EAF0),
+          notificationBackground: AppColors.pageBackground,
+          notificationBorderColor: AppColors.border,
           showNotificationDot: true,
           onNotificationTap: () {
             Navigator.of(context).push(

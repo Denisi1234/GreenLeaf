@@ -1,6 +1,5 @@
 import 'package:intl/intl.dart';
 import 'package:track_mauzo/l10n/app_localization.dart';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -133,7 +132,7 @@ class _DashboardPageState extends State<DashboardPage> {
         : context.tr('{p0}% {p1} Today', args: {'p0': (((todaySales - yesterdaySales) / yesterdaySales) * 100).abs().toStringAsFixed(0), 'p1': context.tr(hasGrowth ? 'Growth' : 'Dip')});
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEAF2F9), // Soft light-blue grey matching the app theme
+      backgroundColor: AppColors.pageBackground, // Soft light-blue grey matching the app theme
       drawer: widget.useSharedShell ? null : const MarketAppDrawer(selectedItem: 'Dashboard'),
       body: SafeArea(
         top: !widget.useSharedShell,
@@ -231,7 +230,7 @@ class _CashierShiftOverviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.standard),
         border: Border.all(color: AppColors.border),
       ),

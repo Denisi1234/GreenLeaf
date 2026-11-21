@@ -137,7 +137,7 @@ class ReportToolbar extends StatelessWidget {
                   ),
                 ] else
                    Padding(
-                    padding: EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: 8),
                     child: WorkspaceStatus(
                       label: context.tr('Current snapshot'),
                       color: AppColors.textBody,
@@ -169,8 +169,8 @@ class ReportToolbar extends StatelessWidget {
                       decoration:  InputDecoration(
                         labelText: context.tr('Filter records'),
                         border:
-                            OutlineInputBorder(borderRadius: BorderRadius.zero),
-                        enabledBorder: OutlineInputBorder(
+                            const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                        enabledBorder: const OutlineInputBorder(
                           borderRadius: BorderRadius.zero,
                           borderSide: BorderSide(color: AppColors.border),
                         ),

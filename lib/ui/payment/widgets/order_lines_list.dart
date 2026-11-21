@@ -25,18 +25,18 @@ class OrderLinesList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!hasItems) {
       return  MarketSurfaceCard(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: SizedBox(
           height: 92,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.remove_shopping_cart_outlined,
-                  size: 36, color: Color(0xFF9CA3AF)),
-              SizedBox(height: 10),
+              const Icon(Icons.remove_shopping_cart_outlined,
+                  size: 36, color: AppColors.textLight),
+              const SizedBox(height: 10),
               Text(
                 context.tr('No items in this counter yet'),
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.ink,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -217,9 +217,9 @@ class _QuantityStepper extends StatelessWidget {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppColors.pageBackground,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.borderLight),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -236,7 +236,7 @@ class _QuantityStepper extends StatelessWidget {
             alignment: Alignment.center,
             decoration: const BoxDecoration(
               border: Border.symmetric(
-                vertical: BorderSide(color: Color(0xFFE2E8F0)),
+                vertical: BorderSide(color: AppColors.borderLight),
               ),
             ),
             child: Text(

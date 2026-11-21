@@ -57,7 +57,7 @@ class ProductCsvService {
               decoration:  InputDecoration(
                 hintText:
                     context.tr('Milk 1L, Dairy, 2000, 2500, 30\nBread, Bakery, 1500, 1800, 20'),
-                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
               ),
             ),
           ],

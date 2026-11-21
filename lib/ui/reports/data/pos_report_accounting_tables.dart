@@ -1,4 +1,4 @@
-﻿part of '../pos_report_data.dart';
+part of '../pos_report_data.dart';
 
 extension PosReportAccountingTables on PosReportData {
   ReportTable _trialBalanceTable() {
@@ -53,7 +53,7 @@ extension PosReportAccountingTables on PosReportData {
     ];
     return ReportTable(
       const [
-        ReportColumn('Section'),
+        ReportColumn('Section', systemLabels: true),
         ReportColumn('Account'),
         ReportColumn('Amount', money: true),
       ],
@@ -88,8 +88,8 @@ extension PosReportAccountingTables on PosReportData {
     final net = operating + financing - assetPurchases;
     return ReportTable(
       const [
-        ReportColumn('Activity'),
-        ReportColumn('Category'),
+        ReportColumn('Activity', systemLabels: true),
+        ReportColumn('Category', systemLabels: true),
         ReportColumn('Amount', money: true),
       ],
       [
@@ -173,7 +173,7 @@ extension PosReportAccountingTables on PosReportData {
         unmatched.fold<double>(0, (sum, entry) => sum + entry.amount);
     return ReportTable(
       const [
-        ReportColumn('Item'),
+        ReportColumn('Item', systemLabels: true),
         ReportColumn('Count'),
         ReportColumn('Amount', money: true),
       ],
@@ -253,7 +253,7 @@ extension PosReportAccountingTables on PosReportData {
     ];
     return ReportTable(
       const [
-        ReportColumn('Item'),
+        ReportColumn('Item', systemLabels: true),
         ReportColumn('Amount', money: true),
       ],
       rows,

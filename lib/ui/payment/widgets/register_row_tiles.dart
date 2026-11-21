@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../service/pos_local_store.dart';
 import '../../../service/register_shift_model.dart';
 import '../../widgets/app_design.dart';
 import 'register_models.dart';

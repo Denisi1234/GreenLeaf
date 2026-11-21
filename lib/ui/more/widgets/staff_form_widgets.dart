@@ -320,7 +320,7 @@ class StaffFormChoicePill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : const Color(0xFFF8FAFC),
+          color: selected ? AppColors.primaryLight : AppColors.pageBackground,
           borderRadius: BorderRadius.zero,
           border: Border.all(
             color: selected
@@ -455,7 +455,7 @@ class StaffSaveBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(

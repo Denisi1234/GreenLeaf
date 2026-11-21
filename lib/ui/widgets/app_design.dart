@@ -26,14 +26,16 @@ class AppColors {
   static const textLight = Color(0xFF9CA3AF);
   static const textPlaceholder = Color(0xFF9CA3AF);
 
-  // Background & surface (Light blue-grey theme matching dashboard & more page)
+  // Background & surface (Soft cyan-tinted light palette — no stark pure white)
   static const pageBackground = Color(0xFFEAF2F9); // Soft light-blue grey (#EAF2F9)
-  static const surface = Colors.white;             // Clean crisp white surface
+  static const surface = primarySoft;              // Soft low-glare cyan off-white (#F0F9FB)
   static const surfaceSecondary = Color(0xFFF1F5F9); // Elevated subtle slate
   static const surfaceHover = Color(0xFFE2E8F0);     // Hover state
   static const cardWhite = surface;
   static const surfaceSubtle = surfaceSecondary;
-  static const kpiSurface = Colors.white;
+  static const kpiSurface = primarySoft;
+  static const headerSurface = primaryLight; // Soft cyan-tinted top app header (#E0F4F8)
+  static const sectionSurface = primarySoft; // Soft low-glare grouped section surface (#F0F9FB)
 
   // Borders & dividers (Clean light-blue borders matching dashboard)
   static const border = Color(0xFFD6E4F0);
@@ -57,11 +59,29 @@ class AppColors {
   static const info = Color(0xFF22B8C4);
   static const infoLight = Color(0xFFE0F4F8);
 
-  // KPI tones
-  static const toneViolet = Color(0xFF10B981);
-  static const toneIndigo = Color(0xFF22B8C4);
-  static const toneTeal = Color(0xFF0284C7);
-  static const toneLime = Color(0xFF16A34A);
+  // KPI pastel surfaces & deep accents (shared across Inventory, Expenses, Accounting, Tax & Register KPIs)
+  static const kpiRoseBg = Color(0xFFFCE7F3);
+  static const kpiRose = Color(0xFFBE185D);
+  static const kpiSkyBg = Color(0xFFE0F2FE);
+  static const kpiSky = Color(0xFF0369A1);
+  static const kpiAmberBg = Color(0xFFFEF3C7);
+  static const kpiAmber = Color(0xFFB45309);
+  static const kpiDangerBg = Color(0xFFFEE2E2);
+  static const kpiDanger = Color(0xFFB91C1C);
+  static const kpiVioletBg = Color(0xFFEDE9FE);
+  static const kpiViolet = Color(0xFF6D28D9);
+  static const kpiSuccessBg = Color(0xFFD1FAE5);
+  static const kpiSuccess = Color(0xFF047857);
+  static const kpiNeutralBg = Color(0xFFF1F5F9);
+  static const kpiNeutral = textMuted;
+
+  // KPI tones (aligned with the KPI accent palette)
+  static const toneViolet = kpiViolet;
+  static const toneIndigo = kpiSky;
+  static const toneTeal = primary;
+  static const toneLime = kpiSuccess;
+  static const toneRose = kpiRose;
+  static const toneAmber = kpiAmber;
 
   // Reports page specific colors
   static const reportsInk = ink;

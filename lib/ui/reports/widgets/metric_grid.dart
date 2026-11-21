@@ -9,12 +9,12 @@ class MetricGrid extends StatelessWidget {
   final List<MetricData> metrics;
 
   static const _palette = [
-    (Color(0xFFE0F2FE), Color(0xFF0369A1)), // Sky
-    (Color(0xFFD1FAE5), Color(0xFF047857)), // Emerald
-    (Color(0xFFFEF3C7), Color(0xFFB45309)), // Amber
-    (Color(0xFFF3E8FF), Color(0xFF7E22CE)), // Purple
-    (Color(0xFFFCE7F3), Color(0xFFBE185D)), // Rose
-    (Color(0xFFFFEDD5), Color(0xFFC2410C)), // Orange
+    (AppColors.kpiSkyBg, AppColors.kpiSky), // Sky
+    (AppColors.kpiSuccessBg, AppColors.kpiSuccess), // Emerald
+    (AppColors.kpiAmberBg, AppColors.kpiAmber), // Amber
+    (AppColors.kpiVioletBg, AppColors.kpiViolet), // Purple
+    (AppColors.kpiRoseBg, AppColors.kpiRose), // Rose
+    (AppColors.kpiAmberBg, AppColors.kpiAmber), // Orange
   ];
 
   @override
@@ -63,7 +63,7 @@ class MetricGrid extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: AppColors.surface.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.zero,
                   ),
                   child: Icon(metric.icon, size: 18, color: primaryColor),

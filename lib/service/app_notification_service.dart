@@ -45,10 +45,10 @@ class AppNotificationService {
     );
 
     // Linux settings
-    final linuxSettings =
+    const linuxSettings =
         LinuxInitializationSettings(defaultActionName: 'Open notification');
 
-    final initSettings = InitializationSettings(
+    const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
       macOS: darwinSettings,

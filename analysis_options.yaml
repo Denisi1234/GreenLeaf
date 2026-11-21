@@ -11,7 +11,10 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
-  - "test/mocks/**.mocks.dart"
+    - "build/**"
+    - "lib/l10n/generated/**"
+    - "tool/localization_audit.dart"
+    - "test/mocks/**.mocks.dart"
 
 linter:
   # The lint rules applied to this project can be customized in the

@@ -49,7 +49,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                               _Section(
                                 title: context.tr('4. Information Sharing'),
                                 content:
-                                    'We do not sell your personal or business information to third parties. Data stays on your device unless you configure a cloud sync server.',
+                                    'We do not sell your personal or business information to third parties. Data stays on your device unless you turn on online backup.',
                               ),
                               _Section(
                                 title: context.tr('5. Your Choices'),

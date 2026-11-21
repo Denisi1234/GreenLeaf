@@ -5,11 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
-import '../../service/pos_suspended_sale_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
-import '../widgets/workspace_widgets.dart';
 
 /// Modal bottom sheet for viewing and resuming held sales (OSPOS Suspended Sales)
 class SuspendedSalesSheet extends StatelessWidget {
@@ -50,7 +48,7 @@ class SuspendedSalesSheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFCBD5E1),
+                color: AppColors.borderInput,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -78,7 +76,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
+                        color: AppColors.ink,
                       ),
                     ),
                     Text(
@@ -159,7 +157,7 @@ class SuspendedSalesSheet extends StatelessWidget {
                                     style: GoogleFonts.manrope(
                                       fontWeight: FontWeight.w800,
                                       fontSize: 14,
-                                      color: const Color(0xFF0F172A),
+                                      color: AppColors.ink,
                                     ),
                                   ),
                                   const SizedBox(width: 8),

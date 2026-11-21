@@ -138,25 +138,19 @@ class _PaymentPageState extends State<PaymentPage> {
 
   Future<void> _clearCart() async {
     if (_savingSale || !_hasItems) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title:  Text(context.tr('Clear current sale?')),
-        content: Text(
-            context.tr('Remove all {p0} units and reset the payment details for this sale?', args: {'p0': _unitCount})),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child:  Text(context.tr('Keep sale'))),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              style:
-                  FilledButton.styleFrom(backgroundColor: AppColors.dangerDeep),
-              child:  Text(context.tr('Clear sale'))),
-        ],
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: context.tr('Clear current sale?'),
+      message: context.tr(
+        'Remove all {p0} units and reset the payment details for this sale?',
+        args: {'p0': _unitCount},
       ),
+      confirmLabel: context.tr('Clear sale'),
+      cancelLabel: context.tr('Keep sale'),
+      isDestructive: true,
+      icon: Icons.remove_shopping_cart_outlined,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     await context.read<PosLocalStore>().clearCart();
     if (!mounted) return;
     setState(() {

@@ -62,7 +62,7 @@ class MarketPageHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadding, AppSpacing.md,
           AppSpacing.pagePadding, AppSpacing.lg),
       decoration: BoxDecoration(
-        color: hasBackground ? AppColors.surface : null,
+        color: hasBackground ? AppColors.headerSurface : null,
         gradient: hasGradient
             ? LinearGradient(
                 begin: Alignment.topLeft,

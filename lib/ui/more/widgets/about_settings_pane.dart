@@ -69,7 +69,7 @@ class AboutSettingsPane extends StatelessWidget {
               label: t('Storage', 'Hifadhi'),
               value: connected
                   ? t('Cloud + local cache', 'Wingu + hifadhi ya ndani')
-                  : t('On-device database', 'Hifadhi ya kifaa'),
+                  : t('Saved on this device', 'Hifadhi ya kifaa'),
             ),
           ],
         ),

@@ -1,182 +1,242 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
-
-import 'package:pdf/pdf.dart';
+import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-
 import '../../../service/expense_model.dart';
 import '../../../service/pos_local_store.dart';
 import '../../../service/pos_order_models.dart';
+import '../../../service/report_pdf/report_pdf_layout.dart';
 import '../../business_category_config.dart';
 import '../models/report_models.dart';
+import '../pos_report_data.dart';
 import 'report_data_service.dart';
 
-part 'pdf/pdf_report_header_sections.dart';
-part 'pdf/pdf_report_body_sections.dart';
 part 'pdf/pdf_report_analytics.dart';
-part 'pdf/pdf_report_widgets.dart';
 
+/// Analytical sections use the same paper, header and tables as catalog exports.
 class PdfReportService {
   static Future<Uint8List> generateSalesReportPdf({
     required PosLocalStore store,
     required ReportSnapshot report,
     required AppProfileData profile,
   }) async {
-    final pdf = pw.Document();
-    final baseFont = await PdfGoogleFonts.notoSansRegular();
-    final boldFont = await PdfGoogleFonts.notoSansBold();
-    final logoImage = await _loadPdfLogoImage(profile);
-    final generatedAt = DateTime.now();
-
-    final currentOrders =
+    final context = ReportPdfContext.fromStore(store,
+        period:
+            '${DateFormat('yyyy-MM-dd').format(report.startDate)} - ${DateFormat('yyyy-MM-dd').format(report.endDate)}');
+    final sw = context.strings.isSwahili;
+    String t(String en, String swahili) => sw ? swahili : en;
+    String money(num amount) =>
+        '${context.currency} ${NumberFormat('#,##0.00', context.languageCode).format(amount)}';
+    final orders =
         _ordersWithinRange(store.orders, report.startDate, report.endDate);
-    final previousRange =
-        _previousComparableRange(report.startDate, report.endDate);
-    final previousOrders = _ordersWithinRange(
-      store.orders,
-      previousRange.start,
-      previousRange.end,
-    );
-    final currentExpenses = _expensesWithinRange(
-      store.expenses,
-      report.startDate,
-      report.endDate,
-    );
-    final previousExpenses = _expensesWithinRange(
-      store.expenses,
-      previousRange.start,
-      previousRange.end,
-    );
-    final currentStats = ReportDataService.buildPdfStats(
-      orders: currentOrders,
-      customers: store.customers,
-      expenses: currentExpenses,
-      startDate: report.startDate,
-      endDate: report.endDate,
-    );
+    final previous = _previousComparableRange(report.startDate, report.endDate);
+    final spending =
+        _expensesWithinRange(store.expenses, report.startDate, report.endDate);
+    final stats = ReportDataService.buildPdfStats(
+        orders: orders,
+        customers: store.customers,
+        expenses: spending,
+        startDate: report.startDate,
+        endDate: report.endDate);
     final previousStats = ReportDataService.buildPdfStats(
-      orders: previousOrders,
-      customers: store.customers,
-      expenses: previousExpenses,
-      startDate: previousRange.start,
-      endDate: previousRange.end,
-    );
-    final reportTitle = _reportTitleFor(report);
-    final executiveSummary = _buildPdfExecutiveSummary(
-      report: report,
-      stats: currentStats,
-      previousStats: previousStats,
-      profile: profile,
-      lowStockCount: lowStockItems(store).length,
-    );
+        orders: _ordersWithinRange(store.orders, previous.start, previous.end),
+        customers: store.customers,
+        expenses:
+            _expensesWithinRange(store.expenses, previous.start, previous.end),
+        startDate: previous.start,
+        endDate: previous.end);
     final forecast = _buildForecastSnapshot(
-      report: report,
-      currentStats: currentStats,
-      previousStats: previousStats,
-      store: store,
-    );
-    final conclusion = _buildPdfConclusion(
-      report,
-      currentStats,
-      lowStockItems(store).length,
-    );
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageTheme: pw.PageTheme(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.fromLTRB(24, 20, 24, 26),
-          theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
-        ),
-        header: (context) => context.pageNumber == 1
-            ? pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 10),
-                child: _pdfReportHeader(
-                  reportTitle: reportTitle,
-                  report: report,
-                  profile: profile,
-                  logoImage: logoImage,
-                ),
-              )
-            : pw.SizedBox(height: 0),
-        build: (context) => [
-          _pdfIntroSection(
-            executiveSummary,
-            report,
-            currentStats,
-            previousStats,
-          ),
-          pw.SizedBox(height: 12),
-          _pdfHighlightsSection(report, currentStats, previousStats, store),
-          pw.SizedBox(height: 12),
-          _pdfSectionDivider(),
-          _pdfSectionTitle('1. Key Performance Indicators'),
-          pw.SizedBox(height: 8),
-          _pdfKpiTable(currentStats, previousStats),
-          pw.SizedBox(height: 14),
-          _pdfSectionDivider(),
-          _pdfSectionTitle('2. Sales Trends'),
-          pw.SizedBox(height: 8),
-          _pdfSalesTrendSection(report, currentStats),
-          pw.SizedBox(height: 14),
-          _pdfSectionDivider(),
-          _pdfSectionTitle('3. Top Selling Products'),
-          pw.SizedBox(height: 8),
-          _pdfProductTable(report.products),
-          pw.SizedBox(height: 14),
-          _pdfSectionDivider(),
-          _pdfSectionTitle('4. Customer Insights'),
-          pw.SizedBox(height: 8),
-          _pdfCustomerInsightsSection(currentOrders, store, currentStats),
-          pw.SizedBox(height: 14),
-          _pdfSectionDivider(),
-          _pdfSectionTitle('5. Expense Analysis'),
-          pw.SizedBox(height: 8),
-          _pdfExpenseAnalysisSection(currentExpenses),
-          pw.SizedBox(height: 14),
-          _pdfSectionDivider(),
-          _pdfSectionTitle('6. Forecast & Planning Outlook'),
-          pw.SizedBox(height: 8),
-          _pdfForecastSection(forecast),
-          pw.SizedBox(height: 14),
-          _pdfSectionDivider(),
-          _pdfSectionTitle('7. Conclusion'),
-          pw.SizedBox(height: 8),
-          _pdfConclusionSection(conclusion),
-          pw.SizedBox(height: 14),
-          _pdfSectionDivider(),
-          _pdfSectionTitle('8. References'),
-          pw.SizedBox(height: 8),
-          _pdfReferencesSection(report),
-        ],
-        footer: (context) => pw.Padding(
-          padding: const pw.EdgeInsets.only(top: 10),
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text(
-                _formatPdfDateTime(generatedAt),
-                style: const pw.TextStyle(
-                  fontSize: 8.5,
-                  color: PdfColors.grey600,
-                ),
-              ),
-              pw.Text(
-                '${context.pageNumber}/${context.pagesCount}',
-                style: const pw.TextStyle(
-                  fontSize: 8.5,
-                  color: PdfColors.grey600,
-                ),
-              ),
+        report: report,
+        currentStats: stats,
+        previousStats: previousStats,
+        store: store);
+    final lowStock = lowStockItems(store).length;
+    final expensesByCategory = <String, double>{};
+    for (final expense in spending) {
+      expensesByCategory.update(expense.category, (n) => n + expense.amount,
+          ifAbsent: () => expense.amount);
+    }
+    final summary = sw
+        ? '${context.businessName} limerekodi mauzo ya ${money(stats.revenue)} katika oda ${stats.orderCount}. '
+            'Wastani wa oda ni ${money(stats.averageOrderValue)}; wateja hai ni ${stats.activeCustomers}, '
+            'na waliorejea ni ${stats.returningCustomers}. Matumizi ni ${money(stats.totalExpenses)}. '
+            'Bidhaa zinazohitaji ufuatiliaji wa idadi dukani ni $lowStock.'
+        : _buildPdfExecutiveSummary(
+            report: report,
+            stats: stats,
+            previousStats: previousStats,
+            profile: profile,
+            lowStockCount: lowStock);
+    final conclusion = sw
+        ? 'Mauzo ni ${money(stats.revenue)}, matumizi ni ${money(stats.totalExpenses)}, '
+            'na salio la mauzo baada ya matumizi ni ${money(stats.revenue - stats.totalExpenses)}. '
+            'Fuatilia bidhaa $lowStock zilizopungua na linganisha makadirio na mwenendo halisi wa mauzo.'
+        : _buildPdfConclusion(report, stats, lowStock);
+    List<pw.Widget> section(
+            int index, String en, String swahili, ReportTable table) =>
+        [
+          pw.SizedBox(height: 16),
+          ReportPdfLayout.sectionTitle('$index. ${t(en, swahili)}'),
+          pw.SizedBox(height: 7),
+          ReportPdfLayout.tableWidget(table: table, context: context),
+        ];
+    return ReportPdfLayout.buildDocument(
+      title: t('Sales intelligence report', 'Ripoti ya uchambuzi wa mauzo'),
+      context: context,
+      subtitle: context.strings.text(report.periodLabel),
+      body: (_) => [
+        ReportPdfLayout.sectionTitle(
+            t('Executive summary', 'Muhtasari wa utendaji')),
+        pw.SizedBox(height: 6),
+        pw.Paragraph(text: summary),
+        ...section(
+            1,
+            'Key Performance Indicators',
+            'Viashiria muhimu vya utendaji',
+            ReportTable([
+              ReportColumn(t('Metric', 'Kiashiria')),
+              ReportColumn(t('Value', 'Thamani')),
+              ReportColumn(t('Change from previous period',
+                  'Mabadiliko kutoka kipindi kilichopita')),
+            ], [
+              [
+                t('Total revenue', 'Jumla ya mapato'),
+                money(stats.revenue),
+                _changeLabel(stats.revenue, previousStats.revenue)
+              ],
+              [
+                t('Completed orders', 'Oda zilizokamilika'),
+                stats.orderCount,
+                _changeLabel(stats.orderCount, previousStats.orderCount)
+              ],
+              [
+                t('Average order value', 'Wastani wa thamani ya oda'),
+                money(stats.averageOrderValue),
+                _changeLabel(
+                    stats.averageOrderValue, previousStats.averageOrderValue)
+              ],
+              [
+                t('New customers', 'Wateja wapya'),
+                stats.newCustomers,
+                _changeLabel(stats.newCustomers, previousStats.newCustomers)
+              ],
+              [
+                t('Returning customers', 'Wateja waliorudi'),
+                stats.returningCustomers,
+                _changeLabel(
+                    stats.returningCustomers, previousStats.returningCustomers)
+              ],
+            ])),
+        ...section(
+            2,
+            'Sales Trends',
+            'Mwenendo wa mauzo',
+            ReportTable([
+              const ReportColumn('Date'),
+              const ReportColumn('Revenue', money: true),
+            ], [
+              for (final point in report.trendPoints) [point.label, point.value]
+            ])),
+        ...section(
+            3,
+            'Top Selling Products',
+            'Bidhaa zinazouzwa zaidi',
+            ReportTable([
+              ReportColumn(t('Product', 'Bidhaa')),
+              ReportColumn(t('Sold', 'Zilizouzwa')),
+              ReportColumn(t('Revenue', 'Mapato')),
+            ], [
+              for (final product in report.products)
+                [
+                  product.title,
+                  context.strings.message(product.orders),
+                  product.amount
+                ]
+            ])),
+        ...section(
+            4,
+            'Customer Insights',
+            'Tathmini ya wateja',
+            ReportTable([
+              ReportColumn(t('Metric', 'Kiashiria')),
+              ReportColumn(t('Value', 'Thamani')),
+            ], [
+              [t('Active customers', 'Wateja hai'), stats.activeCustomers],
+              [
+                t('Returning customers', 'Wateja waliorudi'),
+                stats.returningCustomers
+              ],
+              [t('New customers', 'Wateja wapya'), stats.newCustomers],
+              [
+                t('Top customer', 'Mteja anayeongoza'),
+                stats.topCustomerName ?? '-'
+              ],
+              [
+                t('Top customer sales', 'Mauzo ya mteja anayeongoza'),
+                money(stats.topCustomerValue)
+              ],
+            ])),
+        ...section(
+            5,
+            'Expense Analysis',
+            'Uchambuzi wa matumizi',
+            ReportTable([
+              const ReportColumn('Category'),
+              const ReportColumn('Amount', money: true),
+            ], [
+              for (final entry in expensesByCategory.entries)
+                [entry.key, entry.value]
             ],
-          ),
-        ),
-      ),
+                note:
+                    '${context.label('Total expenses')}: ${money(stats.totalExpenses)}')),
+        ReportPdfLayout.metadata([
+          MapEntry(context.label('Total expenses'), money(stats.totalExpenses))
+        ]),
+        ...section(
+            6,
+            'Forecast & Planning Outlook',
+            'Makadirio na mipango',
+            ReportTable([
+              ReportColumn(t('Period', 'Kipindi')),
+              ReportColumn(t('Low', 'Chini'), money: true),
+              ReportColumn(t('Base', 'Msingi'), money: true),
+              ReportColumn(t('High', 'Juu'), money: true),
+            ], [
+              [
+                t('Next 7 days', 'Siku 7 zijazo'),
+                forecast.nextWeekLow,
+                forecast.nextWeekBase,
+                forecast.nextWeekHigh
+              ],
+              [
+                t('Next 30 days', 'Siku 30 zijazo'),
+                forecast.nextMonthLow,
+                forecast.nextMonthBase,
+                forecast.nextMonthHigh
+              ],
+            ])),
+        pw.SizedBox(height: 6),
+        pw.Paragraph(
+            text: t(
+                'Projection assumes the current sales pattern, pricing, and stock availability remain broadly consistent.',
+                'Makadirio yanategemea mwenendo wa sasa wa mauzo, bei na upatikanaji wa bidhaa kuendelea kwa kiasi kikubwa.')),
+        pw.Paragraph(
+            text: sw
+                ? 'Fuatilia bidhaa zilizopungua na uwiano wa matumizi kwa mapato. Makadirio si dhamana ya mauzo yajayo.'
+                : '${forecast.directionTone}. ${forecast.confidenceLabel}. ${forecast.riskNote}.'),
+        pw.SizedBox(height: 16),
+        ReportPdfLayout.sectionTitle(t('7. Conclusion', '7. Hitimisho')),
+        pw.SizedBox(height: 6),
+        pw.Paragraph(text: conclusion),
+        pw.SizedBox(height: 16),
+        ReportPdfLayout.sectionTitle(t('8. References', '8. Vyanzo')),
+        pw.SizedBox(height: 6),
+        pw.Paragraph(
+            text: t(
+                'Internal POS sales data, customer database, expense records, and store profile settings.',
+                'Taarifa za mauzo za mfumo, rekodi za wateja, matumizi na mipangilio ya duka.')),
+      ],
     );
-
-    return pdf.save();
   }
 
   static List<StockAlertItem> lowStockItems(PosLocalStore store) {

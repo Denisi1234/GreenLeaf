@@ -56,8 +56,8 @@ class BankReconciliationKpiMetrics extends StatelessWidget {
                 icon: Icons.arrow_downward_rounded,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFD1FAE5),
-                color: const Color(0xFF047857),
+                backgroundColor: AppColors.kpiSuccessBg,
+                color: AppColors.kpiSuccess,
               ),
             ),
             SizedBox(
@@ -68,8 +68,8 @@ class BankReconciliationKpiMetrics extends StatelessWidget {
                 icon: Icons.arrow_upward_rounded,
                 sharp: true,
                 borderless: true,
-                backgroundColor: const Color(0xFFFEE2E2),
-                color: const Color(0xFFB91C1C),
+                backgroundColor: AppColors.kpiDangerBg,
+                color: AppColors.kpiDanger,
               ),
             ),
             SizedBox(
@@ -80,8 +80,8 @@ class BankReconciliationKpiMetrics extends StatelessWidget {
                 icon: Icons.swap_vert_rounded,
                 sharp: true,
                 borderless: true,
-                backgroundColor: net >= 0 ? const Color(0xFFE0F2FE) : const Color(0xFFFFEDD5),
-                color: net >= 0 ? const Color(0xFF0369A1) : const Color(0xFFC2410C),
+                backgroundColor: net >= 0 ? AppColors.kpiSkyBg : AppColors.kpiAmberBg,
+                color: net >= 0 ? AppColors.kpiSky : AppColors.kpiAmber,
               ),
             ),
             SizedBox(
@@ -93,15 +93,15 @@ class BankReconciliationKpiMetrics extends StatelessWidget {
                 sharp: true,
                 borderless: true,
                 backgroundColor: allMatched
-                    ? const Color(0xFFDCFCE7)
+                    ? AppColors.kpiSuccessBg
                     : (matchedCount == 0 && totalCount > 0
-                        ? const Color(0xFFF3F4F6)
-                        : const Color(0xFFFEF3C7)),
+                        ? AppColors.surfaceSecondary
+                        : AppColors.kpiAmberBg),
                 color: allMatched
-                    ? const Color(0xFF15803D)
+                    ? AppColors.kpiSuccess
                     : (matchedCount == 0 && totalCount > 0
-                        ? const Color(0xFF4B5563)
-                        : const Color(0xFFB45309)),
+                        ? AppColors.textSecondary
+                        : AppColors.kpiAmber),
               ),
             ),
           ],

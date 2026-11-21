@@ -1,5 +1,4 @@
 import 'package:track_mauzo/l10n/app_localization.dart';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,7 +26,7 @@ class AboutAppPage extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.zero,
                         border: Border.all(color: AppColors.border),
                       ),
@@ -38,7 +37,7 @@ class AboutAppPage extends StatelessWidget {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFCE7F3),
+                              color: AppColors.kpiRoseBg,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             alignment: Alignment.center,
@@ -50,7 +49,7 @@ class AboutAppPage extends StatelessWidget {
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.point_of_sale_rounded,
                                 size: 36,
-                                color: Color(0xFFBE185D),
+                                color: AppColors.kpiRose,
                               ),
                             ),
                           ),
@@ -60,7 +59,7 @@ class AboutAppPage extends StatelessWidget {
                             style: GoogleFonts.manrope(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: const Color(0xFF0F172A),
+                              color: AppColors.ink,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -69,7 +68,7 @@ class AboutAppPage extends StatelessWidget {
                             style: GoogleFonts.manrope(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF64748B),
+                              color: AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -79,7 +78,7 @@ class AboutAppPage extends StatelessWidget {
                             style: GoogleFonts.manrope(
                               fontSize: 13,
                               height: 1.5,
-                              color: const Color(0xFF475569),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -99,7 +98,7 @@ class AboutAppPage extends StatelessWidget {
                                 style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF0284C7),
+                                  color: AppColors.kpiSky,
                                 ),
                               ),
                             ),
@@ -109,7 +108,7 @@ class AboutAppPage extends StatelessWidget {
                             context.tr('© 2026 TrackMauzo. All rights reserved.'),
                             style: GoogleFonts.manrope(
                               fontSize: 11,
-                              color: const Color(0xFF94A3B8),
+                              color: AppColors.textLight,
                             ),
                           ),
                         ],

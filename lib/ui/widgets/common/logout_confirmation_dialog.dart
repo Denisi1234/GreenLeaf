@@ -46,7 +46,7 @@ Future<bool> showLogoutConfirmationDialog(
                       width: 44,
                       height: 44,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFEE2E2), // Soft red badge
+                        color: AppColors.kpiDangerBg, // Soft red badge
                         borderRadius: BorderRadius.zero,
                       ),
                       child: const Icon(

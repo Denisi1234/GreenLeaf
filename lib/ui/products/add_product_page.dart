@@ -78,57 +78,16 @@ class _AddProductPageState extends State<AddProductPage> {
     final product = widget.product;
     if (product == null) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.modal),
-        ),
-        title: Text(
-          context.tr('Delete Item?'),
-          style: GoogleFonts.manrope(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        content: Text(
-          context.tr(
-            'Are you sure you want to remove "{p0}"? This cannot be undone.',
-            args: {'p0': product.name},
-          ),
-          style: GoogleFonts.manrope(
-            fontSize: 14,
-            color: const Color(0xFF475569),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              context.tr('Cancel'),
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-              ),
-            ),
-            child: Text(
-              context.tr('Delete'),
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: context.tr('Delete Item?'),
+      message: context.tr(
+        'Are you sure you want to remove "{p0}"? This cannot be undone.',
+        args: {'p0': product.name},
       ),
+      confirmLabel: context.tr('Delete'),
+      cancelLabel: context.tr('Cancel'),
+      isDestructive: true,
     );
 
     if (confirmed != true || !mounted) return;
@@ -157,13 +116,13 @@ class _AddProductPageState extends State<AddProductPage> {
     final isEdit = _controller.isEdit;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEAF2F9),
+      backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.headerSurface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A), size: 24),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink, size: 24),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -171,13 +130,13 @@ class _AddProductPageState extends State<AddProductPage> {
           style: GoogleFonts.manrope(
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF0F172A),
+            color: AppColors.ink,
           ),
         ),
         actions: [
           if (isEdit)
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 22),
+              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 22),
               onPressed: _deleteProduct,
               tooltip: context.tr('Delete Item'),
             ),
@@ -185,7 +144,7 @@ class _AddProductPageState extends State<AddProductPage> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFD6E4F0), height: 1),
+          child: Container(color: AppColors.border, height: 1),
         ),
       ),
       body: SafeArea(
@@ -235,14 +194,14 @@ class _AddProductPageState extends State<AddProductPage> {
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                             child: Row(
                               children: [
-                                const Icon(Icons.add_circle_outline_rounded, size: 15, color: Color(0xFF0284C7)),
+                                const Icon(Icons.add_circle_outline_rounded, size: 15, color: AppColors.kpiSky),
                                 const SizedBox(width: 4),
                                 Text(
                                   context.tr('+ New Category'),
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF0284C7),
+                                    color: AppColors.kpiSky,
                                   ),
                                 ),
                               ],
@@ -261,14 +220,14 @@ class _AddProductPageState extends State<AddProductPage> {
                             value: '__new__',
                             child: Row(
                               children: [
-                                const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF0284C7), size: 18),
+                                const Icon(Icons.add_circle_outline_rounded, color: AppColors.kpiSky, size: 18),
                                 const SizedBox(width: 8),
                                 Text(
                                   context.tr('+ Add New Category'),
                                   style: GoogleFonts.manrope(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF0284C7),
+                                    color: AppColors.kpiSky,
                                   ),
                                 ),
                               ],
@@ -368,8 +327,8 @@ class _AddProductPageState extends State<AddProductPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFD6E4F0), width: 1)),
+                color: AppColors.surface,
+                border: Border(top: BorderSide(color: AppColors.border, width: 1)),
               ),
               child: Row(
                 children: [

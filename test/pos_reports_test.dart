@@ -6,6 +6,7 @@ import 'package:track_mauzo/service/pos_order_models.dart';
 import 'package:track_mauzo/ui/models/product_item.dart';
 import 'package:track_mauzo/ui/reports/pos_report_catalog.dart';
 import 'package:track_mauzo/ui/reports/pos_report_data.dart';
+import 'package:track_mauzo/ui/reports/advanced_reports_page.dart';
 import 'package:track_mauzo/ui/reports/reports_catalog_page.dart';
 
 void main() {
@@ -67,7 +68,7 @@ void main() {
     addTearDown(store.dispose);
     await tester.pumpWidget(ChangeNotifierProvider.value(
       value: store,
-      child: const MaterialApp(home: ReportsCatalogPage()),
+      child: const MaterialApp(home: AdvancedReportsPage()),
     ));
 
     await tester.enterText(find.byType(TextField), 'Detailed Sales');

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../service/pos_local_store.dart';
 import '../../service/register_shift_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';

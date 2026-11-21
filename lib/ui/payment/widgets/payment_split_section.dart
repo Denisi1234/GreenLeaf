@@ -2,7 +2,6 @@ import 'package:track_mauzo/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../service/pos_suspended_sale_model.dart';
 import '../../../utils/currency_formatter.dart';
-import '../../models/product_item.dart';
 import '../../widgets/app_design.dart';
 
 class PaymentSplitSection extends StatelessWidget {
@@ -36,7 +35,7 @@ class PaymentSplitSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
-                value: method,
+                initialValue: method,
                 decoration:  InputDecoration(labelText: context.tr('Payment method')),
                 items:  [
                   DropdownMenuItem(value: 'Cash', child: Text(context.tr('Cash'))),
@@ -149,10 +148,10 @@ class PaymentSplitSection extends StatelessWidget {
             children: [
                Text(
                 context.tr('Remaining balance due'),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textMuted,
                 ),
               ),
               Text(

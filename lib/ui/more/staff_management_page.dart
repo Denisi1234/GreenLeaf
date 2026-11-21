@@ -14,7 +14,6 @@ import 'role_details_page.dart';
 import 'staff_member_details_page.dart';
 import 'widgets/staff_action_sheet.dart';
 import 'widgets/staff_cards.dart';
-import 'widgets/staff_credentials_share_dialog.dart';
 import 'widgets/staff_filter_actions.dart';
 import 'widgets/staff_kpi_metrics.dart';
 import 'widgets/staff_models.dart';
@@ -148,31 +147,21 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
     StaffMemberData member,
   ) async {
     final strings = AppStrings.of(store.languageCode);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(staffDual(strings, 'Remove staff member', 'Ondoa Mfanyakazi')),
-        content: Text(
-          staffDual(
-              strings,
-              'Remove ${member.name} from this store? This cannot be undone.',
-              'Ondoa ${member.name} kwenye duka hili? Hili haliwezi kutenduliwa.'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(strings.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: Text(staffDual(strings, 'Remove', 'Ondoa')),
-          ),
-        ],
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: staffDual(strings, 'Remove staff member', 'Ondoa Mfanyakazi'),
+      message: staffDual(
+        strings,
+        'Remove ${member.name} from this store? This cannot be undone.',
+        'Ondoa ${member.name} kwenye duka hili? Hili haliwezi kutenduliwa.',
       ),
+      confirmLabel: staffDual(strings, 'Remove', 'Ondoa'),
+      cancelLabel: strings.cancel,
+      isDestructive: true,
+      icon: Icons.person_remove_outlined,
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     await store.deleteStaffMember(member.id);
     if (!mounted) return;
     showMarketNotice(

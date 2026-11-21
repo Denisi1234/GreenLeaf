@@ -300,8 +300,9 @@ void main() {
           'customers',
           'suppliers',
           'staff'
-        ].contains(entry.key))
+        ].contains(entry.key)) {
           await capture(tester, '${entry.key}-${width.toInt()}');
+        }
         final scroll = find.byWidgetPredicate((widget) =>
             widget is Scrollable && widget.axisDirection == AxisDirection.down);
         if (scroll.evaluate().isNotEmpty) {

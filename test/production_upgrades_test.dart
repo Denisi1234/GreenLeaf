@@ -13,7 +13,6 @@ import 'package:track_mauzo/service/pos_local_store.dart';
 import 'package:track_mauzo/service/pos_order_models.dart';
 import 'package:track_mauzo/service/receipt_settings.dart';
 import 'package:track_mauzo/service/secure_token_storage.dart';
-import 'package:track_mauzo/service/staff_credentials.dart';
 import 'package:track_mauzo/service/store_preferences.dart';
 import 'package:track_mauzo/service/tax_settings.dart';
 import 'package:track_mauzo/service/thermal_printer_service.dart';

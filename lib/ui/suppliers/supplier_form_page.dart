@@ -206,39 +206,19 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   }
 
   Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.modal),
-        ),
-        title: Text(_t('Delete supplier?', 'Futa msambazaji?')),
-        content: Text(
-          _t(
-            'Supplier will be removed. Goods received records remain in reports.',
-            'Msambazaji ataondolewa. Rekodi za upokeaji zitabaki kwenye ripoti.',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(_t('Cancel', 'Ghairi')),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-              ),
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(_t('Delete', 'Futa')),
-          ),
-        ],
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: _t('Delete supplier?', 'Futa msambazaji?'),
+      message: _t(
+        'Supplier will be removed. Goods received records remain in reports.',
+        'Msambazaji ataondolewa. Rekodi za upokeaji zitabaki kwenye ripoti.',
       ),
+      confirmLabel: _t('Delete', 'Futa'),
+      cancelLabel: _t('Cancel', 'Ghairi'),
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     final deleteTitle = _t('Supplier Deleted', 'Msambazaji Amefutwa');
     final deleteMsg = _t('Supplier deleted successfully', 'Msambazaji amefutwa kikamilifu');
     await context.read<PosLocalStore>().deleteSupplier(widget.supplier!.id!);

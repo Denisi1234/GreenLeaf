@@ -26,7 +26,7 @@ class StaffStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      borderColor: const Color(0xFFD6E4F0),
+      borderColor: AppColors.border,
       radius: 0,
       showShadow: false,
       child: Column(
@@ -90,7 +90,7 @@ class StaffTile extends StatelessWidget {
       borderRadius: BorderRadius.zero,
       child: MarketSurfaceCard(
         padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
-        borderColor: const Color(0xFFD6E4F0),
+        borderColor: AppColors.border,
         radius: 0,
         showShadow: false,
         child: Row(
@@ -271,7 +271,7 @@ class StaffRoleTile extends StatelessWidget {
       borderRadius: BorderRadius.zero,
       child: MarketSurfaceCard(
         padding: const EdgeInsets.all(14),
-        borderColor: const Color(0xFFD6E4F0),
+        borderColor: AppColors.border,
         radius: 0,
         showShadow: false,
         child: Row(
@@ -342,7 +342,7 @@ class StaffEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(24),
-      borderColor: const Color(0xFFD6E4F0),
+      borderColor: AppColors.border,
       radius: 0,
       showShadow: false,
       child: Column(

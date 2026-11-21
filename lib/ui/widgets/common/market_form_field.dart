@@ -125,23 +125,23 @@ class MarketFormField extends StatelessWidget {
                 ? const BoxConstraints(minWidth: 44, minHeight: 44)
                 : const BoxConstraints(minWidth: 0, minHeight: 0),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
+              borderRadius: BorderRadius.zero,
               borderSide: const BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
+              borderRadius: BorderRadius.zero,
               borderSide: const BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
+              borderRadius: BorderRadius.zero,
               borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
+              borderRadius: BorderRadius.zero,
               borderSide: const BorderSide(color: AppColors.danger),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(radius),
+              borderRadius: BorderRadius.zero,
               borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
             ),
             errorStyle: AppTypography.helperText.copyWith(

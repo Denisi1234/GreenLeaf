@@ -38,38 +38,18 @@ class ReceivingPage extends StatefulWidget {
     if (receiving.id == null) return;
     final store = context.read<PosLocalStore>();
     final sw = store.languageCode == 'sw';
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.modal),
-        ),
-        title: Text(sw ? 'Futa upokeaji?' : 'Delete receiving record?'),
-        content: Text(
-          sw
-              ? 'Rekodi itaondolewa. Hifadhi iliyoongezwa haitarejeshwa kiotomatiki.'
-              : 'The record will be removed. Stock added by this delivery will not be reversed automatically.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(sw ? 'Ghairi' : 'Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-              ),
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(sw ? 'Futa' : 'Delete'),
-          ),
-        ],
-      ),
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: sw ? 'Futa upokeaji?' : 'Delete receiving record?',
+      message: sw
+          ? 'Rekodi itaondolewa. Hifadhi iliyoongezwa haitarejeshwa kiotomatiki.'
+          : 'The record will be removed. Stock added by this delivery will not be reversed automatically.',
+      confirmLabel: sw ? 'Futa' : 'Delete',
+      cancelLabel: sw ? 'Ghairi' : 'Cancel',
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await store.deleteReceiving(receiving.id!);
     if (!context.mounted) return;
     showMarketNotice(
@@ -166,8 +146,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                   icon: Icons.inventory_2_outlined,
                                   sharp: true,
                                   borderless: true,
-                                  backgroundColor: const Color(0xFFD1FAE5),
-                                  color: const Color(0xFF047857),
+                                  backgroundColor: AppColors.kpiSuccessBg,
+                                  color: AppColors.kpiSuccess,
                                 ),
                               ),
                               SizedBox(
@@ -178,8 +158,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                   icon: Icons.local_shipping_outlined,
                                   sharp: true,
                                   borderless: true,
-                                  backgroundColor: const Color(0xFFE0F2FE),
-                                  color: const Color(0xFF0369A1),
+                                  backgroundColor: AppColors.kpiSkyBg,
+                                  color: AppColors.kpiSky,
                                 ),
                               ),
                               SizedBox(
@@ -190,8 +170,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                   icon: Icons.all_inbox_rounded,
                                   sharp: true,
                                   borderless: true,
-                                  backgroundColor: const Color(0xFFFCE7F3),
-                                  color: const Color(0xFFBE185D),
+                                  backgroundColor: AppColors.kpiRoseBg,
+                                  color: AppColors.kpiRose,
                                 ),
                               ),
                               SizedBox(
@@ -202,8 +182,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                   icon: Icons.calendar_today_outlined,
                                   sharp: true,
                                   borderless: true,
-                                  backgroundColor: const Color(0xFFFEF3C7),
-                                  color: const Color(0xFFB45309),
+                                  backgroundColor: AppColors.kpiAmberBg,
+                                  color: AppColors.kpiAmber,
                                 ),
                               ),
                             ],

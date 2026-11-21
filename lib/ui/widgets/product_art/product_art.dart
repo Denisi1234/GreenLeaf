@@ -134,7 +134,7 @@ class _BottleArt extends StatelessWidget {
                       child:  Center(
                         child: Text(
                           context.tr('Aqua'),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
@@ -209,7 +209,7 @@ class _CanArt extends StatelessWidget {
               angle: -math.pi / 2,
               child:  Text(
                 context.tr('Coca-Cola'),
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontStyle: FontStyle.italic,
@@ -270,7 +270,7 @@ class _ChipsBagArt extends StatelessWidget {
               child:  Center(
                 child: Text(
                   context.tr('Lay\'s'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontStyle: FontStyle.italic,
@@ -287,7 +287,7 @@ class _ChipsBagArt extends StatelessWidget {
             child: Text(
               context.tr('Classic'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Color(0xFF111111),
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
@@ -327,7 +327,7 @@ class _ChocolateArt extends StatelessWidget {
               top: 8,
               child: Text(
                 context.tr('Galaxy'),
-                style: TextStyle(
+                style: const TextStyle(
                   color: Color(0xFF111111),
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
@@ -379,7 +379,7 @@ class _CerealBoxArt extends StatelessWidget {
             left: 10,
             child: Text(
               context.tr('Kellogg\'s'),
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.primaryDeep,
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
@@ -393,7 +393,7 @@ class _CerealBoxArt extends StatelessWidget {
             child: Text(
               context.tr('CORN\nFLAKES'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Color(0xFF111111),
                 fontSize: 13,
                 height: 1,
@@ -414,7 +414,7 @@ class _CerealBoxArt extends StatelessWidget {
               child:  Center(
                 child: Text(
                   context.tr('flakes'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.primaryDeep,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -451,7 +451,7 @@ class _SoapBoxArt extends StatelessWidget {
             left: 12,
             child: Text(
               context.tr('Dove'),
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.ink,
                 fontSize: 14,
                 fontStyle: FontStyle.italic,
@@ -459,7 +459,7 @@ class _SoapBoxArt extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(
+          const Positioned(
             bottom: 10,
             left: 12,
             right: 12,
@@ -487,10 +487,10 @@ class _ToothpasteArt extends StatelessWidget {
       ),
       child:  Row(
         children: [
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Text(
             context.tr('Colgate'),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 13,
               fontStyle: FontStyle.italic,
@@ -598,7 +598,7 @@ class _DetergentBagArt extends StatelessWidget {
           child:  Center(
             child: Text(
               context.tr('Tide'),
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.primaryDeep,
                 fontSize: 12,
                 fontStyle: FontStyle.italic,

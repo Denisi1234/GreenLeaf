@@ -58,8 +58,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _NotificationItem(
           id: id,
           icon: Icons.payments_outlined,
-          iconColor: const Color(0xFF10B981),
-          iconBackground: const Color(0xFFD1FAE5),
+          iconColor: AppColors.success,
+          iconBackground: AppColors.kpiSuccessBg,
           title: context.tr('Sale #{p0}', args: {'p0': order.id}),
           message: context.tr('Sh {p0} completed by {p1}', args: {'p0': formatCurrency(order.total), 'p1': order.cashierName}),
           timeLabel: _formatTime(parsedDate),
@@ -79,8 +79,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _NotificationItem(
           id: id,
           icon: Icons.cancel_outlined,
-          iconColor: const Color(0xFFEF4444),
-          iconBackground: const Color(0xFFFEE2E2),
+          iconColor: AppColors.danger,
+          iconBackground: AppColors.kpiDangerBg,
           title: context.tr('Out of Stock: {p0}', args: {'p0': item.name}),
           message: context.tr('{p0} has reached 0 units in stock. Restock needed.', args: {'p0': item.name}),
           timeLabel: context.tr('Alert'),
@@ -100,8 +100,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _NotificationItem(
           id: id,
           icon: Icons.warning_amber_rounded,
-          iconColor: const Color(0xFFF59E0B),
-          iconBackground: const Color(0xFFFEF3C7),
+          iconColor: AppColors.warning,
+          iconBackground: AppColors.kpiAmberBg,
           title: context.tr('Low Stock: {p0}', args: {'p0': item.name}),
           message: context.tr('Only {p0} unit(s) remaining for {p1}.', args: {'p0': item.stockCount, 'p1': item.name}),
           timeLabel: context.tr('Warning'),
@@ -121,8 +121,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _NotificationItem(
           id: id,
           icon: Icons.account_balance_wallet_outlined,
-          iconColor: const Color(0xFF0284C7),
-          iconBackground: const Color(0xFFE0F2FE),
+          iconColor: AppColors.kpiSky,
+          iconBackground: AppColors.kpiSkyBg,
           title: context.tr('Pending Debt: {p0}', args: {'p0': customer.name}),
           message: context.tr('{p0} owes Sh {p1} in unpaid credit.', args: {'p0': customer.name, 'p1': formatCurrency(customer.debitBalance)}),
           timeLabel: 'Pending',
@@ -144,7 +144,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final items = _generateRealNotifications(store);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEAF2F9),
+      backgroundColor: AppColors.pageBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +159,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     tooltip: strings.markAllAsRead,
                     icon: const Icon(
                       Icons.done_all_rounded,
-                      color: Color(0xFF0284C7),
+                      color: AppColors.kpiSky,
                     ),
                   ),
               ],
@@ -207,10 +207,10 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(10), // Clean rounded card
         border: Border.all(
-          color: item.unread ? const Color(0xFFBAE6FD) : const Color(0xFFD6E4F0),
+          color: item.unread ? AppColors.kpiSkyBg : AppColors.border,
           width: item.unread ? 1.5 : 1.0,
         ),
         boxShadow: [
@@ -257,14 +257,14 @@ class _NotificationCard extends StatelessWidget {
                               style: GoogleFonts.manrope(
                                 fontSize: 14,
                                 fontWeight: item.unread ? FontWeight.w800 : FontWeight.w600,
-                                color: const Color(0xFF0F172A),
+                                color: AppColors.ink,
                               ),
                             ),
                           ),
                           Text(
                             item.timeLabel,
                             style: GoogleFonts.manrope(
-                              color: const Color(0xFF94A3B8),
+                              color: AppColors.textLight,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
@@ -275,7 +275,7 @@ class _NotificationCard extends StatelessWidget {
                       Text(
                         item.message,
                         style: GoogleFonts.manrope(
-                          color: const Color(0xFF64748B),
+                          color: AppColors.textMuted,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w500,
                           height: 1.3,
@@ -291,7 +291,7 @@ class _NotificationCard extends StatelessWidget {
                     height: 7,
                     margin: const EdgeInsets.only(top: 4),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF0284C7),
+                      color: AppColors.kpiSky,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -322,12 +322,12 @@ class _EmptyNotificationsState extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: const BoxDecoration(
-                color: Color(0xFFD1FAE5),
+                color: AppColors.kpiSuccessBg,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check_circle_outline_rounded,
-                color: Color(0xFF10B981),
+                color: AppColors.success,
                 size: 32,
               ),
             ),
@@ -337,7 +337,7 @@ class _EmptyNotificationsState extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF0F172A),
+                color: AppColors.ink,
               ),
             ),
             const SizedBox(height: 4),
@@ -345,7 +345,7 @@ class _EmptyNotificationsState extends StatelessWidget {
               context.tr('No new store alerts or transactions to review right now.'),
               textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
-                color: const Color(0xFF64748B),
+                color: AppColors.textMuted,
                 fontSize: 13,
               ),
             ),

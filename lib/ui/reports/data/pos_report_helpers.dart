@@ -1,4 +1,4 @@
-﻿part of '../pos_report_data.dart';
+part of '../pos_report_data.dart';
 
 final _day = DateFormat('yyyy-MM-dd', 'en_US');
 final _timestamp = DateFormat('yyyy-MM-dd HH:mm', 'en_US');
@@ -408,7 +408,7 @@ ReportTable _profitLoss(List<_Sale> sales, List<Expense> expenses) {
   final cost = _cost(sales.expand((sale) => sale.order.lines));
   final spending = _sum(expenses, (expense) => expense.amount);
   return ReportTable(
-    const [ReportColumn('POS activity'), ReportColumn('Amount', money: true)],
+    const [ReportColumn('POS activity', systemLabels: true), ReportColumn('Amount', money: true)],
     [
       ['Net sales', revenue],
       ['Cost of goods sold', cost],

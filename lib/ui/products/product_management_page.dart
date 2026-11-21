@@ -147,43 +147,16 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       );
       return;
     }
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.modal),
-        ),
-        title: Text(
-          context.tr('Delete Item?'),
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          context.tr('Are you sure you want to delete {p0}? This will remove it from inventory.', args: {'p0': product.name}),
-          style: GoogleFonts.manrope(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              context.tr('Cancel'),
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-              ),
-            ),
-            child: Text(
-              context.tr('Delete'),
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
+    final shouldDelete = await showMarketConfirmDialog(
+      context,
+      title: context.tr('Delete Item?'),
+      message: context.tr(
+        'Are you sure you want to delete {p0}? This will remove it from inventory.',
+        args: {'p0': product.name},
       ),
+      confirmLabel: context.tr('Delete'),
+      cancelLabel: context.tr('Cancel'),
+      isDestructive: true,
     );
 
     if (shouldDelete != true || !mounted) return;
@@ -346,32 +319,34 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                 IconButton.outlined(
                                   tooltip: context.tr('Export CSV'),
                                   style: OutlinedButton.styleFrom(
+                                    backgroundColor: AppColors.kpiSkyBg,
                                     shape: const RoundedRectangleBorder(
                                       borderRadius: BorderRadius.zero,
                                     ),
                                     side: const BorderSide(
-                                        color: AppColors.border),
+                                        color: AppColors.kpiSky),
                                   ),
                                   onPressed: () =>
                                       ProductCsvService.exportInventoryCsv(
                                           filtered),
                                   icon: const Icon(Icons.download_rounded,
-                                      color: AppColors.ink),
+                                      color: AppColors.kpiSky),
                                 ),
                                 if (canManageInventory) ...[
                                   const SizedBox(width: 6),
                                   IconButton.outlined(
                                     tooltip: context.tr('Import CSV'),
                                     style: OutlinedButton.styleFrom(
+                                      backgroundColor: AppColors.kpiVioletBg,
                                       shape: const RoundedRectangleBorder(
                                         borderRadius: BorderRadius.zero,
                                       ),
                                       side: const BorderSide(
-                                          color: AppColors.border),
+                                          color: AppColors.kpiViolet),
                                     ),
                                     onPressed: _handleImportCsv,
                                     icon: const Icon(Icons.upload_file_rounded,
-                                        color: AppColors.ink),
+                                        color: AppColors.kpiViolet),
                                   ),
                                 ],
                               ],

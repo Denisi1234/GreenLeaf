@@ -4,7 +4,6 @@ import '../../service/pos_local_store.dart';
 import '../../service/pos_suspended_sale_model.dart';
 import '../../service/tax_settings.dart';
 import '../models/product_item.dart';
-import 'widgets/order_lines_list.dart';
 
 /// Decoupled state & business-logic controller for [PaymentPage].
 ///

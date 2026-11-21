@@ -1,3 +1,4 @@
+import '../../service/report_pdf/report_pdf_context.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +44,7 @@ class _CustomersPageState extends State<CustomersPage> {
   String _searchQuery = '';
   String _filter = CustomerFilterOption.all.name;
   CustomerSortMode _sort = CustomerSortMode.newest;
-  bool _exporting = false;
+  final bool _exporting = false;
 
   @override
   void dispose() {
@@ -127,8 +128,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                       icon: Icons.people_alt_outlined,
                                       sharp: true,
                                       borderless: true,
-                                      backgroundColor: const Color(0xFFE0F2FE),
-                                      color: const Color(0xFF0369A1),
+                                      backgroundColor: AppColors.kpiSkyBg,
+                                      color: AppColors.kpiSky,
                                     ),
                                   ),
                                   SizedBox(
@@ -140,8 +141,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                       icon: Icons.shopping_bag_outlined,
                                       sharp: true,
                                       borderless: true,
-                                      backgroundColor: const Color(0xFFFCE7F3),
-                                      color: const Color(0xFFBE185D),
+                                      backgroundColor: AppColors.kpiRoseBg,
+                                      color: AppColors.kpiRose,
                                     ),
                                   ),
                                   SizedBox(
@@ -154,8 +155,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                       icon: Icons.trending_up_rounded,
                                       sharp: true,
                                       borderless: true,
-                                      backgroundColor: const Color(0xFFD1FAE5),
-                                      color: const Color(0xFF047857),
+                                      backgroundColor: AppColors.kpiSuccessBg,
+                                      color: AppColors.kpiSuccess,
                                     ),
                                   ),
                                   SizedBox(
@@ -169,8 +170,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                           Icons.account_balance_wallet_outlined,
                                       sharp: true,
                                       borderless: true,
-                                      backgroundColor: const Color(0xFFFEE2E2),
-                                      color: const Color(0xFFB91C1C),
+                                      backgroundColor: AppColors.kpiDangerBg,
+                                      color: AppColors.kpiDanger,
                                     ),
                                   ),
                                 ],
@@ -529,7 +530,13 @@ class _CustomersPageState extends State<CustomersPage> {
     if (choice == 'csv') {
       await CustomerExportService.exportCsv(context, rows: rows, stats: stats, strings: strings);
     } else if (choice == 'pdf') {
-      await CustomerExportService.exportPdf(context, rows: rows, stats: stats, strings: strings);
+      await CustomerExportService.exportPdf(context, rows: rows, stats: stats, strings: strings,
+        pdfContext: ReportPdfContext.fromStore(store, languageCode: strings.languageCode,
+          filterSummary: [
+            if (_searchQuery.trim().isNotEmpty) '${strings.text('Search')}: ${_searchQuery.trim()}',
+            if (_filter != CustomerFilterOption.all.name) filterFromName(_filter).label(strings),
+            '${strings.text('Sort')}: ${_sort.label(strings)}',
+          ].join(' | ')));
     }
   }
 

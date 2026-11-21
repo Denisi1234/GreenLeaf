@@ -1,6 +1,5 @@
 import 'package:track_mauzo/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
-import '../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

@@ -32,7 +32,7 @@ class StockAlertCard extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF111111),
+                color: AppColors.ink,
               ),
             ),
             if (onViewAll != null)
@@ -52,9 +52,9 @@ class StockAlertCard extends StatelessWidget {
         const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFF3F4F6)),
+            border: Border.all(color: AppColors.surfaceSecondary),
           ),
           child: Column(
             children: [
@@ -63,7 +63,7 @@ class StockAlertCard extends StatelessWidget {
                   const Divider(
                     height: 1,
                     thickness: 1,
-                    color: Color(0xFFF3F4F6),
+                    color: AppColors.surfaceSecondary,
                     indent: 16,
                     endIndent: 16,
                   ),
@@ -80,22 +80,22 @@ class StockAlertCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF3F4F6)),
+        border: Border.all(color: AppColors.surfaceSecondary),
       ),
       child: Row(
         children: [
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceSecondary,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.check_circle_rounded,
-              color: Color(0xFF111111),
+              color: AppColors.ink,
               size: 24,
             ),
           ),
@@ -109,7 +109,7 @@ class StockAlertCard extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF111111),
+                    color: AppColors.ink,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -117,7 +117,7 @@ class StockAlertCard extends StatelessWidget {
                   context.tr('No items are in the low-stock watchlist right now.'),
                   style: GoogleFonts.manrope(
                     fontSize: 11,
-                    color: const Color(0xFF667085),
+                    color: AppColors.textMuted,
                   ),
                 ),
               ],
@@ -165,7 +165,7 @@ class _StockAlertRow extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF111111),
+                    color: AppColors.ink,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -175,7 +175,7 @@ class _StockAlertRow extends StatelessWidget {
                   '${item.category} • ${item.statusLabel}',
                   style: GoogleFonts.manrope(
                     fontSize: 10,
-                    color: const Color(0xFF667085),
+                    color: AppColors.textMuted,
                   ),
                 ),
               ],

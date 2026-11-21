@@ -8,7 +8,6 @@ import '../../service/pos_order_models.dart';
 import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
 import 'widgets/order_history_card.dart';
-import '../widgets/market_shared_widgets.dart';
 
 class OrderHistoryPage extends StatefulWidget {
   const OrderHistoryPage({super.key, this.useSharedShell = false});
@@ -411,7 +410,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 Expanded(
                   flex: 2,
                   child: Container(
-                    color: const Color(0xFFE0F2FE),
+                    color: AppColors.kpiSkyBg,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 10,
@@ -424,7 +423,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           style: AppTypography.label.copyWith(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0369A1),
+                            color: AppColors.kpiSky,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -434,7 +433,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.bodyMain.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0C4A6E),
+                            color: AppColors.kpiSky,
                           ),
                         ),
                       ],
@@ -443,7 +442,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ),
                 Expanded(
                   child: Container(
-                    color: const Color(0xFFECFDF5),
+                    color: AppColors.kpiSuccessBg,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 10,
@@ -456,7 +455,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           style: AppTypography.label.copyWith(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0F766E),
+                            color: AppColors.kpiSuccess,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -464,7 +463,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           '$completedCount',
                           style: AppTypography.bodyMain.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0F766E),
+                            color: AppColors.kpiSuccess,
                           ),
                         ),
                       ],
@@ -473,7 +472,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ),
                 Expanded(
                   child: Container(
-                    color: const Color(0xFFFEE2E2),
+                    color: AppColors.kpiDangerBg,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 10,
@@ -486,7 +485,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           style: AppTypography.label.copyWith(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFFB91C1C),
+                            color: AppColors.kpiDanger,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -494,7 +493,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                           '$voidedCount',
                           style: AppTypography.bodyMain.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFFB91C1C),
+                            color: AppColors.kpiDanger,
                           ),
                         ),
                       ],
@@ -563,8 +562,8 @@ class _SharpFilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = active ? const Color(0xFFEFF6FF) : AppColors.pageBackground;
-    final fg = active ? const Color(0xFF1D4ED8) : AppColors.ink;
+    final bg = active ? AppColors.kpiSkyBg : AppColors.pageBackground;
+    final fg = active ? AppColors.kpiSky : AppColors.ink;
     return Material(
       color: bg,
       borderRadius: BorderRadius.zero,

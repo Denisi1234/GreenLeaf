@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../service/accounting_model.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../widgets/app_design.dart';
-import '../fixed_assets_page.dart';
 
 class AssetRowTile extends StatelessWidget {
   const AssetRowTile({

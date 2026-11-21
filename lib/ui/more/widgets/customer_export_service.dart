@@ -1,4 +1,7 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:provider/provider.dart';
+import '../../../service/pos_local_store.dart';
+import '../../../service/report_pdf/report_pdf_layout.dart';
+import '../../reports/pos_report_data.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -6,8 +9,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -18,11 +19,6 @@ import 'customer_models.dart';
 
 String _dual(AppStrings strings, String english, String swahili) =>
     strings.isSwahili ? swahili : english;
-
-String _formatMoney(double value) {
-  final formatted = NumberFormat('#,##0.00').format(value);
-  return 'TSh $formatted';
-}
 
 class CustomerExportService {
   static String _stamp() => DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
@@ -43,7 +39,12 @@ class CustomerExportService {
     required AppStrings strings,
   }) async {
     final buffer = StringBuffer();
-    buffer.writeln('Name,Phone,Email,Address,Orders,Total Spent,Points,Outstanding Debit,Joined,Tags'.split(',').map(strings.text).map(_csvCell).join(','));
+    buffer.writeln(
+        'Name,Phone,Email,Address,Orders,Total Spent,Points,Outstanding Debit,Joined,Tags'
+            .split(',')
+            .map(strings.text)
+            .map(_csvCell)
+            .join(','));
     for (final c in rows) {
       final info = stats[c.name] ?? CustomerStats.empty;
       final cells = <String>[
@@ -74,71 +75,60 @@ class CustomerExportService {
     required List<CustomerData> rows,
     required Map<String, CustomerStats> stats,
     required AppStrings strings,
+    ReportPdfContext? pdfContext,
   }) async {
-    final totalSpent = rows.fold<double>(
-        0, (sum, c) => sum + (stats[c.name]?.spent ?? c.totalSpent));
-    final outstanding = rows.fold<double>(0, (sum, c) => sum + c.debitBalance);
-    final doc = pw.Document();
-
-    doc.addPage(
-      pw.MultiPage(
-        pageTheme: const pw.PageTheme(
-          pageFormat: PdfPageFormat.a4,
-          margin: pw.EdgeInsets.all(24),
-        ),
-        header: (ctx) => pw.Container(
-          margin: const pw.EdgeInsets.only(bottom: 12),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(context.tr('Customer Report'),
-                  style: pw.TextStyle(
-                      fontSize: 18, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                  context.tr('{p0} customers · Lifetime sales {p1} · Outstanding {p2}', args: {'p0': rows.length, 'p1': _formatMoney(totalSpent), 'p2': _formatMoney(outstanding)}),
-                  style: const pw.TextStyle(
-                      fontSize: 10, color: PdfColors.grey700)),
-            ],
-          ),
-        ),
-        build: (ctx) => [
-          pw.TableHelper.fromTextArray(
-            headers: [
-              'Name',
-              'Phone',
-              'Orders',
-              'Total Spent',
-              'Points',
-              'Debit',
-              'Joined'
-            ].map(strings.text).toList(),
-            data: rows.map((c) {
-              final info = stats[c.name] ?? CustomerStats.empty;
-              final spent = info.spent + c.totalSpent;
-              return [
-                c.name,
-                c.phone,
-                '${info.orders + c.totalOrders}',
-                _formatMoney(spent),
-                '${_loyaltyPoints(spent)}',
-                c.debitBalance > 0 ? _formatMoney(c.debitBalance) : '—',
-                DateFormat('yyyy-MM-dd').format(c.createdAt),
-              ];
-            }).toList(),
-            headerStyle:
-                pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
-            cellStyle: const pw.TextStyle(fontSize: 8),
-            cellAlignment: pw.Alignment.centerLeft,
-            headerAlignment: pw.Alignment.centerLeft,
-            border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
-          ),
-        ],
-      ),
-    );
-
+    final reportContext = pdfContext ??
+        ReportPdfContext.fromStore(context.read<PosLocalStore>(),
+            languageCode: strings.languageCode);
+    final bytes = await buildPdf(
+        rows: rows, stats: stats, strings: strings, pdfContext: reportContext);
     await Printing.sharePdf(
-        bytes: await doc.save(), filename: 'customers_${_stamp()}.pdf');
+        bytes: bytes, filename: 'customers_${_stamp()}.pdf');
+  }
+
+  static Future<Uint8List> buildPdf({
+    required List<CustomerData> rows,
+    required Map<String, CustomerStats> stats,
+    required AppStrings strings,
+    ReportPdfContext? pdfContext,
+  }) {
+    final context =
+        pdfContext ?? ReportPdfContext(languageCode: strings.languageCode);
+    final totalSpent = rows.fold<double>(
+        0, (sum, c) => sum + (stats[c.name]?.spent ?? 0) + c.totalSpent);
+    final outstanding = rows.fold<double>(0, (sum, c) => sum + c.debitBalance);
+    String money(double amount) =>
+        '${context.currency} ${NumberFormat('#,##0.00', context.languageCode).format(amount)}';
+    return ReportPdfLayout.tableDocument(
+      title: context.label('Customer Report'),
+      context: context,
+      subtitle: context.label('Current snapshot'),
+      table: ReportTable(const [
+        ReportColumn('Name'),
+        ReportColumn('Phone'),
+        ReportColumn('Orders'),
+        ReportColumn('Total Spent', money: true),
+        ReportColumn('Points'),
+        ReportColumn('Debit', money: true),
+        ReportColumn('Joined'),
+      ], [
+        for (final c in rows)
+          [
+            c.name,
+            c.phone,
+            (stats[c.name]?.orders ?? 0) + c.totalOrders,
+            (stats[c.name]?.spent ?? 0) + c.totalSpent,
+            _loyaltyPoints((stats[c.name]?.spent ?? 0) + c.totalSpent),
+            c.debitBalance,
+            DateFormat('yyyy-MM-dd').format(c.createdAt),
+          ]
+      ]),
+      summary: [
+        MapEntry(context.label('Customers'), '${rows.length}'),
+        MapEntry(context.label('Total spent'), money(totalSpent)),
+        MapEntry(context.label('Outstanding balance'), money(outstanding)),
+      ],
+    );
   }
 
   static Future<void> _shareBytes(

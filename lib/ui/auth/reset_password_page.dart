@@ -1,3 +1,4 @@
+import '../widgets/app_design.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -162,8 +163,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     } else {
       setState(() {
         _error = api == null
-            ? 'Uthibitisho wa OTP unahitaji muunganisho wa mtandao.'
-            : 'Namba ya uthibitisho (OTP) si sahihi';
+            ? 'Uthibitisho unahitaji muunganisho wa intaneti.'
+            : 'Namba ya uthibitisho si sahihi';
       });
     }
   }
@@ -233,10 +234,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           const Center(
             child: CircleAvatar(
               radius: 36,
-              backgroundColor: Color(0xFFF3F4F6),
+              backgroundColor: AppColors.surfaceSecondary,
               child: Icon(
                 Icons.check_circle_rounded,
-                color: Color(0xFF111111),
+                color: AppColors.ink,
                 size: 44,
               ),
             ),
@@ -248,7 +249,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF111111),
+              color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 10),
@@ -258,7 +259,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14.5,
               height: 1.5,
-              color: const Color(0xFF64748B),
+              color: AppColors.textMuted,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -276,13 +277,13 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       children: [
         Text(
           _step == _ResetStep.enterOtp
-              ? (isSwahili ? 'Uthibitisho wa OTP' : 'Verify OTP Code')
+              ? (isSwahili ? 'Thibitisha Namba' : 'Verify Code')
               : strings.resetPassword,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 28,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.6,
-            color: const Color(0xFF111111),
+            color: AppColors.ink,
           ),
         ),
         const SizedBox(height: 8),
@@ -299,7 +300,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14.5,
             height: 1.5,
-            color: const Color(0xFF64748B),
+            color: AppColors.textMuted,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -330,7 +331,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           ),
           const SizedBox(height: 26),
           AuthSubmitButton(
-            label: isSwahili ? 'Tuma Namba ya OTP' : 'Send Verification OTP',
+            label: isSwahili ? 'Tuma Namba ya Uthibitisho' : 'Send Verification Code',
             busy: _busy,
             onPressed: _requestOtp,
           ),
@@ -339,7 +340,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         // STEP 2: Enter 6-digit OTP
         if (_step == _ResetStep.enterOtp) ...[
           AuthFieldLabel(
-            text: isSwahili ? 'Namba ya Uthibitisho (OTP)' : '6-Digit OTP Code',
+            text: isSwahili ? 'Namba ya Uthibitisho' : '6-Digit Code',
           ),
           TextFormField(
             controller: _otpController,
@@ -350,7 +351,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               fontSize: 22,
               fontWeight: FontWeight.w800,
               letterSpacing: 8,
-              color: const Color(0xFF111111),
+              color: AppColors.ink,
             ),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
@@ -379,7 +380,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
+                    color: AppColors.textMuted,
                   ),
                 ),
               ),
@@ -396,8 +397,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: _resendCountdown > 0
-                        ? const Color(0xFF94A3B8)
-                        : const Color(0xFF111111),
+                        ? AppColors.textLight
+                        : AppColors.ink,
                   ),
                 ),
               ),

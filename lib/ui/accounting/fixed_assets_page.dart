@@ -219,38 +219,18 @@ class FixedAssetsPage extends StatelessWidget {
       BuildContext context, FixedAsset asset, bool isSwahili) async {
     if (asset.id == null) return;
     final store = context.read<PosLocalStore>();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.modal),
-        ),
-        title: Text(isSwahili ? 'Futa mali?' : 'Delete asset?'),
-        content: Text(
-          isSwahili
-              ? 'Mali hii na rekodi yake ya uchakavu vitaondolewa.'
-              : 'This asset and its depreciation record will be removed.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(isSwahili ? 'Ghairi' : 'Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.standard),
-              ),
-            ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(isSwahili ? 'Futa' : 'Delete'),
-          ),
-        ],
-      ),
+    final confirmed = await showMarketConfirmDialog(
+      context,
+      title: isSwahili ? 'Futa mali?' : 'Delete asset?',
+      message: isSwahili
+          ? 'Mali hii na rekodi yake ya uchakavu vitaondolewa.'
+          : 'This asset and its depreciation record will be removed.',
+      confirmLabel: isSwahili ? 'Futa' : 'Delete',
+      cancelLabel: isSwahili ? 'Ghairi' : 'Cancel',
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await store.deleteFixedAsset(asset.id!);
     if (!context.mounted) return;
     showMarketNotice(

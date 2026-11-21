@@ -94,7 +94,7 @@ class InventoryDataTable extends StatelessWidget {
                         DataCell(Text(formatProductPrice(item.sellingPrice))),
                         DataCell(
                           Text(
-                            item.unit == null || item.unit!.isEmpty
+                            item.unit.isEmpty
                                 ? '${item.stockCount}'
                                 : '${item.stockCount} ${item.unit}',
                           ),

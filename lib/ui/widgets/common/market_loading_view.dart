@@ -173,7 +173,7 @@ class MarketTableSkeleton extends StatelessWidget {
                   child: Container(
                     height: 12,
                     margin: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.border,
                       borderRadius: BorderRadius.zero,
                     ),

@@ -7,12 +7,10 @@ import '../home/sales_page.dart';
 import '../more/more_page.dart';
 import '../products/product_management_page.dart';
 import '../reports/dashboard_page.dart';
-import '../sales/order_history_page.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../more/settings_page.dart';
-import '../notifications/notifications_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -202,20 +200,20 @@ class _AppShellState extends State<AppShell>
               children: [
                 NavigationRail(
                   extended: extendedRail,
-                  backgroundColor: AppColors.surface,
+                  backgroundColor: AppColors.headerSurface,
                   selectedIndex: _currentTab.index,
                   onDestinationSelected: (idx) =>
                       _handleTabChange(MarketTab.values[idx]),
                   indicatorColor:
-                      const Color(0xFF0F766E).withValues(alpha: 0.12),
+                      AppColors.kpiSuccess.withValues(alpha: 0.12),
                   selectedIconTheme:
-                      const IconThemeData(color: Color(0xFF0F766E)),
+                      const IconThemeData(color: AppColors.kpiSuccess),
                   selectedLabelTextStyle: AppTypography.bodySmall.copyWith(
-                    color: const Color(0xFF0F766E),
+                    color: AppColors.kpiSuccess,
                     fontWeight: FontWeight.w800,
                   ),
                   unselectedIconTheme:
-                      const IconThemeData(color: Color(0xFF64748B)),
+                      const IconThemeData(color: AppColors.textMuted),
                   unselectedLabelTextStyle: AppTypography.bodySmall.copyWith(
                     color: AppColors.textBody,
                     fontWeight: FontWeight.w600,

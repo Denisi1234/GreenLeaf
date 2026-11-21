@@ -21,7 +21,7 @@ class AppStrings {
       final locale = Localizations.maybeLocaleOf(codeOrContext);
       return AppStrings._(normalize(locale?.languageCode ?? 'en'));
     }
-    return AppStrings._('en');
+    return const AppStrings._('en');
   }
 
   bool get isSwahili => languageCode == 'sw';

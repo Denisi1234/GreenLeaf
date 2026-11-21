@@ -1,4 +1,7 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:provider/provider.dart';
+import '../../../service/pos_local_store.dart';
+import '../../../service/report_pdf/report_pdf_layout.dart';
+import '../../reports/pos_report_data.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -6,8 +9,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -25,7 +26,12 @@ class ExpenseExportService {
     required AppStrings strings,
   }) async {
     final buffer = StringBuffer();
-    buffer.writeln('Title,Vendor,Category,Payment Method,Date,Amount,Tax,Total,Status,Notes'.split(',').map(strings.text).map(_csvCell).join(','));
+    buffer.writeln(
+        'Title,Vendor,Category,Payment Method,Date,Amount,Tax,Total,Status,Notes'
+            .split(',')
+            .map(strings.text)
+            .map(_csvCell)
+            .join(','));
     for (final e in expenses) {
       final cells = <String>[
         e.title,
@@ -54,72 +60,57 @@ class ExpenseExportService {
     required BuildContext context,
     required List<Expense> expenses,
     required AppStrings strings,
+    ReportPdfContext? pdfContext,
   }) async {
-    final doc = pw.Document();
-    final total = expenses.fold<double>(0, (s, e) => s + e.totalWithTax);
+    final reportContext = pdfContext ??
+        ReportPdfContext.fromStore(context.read<PosLocalStore>(),
+            languageCode: strings.languageCode);
+    final bytes = await buildPdf(
+        expenses: expenses, strings: strings, pdfContext: reportContext);
+    await Printing.sharePdf(bytes: bytes, filename: 'expenses_${_stamp()}.pdf');
+  }
 
-    doc.addPage(
-      pw.MultiPage(
-        pageTheme: const pw.PageTheme(
-          pageFormat: PdfPageFormat.a4,
-          margin: pw.EdgeInsets.all(24),
-        ),
-        header: (ctx) => pw.Container(
-          margin: const pw.EdgeInsets.only(bottom: 12),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(context.tr('Expense Report'),
-                  style: pw.TextStyle(
-                      fontSize: 18, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                  context.tr('{p0} records · Total {p1}', args: {'p0': expenses.length, 'p1': formatExpenseMoney(total)}),
-                  style: const pw.TextStyle(
-                      fontSize: 10, color: PdfColors.grey700)),
-            ],
-          ),
-        ),
-        build: (ctx) => [
-          pw.TableHelper.fromTextArray(
-            headers: [
-              'Title',
-              'Vendor',
-              'Category',
-              'Payment',
-              'Date',
-              'Amount',
-              'Tax',
-              'Total',
-              'Status'
-            ].map(strings.text).toList(),
-            data: expenses
-                .map((e) => [
-                      e.title,
-                      e.vendor,
-                      e.category,
-                      strings.text(e.paymentMethod),
-                      DateFormat('yyyy-MM-dd').format(e.date),
-                      formatExpenseMoney(e.amount),
-                      formatExpenseMoney(e.taxAmount),
-                      formatExpenseMoney(e.totalWithTax),
-                      strings.text(e.status.label),
-                    ])
-                .toList(),
-            headerStyle:
-                pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
-            cellStyle: const pw.TextStyle(fontSize: 8),
-            cellAlignment: pw.Alignment.centerLeft,
-            headerAlignment: pw.Alignment.centerLeft,
-            border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
-          ),
-        ],
-      ),
-    );
-
-    await Printing.sharePdf(
-      bytes: await doc.save(),
-      filename: 'expenses_${_stamp()}.pdf',
+  static Future<Uint8List> buildPdf({
+    required List<Expense> expenses,
+    required AppStrings strings,
+    ReportPdfContext? pdfContext,
+  }) {
+    final context =
+        pdfContext ?? ReportPdfContext(languageCode: strings.languageCode);
+    final total = expenses.fold<double>(0, (sum, e) => sum + e.totalWithTax);
+    return ReportPdfLayout.tableDocument(
+      title: context.label('Expense Report'),
+      context: context,
+      subtitle: context.label('Report results'),
+      table: ReportTable(const [
+        ReportColumn('Title'),
+        ReportColumn('Vendor'),
+        ReportColumn('Category'),
+        ReportColumn('Payment'),
+        ReportColumn('Date'),
+        ReportColumn('Amount', money: true),
+        ReportColumn('Tax', money: true),
+        ReportColumn('Total', money: true),
+        ReportColumn('Status'),
+      ], [
+        for (final e in expenses)
+          [
+            e.title,
+            e.vendor,
+            e.category,
+            e.paymentMethod,
+            DateFormat('yyyy-MM-dd').format(e.date),
+            e.amount,
+            e.taxAmount,
+            e.totalWithTax,
+            e.status.localized(context.strings.isSwahili),
+          ]
+      ]),
+      summary: [
+        MapEntry(context.label('Records'), '${expenses.length}'),
+        MapEntry(context.label('Total expenses'),
+            '${context.currency} ${NumberFormat('#,##0.00', context.languageCode).format(total)}'),
+      ],
     );
   }
 

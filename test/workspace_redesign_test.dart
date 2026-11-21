@@ -21,7 +21,6 @@ import 'package:track_mauzo/ui/reports/reports_catalog_page.dart';
 import 'package:track_mauzo/ui/payment/payment_page.dart';
 import 'package:track_mauzo/ui/products/inventory_product_item.dart';
 import 'package:track_mauzo/ui/products/product_management_page.dart';
-import 'package:track_mauzo/ui/suppliers/receiving_page.dart';
 import 'package:track_mauzo/ui/widgets/app_theme.dart';
 
 class _ReviewStore extends PosLocalStore {
@@ -195,7 +194,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1–1 of 1'), findsOneWidget);
     expect(find.text('Mineral Water'), findsOneWidget);
-    await tester.tap(find.text('Clear filters'));
+    await tester.tap(find.text('Reset'));
     await tester.pumpAndSettle();
     expect(tester.widget<DataTable>(find.byType(DataTable)).rows.length, 20);
     await tester.tap(find.text('Quantity'));
@@ -297,6 +296,8 @@ void main() {
   testWidgets('cash amount validates and remains usable above keyboard',
       (tester) async {
     await _mount(tester, checkout, const Size(390, 900));
+    await tester.ensureVisible(find.byKey(const ValueKey('complete-sale')));
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.byKey(const ValueKey('complete-sale')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
