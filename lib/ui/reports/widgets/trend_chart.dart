@@ -11,13 +11,13 @@ class TrendChart extends StatelessWidget {
     required this.points,
     required this.maxValue,
     this.label = 'Revenue',
-    this.color = AppColors.primary,
+    this.color,
   });
 
   final List<TrendPoint> points;
   final double maxValue;
   final String label;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,7 @@ class TrendChart extends StatelessWidget {
             painter: _TrendPainter(
               points: points,
               maxValue: maxValue,
-              color: color,
+              color: color ?? AppColors.primary,
             ),
           ),
         ),

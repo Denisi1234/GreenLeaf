@@ -37,8 +37,8 @@ class ReceivingRow extends StatelessWidget {
     final invoicePart = receiving.invoiceNo.trim().isNotEmpty
         ? 'Inv #${receiving.invoiceNo.trim()}'
         : null;
-    final totalUnits =
-        roundQuantity(receiving.lines.fold<double>(0, (sum, line) => sum + line.quantity));
+    final totalUnits = roundQuantity(
+        receiving.lines.fold<double>(0, (sum, line) => sum + line.quantity));
     final countLabel =
         '${receiving.lines.length} ${isSwahili ? 'vitu' : 'items'} • ${formatQuantity(totalUnits)} ${isSwahili ? 'vipimo' : 'units'}';
     final dateLabel = formatReceivingDate(receiving.date);
@@ -75,7 +75,7 @@ class ReceivingRow extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppColors.surfaceSecondary,
                           border: Border.all(color: AppColors.border),
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: AppCorners.control,
                         ),
                         child: Text(
                           invoicePart,
@@ -159,8 +159,7 @@ class ReceivingEmptyState extends StatelessWidget {
           title: isFiltered
               ? t('No deliveries match your search',
                   'Hakuna rekodi inayolingana')
-              : t('No goods received yet',
-                  'Hakuna bidhaa zilizopokelewa bado'),
+              : t('No goods received yet', 'Hakuna bidhaa zilizopokelewa bado'),
           message: isFiltered
               ? t(
                   'Check the invoice number, supplier name, or product name searched.',

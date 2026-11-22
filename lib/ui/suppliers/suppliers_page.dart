@@ -164,7 +164,7 @@ class _SuppliersPageState extends State<SuppliersPage> {
             _searchController.clear();
             setState(() => _query = '');
           },
-          radius: 0,
+          radius: AppRadius.input,
           showShadow: false,
           backgroundColor: AppColors.surface,
         ),
@@ -185,60 +185,60 @@ class _SuppliersPageState extends State<SuppliersPage> {
               setState(() => _query = '');
             },
           )
-          else
-            WorkspaceRegister(
-                columns: [
-                  DataColumn(label: Text(t('Supplier', 'Msambazaji'))),
-                  DataColumn(label: Text(t('Phone', 'Simu'))),
-                  DataColumn(label: Text(t('Email', 'Barua pepe'))),
-                  DataColumn(
-                      label: Text(t('Balance payable', 'Deni')), numeric: true),
-                  const DataColumn(label: Text(''))
-                ],
-                rows: filtered
-                    .map((supplier) => DataRow(cells: [
-                          DataCell(Text(supplier.name),
-                              onTap: () => _openDetail(context, supplier)),
-                          DataCell(Text(supplier.phone)),
-                          DataCell(Text(supplier.email)),
-                          DataCell(Text(
-                              _money(store.supplierBalance(supplier.id ?? 0)))),
-                          DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
-                            IconButton(
-                                tooltip: t('Receive goods', 'Pokea bidhaa'),
-                                onPressed: () => _receiveFor(context, supplier),
-                                icon: const Icon(Icons.move_to_inbox_outlined,
-                                    size: 20)),
-                            IconButton(
-                                tooltip: t('Open supplier', 'Fungua msambazaji'),
-                                onPressed: () => _openDetail(context, supplier),
-                                icon: const Icon(Icons.chevron_right_rounded)),
-                          ])),
-                        ]))
-                    .toList(),
-                mobile: MarketSurfaceCard(
-                  radius: 0,
-                  showShadow: false,
-                  borderColor: AppColors.border,
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < filtered.length; i++) ...[
-                        SupplierRow(
-                          supplier: filtered[i],
-                          balance: store.supplierBalance(filtered[i].id ?? 0),
-                          isSwahili: sw,
-                          onTap: () => _openDetail(context, filtered[i]),
-                          onReceive: () => _receiveFor(context, filtered[i]),
-                        ),
-                        if (i != filtered.length - 1)
-                          const Divider(height: 1, color: AppColors.divider),
-                      ],
+        else
+          WorkspaceRegister(
+              columns: [
+                DataColumn(label: Text(t('Supplier', 'Msambazaji'))),
+                DataColumn(label: Text(t('Phone', 'Simu'))),
+                DataColumn(label: Text(t('Email', 'Barua pepe'))),
+                DataColumn(
+                    label: Text(t('Balance payable', 'Deni')), numeric: true),
+                const DataColumn(label: Text(''))
+              ],
+              rows: filtered
+                  .map((supplier) => DataRow(cells: [
+                        DataCell(Text(supplier.name),
+                            onTap: () => _openDetail(context, supplier)),
+                        DataCell(Text(supplier.phone)),
+                        DataCell(Text(supplier.email)),
+                        DataCell(Text(
+                            _money(store.supplierBalance(supplier.id ?? 0)))),
+                        DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
+                          IconButton(
+                              tooltip: t('Receive goods', 'Pokea bidhaa'),
+                              onPressed: () => _receiveFor(context, supplier),
+                              icon: const Icon(Icons.move_to_inbox_outlined,
+                                  size: 20)),
+                          IconButton(
+                              tooltip: t('Open supplier', 'Fungua msambazaji'),
+                              onPressed: () => _openDetail(context, supplier),
+                              icon: const Icon(Icons.chevron_right_rounded)),
+                        ])),
+                      ]))
+                  .toList(),
+              mobile: MarketSurfaceCard(
+                radius: AppRadius.input,
+                showShadow: false,
+                borderColor: AppColors.border,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (var i = 0; i < filtered.length; i++) ...[
+                      SupplierRow(
+                        supplier: filtered[i],
+                        balance: store.supplierBalance(filtered[i].id ?? 0),
+                        isSwahili: sw,
+                        onTap: () => _openDetail(context, filtered[i]),
+                        onReceive: () => _receiveFor(context, filtered[i]),
+                      ),
+                      if (i != filtered.length - 1)
+                        Divider(height: 1, color: AppColors.divider),
                     ],
-                  ),
-                )),
-        ],
-      );
+                  ],
+                ),
+              )),
+      ],
+    );
 
     if (widget.embedded) return body;
 
@@ -292,4 +292,3 @@ class _SuppliersPageState extends State<SuppliersPage> {
     return '${negative ? '-' : ''}TSh ${formatCurrency(value.abs())}';
   }
 }
-

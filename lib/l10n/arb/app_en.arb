@@ -1878,5 +1878,20 @@
   "{p0}h ago": "{p0}h ago",
   "{p0}m ago": "{p0}m ago",
   "{p0}–{p1} of {p2}": "{p0}–{p1} of {p2}",
-  "© 2026 TrackMauzo. All rights reserved.": "© 2026 TrackMauzo. All rights reserved."
+  "© 2026 TrackMauzo. All rights reserved.": "© 2026 TrackMauzo. All rights reserved.",
+  "Catalog view": "Catalog view",
+  "Detailed tiles": "Detailed tiles",
+  "Compact tiles": "Compact tiles",
+  "List view": "List view",
+  "Edit quantity": "Edit quantity",
+  "Update quantity": "Update quantity",
+  "Available: {p0}": "Available: {p0}",
+  "Enter a whole quantity greater than zero.": "Enter a whole quantity greater than zero.",
+  "Quantity exceeds available stock.": "Quantity exceeds available stock.",
+  "Remove every item from the current sale?": "Remove every item from the current sale?",
+  "Could not clear sale": "Could not clear sale",
+  "Stock changed": "Stock changed",
+  "Review the available quantity and try again.": "Review the available quantity and try again.",
+  "{p0} each": "{p0} each",
+  "Remove item": "Remove item"
 }

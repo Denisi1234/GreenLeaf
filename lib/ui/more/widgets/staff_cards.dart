@@ -146,7 +146,7 @@ class StaffTile extends StatelessWidget {
             ),
             IconButton(
               onPressed: onMenu,
-              icon: const Icon(
+              icon: Icon(
                 Icons.more_vert_rounded,
                 color: AppColors.textMuted,
               ),
@@ -176,7 +176,7 @@ class StaffAvatar extends StatelessWidget {
       child: path == null || path.isEmpty
           ? Text(
               member.initials,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.ink,
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
@@ -234,7 +234,7 @@ class StaffMiniTag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surfaceSecondary,
         borderRadius: BorderRadius.all(Radius.circular(6)),
       ),
@@ -283,7 +283,7 @@ class StaffRoleTile extends StatelessWidget {
                 color: AppColors.kpiSkyBg,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.shield_outlined,
                 color: AppColors.kpiSky,
                 size: 22,
@@ -313,7 +313,7 @@ class StaffRoleTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
               color: AppColors.textLight,
             ),

@@ -1,15 +1,18 @@
-import 'package:flutter/material.dart';
 import 'package:aza_pos/l10n/app_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_design.dart';
 
-/// Standardized, Android-ready confirmation dialog used across the entire app.
+/// Standardized, clean confirmation dialog matching Aza POS's pill-button design.
 ///
-/// Returns `true` when the user confirms, or `false` when cancelled/dismissed.
+/// Used across the entire app for destructive actions (delete item, clear cart,
+/// sign out) and standard confirmations. Returns `true` when confirmed.
 Future<bool> showMarketConfirmDialog(
   BuildContext context, {
   required String title,
   required String message,
+  String? subtitle,
   String? confirmLabel,
   String? cancelLabel,
   bool isDestructive = false,
@@ -17,89 +20,143 @@ Future<bool> showMarketConfirmDialog(
 }) async {
   final result = await showDialog<bool>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      backgroundColor: AppColors.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.modal),
-      ),
-      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-      contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-      title: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (icon != null) ...[
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isDestructive
-                    ? AppColors.dangerLight
-                    : AppColors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(AppRadius.standard),
+    barrierDismissible: true,
+    builder: (dialogContext) {
+      final accent = isDestructive ? AppColors.dangerDeep : AppColors.primary;
+      final effectiveIcon =
+          icon ?? (isDestructive ? Icons.delete_outline_rounded : null);
+
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 380),
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.rounded),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppShadows.medium,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (effectiveIcon != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1, right: 12),
+                      child: Icon(
+                        effectiveIcon,
+                        size: 24,
+                        color: accent,
+                      ),
+                    ),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: AppTypography.sectionHeader.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink,
+                            height: 1.2,
+                          ),
+                        ),
+                        if (subtitle != null && subtitle.trim().isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            subtitle.trim(),
+                            style: AppTypography.caption.copyWith(
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: isDestructive ? AppColors.danger : AppColors.ink,
+              const SizedBox(height: 12),
+              Text(
+                message,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textBody,
+                  height: 1.5,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: Text(
-              title,
-              style: AppTypography.cardHeader.copyWith(color: AppColors.ink),
-            ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: AppColors.surface,
+                          foregroundColor: AppColors.textBody,
+                          side: BorderSide(color: AppColors.border),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                        ),
+                        child: Text(
+                          cancelLabel ?? dialogContext.tr('Cancel'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(dialogContext).pop(true);
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: accent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                        ),
+                        child: Text(
+                          confirmLabel ??
+                              (isDestructive
+                                  ? dialogContext.tr('Delete')
+                                  : dialogContext.tr('Confirm')),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
-      content: Text(
-        message,
-        style: AppTypography.bodySmall.copyWith(
-          color: AppColors.textMuted,
-          height: 1.45,
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          style: TextButton.styleFrom(
-            backgroundColor: AppColors.surfaceSecondary,
-            foregroundColor: AppColors.textBody,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-          ),
-          child: Text(
-            cancelLabel ?? dialogContext.tr('Cancel'),
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          style: FilledButton.styleFrom(
-            backgroundColor:
-                isDestructive ? AppColors.danger : AppColors.primary,
-            foregroundColor: Colors.white,
-            side: BorderSide.none,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-          ),
-          child: Text(
-            confirmLabel ??
-                (isDestructive
-                    ? dialogContext.tr('Delete')
-                    : dialogContext.tr('Confirm')),
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-        ),
-      ],
-    ),
+      );
+    },
   );
   return result == true;
 }

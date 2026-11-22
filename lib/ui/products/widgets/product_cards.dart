@@ -6,7 +6,7 @@ import '../../../utils/currency_formatter.dart';
 import '../../../utils/quantity_formatter.dart';
 import '../../notifications/notifications_page.dart';
 import '../../widgets/app_design.dart';
-import '../../widgets/app_image.dart';
+import '../../widgets/common/product_thumbnail.dart';
 import '../../widgets/market_shared_widgets.dart';
 import '../inventory_product_item.dart';
 
@@ -44,8 +44,7 @@ class ProductItemRowCard extends StatelessWidget {
       packName: product.packName,
       packSize: product.packSize,
     );
-    final hasImage =
-        product.imagePath != null && product.imagePath!.trim().isNotEmpty;
+    final compact = MediaQuery.sizeOf(context).width < 360;
 
     return Container(
       decoration: BoxDecoration(
@@ -59,13 +58,13 @@ class ProductItemRowCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.standard),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+            padding: EdgeInsets.fromLTRB(8, 8, compact ? 10 : 16, 8),
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
-                    width: 88,
+                    width: compact ? 68 : 88,
                     constraints: const BoxConstraints(minHeight: 82),
                     decoration: BoxDecoration(
                       color: AppColors.pageBackground,
@@ -73,25 +72,8 @@ class ProductItemRowCard extends StatelessWidget {
                       border: Border.all(color: AppColors.border, width: 1),
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: hasImage
-                        ? Image(
-                            image: appImageProvider(context, product.imagePath!),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: FittedBox(
-                                fit: BoxFit.contain,
-                                child: ProductArt(type: product.artType),
-                              ),
-                            ),
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: FittedBox(
-                              fit: BoxFit.contain,
-                              child: ProductArt(type: product.artType),
-                            ),
-                          ),
+                    child: ProductThumbnail(
+                        name: product.name, imagePath: product.imagePath),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -100,220 +82,258 @@ class ProductItemRowCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              product.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.manrope(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textMain,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  product.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textMain,
+                                  ),
+                                ),
                               ),
-                            ),
+                              if (onTap != null ||
+                                  onAdjustStock != null ||
+                                  onDelete != null)
+                                PopupMenuButton<String>(
+                                  onSelected: (val) {
+                                    if (val == 'edit') onTap?.call();
+                                    if (val == 'adjust') onAdjustStock?.call();
+                                    if (val == 'delete') onDelete?.call();
+                                  },
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  icon: Icon(
+                                    Icons.more_horiz_rounded,
+                                    color: AppColors.textLight,
+                                    size: 20,
+                                  ),
+                                  itemBuilder: (context) => [
+                                    if (onTap != null)
+                                      PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.edit_outlined,
+                                                size: 18,
+                                                color: AppColors.primaryDeep),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              context.tr('Edit Item'),
+                                              style: GoogleFonts.manrope(
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    if (onAdjustStock != null)
+                                      PopupMenuItem(
+                                        value: 'adjust',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.tune_rounded,
+                                                size: 18,
+                                                color: AppColors.primaryDeep),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              isSwahili
+                                                  ? 'Rekebisha stoo'
+                                                  : 'Adjust stock',
+                                              style: GoogleFonts.manrope(
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    if (onDelete != null)
+                                      PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                                Icons.delete_outline_rounded,
+                                                size: 18,
+                                                color: AppColors.danger),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              context.tr('Delete'),
+                                              style: GoogleFonts.manrope(
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.danger,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                            ],
                           ),
-                          if (onTap != null ||
-                              onAdjustStock != null ||
-                              onDelete != null)
-                            PopupMenuButton<String>(
-                        onSelected: (val) {
-                          if (val == 'edit') onTap?.call();
-                          if (val == 'adjust') onAdjustStock?.call();
-                          if (val == 'delete') onDelete?.call();
-                        },
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(
-                          Icons.more_horiz_rounded,
-                          color: AppColors.textLight,
-                          size: 20,
-                        ),
-                        itemBuilder: (context) => [
-                          if (onTap != null)
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.edit_outlined,
-                                      size: 18, color: AppColors.primaryDeep),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    context.tr('Edit Item'),
-                                    style: GoogleFonts.manrope(
-                                        fontWeight: FontWeight.w600),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  product.category,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textMuted,
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                          if (onAdjustStock != null)
-                            PopupMenuItem(
-                              value: 'adjust',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.tune_rounded,
-                                      size: 18, color: AppColors.primaryDeep),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    isSwahili ? 'Rekebisha stoo' : 'Adjust stock',
-                                    style: GoogleFonts.manrope(
-                                        fontWeight: FontWeight.w600),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 4,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: AppColors.borderInput,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  context.tr('Code: {p0}',
+                                      args: {'p0': product.code}),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textLight,
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                          if (onDelete != null)
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.delete_outline_rounded,
-                                      size: 18, color: AppColors.danger),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    context.tr('Delete'),
-                                    style: GoogleFonts.manrope(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.danger,
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.tr('Selling Price'),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textLight,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 2),
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        isMeasured
+                                            ? '${formatProductPrice(product.sellingPrice)} / ${product.unit}'
+                                            : formatProductPrice(
+                                                product.sellingPrice),
+                                        maxLines: 1,
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.successDeep,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      context.tr('In Stock'),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textLight,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 7,
+                                          height: 7,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: isOutOfStock
+                                                ? AppColors.danger
+                                                : isLowStock
+                                                    ? AppColors.warning
+                                                    : AppColors.success,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Flexible(
+                                          child: Text(
+                                            isOutOfStock
+                                                ? context.tr('Out of stock')
+                                                : formatStockWithUnit(
+                                                    product.stockCount,
+                                                    product.unit),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.manrope(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: isOutOfStock
+                                                  ? AppColors.danger
+                                                  : isLowStock
+                                                      ? AppColors.kpiAmber
+                                                      : AppColors.textMain,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (packEquiv != null)
+                                      Text(
+                                        '≈ $packEquiv',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textMuted,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Text(
-                      product.category,
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textMuted,
-                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration: const BoxDecoration(
-                        color: AppColors.borderInput,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.tr('Code: {p0}', args: {'p0': product.code}),
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textLight,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.tr('Selling Price'),
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textLight,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          isMeasured
-                              ? '${formatProductPrice(product.sellingPrice)} / ${product.unit}'
-                              : formatProductPrice(product.sellingPrice),
-                          style: GoogleFonts.manrope(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.successDeep,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          context.tr('In Stock'),
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textLight,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isOutOfStock
-                                    ? AppColors.danger
-                                    : isLowStock
-                                        ? AppColors.warning
-                                        : AppColors.success,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              isOutOfStock
-                                  ? context.tr('Out of stock')
-                                  : formatStockWithUnit(
-                                      product.stockCount, product.unit),
-                              style: GoogleFonts.manrope(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: isOutOfStock
-                                    ? AppColors.danger
-                                    : isLowStock
-                                        ? AppColors.kpiAmber
-                                        : AppColors.textMain,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (packEquiv != null)
-                          Text(
-                            '≈ $packEquiv',
-                            style: GoogleFonts.manrope(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ],
-    ),
-  ),
-),
-),
-),
-);
+      ),
+    );
   }
 }
 

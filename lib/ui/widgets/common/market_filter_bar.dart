@@ -69,16 +69,19 @@ class MarketFilterBar<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasSearch = searchController != null;
     final hasOptions = options.isNotEmpty;
-    final hasExtras = extraControls.isNotEmpty || (hasActiveFilters && onReset != null);
+    final hasExtras =
+        extraControls.isNotEmpty || (hasActiveFilters && onReset != null);
 
     return Container(
       padding: padding,
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
-        border: bordered ? Border.all(color: AppColors.border) : const Border(
-          bottom: BorderSide(color: AppColors.border),
-        ),
+        borderRadius: bordered ? AppCorners.control : BorderRadius.zero,
+        border: bordered
+            ? Border.all(color: AppColors.border)
+            : Border(
+                bottom: BorderSide(color: AppColors.border),
+              ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,6 +94,7 @@ class MarketFilterBar<T> extends StatelessWidget {
                   Expanded(
                     child: MarketSearchField(
                       controller: searchController!,
+                      focusNode: searchFocusNode,
                       hintText: searchHint ?? context.tr('Search'),
                       onChanged: onSearchChanged ?? (_) {},
                       onClear: onSearchClear,
@@ -103,7 +107,8 @@ class MarketFilterBar<T> extends StatelessWidget {
               ],
             ),
           if (hasOptions) ...[
-            if (hasSearch || trailing != null) const SizedBox(height: AppSpacing.sm + 2),
+            if (hasSearch || trailing != null)
+              const SizedBox(height: AppSpacing.sm + 2),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -195,7 +200,8 @@ class _FilterChipPill<T> extends StatelessWidget {
               if (option.count != null) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
                     color: selected
                         ? activeAccent.withValues(alpha: 0.14)
@@ -242,7 +248,7 @@ class _ResetFilterButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.filter_alt_off_rounded,
                 size: 15,
                 color: AppColors.kpiDanger,

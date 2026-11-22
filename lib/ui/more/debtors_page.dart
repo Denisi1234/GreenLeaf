@@ -87,9 +87,12 @@ class _DebtorsPageState extends State<DebtorsPage> {
                       actions: [
                         if (debtors.isNotEmpty || entries.isNotEmpty)
                           IconButton(
-                            tooltip: _dual(strings, 'Clear old debts', 'Futa madeni ya zamani'),
-                            icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.dangerDeep),
-                            onPressed: () => DebtorActions.confirmClearAllDebits(
+                            tooltip: _dual(strings, 'Clear old debts',
+                                'Futa madeni ya zamani'),
+                            icon: Icon(Icons.delete_sweep_outlined,
+                                color: AppColors.dangerDeep),
+                            onPressed: () =>
+                                DebtorActions.confirmClearAllDebits(
                               context,
                               store: store,
                               strings: strings,
@@ -158,9 +161,7 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                   SizedBox(
                                     width: width,
                                     child: WorkspaceMetric(
-                                      label: _dual(
-                                          strings,
-                                          'Overdue (>30d)',
+                                      label: _dual(strings, 'Overdue (>30d)',
                                           'Imechelewa (>30d)'),
                                       value: '$criticalDebtors',
                                       icon: Icons.warning_amber_rounded,
@@ -179,7 +180,7 @@ class _DebtorsPageState extends State<DebtorsPage> {
                             controller: _searchController,
                             hintText: _dual(
                                 strings, 'Search debtors', 'Tafuta wadaiwa'),
-                            radius: 0,
+                            radius: AppRadius.input,
                             showShadow: false,
                             onChanged: (value) =>
                                 setState(() => _search = value),
@@ -238,88 +239,88 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                       numeric: true),
                                   const DataColumn(label: Text('')),
                                 ],
-                                rows: visible
-                                    .map((customer) {
-                                      final days = DebitStatementService.getAgingDays(customer, store);
-                                      return DataRow(cells: [
-                                          DataCell(Text(customer.name),
-                                              onTap: () =>
-                                                  _openCustomer(customer)),
-                                          DataCell(Text(customer.phone)),
-                                          DataCell(
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: days > 30
-                                                    ? AppColors.kpiDangerBg
-                                                    : (days > 15
-                                                        ? AppColors.kpiAmberBg
-                                                        : AppColors.kpiSkyBg),
-                                              ),
-                                              child: Text(
-                                                '$days d',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: days > 30
-                                                      ? AppColors.kpiDanger
-                                                      : (days > 15
-                                                          ? AppColors.kpiAmber
-                                                          : AppColors.kpiSky),
-                                                ),
+                                rows: visible.map((customer) {
+                                  final days =
+                                      DebitStatementService.getAgingDays(
+                                          customer, store);
+                                  return DataRow(cells: [
+                                    DataCell(Text(customer.name),
+                                        onTap: () => _openCustomer(customer)),
+                                    DataCell(Text(customer.phone)),
+                                    DataCell(
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: days > 30
+                                              ? AppColors.kpiDangerBg
+                                              : (days > 15
+                                                  ? AppColors.kpiAmberBg
+                                                  : AppColors.kpiSkyBg),
+                                        ),
+                                        child: Text(
+                                          '$days d',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: days > 30
+                                                ? AppColors.kpiDanger
+                                                : (days > 15
+                                                    ? AppColors.kpiAmber
+                                                    : AppColors.kpiSky),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(Text(_money(customer.debitBalance),
+                                        style: TextStyle(
+                                            color: AppColors.dangerDeep,
+                                            fontWeight: FontWeight.w700))),
+                                    DataCell(Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          tooltip: _dual(
+                                              strings,
+                                              'Send reminder',
+                                              'Tuma kikumbusho'),
+                                          icon: Icon(Icons.send_rounded,
+                                              size: 18,
+                                              color: AppColors.primaryDeep),
+                                          onPressed: () =>
+                                              DebtorActions.sendReminder(
+                                            context,
+                                            customer: customer,
+                                            store: store,
+                                            strings: strings,
+                                            formatMoney: (val) => _money(val),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        OutlinedButton.icon(
+                                            style: OutlinedButton.styleFrom(
+                                              backgroundColor:
+                                                  AppColors.primary,
+                                              foregroundColor: Colors.white,
+                                              side: BorderSide.none,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        AppRadius.pill),
                                               ),
                                             ),
-                                          ),
-                                          DataCell(Text(
-                                              _money(customer.debitBalance),
-                                              style: const TextStyle(
-                                                  color: AppColors.dangerDeep,
-                                                  fontWeight:
-                                                      FontWeight.w700))),
-                                          DataCell(Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              IconButton(
-                                                tooltip: _dual(strings, 'Send reminder', 'Tuma kikumbusho'),
-                                                icon: const Icon(Icons.send_rounded, size: 18, color: AppColors.primaryDeep),
-                                                onPressed: () => DebtorActions.sendReminder(
-                                                  context,
-                                                  customer: customer,
-                                                  store: store,
-                                                  strings: strings,
-                                                  formatMoney: (val) => _money(val),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              OutlinedButton.icon(
-                                                  style:
-                                                      OutlinedButton.styleFrom(
-                                                    backgroundColor:
-                                                        AppColors.primary,
-                                                    foregroundColor:
-                                                        Colors.white,
-                                                    side: BorderSide.none,
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              AppRadius.pill),
-                                                    ),
-                                                  ),
-                                                  onPressed: () =>
-                                                      _settle(customer),
-                                                  icon: const Icon(
-                                                      Icons.payments_outlined,
-                                                      size: 18),
-                                                  label: Text(_dual(
-                                                      strings,
-                                                      'Record payment',
-                                                      'Rekodi malipo'))),
-                                            ],
-                                          )),
-                                        ]);
-                                    })
-                                    .toList(),
+                                            onPressed: () => _settle(customer),
+                                            icon: const Icon(
+                                                Icons.payments_outlined,
+                                                size: 18),
+                                            label: Text(_dual(
+                                                strings,
+                                                'Record payment',
+                                                'Rekodi malipo'))),
+                                      ],
+                                    )),
+                                  ]);
+                                }).toList(),
                                 mobile: Column(children: [
                                   ...visible.map(
                                     (customer) => Padding(
@@ -331,7 +332,8 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                         strings: strings,
                                         onTap: () => _openCustomer(customer),
                                         onSettle: () => _settle(customer),
-                                        onReminder: () => DebtorActions.sendReminder(
+                                        onReminder: () =>
+                                            DebtorActions.sendReminder(
                                           context,
                                           customer: customer,
                                           store: store,
@@ -469,7 +471,7 @@ class _DebtorsPageState extends State<DebtorsPage> {
                 title:
                     Text(mode.label(strings), style: AppTypography.bodyMedium),
                 trailing: mode == _sort
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    ? Icon(Icons.check_rounded, color: AppColors.primary)
                     : null,
                 onTap: () => Navigator.of(ctx).pop(mode),
               ),
@@ -525,6 +527,3 @@ class _DebtorsPageState extends State<DebtorsPage> {
     );
   }
 }
-
-
-

@@ -188,38 +188,35 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                                   controller: _nameController,
                                   icon: Icons.person_outline_rounded,
                                   textCapitalization: TextCapitalization.words,
-                                  validator: (value) => (value == null ||
-                                          value.trim().isEmpty)
-                                      ? _dual(
-                                          strings,
-                                          'Customer name is required',
-                                          'Jina la mteja linahitajika')
-                                      : null,
+                                  validator: (value) =>
+                                      (value == null || value.trim().isEmpty)
+                                          ? _dual(
+                                              strings,
+                                              'Customer name is required',
+                                              'Jina la mteja linahitajika')
+                                          : null,
                                 ),
                                 const SizedBox(height: 14),
                                 _CustomerField(
-                                  label: _dual(strings, 'Phone number',
-                                      'Namba ya simu'),
+                                  label: _dual(
+                                      strings, 'Phone number', 'Namba ya simu'),
                                   hint: _dual(strings, 'Enter phone number',
                                       'Weka namba ya simu'),
                                   controller: _phoneController,
                                   icon: Icons.call_outlined,
                                   keyboardType: TextInputType.phone,
-                                  validator: (value) => (value == null ||
-                                          value.trim().isEmpty)
-                                      ? _dual(
-                                          strings,
-                                          'Phone number is required',
-                                          'Namba ya simu inahitajika')
-                                      : null,
+                                  validator: (value) =>
+                                      (value == null || value.trim().isEmpty)
+                                          ? _dual(
+                                              strings,
+                                              'Phone number is required',
+                                              'Namba ya simu inahitajika')
+                                          : null,
                                 ),
                                 const SizedBox(height: 14),
                                 _CustomerField(
-                                  label:
-                                      _dual(strings, 'Email', 'Barua pepe'),
-                                  hint: _dual(
-                                      strings,
-                                      'Optional email address',
+                                  label: _dual(strings, 'Email', 'Barua pepe'),
+                                  hint: _dual(strings, 'Optional email address',
                                       'Barua pepe (si lazima)'),
                                   controller: _emailController,
                                   icon: Icons.alternate_email_rounded,
@@ -278,7 +275,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.surface,
                     border: Border(
                         top: BorderSide(color: AppColors.border, width: 1)),
@@ -292,7 +289,7 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                           color: AppColors.kpiDangerBg,
                           foregroundColor: AppColors.kpiDanger,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           onTap: _isSaving
                               ? null
                               : () => Navigator.of(context).pop(),
@@ -309,8 +306,8 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                               : _isEdit
                                   ? _dual(strings, 'Save changes',
                                       'Hifadhi mabadiliko')
-                                  : _dual(strings, 'Create customer',
-                                      'Unda mteja'),
+                                  : _dual(
+                                      strings, 'Create customer', 'Unda mteja'),
                           onTap: _isSaving ? null : _saveCustomer,
                         ),
                       ),
@@ -343,7 +340,7 @@ class _TagChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : AppColors.pageBackground,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppCorners.control,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -379,7 +376,7 @@ class _SaveButton extends StatelessWidget {
         icon: Icons.check_rounded,
         color: AppColors.primary,
         borderColor: null,
-        radius: 0,
+        radius: AppRadius.input,
         height: 48,
       );
 }
@@ -430,24 +427,24 @@ class _CustomerField extends StatelessWidget {
               horizontal: 14,
               vertical: 14,
             ),
-            border: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+            border: OutlineInputBorder(
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.border),
             ),
-            enabledBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.border),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.danger, width: 1.5),
             ),
             focusedErrorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.danger, width: 1.5),
             ),
           ),

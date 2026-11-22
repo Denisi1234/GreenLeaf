@@ -88,7 +88,7 @@ class PhotoUploadTile extends StatelessWidget {
         ),
         child: Column(
           children: [
-            const Icon(
+            Icon(
               Icons.add_a_photo_outlined,
               color: AppColors.primaryDeep,
               size: 24,
@@ -150,7 +150,7 @@ class ExpiryTrackingCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.event_busy_rounded,
                 size: 20,
                 color: AppColors.textMuted,
@@ -187,7 +187,7 @@ class ExpiryTrackingCard extends StatelessWidget {
           ),
           if (trackExpiry) ...[
             const SizedBox(height: 10),
-            const Divider(height: 1, color: AppColors.borderLight),
+            Divider(height: 1, color: AppColors.borderLight),
             const SizedBox(height: 10),
             Row(
               children: [

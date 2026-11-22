@@ -247,7 +247,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
               backgroundColor: AppColors.surfaceSecondary,
               foregroundColor: AppColors.textBody,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
+                borderRadius: BorderRadius.circular(AppRadius.button),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
@@ -267,7 +267,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
               elevation: 0,
               side: BorderSide.none,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
+                borderRadius: BorderRadius.circular(AppRadius.button),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             ),
@@ -338,9 +338,9 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
         backgroundColor: AppColors.pageBackground,
         floatingActionButton: Material(
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
+          borderRadius: BorderRadius.circular(AppRadius.button),
           child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
+            borderRadius: BorderRadius.circular(AppRadius.button),
             splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
             highlightColor: Colors.transparent,
             onTap: () => _openAddStaff(store),
@@ -389,7 +389,7 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
                         onCreateRole: () => _createRole(store),
                         onOpenRole: _openRole,
                       ),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.admin_panel_settings_outlined,
                         color: AppColors.ink,
                       ),

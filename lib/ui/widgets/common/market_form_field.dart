@@ -25,8 +25,8 @@ class MarketFormField extends StatelessWidget {
     this.suffixIcon,
     this.readOnly = false,
     this.onTap,
-    this.radius = 0,
-    this.fillColor = AppColors.surface,
+    this.radius = AppRadius.input,
+    this.fillColor,
     this.enabled = true,
   });
 
@@ -48,7 +48,7 @@ class MarketFormField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final double radius;
-  final Color fillColor;
+  final Color? fillColor;
   final bool enabled;
 
   @override
@@ -61,23 +61,30 @@ class MarketFormField extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              RichText(
-                text: TextSpan(
+              Expanded(
+                  child: Text.rich(
+                TextSpan(
                   text: label!,
-                  style: AppTypography.label,
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textBody,
+                  ),
                   children: [
                     if (isRequired)
-                      const TextSpan(
+                      TextSpan(
                         text: ' *',
                         style: TextStyle(
-                          color: AppColors.danger,
+                          color: AppColors.dangerDeep,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                   ],
                 ),
-              ),
-              if (labelAction != null) labelAction!,
+              )),
+              if (labelAction != null) ...[
+                const SizedBox(width: 8),
+                Flexible(child: labelAction!),
+              ],
             ],
           ),
           const SizedBox(height: 6),
@@ -99,6 +106,7 @@ class MarketFormField extends StatelessWidget {
             color: enabled ? AppColors.textMain : AppColors.textMuted,
           ),
           decoration: InputDecoration(
+            errorMaxLines: 3,
             hintText: hintText,
             hintStyle: AppTypography.bodyMain.copyWith(
               color: AppColors.textLight,
@@ -110,7 +118,8 @@ class MarketFormField extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
             filled: true,
-            fillColor: enabled ? fillColor : AppColors.surfaceSecondary,
+            fillColor:
+                enabled ? (fillColor ?? AppColors.surface) : AppColors.surfaceSecondary,
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -126,15 +135,16 @@ class MarketFormField extends StatelessWidget {
                 : const BoxConstraints(minWidth: 0, minHeight: 0),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(radius),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(radius),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(radius),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide:
+                  BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(radius),
@@ -167,8 +177,8 @@ class MarketDropdownField<T> extends StatelessWidget {
     required this.onChanged,
     this.hintText,
     this.prefixIcon,
-    this.radius = 0,
-    this.fillColor = AppColors.surface,
+    this.radius = AppRadius.input,
+    this.fillColor,
   });
 
   final String? label;
@@ -180,7 +190,7 @@ class MarketDropdownField<T> extends StatelessWidget {
   final String? hintText;
   final Widget? prefixIcon;
   final double radius;
-  final Color fillColor;
+  final Color? fillColor;
 
   @override
   Widget build(BuildContext context) {
@@ -192,10 +202,14 @@ class MarketDropdownField<T> extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              RichText(
-                text: TextSpan(
+              Expanded(
+                  child: Text.rich(
+                TextSpan(
                   text: label!,
-                  style: AppTypography.label,
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textBody,
+                  ),
                   children: [
                     if (isRequired)
                       const TextSpan(
@@ -207,7 +221,8 @@ class MarketDropdownField<T> extends StatelessWidget {
                       ),
                   ],
                 ),
-              ),
+              )),
+              if (labelAction != null) const SizedBox(width: 8),
               if (labelAction != null) labelAction!,
             ],
           ),
@@ -215,7 +230,7 @@ class MarketDropdownField<T> extends StatelessWidget {
         ],
         Container(
           decoration: BoxDecoration(
-            color: fillColor,
+            color: fillColor ?? AppColors.surface,
             borderRadius: BorderRadius.circular(radius),
             border: Border.all(color: AppColors.border),
           ),
@@ -226,7 +241,7 @@ class MarketDropdownField<T> extends StatelessWidget {
               isExpanded: true,
               dropdownColor: AppColors.surface,
               borderRadius: BorderRadius.circular(radius),
-              icon: const Icon(
+              icon: Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: AppColors.textMuted,
                 size: 22,

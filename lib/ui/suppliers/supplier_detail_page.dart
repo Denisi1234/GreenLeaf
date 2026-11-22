@@ -163,7 +163,7 @@ class SupplierDetailPage extends StatelessWidget {
                                     : s.address.trim()),
                             if (s.notes.trim().isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              const Divider(
+                              Divider(
                                   height: 1, color: AppColors.divider),
                               const SizedBox(height: 8),
                               Text(t('Notes', 'Maelezo'),
@@ -236,7 +236,7 @@ class SupplierDetailPage extends StatelessWidget {
                                 _HistoryRow(
                                     receiving: history[i], isSwahili: sw),
                                 if (i != history.length - 1)
-                                  const Divider(
+                                  Divider(
                                       height: 1, color: AppColors.divider),
                               ],
                             ],

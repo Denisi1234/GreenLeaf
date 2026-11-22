@@ -6,6 +6,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'support/ui_test_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:aza_pos/service/pos_local_store.dart';
@@ -22,6 +24,7 @@ import 'package:aza_pos/ui/payment/payment_page.dart';
 import 'package:aza_pos/ui/products/inventory_product_item.dart';
 import 'package:aza_pos/ui/products/product_management_page.dart';
 import 'package:aza_pos/ui/widgets/app_theme.dart';
+import 'package:aza_pos/ui/shell/app_shell.dart';
 
 class _ReviewStore extends PosLocalStore {
   int logoutCalls = 0;
@@ -51,7 +54,37 @@ class _ReviewStore extends PosLocalStore {
   @override
   List<ProductItem> get cartItems => List.unmodifiable(_cart);
   @override
-  int get cartCount => _cart.length;
+  int get cartCount =>
+      _cart.fold<double>(0, (sum, item) => sum + item.quantity).round();
+  @override
+  double cartQuantityForProduct(ProductItem product) => _cart
+      .where((item) => productKey(item) == productKey(product))
+      .fold<double>(0, (sum, item) => sum + item.quantity);
+  @override
+  bool setCartItemQuantity(ProductItem product, double quantity,
+      {double? customPrice, double? matchCustomPrice}) {
+    final matchPrice = matchCustomPrice ?? product.customPrice;
+    final otherQuantity = _cart
+        .where((item) =>
+            productKey(item) == productKey(product) &&
+            item.customPrice != matchPrice)
+        .fold<double>(0, (sum, item) => sum + item.quantity);
+    if (!quantity.isFinite ||
+        quantity < 0 ||
+        quantity + otherQuantity > availableStockForProduct(product))
+      return false;
+    _cart.removeWhere((item) =>
+        productKey(item) == productKey(product) &&
+        item.customPrice == matchPrice);
+    if (quantity > 0)
+      _cart.add(product.copyWith(
+          quantity: quantity,
+          customPrice: customPrice,
+          clearCustomPrice: customPrice == null));
+    notifyListeners();
+    return true;
+  }
+
   @override
   double get cartTotal =>
       _cart.fold(0, (total, item) => total + item.lineTotal);
@@ -108,6 +141,8 @@ class _ReviewStore extends PosLocalStore {
   @override
   Future<void> clearCart() async {
     clears++;
+    _cart.clear();
+    notifyListeners();
   }
 
   @override
@@ -151,7 +186,12 @@ class _ReviewStore extends PosLocalStore {
 
 const _captureKey = ValueKey('review-capture');
 
-Future<_ReviewStore> _mount(WidgetTester tester, Widget page, Size size) async {
+Future<_ReviewStore> _mount(WidgetTester tester, Widget page, Size size,
+    {bool reduceMotion = false}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   final handler = FlutterError.onError;
@@ -166,6 +206,10 @@ Future<_ReviewStore> _mount(WidgetTester tester, Widget page, Size size) async {
     value: store,
     child: MaterialApp(
       theme: buildOsposTheme(ThemeData.light().textTheme),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
+        child: child!,
+      ),
       home: RepaintBoundary(key: _captureKey, child: page),
     ),
   ));
@@ -175,6 +219,8 @@ Future<_ReviewStore> _mount(WidgetTester tester, Widget page, Size size) async {
 
 Future<void> _capture(WidgetTester tester, String name) async {
   if (!const bool.fromEnvironment('UI_REVIEW')) return;
+  await tester.runAsync(() => GoogleFonts.pendingFonts());
+  await tester.pumpAndSettle();
   await tester.runAsync(() async {
     final boundary =
         tester.renderObject<RenderRepaintBoundary>(find.byKey(_captureKey));
@@ -189,9 +235,31 @@ Future<void> _capture(WidgetTester tester, String name) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(configureUiTestFonts);
+  setUpAll(() async {
+    await initializeDateFormatting();
+    await configureUiTestFonts();
+  });
 
-  for (final width in [390.0, 768.0, 1440.0]) {
+  testWidgets('tablet shell keeps navigation and cart visible', (tester) async {
+    await _mount(tester, const AppShell(), const Size(1024, 900));
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.text('Current sale'), findsOneWidget);
+    await _capture(tester, 'shell-tablet');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reduced motion switches workspaces without a slide animation',
+      (tester) async {
+    await _mount(tester, const AppShell(), const Size(1024, 900),
+        reduceMotion: true);
+    await tester.tap(find.byIcon(Icons.grid_view_outlined));
+    await tester.pump();
+    expect(find.byType(MorePage), findsOneWidget);
+    expect(find.byType(SalesPage), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final width in [320.0, 390.0, 768.0, 1024.0, 1440.0]) {
     for (final entry in <String, Widget>{
       'sales': const SalesPage(useSharedShell: true),
       'inventory': const ProductManagementPage(useSharedShell: true),
@@ -209,6 +277,94 @@ void main() {
       });
     }
   }
+
+  for (final width in [320.0, 1024.0, 1440.0]) {
+    testWidgets(
+        'catalog views keep search, stock and cart at ${width.toInt()}px',
+        (tester) async {
+      final store = await _mount(
+          tester, const SalesPage(useSharedShell: true), Size(width, 900));
+      await tester.tap(find.byTooltip('Catalog view'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Compact tiles'));
+      await tester.pumpAndSettle();
+      expect(
+          tester
+              .widgetList<ProductCard>(find.byType(ProductCard))
+              .every((card) => card.layout == ProductCardLayout.compact),
+          isTrue);
+      await _capture(tester, 'catalog-compact-${width.toInt()}');
+      await tester.enterText(find.byType(TextField), 'Product 01');
+      await tester.pumpAndSettle();
+      expect(find.byType(ProductCard), findsOneWidget);
+      await tester.tap(find.byType(ProductCard));
+      await tester.pumpAndSettle();
+      expect(store.cartCount, 1);
+      await tester.tap(find.byTooltip('Catalog view'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('List view'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<ProductCard>(find.byType(ProductCard)).layout,
+          ProductCardLayout.list);
+      expect(find.byType(ProductCard), findsOneWidget);
+      await tester.tap(find.byType(ProductCard));
+      await tester.pumpAndSettle();
+      expect(store.cartCount, 2);
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pumpAndSettle();
+      final water = find.ancestor(
+          of: find.text('Mineral Water').first,
+          matching: find.byType(ProductCard));
+      await tester.tap(water);
+      await tester.pumpAndSettle();
+      expect(store.cartCount, 2,
+          reason: 'Out-of-stock items remain disabled in list view');
+      await _capture(tester, 'catalog-list-${width.toInt()}');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
+  testWidgets(
+      'register edits quantities, removes only one price group and confirms clear',
+      (tester) async {
+    final store = await _mount(
+        tester, const SalesPage(useSharedShell: true), const Size(1024, 900));
+    final product = store.products[1];
+    store.addToCartQuantity(product, 1, customPrice: 1200);
+    store.addToCartQuantity(product, 1, customPrice: 1300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit quantity').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(store.cartCount, 2);
+    await tester.tap(find.byTooltip('Edit quantity').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Quantity'), '2');
+    await tester.tap(find.text('Update quantity'));
+    await tester.pumpAndSettle();
+    expect(store.cartCount, 3);
+    expect(store.cartTotal, 3700);
+    await _capture(tester, 'register-cart-edited');
+    await tester.tap(find.byTooltip('Remove item').first);
+    await tester.pumpAndSettle();
+    expect(store.cartCount, 1);
+    expect(store.cartTotal, 1300);
+    await tester.tap(find.byTooltip('Clear sale'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keep sale'));
+    await tester.pumpAndSettle();
+    expect(store.cartCount, 1);
+    await tester.tap(find.byTooltip('Clear sale'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Clear sale'));
+    await tester.pumpAndSettle();
+    expect(store.cartCount, 0);
+    expect(store.clears, 1);
+    expect(find.text('Your cart is empty'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('inventory filters, clears, sorts and pages real rows',
       (tester) async {

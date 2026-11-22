@@ -118,14 +118,14 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                       Navigator.of(pageCtx).pop(DateTime(1970, 1, 1)),
                   child: Text(
                     context.tr('Clear'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.dangerDeep,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
             ],
-            bottom: const PreferredSize(
+            bottom: PreferredSize(
               preferredSize: Size.fromHeight(1),
               child: Divider(height: 1, color: AppColors.divider),
             ),
@@ -165,7 +165,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     ),
                   ),
                 ),
-                const Divider(height: 1, color: AppColors.divider),
+                Divider(height: 1, color: AppColors.divider),
                 Expanded(
                   child: Material(
                     color: AppColors.surface,
@@ -303,7 +303,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               foregroundColor: AppColors.ink,
               elevation: 0,
               scrolledUnderElevation: 0,
-              bottom: const PreferredSize(
+              bottom: PreferredSize(
                 preferredSize: Size.fromHeight(1),
                 child: Divider(height: 1, color: AppColors.divider),
               ),
@@ -329,7 +329,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         'Search by ID, cashier, customer or payment...',
                       ),
                       hintStyle: AppTypography.label,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.search_rounded,
                         size: 18,
                         color: AppColors.textMuted,
@@ -347,7 +347,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                             ),
                           IconButton(
                             tooltip: context.tr('Scan receipt barcode'),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.qr_code_scanner_rounded,
                               size: 19,
                               color: AppColors.ink,
@@ -364,16 +364,16 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         vertical: 11,
                       ),
                       border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: AppCorners.control,
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: AppCorners.control,
                         borderSide: BorderSide.none,
                       ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.zero,
-                        borderSide: BorderSide(color: AppColors.ink, width: 1),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppCorners.control,
+                        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                       ),
                     ),
                   ),
@@ -406,7 +406,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ],
               ),
             ),
-            const Divider(height: 1, color: AppColors.divider),
+            Divider(height: 1, color: AppColors.divider),
             // Sharp ERP KPI summary strip
             Row(
               children: [
@@ -505,7 +505,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ),
               ],
             ),
-            const Divider(height: 1, color: AppColors.divider),
+            Divider(height: 1, color: AppColors.divider),
             Expanded(
               child: filteredOrders.isEmpty
                   ? Center(
@@ -514,7 +514,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.receipt_long_outlined,
                               color: AppColors.textMuted,
                               size: 36,
@@ -569,9 +569,11 @@ class _SharpFilterCard extends StatelessWidget {
     final fg = active ? AppColors.kpiSky : AppColors.ink;
     return Material(
       color: bg,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        borderRadius: AppCorners.control,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           child: Row(

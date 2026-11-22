@@ -2,6 +2,7 @@ import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../app_design.dart';
+import '../app_theme_palette.dart';
 
 class MarketPageHeader extends StatelessWidget {
   const MarketPageHeader({
@@ -53,22 +54,30 @@ class MarketPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemePalette.of(context);
     final hasGradient = isGradient;
     final hasBackground = !transparent && !hasGradient;
-    final effectiveColor = hasGradient ? Colors.white : AppColors.ink;
+    final effectiveColor = hasGradient ? Colors.white : palette.ink;
     final hasBorder = showBorder && !transparent && !hasGradient;
 
+    final compact = MediaQuery.sizeOf(context).width < 360;
+    final horizontalPad = compact ? 10.0 : AppSpacing.pagePadding;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.pagePadding, AppSpacing.md,
-          AppSpacing.pagePadding, AppSpacing.lg),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPad,
+        AppSpacing.md,
+        horizontalPad,
+        compact ? AppSpacing.md : AppSpacing.lg,
+      ),
       decoration: BoxDecoration(
-        color: hasBackground ? AppColors.headerSurface : null,
+        color: hasBackground ? palette.headerSurface : null,
         gradient: hasGradient
             ? LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: gradientColors ??
-                    const [AppColors.primary, AppColors.primaryDeep],
+                    [palette.primary, palette.primaryDeep],
               )
             : null,
         borderRadius: hasGradient
@@ -76,7 +85,7 @@ class MarketPageHeader extends StatelessWidget {
                 bottom: Radius.circular(AppRadius.extraRounded))
             : null,
         border: hasBorder
-            ? const Border(bottom: BorderSide(color: AppColors.divider))
+            ? Border(bottom: BorderSide(color: palette.divider))
             : null,
         boxShadow: showShadow ? AppShadows.soft : null,
       ),

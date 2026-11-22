@@ -64,7 +64,7 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
         if (snapshot.connectionState != ConnectionState.done) {
           return MaterialApp(
             locale: Locale(widget.store.languageCode),
-            supportedLocales: const [Locale('sw'), Locale('en')],
+            supportedLocales: const [Locale('en'), Locale('sw')],
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
             debugShowCheckedModeBanner: false,
             home: const _BootstrapScreen(),
@@ -74,7 +74,7 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
         if (snapshot.hasError) {
           return MaterialApp(
             locale: Locale(widget.store.languageCode),
-            supportedLocales: const [Locale('sw'), Locale('en')],
+            supportedLocales: const [Locale('en'), Locale('sw')],
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
             debugShowCheckedModeBanner: false,
             home: _BootstrapErrorScreen(
@@ -109,7 +109,7 @@ class _BootstrapScreen extends StatelessWidget {
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Aza POS',
               style: TextStyle(
                 color: AppColors.ink,
@@ -119,7 +119,7 @@ class _BootstrapScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'POINT OF SALE',
               style: TextStyle(
                 color: AppColors.textMuted,
@@ -129,7 +129,7 @@ class _BootstrapScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 28),
-            const SizedBox(
+            SizedBox(
               width: 24,
               height: 24,
               child: CircularProgressIndicator(
@@ -185,7 +185,7 @@ class _BootstrapErrorScreen extends StatelessWidget {
                         ? 'Aza POS haikuweza kuanza'
                         : 'Aza POS could not start',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.ink,
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -198,7 +198,7 @@ class _BootstrapErrorScreen extends StatelessWidget {
                             ? 'Hitilafu isiyojulikana wakati wa kuanza'
                             : 'Unknown error during startup'),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 13,
                       height: 1.4,

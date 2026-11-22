@@ -76,8 +76,11 @@ class CustomerContactActions extends StatelessWidget {
             label: customerDual(strings, 'SMS', 'Ujumbe'),
             enabled: hasPhone,
             onTap: hasPhone
-                ? () => _open(context, 'sms:$phone',
-                    customerDual(strings, 'SMS app unavailable', 'Ujumbe haupatikani'))
+                ? () => _open(
+                    context,
+                    'sms:$phone',
+                    customerDual(
+                        strings, 'SMS app unavailable', 'Ujumbe haupatikani'))
                 : null,
           ),
         ),
@@ -124,9 +127,9 @@ class CustomerActionTile extends StatelessWidget {
     final bg = enabled ? AppColors.kpiSkyBg : AppColors.surface;
     return Material(
       color: bg,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: InkWell(
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         highlightColor: Colors.transparent,
         onTap: onTap,
         child: SizedBox(
@@ -357,7 +360,7 @@ class CustomerOrdersSection extends StatelessWidget {
             showShadow: true,
             child: Column(
               children: [
-                const Icon(Icons.receipt_long_outlined,
+                Icon(Icons.receipt_long_outlined,
                     color: AppColors.textLight, size: 32),
                 const SizedBox(height: 8),
                 Text(
@@ -424,7 +427,7 @@ class CustomerOrderTile extends StatelessWidget {
               color: AppColors.kpiSkyBg,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.receipt_rounded,
+            child: Icon(Icons.receipt_rounded,
                 color: AppColors.kpiSky, size: 16),
           ),
           const SizedBox(width: 10),

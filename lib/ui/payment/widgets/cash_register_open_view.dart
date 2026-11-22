@@ -102,16 +102,16 @@ class CashRegisterOpenView extends StatelessWidget {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surfaceSecondary,
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppCorners.control,
               ),
               child: Icon(icon, size: 20, color: AppColors.ink),
             ),
@@ -125,7 +125,7 @@ class CashRegisterOpenView extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
+            Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
           ],
         ),
       ),
@@ -168,9 +168,9 @@ class CashRegisterOpenView extends StatelessWidget {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.successLight,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: AppCorners.control,
                     ),
                     child: Text(
                       _t('Open', 'Wazi'),
@@ -193,7 +193,7 @@ class CashRegisterOpenView extends StatelessWidget {
               _line(_t('Cash sales', 'Mauzo ya taslimu'), summary.cashSales),
               _line(_t('Cash in', 'Pesa kuingia'), summary.cashIn),
               _line(_t('Payouts & drops', 'Malipo na amana'), -summary.cashOut),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
                 child: Divider(height: 1, color: AppColors.divider),
               ),
@@ -244,14 +244,14 @@ class CashRegisterOpenView extends StatelessWidget {
                 subtitle: _t('Add cash to the drawer', 'Ongeza pesa kazini'),
                 onTap: () => onOpenMovementPage(store, CashMovementType.cashIn),
               ),
-              const Divider(height: 1, color: AppColors.divider),
+              Divider(height: 1, color: AppColors.divider),
               _actionTile(
                 icon: Icons.remove_circle_outline_rounded,
                 title: _t('Payout', 'Malipo'),
                 subtitle: _t('Cash paid out from drawer', 'Pesa iliyotolewa kazini'),
                 onTap: () => onOpenMovementPage(store, CashMovementType.payout),
               ),
-              const Divider(height: 1, color: AppColors.divider),
+              Divider(height: 1, color: AppColors.divider),
               _actionTile(
                 icon: Icons.savings_outlined,
                 title: _t('Safe drop / bank deposit', 'Amana salama / benki'),
@@ -266,7 +266,7 @@ class CashRegisterOpenView extends StatelessWidget {
           label: _t('Close register & cash up', 'Funga kasha na hesabu'),
           icon: Icons.lock_outline_rounded,
           color: AppColors.primary,
-          radius: 0,
+          radius: AppRadius.button,
           onTap: () => onOpenClosePage(store, shift),
         ),
         const SizedBox(height: 20),
@@ -297,7 +297,7 @@ class CashRegisterOpenView extends StatelessWidget {
                         onDelete: () => onDeleteMovement(store, shift.movements.reversed.toList()[i]),
                       ),
                       if (i != shift.movements.length - 1)
-                        const Divider(height: 1, color: AppColors.divider),
+                        Divider(height: 1, color: AppColors.divider),
                     ],
                   ],
                 ),

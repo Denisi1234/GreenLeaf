@@ -14,9 +14,9 @@ import '../models/report_models.dart';
 import '../pos_report_data.dart';
 
 class ReportDataService {
-  static const Color _blue = AppColors.primary;
-  static const Color _bg = AppColors.pageBackground;
-  static const Color _ink = AppColors.ink;
+  static Color get _blue => AppColors.primary;
+  static Color get _bg => AppColors.pageBackground;
+  static Color get _ink => AppColors.ink;
 
   static ReportSnapshot buildReportSnapshot({
     required PosLocalStore store,
@@ -301,7 +301,7 @@ class ReportDataService {
     required ReportPeriod period,
   }) {
     final revenue = _metricByTitle(report.metrics, 'Total Revenue') ??
-        const MetricData(
+        MetricData(
           title: 'Total Revenue',
           value: '0',
           icon: Icons.payments_outlined,
@@ -313,7 +313,7 @@ class ReportDataService {
           deltaIsPositive: null,
         );
     final orders = _metricByTitle(report.metrics, 'Total Orders') ??
-        const MetricData(
+        MetricData(
           title: 'Total Orders',
           value: '0',
           icon: Icons.shopping_bag_outlined,
@@ -325,7 +325,7 @@ class ReportDataService {
           deltaIsPositive: null,
         );
     final customers = _metricByTitle(report.metrics, 'New Customers') ??
-        const MetricData(
+        MetricData(
           title: 'New Customers',
           value: '0',
           icon: Icons.people_alt_outlined,
@@ -819,23 +819,23 @@ class ReportDataService {
   static List<Color> _colorsForLine(OrderLine line) {
     switch (line.artType) {
       case ProductArtType.aquafina:
-        return const [AppColors.primary, AppColors.primarySoft];
+        return [AppColors.primary, AppColors.primarySoft];
       case ProductArtType.coke:
-        return const [AppColors.danger, AppColors.dangerLight];
+        return [AppColors.danger, AppColors.dangerLight];
       case ProductArtType.lays:
-        return const [AppColors.ink, AppColors.textLight];
+        return [AppColors.ink, AppColors.textLight];
       case ProductArtType.galaxy:
-        return const [AppColors.primaryBright, AppColors.primarySoft];
+        return [AppColors.primaryBright, AppColors.primarySoft];
       case ProductArtType.kelloggs:
-        return const [AppColors.ink, AppColors.textLight];
+        return [AppColors.ink, AppColors.textLight];
       case ProductArtType.dove:
-        return const [AppColors.ink, AppColors.ink];
+        return [AppColors.ink, AppColors.ink];
       case ProductArtType.colgate:
-        return const [AppColors.textBody, AppColors.border];
+        return [AppColors.textBody, AppColors.border];
       case ProductArtType.dettol:
-        return const [AppColors.ink, AppColors.ink];
+        return [AppColors.ink, AppColors.ink];
       case ProductArtType.tide:
-        return const [AppColors.ink, AppColors.textLight];
+        return [AppColors.ink, AppColors.textLight];
     }
   }
 

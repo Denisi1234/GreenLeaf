@@ -162,7 +162,7 @@ class _CanArt extends StatelessWidget {
       width: 68,
       height: 112,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [
@@ -248,7 +248,7 @@ class _ChipsBagArt extends StatelessWidget {
       width: 74,
       height: 108,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [AppColors.primarySoft, AppColors.primary],
@@ -341,7 +341,7 @@ class _ChocolateArt extends StatelessWidget {
               child: Container(
                 width: 42,
                 height: 18,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [AppColors.ink, AppColors.primary],
                   ),
@@ -379,7 +379,7 @@ class _CerealBoxArt extends StatelessWidget {
             left: 10,
             child: Text(
               context.tr('Kellogg\'s'),
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.primaryDeep,
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
@@ -414,7 +414,7 @@ class _CerealBoxArt extends StatelessWidget {
               child:  Center(
                 child: Text(
                   context.tr('flakes'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.primaryDeep,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -451,7 +451,7 @@ class _SoapBoxArt extends StatelessWidget {
             left: 12,
             child: Text(
               context.tr('Dove'),
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.ink,
                 fontSize: 14,
                 fontStyle: FontStyle.italic,
@@ -459,7 +459,7 @@ class _SoapBoxArt extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             bottom: 10,
             left: 12,
             right: 12,
@@ -480,7 +480,7 @@ class _ToothpasteArt extends StatelessWidget {
       width: 96,
       height: 34,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [AppColors.primaryDeep, AppColors.primary],
         ),
         borderRadius: BorderRadius.circular(AppRadius.sharp),
@@ -580,7 +580,7 @@ class _DetergentBagArt extends StatelessWidget {
       width: 74,
       height: 108,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [AppColors.primaryBright, AppColors.primaryDeep],
@@ -591,14 +591,14 @@ class _DetergentBagArt extends StatelessWidget {
         child: Container(
           width: 44,
           height: 44,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
           ),
           child:  Center(
             child: Text(
               context.tr('Tide'),
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.primaryDeep,
                 fontSize: 12,
                 fontStyle: FontStyle.italic,

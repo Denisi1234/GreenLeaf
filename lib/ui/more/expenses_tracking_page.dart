@@ -104,7 +104,7 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                         onPressed: filtered.isEmpty || _exporting
                             ? null
                             : () => _showExportMenu(filtered),
-                        icon: const Icon(Icons.ios_share_rounded,
+                        icon: Icon(Icons.ios_share_rounded,
                             color: AppColors.ink),
                       ),
                     ],
@@ -139,7 +139,7 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                           controller: _searchController,
                           hintText: expenseDual(
                               strings, 'Search expenses', 'Tafuta matumizi'),
-                          radius: 0,
+                          radius: AppRadius.input,
                           showShadow: false,
                           onChanged: (v) => setState(() => _search = v),
                           onClear: () {
@@ -152,8 +152,7 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                           payments: payments,
                           value: _paymentFilter,
                           strings: strings,
-                          onChanged: (v) =>
-                              setState(() => _paymentFilter = v),
+                          onChanged: (v) => setState(() => _paymentFilter = v),
                         ),
                         if (paymentSummary.isNotEmpty) ...[
                           const SizedBox(height: 12),
@@ -177,7 +176,9 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                         if (filtered.isEmpty)
                           ExpenseEmptyState(
                             strings: strings,
-                            isFiltered: _search.isNotEmpty || _paymentFilter != 'All' || inRange.length != all.length,
+                            isFiltered: _search.isNotEmpty ||
+                                _paymentFilter != 'All' ||
+                                inRange.length != all.length,
                             onAdd: _openAddExpense,
                             onClearFilter: () {
                               _searchController.clear();
@@ -268,9 +269,10 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
             Container(
                 width: 40,
                 height: 4,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                     color: AppColors.border,
-                  borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)))),
+                    borderRadius:
+                        BorderRadius.all(Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Sort by', 'Panga kwa'),
                 style: AppTypography.cardHeader),
@@ -281,7 +283,7 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                 title:
                     Text(mode.label(strings), style: AppTypography.bodyMedium),
                 trailing: mode == _sort
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    ? Icon(Icons.check_rounded, color: AppColors.primary)
                     : null,
                 onTap: () => Navigator.of(ctx).pop(mode),
               ),
@@ -312,15 +314,16 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
             Container(
                 width: 40,
                 height: 4,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                     color: AppColors.border,
-                  borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)))),
+                    borderRadius:
+                        BorderRadius.all(Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Export expenses', 'Hamisha matumizi'),
                 style: AppTypography.cardHeader),
             const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.table_view_rounded,
+              leading: Icon(Icons.table_view_rounded,
                   color: AppColors.primary, size: 20),
               title: Text(
                   expenseDual(strings, 'Export as CSV', 'Hamisha kama CSV'),
@@ -328,7 +331,7 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
               onTap: () => Navigator.of(ctx).pop('csv'),
             ),
             ListTile(
-              leading: const Icon(Icons.picture_as_pdf_rounded,
+              leading: Icon(Icons.picture_as_pdf_rounded,
                   color: AppColors.ink, size: 20),
               title: Text(
                   expenseDual(strings, 'Export as PDF', 'Hamisha kama PDF'),
@@ -355,15 +358,17 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
           expenses: currentItems,
           strings: strings,
           pdfContext: ReportPdfContext.fromStore(context.read<PosLocalStore>(),
-            languageCode: strings.languageCode,
-            period: _range == ExpenseRange.custom && _customRange != null
-                ? '${DateFormat('yyyy-MM-dd').format(_customRange!.start)} - ${DateFormat('yyyy-MM-dd').format(_customRange!.end)}'
-                : _range.label(strings),
-            filterSummary: [
-              if (_search.trim().isNotEmpty) '${strings.text('Search')}: ${_search.trim()}',
-              if (_paymentFilter != 'All') strings.paymentMethod(_paymentFilter),
-              '${strings.text('Sort')}: ${_sort.label(strings)}',
-            ].join(' | ')),
+              languageCode: strings.languageCode,
+              period: _range == ExpenseRange.custom && _customRange != null
+                  ? '${DateFormat('yyyy-MM-dd').format(_customRange!.start)} - ${DateFormat('yyyy-MM-dd').format(_customRange!.end)}'
+                  : _range.label(strings),
+              filterSummary: [
+                if (_search.trim().isNotEmpty)
+                  '${strings.text('Search')}: ${_search.trim()}',
+                if (_paymentFilter != 'All')
+                  strings.paymentMethod(_paymentFilter),
+                '${strings.text('Sort')}: ${_sort.label(strings)}',
+              ].join(' | ')),
         );
       }
     } finally {
@@ -435,9 +440,10 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
             Container(
                 width: 40,
                 height: 4,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                     color: AppColors.border,
-                  borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)))),
+                    borderRadius:
+                        BorderRadius.all(Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Select period', 'Chagua kipindi'),
                 style: AppTypography.cardHeader),
@@ -446,7 +452,7 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
               ListTile(
                 title: Text(r.label(strings), style: AppTypography.bodyMedium),
                 trailing: r == _range
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    ? Icon(Icons.check_rounded, color: AppColors.primary)
                     : null,
                 onTap: () => Navigator.of(ctx).pop(r),
               ),

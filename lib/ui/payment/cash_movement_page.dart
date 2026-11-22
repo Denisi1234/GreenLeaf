@@ -110,7 +110,7 @@ class _CashMovementPageState extends State<CashMovementPage> {
                       padding: const EdgeInsets.all(16),
                       showShadow: false,
                       borderColor: AppColors.border,
-                      radius: 0,
+                      radius: AppRadius.standard,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -139,7 +139,7 @@ class _CashMovementPageState extends State<CashMovementPage> {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface,
                   border: Border(
                       top: BorderSide(color: AppColors.border, width: 1)),
@@ -153,7 +153,7 @@ class _CashMovementPageState extends State<CashMovementPage> {
                         color: AppColors.kpiDangerBg,
                         foregroundColor: AppColors.kpiDanger,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.button,
                         onTap: _saving
                             ? null
                             : () => Navigator.of(context).maybePop(),
@@ -170,7 +170,7 @@ class _CashMovementPageState extends State<CashMovementPage> {
                         icon: Icons.check_rounded,
                         variant: MarketButtonVariant.primary,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.button,
                         height: 48,
                         onTap: _saving ? null : _save,
                       ),

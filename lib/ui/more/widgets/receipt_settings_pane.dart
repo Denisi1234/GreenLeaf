@@ -290,7 +290,8 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
 
     final printerCard = SettingsCard(
       icon: Icons.print_outlined,
-      title: t('Bluetooth thermal printer', 'Printa ya Bluetooth (58mm / 80mm)'),
+      title:
+          t('Bluetooth thermal printer', 'Printa ya Bluetooth (58mm / 80mm)'),
       description: t(
         'Print receipts directly to a paired 58mm or 80mm ESC/POS printer.',
         'Chapisha risiti moja kwa moja kwenda printa ya Bluetooth (58mm au 80mm).',
@@ -344,7 +345,7 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
                 foregroundColor: AppColors.kpiSky,
                 side: BorderSide.none,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                 ),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -356,14 +357,15 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
               ),
             ),
             FilledButton.icon(
-              onPressed:
-                  _saving || !hasPrinter ? null : () => _testThermalPrinter(store),
+              onPressed: _saving || !hasPrinter
+                  ? null
+                  : () => _testThermalPrinter(store),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 side: BorderSide.none,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                 ),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 18, vertical: 12),

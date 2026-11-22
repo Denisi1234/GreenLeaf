@@ -161,7 +161,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   IconButton(
                     onPressed: () => _markAllAsRead(items),
                     tooltip: strings.markAllAsRead,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.done_all_rounded,
                       color: AppColors.kpiSky,
                     ),
@@ -294,7 +294,7 @@ class _NotificationCard extends StatelessWidget {
                     width: 7,
                     height: 7,
                     margin: const EdgeInsets.only(top: 4),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.kpiSky,
                       shape: BoxShape.circle,
                     ),

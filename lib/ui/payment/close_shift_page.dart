@@ -125,7 +125,7 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                           _row(_t('Cash in', 'Pesa kuingia'), s.cashIn),
                           _row(_t('Payouts & drops', 'Malipo na amana'),
                               -s.cashOut),
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
                             child:
                                 Divider(height: 1, color: AppColors.divider),
@@ -156,7 +156,7 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 10),
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: AppCorners.control,
                           ),
                         ),
                         icon: const Icon(Icons.calculate_outlined, size: 16),
@@ -202,7 +202,7 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                               'Thibitisha kufunga zamu'),
                       icon: Icons.lock_outline_rounded,
                       color: AppColors.primary,
-                      radius: 0,
+                      radius: AppRadius.button,
                       onTap: _saving ? null : _close,
                     ),
                   ],
@@ -245,7 +245,7 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         border: Border.all(color: AppColors.border),
       ),
       child: Text(
@@ -309,7 +309,7 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       textAlign: TextAlign.center,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
                             horizontal: 8, vertical: 8),
@@ -317,11 +317,11 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                         filled: true,
                         fillColor: AppColors.surface,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: AppCorners.control,
                           borderSide: BorderSide(color: AppColors.border),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: AppCorners.control,
                           borderSide: BorderSide(color: AppColors.border),
                         ),
                       ),

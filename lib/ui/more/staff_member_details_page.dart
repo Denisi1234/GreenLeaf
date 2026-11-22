@@ -20,8 +20,18 @@ String _formatDate(String isoString) {
   try {
     final parsed = DateTime.parse(isoString).toLocal();
     final months = <String>[
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${parsed.day} ${months[parsed.month - 1]} ${parsed.year}';
   } catch (_) {
@@ -49,7 +59,8 @@ class StaffMemberDetailsPage extends StatelessWidget {
     final baseTheme = Theme.of(context);
     final manropeTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
-      primaryTextTheme: GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
+      primaryTextTheme:
+          GoogleFonts.manropeTextTheme(baseTheme.primaryTextTheme),
     );
 
     if (selected == null) {
@@ -63,14 +74,16 @@ class StaffMemberDetailsPage extends StatelessWidget {
               child: Column(
                 children: [
                   MarketPageHeader(
-                    title: _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
+                    title:
+                        _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
                     centerTitle: false,
                     showBorder: false,
                   ),
                   Expanded(
                     child: Center(
                       child: Text(
-                        _dual(strings, 'This staff member no longer exists.', 'Mfanyakazi huyu hayupo tena.'),
+                        _dual(strings, 'This staff member no longer exists.',
+                            'Mfanyakazi huyu hayupo tena.'),
                       ),
                     ),
                   ),
@@ -96,20 +109,25 @@ class StaffMemberDetailsPage extends StatelessWidget {
             child: Column(
               children: [
                 MarketPageHeader(
-                  title: _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
+                  title:
+                      _dual(strings, 'Staff Profile', 'Wasifu wa Mfanyakazi'),
                   subtitle: member.name,
                   centerTitle: false,
                   showBorder: false,
                   actions: [
                     IconButton(
-                      tooltip: _dual(strings, 'Edit staff', 'Hariri mfanyakazi'),
+                      tooltip:
+                          _dual(strings, 'Edit staff', 'Hariri mfanyakazi'),
                       onPressed: () => _openEdit(context, store, member),
-                      icon: const Icon(Icons.edit_outlined, color: AppColors.ink),
+                      icon:
+                          Icon(Icons.edit_outlined, color: AppColors.ink),
                     ),
                     IconButton(
-                      tooltip: _dual(strings, 'Role and permissions', 'Nafasi na ruhusa'),
+                      tooltip: _dual(
+                          strings, 'Role and permissions', 'Nafasi na ruhusa'),
                       onPressed: () => _openRole(context, role, strings),
-                      icon: const Icon(Icons.admin_panel_settings_outlined, color: AppColors.ink),
+                      icon: Icon(Icons.admin_panel_settings_outlined,
+                          color: AppColors.ink),
                     ),
                     const SizedBox(width: 4),
                   ],
@@ -119,7 +137,8 @@ class StaffMemberDetailsPage extends StatelessWidget {
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 36),
                     children: [
-                      StaffProfileHero(member: member, role: role, strings: strings),
+                      StaffProfileHero(
+                          member: member, role: role, strings: strings),
                       const SizedBox(height: 14),
                       StaffInfoSection(
                         title: context.tr('Contact Information'),
@@ -136,7 +155,8 @@ class StaffMemberDetailsPage extends StatelessWidget {
                           ),
                           StaffInfoRowData(
                             label: context.tr('Address'),
-                            value: member.address.isEmpty ? '—' : member.address,
+                            value:
+                                member.address.isEmpty ? '—' : member.address,
                             icon: Icons.location_on_outlined,
                           ),
                         ],
@@ -147,17 +167,22 @@ class StaffMemberDetailsPage extends StatelessWidget {
                         rows: [
                           StaffInfoRowData(
                             label: context.tr('Employee ID'),
-                            value: member.employeeNumber.isEmpty ? '—' : member.employeeNumber,
+                            value: member.employeeNumber.isEmpty
+                                ? '—'
+                                : member.employeeNumber,
                             icon: Icons.badge_outlined,
                           ),
                           StaffInfoRowData(
                             label: context.tr('Job Title'),
-                            value: member.jobTitle.isEmpty ? '—' : member.jobTitle,
+                            value:
+                                member.jobTitle.isEmpty ? '—' : member.jobTitle,
                             icon: Icons.work_outline_rounded,
                           ),
                           StaffInfoRowData(
                             label: context.tr('Department'),
-                            value: member.department.isEmpty ? '—' : member.department,
+                            value: member.department.isEmpty
+                                ? '—'
+                                : member.department,
                             icon: Icons.apartment_outlined,
                           ),
                           StaffInfoRowData(
@@ -169,7 +194,10 @@ class StaffMemberDetailsPage extends StatelessWidget {
                             label: context.tr('Employment Type'),
                             value: member.employmentType.isEmpty
                                 ? context.tr('Full-time')
-                                : context.tr(EmploymentType.fromValue(member.employmentType)?.label ?? 'Full-time'),
+                                : context.tr(EmploymentType.fromValue(
+                                            member.employmentType)
+                                        ?.label ??
+                                    'Full-time'),
                             icon: Icons.schedule_rounded,
                           ),
                           StaffInfoRowData(
@@ -187,17 +215,23 @@ class StaffMemberDetailsPage extends StatelessWidget {
                         rows: [
                           StaffInfoRowData(
                             label: context.tr('Contact Name'),
-                            value: member.emergencyContactName.isEmpty ? '—' : member.emergencyContactName,
+                            value: member.emergencyContactName.isEmpty
+                                ? '—'
+                                : member.emergencyContactName,
                             icon: Icons.person_outline_rounded,
                           ),
                           StaffInfoRowData(
                             label: context.tr('Contact Phone'),
-                            value: member.emergencyContactPhone.isEmpty ? '—' : member.emergencyContactPhone,
+                            value: member.emergencyContactPhone.isEmpty
+                                ? '—'
+                                : member.emergencyContactPhone,
                             icon: Icons.call_outlined,
                           ),
                           StaffInfoRowData(
                             label: context.tr('Relationship'),
-                            value: member.emergencyContactRelation.isEmpty ? '—' : member.emergencyContactRelation,
+                            value: member.emergencyContactRelation.isEmpty
+                                ? '—'
+                                : member.emergencyContactRelation,
                             icon: Icons.people_outline_rounded,
                           ),
                         ],
@@ -232,9 +266,10 @@ class StaffMemberDetailsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 18),
                       MarketButton(
-                        label: _dual(strings, 'Edit Staff Profile', 'Hariri Wasifu wa Mfanyakazi'),
+                        label: _dual(strings, 'Edit Staff Profile',
+                            'Hariri Wasifu wa Mfanyakazi'),
                         icon: Icons.edit_outlined,
-                        radius: 0,
+                        radius: AppRadius.input,
                         onTap: () => _openEdit(context, store, member),
                       ),
                     ],
@@ -248,12 +283,14 @@ class StaffMemberDetailsPage extends StatelessWidget {
     );
   }
 
-  static void _openRole(BuildContext context, StaffRoleData? role, AppStrings strings) {
+  static void _openRole(
+      BuildContext context, StaffRoleData? role, AppStrings strings) {
     if (role == null) {
       showMarketNotice(
         context,
         title: _dual(strings, 'Role Missing', 'Nafasi Inakosekana'),
-        message: _dual(strings, 'This staff member has no assigned role.', 'Mfanyakazi huyu hana nafasi iliyopangwa.'),
+        message: _dual(strings, 'This staff member has no assigned role.',
+            'Mfanyakazi huyu hana nafasi iliyopangwa.'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -265,7 +302,8 @@ class StaffMemberDetailsPage extends StatelessWidget {
     );
   }
 
-  static Future<void> _openEdit(BuildContext context, PosLocalStore store, StaffMemberData member) async {
+  static Future<void> _openEdit(
+      BuildContext context, PosLocalStore store, StaffMemberData member) async {
     final saved = await Navigator.of(context).push<StaffMemberData>(
       MaterialPageRoute<StaffMemberData>(
         builder: (context) => AddEditStaffPage(
@@ -278,7 +316,8 @@ class StaffMemberDetailsPage extends StatelessWidget {
     showMarketNotice(
       context,
       title: context.tr('Staff Updated'),
-      message: context.tr('{p0} was updated successfully.', args: {'p0': saved.name}),
+      message: context
+          .tr('{p0} was updated successfully.', args: {'p0': saved.name}),
     );
   }
 }

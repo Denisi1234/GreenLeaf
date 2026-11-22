@@ -270,7 +270,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primaryDeep,
-                      side: const BorderSide(color: AppColors.primary),
+                      side: BorderSide(color: AppColors.primary),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.standard),
                       ),
@@ -478,7 +478,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                       onPressed: () =>
                                           ProductCsvService.exportInventoryCsv(
                                               filtered),
-                                      icon: const Icon(Icons.download_rounded,
+                                      icon: Icon(Icons.download_rounded,
                                           color: AppColors.kpiSky),
                                     ),
                                   ),
@@ -496,7 +496,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                           side: BorderSide.none,
                                         ),
                                         onPressed: _handleImportCsv,
-                                        icon: const Icon(Icons.upload_file_rounded,
+                                        icon: Icon(Icons.upload_file_rounded,
                                             color: AppColors.kpiViolet),
                                       ),
                                     ),

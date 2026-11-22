@@ -53,7 +53,7 @@ class ReportToolbar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
@@ -72,11 +72,12 @@ class ReportToolbar extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                height: 46,
-                width: 46,
-                decoration: const BoxDecoration(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
                   color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius:
+                      BorderRadius.all(Radius.circular(AppRadius.input)),
                 ),
                 child: IconButton(
                   tooltip: context.tr('Show columns'),
@@ -86,7 +87,7 @@ class ReportToolbar extends StatelessWidget {
                     width: 20,
                     height: 20,
                     colorFilter:
-                        const ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
+                        ColorFilter.mode(AppColors.ink, BlendMode.srcIn),
                   ),
                 ),
               ),
@@ -103,16 +104,17 @@ class ReportToolbar extends StatelessWidget {
                   InkWell(
                     onTap: onChooseRange,
                     child: Container(
-                      height: 42,
+                      height: AppSpacing.touchTarget,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.surfaceSecondary,
-                        borderRadius: BorderRadius.zero,
+                        borderRadius:
+                            BorderRadius.all(Radius.circular(AppRadius.input)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.calendar_today_outlined,
+                          Icon(Icons.calendar_today_outlined,
                               size: 16, color: AppColors.primary),
                           const SizedBox(width: 8),
                           Text(
@@ -124,7 +126,7 @@ class ReportToolbar extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Icon(Icons.keyboard_arrow_down_rounded,
+                          Icon(Icons.keyboard_arrow_down_rounded,
                               size: 16, color: AppColors.textMuted),
                         ],
                       ),
@@ -136,7 +138,7 @@ class ReportToolbar extends StatelessWidget {
                     onPresetSelected: onPresetSelected,
                   ),
                 ] else
-                   Padding(
+                  Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: WorkspaceStatus(
                       label: context.tr('Current snapshot'),
@@ -155,7 +157,7 @@ class ReportToolbar extends StatelessWidget {
                           horizontal: 10, vertical: 8),
                     ),
                     icon: const Icon(Icons.close_rounded, size: 16),
-                    label:  Text(context.tr('Clear filters')),
+                    label: Text(context.tr('Clear filters')),
                   ),
                 ],
                 if (choices.isNotEmpty) ...[
@@ -166,17 +168,19 @@ class ReportToolbar extends StatelessWidget {
                       key: ValueKey(selection),
                       initialValue: selection,
                       isExpanded: true,
-                      decoration:  InputDecoration(
+                      decoration: InputDecoration(
                         labelText: context.tr('Filter records'),
-                        border:
-                            const OutlineInputBorder(borderRadius: BorderRadius.zero),
-                        enabledBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
+                        border: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(
+                                Radius.circular(AppRadius.input))),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(
+                              Radius.circular(AppRadius.input)),
                           borderSide: BorderSide(color: AppColors.border),
                         ),
                       ),
                       items: [
-                         DropdownMenuItem<String>(
+                        DropdownMenuItem<String>(
                           value: null,
                           child: Text(context.tr('All records'),
                               overflow: TextOverflow.ellipsis),

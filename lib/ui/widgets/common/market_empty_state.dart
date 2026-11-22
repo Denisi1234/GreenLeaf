@@ -19,8 +19,8 @@ class MarketEmptyState extends StatelessWidget {
     this.secondaryActionLabel,
     this.secondaryActionIcon,
     this.onSecondaryAction,
-    this.iconColor = AppColors.primary,
-    this.iconBackgroundColor = AppColors.surfaceSecondary,
+    this.iconColor,
+    this.iconBackgroundColor,
     this.showCard = true,
     this.maxWidth = 460,
   });
@@ -35,8 +35,8 @@ class MarketEmptyState extends StatelessWidget {
   final String? secondaryActionLabel;
   final IconData? secondaryActionIcon;
   final VoidCallback? onSecondaryAction;
-  final Color iconColor;
-  final Color iconBackgroundColor;
+  final Color? iconColor;
+  final Color? iconBackgroundColor;
   final bool showCard;
   final double maxWidth;
 
@@ -51,18 +51,19 @@ class MarketEmptyState extends StatelessWidget {
           height: 72,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: iconBackgroundColor,
+            color: iconBackgroundColor ?? AppColors.surfaceSecondary,
             borderRadius: BorderRadius.circular(AppRadius.tile),
           ),
           child: Icon(
             icon,
-            color: iconColor,
+            color: iconColor ?? AppColors.primary,
             size: 34,
           ),
         ),
         const SizedBox(height: 16),
         Text(
           title,
+          semanticsLabel: title,
           textAlign: TextAlign.center,
           style: AppTypography.cardHeader,
         ),
@@ -77,37 +78,41 @@ class MarketEmptyState extends StatelessWidget {
         ),
         if (actionLabel != null && onAction != null) ...[
           const SizedBox(height: 18),
-          if (secondaryActionLabel != null && onSecondaryAction != null)
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              alignment: WrapAlignment.center,
-              children: [
-                MarketButton(
-                  label: actionLabel!,
-                  icon: actionIcon,
-                  isFullWidth: false,
-                  isPrimary: isPrimaryAction,
-                  onTap: onAction,
-                ),
-                MarketButton(
+          LayoutBuilder(builder: (context, constraints) {
+            final narrow = constraints.maxWidth < 360;
+            final actions = [
+              MarketButton(
+                label: actionLabel!,
+                icon: actionIcon,
+                isFullWidth: narrow,
+                isPrimary: isPrimaryAction,
+                onTap: onAction,
+              ),
+              if (secondaryActionLabel != null && onSecondaryAction != null)
+                MarketButton.secondary(
                   label: secondaryActionLabel!,
                   icon: secondaryActionIcon,
-                  color: AppColors.kpiVioletBg,
-                  foregroundColor: AppColors.kpiViolet,
-                  isFullWidth: false,
+                  isFullWidth: narrow,
                   onTap: onSecondaryAction,
                 ),
-              ],
-            )
-          else
-            MarketButton(
-              label: actionLabel!,
-              icon: actionIcon,
-              isFullWidth: false,
-              isPrimary: isPrimaryAction,
-              onTap: onAction,
-            ),
+            ];
+            if (narrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < actions.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 10),
+                    actions[i],
+                  ],
+                ],
+              );
+            }
+            return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                alignment: WrapAlignment.center,
+                children: actions);
+          }),
         ],
       ],
     );
@@ -128,7 +133,7 @@ class MarketEmptyState extends StatelessWidget {
         child: SizedBox(
           width: double.infinity,
           child: MarketSurfaceCard(
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.all(24),
             borderColor: AppColors.border,
             radius: AppRadius.standard,
             showShadow: false,

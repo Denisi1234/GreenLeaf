@@ -111,7 +111,7 @@ class _CustomerDetailsView extends StatelessWidget {
                       ),
                     ),
                     icon:
-                        const Icon(Icons.edit_outlined, color: AppColors.ink),
+                        Icon(Icons.edit_outlined, color: AppColors.ink),
                   ),
                   IconButton(
                     tooltip: customerDual(strings, 'Delete', 'Futa'),

@@ -6,7 +6,8 @@ import '../../widgets/market_shared_widgets.dart';
 import 'expense_models.dart';
 
 class ExpenseTaxBanner extends StatelessWidget {
-  const ExpenseTaxBanner({super.key, required this.amount, required this.strings});
+  const ExpenseTaxBanner(
+      {super.key, required this.amount, required this.strings});
 
   final double amount;
   final AppStrings strings;
@@ -17,16 +18,17 @@ class ExpenseTaxBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.percent_rounded, color: AppColors.primary, size: 18),
+          Icon(Icons.percent_rounded, color: AppColors.primary, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              expenseDual(strings, 'Tax / VAT collected', 'Kodi / VAT iliyokusanywa'),
+              expenseDual(
+                  strings, 'Tax / VAT collected', 'Kodi / VAT iliyokusanywa'),
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.primaryDeep,
                 fontWeight: FontWeight.w700,
@@ -82,7 +84,7 @@ class ExpenseRangeCard extends StatelessWidget {
               color: AppColors.kpiSkyBg,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.date_range_rounded,
+            child: Icon(Icons.date_range_rounded,
                 color: AppColors.kpiSky, size: 18),
           ),
           const SizedBox(width: 10),
@@ -113,14 +115,14 @@ class ExpenseRangeCard extends StatelessWidget {
           IconButton(
             tooltip: expenseDual(strings, 'Pick period', 'Chagua kipindi'),
             onPressed: onPickRange,
-            icon: const Icon(Icons.tune_rounded,
+            icon: Icon(Icons.tune_rounded,
                 color: AppColors.textMuted, size: 20),
             visualDensity: VisualDensity.compact,
           ),
           IconButton(
             tooltip: expenseDual(strings, 'Custom range', 'Kipindi maalum'),
             onPressed: onCustomRange,
-            icon: const Icon(Icons.event_rounded,
+            icon: Icon(Icons.event_rounded,
                 color: AppColors.textMuted, size: 20),
             visualDensity: VisualDensity.compact,
           ),
@@ -157,7 +159,7 @@ class ExpensePaymentFilterRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_balance_wallet_outlined,
+          Icon(Icons.account_balance_wallet_outlined,
               size: 18, color: AppColors.textMuted),
           const SizedBox(width: 8),
           Text(
@@ -178,13 +180,15 @@ class ExpensePaymentFilterRow extends StatelessWidget {
                   color: AppColors.textMain,
                   fontWeight: FontWeight.w700,
                 ),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                icon: Icon(Icons.keyboard_arrow_down_rounded,
                     color: AppColors.textMuted, size: 20),
                 items: payments
                     .map((p) => DropdownMenuItem(
                           value: p,
                           child: Text(
-                            p == 'All' ? expenseDual(strings, 'All', 'Zote') : p,
+                            p == 'All'
+                                ? expenseDual(strings, 'All', 'Zote')
+                                : p,
                             style: AppTypography.bodySmall,
                           ),
                         ))
@@ -264,12 +268,12 @@ class ExpensePaymentSummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   ClipRRect(
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppCorners.control,
                     child: LinearProgressIndicator(
                       value: pct,
                       minHeight: 6,
                       backgroundColor: AppColors.surfaceHover,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
+                      valueColor: AlwaysStoppedAnimation<Color>(
                           AppColors.primary),
                     ),
                   ),

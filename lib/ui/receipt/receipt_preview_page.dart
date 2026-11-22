@@ -241,7 +241,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                  PopupMenuItem(
                     value: 'void',
                     child: Text(context.tr('Void sale'),
-                        style: const TextStyle(color: AppColors.dangerDeep))),
+                        style: TextStyle(color: AppColors.dangerDeep))),
               ],
             ],
           ),
@@ -263,7 +263,7 @@ class _ReceiptPreviewPageState extends State<ReceiptPreviewPage> {
                           )))),
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                         color: AppColors.surface,
                         border:
                             Border(top: BorderSide(color: AppColors.border))),

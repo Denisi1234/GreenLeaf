@@ -189,7 +189,7 @@ class _CustomersPageState extends State<CustomersPage> {
                             controller: _searchController,
                             hintText: _dual(
                                 strings, 'Search customers', 'Tafuta wateja'),
-                            radius: 0,
+                            radius: AppRadius.input,
                             showShadow: false,
                             onChanged: (value) =>
                                 setState(() => _searchQuery = value),
@@ -340,7 +340,8 @@ class _CustomersPageState extends State<CustomersPage> {
   }
 
   bool get _hasActiveFilter =>
-      _searchQuery.trim().isNotEmpty || _filter != CustomerFilterOption.all.name;
+      _searchQuery.trim().isNotEmpty ||
+      _filter != CustomerFilterOption.all.name;
 
   bool _matchesFilter(CustomerData customer, CustomerStats info) {
     final filter = filterFromName(_filter);
@@ -460,9 +461,10 @@ class _CustomersPageState extends State<CustomersPage> {
             Container(
                 width: 40,
                 height: 4,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                     color: AppColors.border,
-                  borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)))),
+                    borderRadius:
+                        BorderRadius.all(Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(_dual(strings, 'Sort customers by', 'Panga wateja kwa'),
                 style: AppTypography.cardHeader),
@@ -473,7 +475,7 @@ class _CustomersPageState extends State<CustomersPage> {
                 title:
                     Text(mode.label(strings), style: AppTypography.bodyMedium),
                 trailing: mode == _sort
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    ? Icon(Icons.check_rounded, color: AppColors.primary)
                     : null,
                 onTap: () => Navigator.of(ctx).pop(mode),
               ),
@@ -486,4 +488,3 @@ class _CustomersPageState extends State<CustomersPage> {
     setState(() => _sort = picked);
   }
 }
-

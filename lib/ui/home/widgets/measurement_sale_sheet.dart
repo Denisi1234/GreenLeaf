@@ -176,7 +176,7 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
         qty > 0 && !exceedsStock && !missingUnitPriceInAmountMode && total >= 0;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppRadius.extraRounded),
@@ -274,16 +274,16 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
                     suffixText: unit,
                     filled: true,
                     fillColor: AppColors.surface,
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    border: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                     ),
                   ),
@@ -345,16 +345,16 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
                       hintText: (qty * widget.product.priceValue).round().toString(),
                       filled: true,
                       fillColor: AppColors.surface,
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.zero,
+                      border: OutlineInputBorder(
+                        borderRadius: AppCorners.control,
                         borderSide: BorderSide(color: AppColors.border),
                       ),
-                      enabledBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.zero,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: AppCorners.control,
                         borderSide: BorderSide(color: AppColors.border),
                       ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.zero,
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppCorners.control,
                         borderSide:
                             BorderSide(color: AppColors.primary, width: 1.5),
                       ),
@@ -390,16 +390,16 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
                     prefixText: 'TSh ',
                     filled: true,
                     fillColor: AppColors.surface,
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    border: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                     ),
                   ),
@@ -450,7 +450,7 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
                         ),
                       ],
                     ),
-                    const Divider(height: 14, color: AppColors.border),
+                    Divider(height: 14, color: AppColors.border),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

@@ -64,7 +64,7 @@ class PaymentSplitSection extends StatelessWidget {
                 backgroundColor: AppColors.kpiDangerBg,
                 foregroundColor: AppColors.kpiDanger,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                 ),
               ),
               child: Text(
@@ -78,7 +78,7 @@ class PaymentSplitSection extends StatelessWidget {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                 ),
               ),
               child: Text(
@@ -166,7 +166,7 @@ class PaymentSplitSection extends StatelessWidget {
             children: [
                Text(
                 context.tr('Remaining balance due'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textMuted,

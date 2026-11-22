@@ -32,7 +32,7 @@ class LedgerTile extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.input,
       showShadow: false,
       child: Row(
         children: [
@@ -42,7 +42,7 @@ class LedgerTile extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: background,
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppCorners.control,
             ),
             child: Icon(
               isPayment ? Icons.south_west_rounded : Icons.north_east_rounded,

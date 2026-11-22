@@ -76,7 +76,7 @@ class ShiftDetailPage extends StatelessWidget {
                               _t('Cash in', 'Pesa kuingia'), summary.cashIn),
                           _moneyRow(_t('Payouts & drops', 'Malipo na amana'),
                               -summary.cashOut),
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
                             child:
                                 Divider(height: 1, color: AppColors.divider),
@@ -130,7 +130,7 @@ class ShiftDetailPage extends StatelessWidget {
                                 i++) ...[
                               _detailMovementRow(shift.movements[i]),
                               if (i != shift.movements.length - 1)
-                                const Divider(
+                                Divider(
                                     height: 1, color: AppColors.divider),
                             ],
                           ],

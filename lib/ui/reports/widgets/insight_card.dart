@@ -164,7 +164,7 @@ class _SeverityConfig {
   final Color textColor;
 }
 
-const _severityConfigs = {
+Map<InsightSeverity, _SeverityConfig> get _severityConfigs => {
   InsightSeverity.info: _SeverityConfig(
     backgroundColor: AppColors.surfaceSecondary,
     iconColor: AppColors.primary,

@@ -12,8 +12,10 @@ enum LedgerSortMode { balance, oldest, recent, overdue }
 
 extension LedgerSortModeExt on LedgerSortMode {
   String label(AppStrings strings) => switch (this) {
-        LedgerSortMode.balance => _dual(strings, 'Highest balance', 'Deni kubwa'),
-        LedgerSortMode.oldest => _dual(strings, 'Oldest debt', 'Deni la zamani'),
+        LedgerSortMode.balance =>
+          _dual(strings, 'Highest balance', 'Deni kubwa'),
+        LedgerSortMode.oldest =>
+          _dual(strings, 'Oldest debt', 'Deni la zamani'),
         LedgerSortMode.recent =>
           _dual(strings, 'Recent activity', 'Shughuli mpya'),
         LedgerSortMode.overdue =>
@@ -47,19 +49,19 @@ class DebtorSortRow extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.input,
       showShadow: false,
       child: Row(
         children: [
           Container(
             width: 34,
             height: 34,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppCorners.control,
             ),
             child:
-                const Icon(Icons.rule_rounded, color: AppColors.ink, size: 18),
+                Icon(Icons.rule_rounded, color: AppColors.ink, size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -101,7 +103,7 @@ class DebtorSortRow extends StatelessWidget {
           IconButton(
             tooltip: _dual(strings, 'Sort', 'Panga'),
             onPressed: onPick,
-            icon: const Icon(Icons.tune_rounded,
+            icon: Icon(Icons.tune_rounded,
                 color: AppColors.textMuted, size: 20),
             visualDensity: VisualDensity.compact,
           ),

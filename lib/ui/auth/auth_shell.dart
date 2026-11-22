@@ -127,7 +127,7 @@ class _BrandPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -176,7 +176,7 @@ class _BrandPanel extends StatelessWidget {
                       constraints: const BoxConstraints(maxWidth: 380),
                       child: Text(
                         strings.authHeroSubtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.borderInput,
                           fontSize: 15,
                           height: 1.6,
@@ -203,7 +203,7 @@ class _BrandPanel extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.only(top: 1),
                           child: Icon(
                             Icons.lock_outline_rounded,
@@ -215,7 +215,7 @@ class _BrandPanel extends StatelessWidget {
                         Expanded(
                           child: Text(
                             strings.authSecureSync,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.primarySoft,
                               fontSize: 12,
                               height: 1.4,
@@ -372,7 +372,7 @@ class _BrandFeature extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.kpiSuccessBg,
               fontSize: 14,
               height: 1.4,
@@ -426,7 +426,7 @@ class AuthFieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondary,
@@ -450,7 +450,7 @@ class AuthSectionLabel extends StatelessWidget {
         children: [
           Text(
             text.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w800,
               color: AppColors.textMuted,
@@ -458,7 +458,7 @@ class AuthSectionLabel extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(child: Divider(color: AppColors.border)),
+          Expanded(child: Divider(color: AppColors.border)),
         ],
       ),
     );
@@ -494,7 +494,7 @@ class AuthErrorBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.dangerDeep,
                 fontSize: 13,
                 height: 1.4,
@@ -582,7 +582,7 @@ class AuthFooter extends StatelessWidget {
       children: [
         Text(
           question,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13.5,
             color: AppColors.textMuted,
             fontWeight: FontWeight.w500,

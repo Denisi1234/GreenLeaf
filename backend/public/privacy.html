@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Notice — Aza POS | Azmur Group Limited</title>
+  <meta name="description" content="Official Privacy Notice for Aza POS, operated by Azmur Group Limited." />
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #FFFFFF;
+      color: #222222;
+      line-height: 1.72;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      border-bottom: 1px solid #E5E7EB;
+      background: #FFFFFF;
+    }
+    .header-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111111;
+      text-decoration: none;
+      letter-spacing: -0.2px;
+    }
+    .header-link {
+      font-size: 14px;
+      color: #4B5563;
+      text-decoration: none;
+    }
+    .header-link:hover {
+      color: #111111;
+      text-decoration: underline;
+    }
+
+    .page-head {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 48px 24px 28px;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    .page-head h1 {
+      margin: 0 0 10px;
+      font-size: clamp(30px, 4vw, 42px);
+      font-weight: 700;
+      color: #111111;
+      letter-spacing: -0.8px;
+      line-height: 1.15;
+    }
+    .meta {
+      margin: 0;
+      font-size: 14px;
+      color: #6B7280;
+    }
+
+    .layout {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr);
+      gap: 48px;
+      align-items: start;
+    }
+
+    .toc {
+      position: sticky;
+      top: 28px;
+    }
+    .toc-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #6B7280;
+      margin: 0 0 12px;
+    }
+    .toc ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border-left: 1px solid #E5E7EB;
+    }
+    .toc li {
+      margin: 0;
+    }
+    .toc a {
+      display: block;
+      padding: 6px 0 6px 14px;
+      font-size: 13.5px;
+      color: #4B5563;
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      margin-left: -1px;
+    }
+    .toc a:hover {
+      color: #111111;
+      border-left-color: #111111;
+    }
+
+    article {
+      max-width: 720px;
+    }
+    article h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #111111;
+      letter-spacing: -0.3px;
+      margin: 40px 0 12px;
+      padding-top: 24px;
+      border-top: 1px solid #E5E7EB;
+      scroll-margin-top: 24px;
+    }
+    article h2:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+    article h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111111;
+      margin: 22px 0 8px;
+    }
+    article p {
+      margin: 0 0 16px;
+      font-size: 15.5px;
+      color: #2B2F36;
+    }
+    article ul {
+      margin: 8px 0 18px;
+      padding-left: 22px;
+    }
+    article li {
+      margin-bottom: 8px;
+      font-size: 15.5px;
+      color: #2B2F36;
+    }
+    article a {
+      color: #111111;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13.5px;
+      background: #F3F4F6;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 18px 0 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+      border-top: 1px solid #D1D5DB;
+      border-bottom: 1px solid #D1D5DB;
+    }
+    th {
+      font-weight: 600;
+      color: #111111;
+      padding: 12px 12px 12px 0;
+      border-bottom: 1px solid #D1D5DB;
+      vertical-align: top;
+    }
+    td {
+      padding: 12px 12px 12px 0;
+      border-bottom: 1px solid #E5E7EB;
+      color: #374151;
+      vertical-align: top;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .contact-block {
+      margin-top: 12px;
+      padding-left: 16px;
+      border-left: 2px solid #111111;
+    }
+    .contact-block p {
+      margin: 4px 0;
+      font-size: 15px;
+    }
+
+    footer {
+      border-top: 1px solid #E5E7EB;
+      padding: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: #6B7280;
+    }
+
+    @media (max-width: 820px) {
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding: 24px 18px 56px;
+      }
+      .toc { position: static; }
+      .page-head { padding: 32px 18px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a class="brand" href="#">Azmur Group Limited &mdash; Aza POS</a>
+      <a class="header-link" href="mailto:info@azmur.co.tz">info@azmur.co.tz</a>
+    </div>
+  </header>
+
+  <div class="page-head">
+    <h1>Privacy Notice</h1>
+    <p class="meta">
+      Effective Date: November 22, 2026 &nbsp;&middot;&nbsp; Last Updated: November 22, 2026 &nbsp;&middot;&nbsp;
+      App: Aza POS (<code>com.azapos.app</code>)
+    </p>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Table of Contents">
+      <div class="toc-title">On this page</div>
+      <ol>
+        <li><a href="#scope">1. Scope &amp; Data Controller</a></li>
+        <li><a href="#collection">2. Information We Collect</a></li>
+        <li><a href="#permissions">3. Device Permissions</a></li>
+        <li><a href="#usage">4. How We Use Information</a></li>
+        <li><a href="#merchant-role">5. Merchant &amp; Customer Data</a></li>
+        <li><a href="#sharing">6. Information Sharing</a></li>
+        <li><a href="#security">7. Data Storage &amp; Security</a></li>
+        <li><a href="#retention">8. Retention &amp; Deletion</a></li>
+        <li><a href="#rights">9. Your Privacy Rights</a></li>
+        <li><a href="#children">10. Children's Privacy</a></li>
+        <li><a href="#changes">11. Changes to This Notice</a></li>
+        <li><a href="#contact">12. Contact Us</a></li>
+      </ol>
+    </nav>
+
+    <article>
+      <h2 id="scope">1. Scope &amp; Data Controller</h2>
+      <p>
+        This Privacy Notice explains how <strong>Azmur Group Limited</strong> ("Azmur", "we", "our", or "us")
+        collects, uses, stores, discloses, and protects information when you use the <strong>Aza POS</strong>
+        mobile and desktop point-of-sale application (<code>com.azapos.app</code>) and our related online
+        backup and synchronization services (collectively, the "Services").
+      </p>
+      <p>
+        By creating an account, accessing, or using the Services, you acknowledge the data practices described
+        in this Privacy Notice.
+      </p>
+
+      <h2 id="collection">2. Information We Collect</h2>
+      <h3>2.1 Account &amp; Merchant Profile Information</h3>
+      <ul>
+        <li>Full name, shop or business name, phone number, role title, business address, currency preference, and optional Tax Identification Number (TIN/VAT ID).</li>
+        <li>Account login credentials, including phone number and password (passwords are protected using secure encryption and are never stored in plain text).</li>
+        <li>Staff member profiles and access permissions configured by the store owner or authorized manager.</li>
+      </ul>
+
+      <h3>2.2 Commercial, Transaction &amp; Operational Records</h3>
+      <ul>
+        <li>Product catalog details (names, barcodes, categories, units of measure, purchase and selling prices, stock counts, expiry dates, and optional product images).</li>
+        <li>Point-of-sale orders, line items, discounts, tax calculations, payment methods (Cash, Card, Mobile Money, Split, Credit), receipts, returns, and held sales.</li>
+        <li>Supplier records, stock delivery invoices, cash register shift counts, cash movements, business expenses (including optional receipt photos), and accounting records.</li>
+      </ul>
+
+      <h3>2.3 Customer Information Entered by Merchants</h3>
+      <p>
+        Merchants may optionally record their buyers' names, phone numbers, purchase histories, loyalty points,
+        and credit balances to issue receipts and manage customer credit accounts.
+      </p>
+
+      <h3>2.4 Technical &amp; Security Metadata</h3>
+      <p>
+        When using online features, our servers process standard connection metadata such as IP address
+        (used strictly to protect accounts against unauthorized login attempts and service abuse) and
+        synchronization timestamps to keep records consistent across your devices.
+      </p>
+
+      <h2 id="permissions">3. Device Permissions</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Permission</th>
+              <th>Purpose</th>
+              <th>Requirement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Camera</strong></td>
+              <td>Scanning product barcodes during inventory entry and counter checkout, and capturing optional product or expense receipt photos.</td>
+              <td>Optional (requested only on use)</td>
+            </tr>
+            <tr>
+              <td><strong>Photos / Media</strong></td>
+              <td>Selecting existing product images, store logos, or expense receipt images from your device gallery.</td>
+              <td>Optional (requested only on use)</td>
+            </tr>
+            <tr>
+              <td><strong>Bluetooth</strong></td>
+              <td>Connecting to paired Bluetooth receipt printers and compatible cash drawers.</td>
+              <td>Optional (receipt printing only)</td>
+            </tr>
+            <tr>
+              <td><strong>Notifications</strong></td>
+              <td>Displaying on-device alerts for completed sales, low-stock items, and pending reminders.</td>
+              <td>Optional (manageable in settings)</td>
+            </tr>
+            <tr>
+              <td><strong>Internet / Network</strong></td>
+              <td>Account registration, SMS verification codes, password recovery, and optional multi-device cloud backup.</td>
+              <td>Core counter sales work offline</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="usage">4. How We Use Information</h2>
+      <ul>
+        <li><strong>Provide POS &amp; Business Services:</strong> Process counter sales, calculate totals, taxes, and change, update stock levels, generate printable or digital receipts, and produce business reports.</li>
+        <li><strong>Authentication &amp; Security:</strong> Send one-time SMS verification codes during registration and password recovery, enforce staff permissions, and prevent unauthorized access.</li>
+        <li><strong>Cloud Backup &amp; Sync:</strong> Keep store records backed up and synchronized across your authorized devices.</li>
+        <li><strong>Requested Merchant Summaries:</strong> Send optional daily sales summary SMS messages configured by the store owner.</li>
+        <li><strong>Support:</strong> Diagnose technical issues and respond to inquiries sent to <a href="mailto:info@azmur.co.tz">info@azmur.co.tz</a>.</li>
+      </ul>
+
+      <h2 id="merchant-role">5. Merchant &amp; End-Customer Data</h2>
+      <p>
+        When a merchant enters information about their own customers, debtors, or suppliers into Aza POS, the
+        merchant acts as the independent Data Controller for those records and is responsible for obtaining any
+        required consent. <strong>Azmur Group Limited</strong> processes such records solely on the merchant's
+        behalf to deliver the POS, receipt, and ledger features.
+      </p>
+
+      <h2 id="sharing">6. Information Sharing &amp; Third-Party Providers</h2>
+      <p>
+        Azmur Group Limited does not sell, rent, or trade personal or business data to third parties, and Aza
+        POS does not include third-party advertising or behavioral tracking tools. Information is shared only as
+        necessary with the following categories of recipients:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Recipient</th>
+              <th>Data Shared</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Authorized SMS Delivery Providers</strong></td>
+              <td>Recipient phone number and verification code or requested daily sales summary text.</td>
+              <td>Delivering account verification codes and owner-requested daily sales SMS summaries.</td>
+            </tr>
+            <tr>
+              <td><strong>Cloud Hosting Providers</strong></td>
+              <td>Synced store account and business records (encrypted in transit).</td>
+              <td>Secure cloud storage, backup, and multi-device synchronization.</td>
+            </tr>
+            <tr>
+              <td><strong>Legal Authorities</strong></td>
+              <td>Minimum information strictly required by applicable law.</td>
+              <td>Compliance with valid legal process or statutory obligations.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="security">7. Data Storage &amp; Security</h2>
+      <ul>
+        <li><strong>Offline-First Local Storage:</strong> Store records are saved locally in private device storage so operations continue reliably without internet connectivity.</li>
+        <li><strong>Encryption in Transit:</strong> All communication between the app and our cloud servers is protected with industry-standard HTTPS encryption.</li>
+        <li><strong>Access Controls:</strong> Passwords are protected using secure one-way encryption, active sessions use revocable authentication credentials, and staff access is restricted by store-defined permissions.</li>
+      </ul>
+
+      <h2 id="retention">8. Data Retention &amp; Account Deletion</h2>
+      <p>
+        We retain cloud account and synced store records for as long as your account remains active or as
+        needed to provide the Services and fulfill legal or accounting obligations.
+      </p>
+      <ul>
+        <li><strong>Local Data:</strong> You may sign out, clear app storage, or uninstall Aza POS from your device at any time to remove locally stored data.</li>
+        <li><strong>Cloud Account Deletion:</strong> To request permanent deletion of your cloud account and all associated store data, email <a href="mailto:info@azmur.co.tz">info@azmur.co.tz</a> with the subject <em>"Account Deletion Request"</em>, your registered phone number, and your shop name. Verified requests are completed within 14 calendar days.</li>
+      </ul>
+
+      <h2 id="rights">9. Your Privacy Rights</h2>
+      <p>
+        Subject to applicable data protection laws (including the Tanzania Personal Data Protection Act, 2022),
+        you have the right to access and export your records (CSV/PDF), correct inaccurate information in
+        Settings, request deletion of your account and cloud data, and opt out of optional SMS reports or
+        notifications.
+      </p>
+
+      <h2 id="children">10. Children's Privacy</h2>
+      <p>
+        Aza POS is a commercial point-of-sale application intended for business owners and authorized adult
+        staff. It is not directed to children under 13, and we do not knowingly collect personal information
+        from children. If you believe a child has provided personal data to us, contact
+        <a href="mailto:info@azmur.co.tz">info@azmur.co.tz</a> for prompt removal.
+      </p>
+
+      <h2 id="changes">11. Changes to This Privacy Notice</h2>
+      <p>
+        We may update this Privacy Notice from time to time. Material updates will be reflected by revising the
+        "Last Updated" date at the top of this page and, where appropriate, via an in-app notice.
+      </p>
+
+      <h2 id="contact">12. Contact Us</h2>
+      <p>
+        For questions, privacy requests, or account deletion inquiries, please contact:
+      </p>
+      <div class="contact-block">
+        <p><strong>Azmur Group Limited</strong></p>
+        <p>Application: Aza POS (<code>com.azapos.app</code>)</p>
+        <p>Email: <a href="mailto:info@azmur.co.tz">info@azmur.co.tz</a></p>
+      </div>
+    </article>
+  </div>
+
+  <footer>
+    &copy; 2026 Azmur Group Limited. All rights reserved.
+  </footer>
+
+</body>
+</html>

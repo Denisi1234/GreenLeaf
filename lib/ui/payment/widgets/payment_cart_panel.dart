@@ -55,18 +55,26 @@ class PaymentCartPanel extends StatelessWidget {
                 Expanded(
                   child: Text(
                     context.tr('Current sale'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.sectionHeader,
                   ),
                 ),
-                Text(
-                  context.tr('{p0} items • {p1} units',
-                      args: {'p0': itemTypes, 'p1': unitCount}),
-                  style: AppTypography.label,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    context.tr('{p0} items • {p1} units',
+                        args: {'p0': itemTypes, 'p1': unitCount}),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: AppTypography.label,
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
           OrderLinesList(
             orderLines: orderLines,
             hasItems: hasItems,
@@ -106,7 +114,8 @@ class CounterActionRow extends StatelessWidget {
               side: BorderSide.none,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+                borderRadius:
+                    BorderRadius.all(Radius.circular(AppRadius.button)),
               ),
             ),
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),

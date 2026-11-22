@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:aza_pos/l10n/app_localization.dart';
+import 'package:flutter/material.dart';
 
 import '../app_design.dart';
 
-/// Standardized Android-ready success or failure result modal shared across the app.
+/// Standardized clean result modal matching Aza POS's pill-button design.
 Future<void> showMarketResultDialog(
   BuildContext context, {
   required String title,
@@ -11,63 +11,72 @@ Future<void> showMarketResultDialog(
   bool isSuccess = true,
   String? buttonLabel,
 }) {
-  final accent = isSuccess ? AppColors.success : AppColors.danger;
-  final badgeBg = isSuccess ? AppColors.successLight : AppColors.dangerLight;
-  final icon = isSuccess ? Icons.check_circle_rounded : Icons.error_rounded;
+  final accent = isSuccess ? AppColors.successDeep : AppColors.dangerDeep;
+  final icon =
+      isSuccess ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded;
 
   return showDialog<void>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      backgroundColor: AppColors.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.modal),
-      ),
-      contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: badgeBg,
-              shape: BoxShape.circle,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 360),
+        padding: const EdgeInsets.fromLTRB(22, 26, 22, 20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.rounded),
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppShadows.medium,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Icon(icon, size: 36, color: accent),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: AppTypography.sectionHeader.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.ink,
+              ),
             ),
-            child: Icon(icon, size: 30, color: accent),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: AppTypography.cardHeader.copyWith(color: AppColors.ink),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textMuted,
-              height: 1.45,
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMedium.copyWith(
+                color: AppColors.textBody,
+                height: 1.45,
+              ),
             ),
-          ),
-          const SizedBox(height: 22),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              style: FilledButton.styleFrom(
-                backgroundColor: isSuccess ? AppColors.ink : AppColors.danger,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.standard),
+            const SizedBox(height: 22),
+            SizedBox(
+              height: 48,
+              child: FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      isSuccess ? AppColors.primary : AppColors.dangerDeep,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+                child: Text(
+                  buttonLabel ?? dialogContext.tr('OK'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              child: Text(buttonLabel ?? dialogContext.tr('OK')),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );

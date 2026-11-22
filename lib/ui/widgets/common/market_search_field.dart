@@ -10,18 +10,19 @@ class MarketSearchField extends StatelessWidget {
   const MarketSearchField({
     super.key,
     required this.controller,
+    this.focusNode,
     required this.hintText,
     required this.onChanged,
     this.onSubmitted,
     this.onClear,
     this.onScanTap,
-    this.height = 46,
-    this.radius = 0,
-    this.backgroundColor = AppColors.surface,
-    this.borderColor = AppColors.border,
-    this.iconColor = AppColors.textMuted,
-    this.hintColor = AppColors.textLight,
-    this.textColor = AppColors.textMain,
+    this.height = 48,
+    this.radius = AppRadius.input,
+    this.backgroundColor,
+    this.borderColor,
+    this.iconColor,
+    this.hintColor,
+    this.textColor,
     this.leadingIcon = Icons.search_rounded,
     this.paddingHorizontal = AppSpacing.sm,
     this.iconSize = 20,
@@ -29,6 +30,7 @@ class MarketSearchField extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final String hintText;
   final ValueChanged<String> onChanged;
   final ValueChanged<String>? onSubmitted;
@@ -36,11 +38,11 @@ class MarketSearchField extends StatelessWidget {
   final VoidCallback? onScanTap;
   final double height;
   final double radius;
-  final Color backgroundColor;
-  final Color borderColor;
-  final Color iconColor;
-  final Color hintColor;
-  final Color textColor;
+  final Color? backgroundColor;
+  final Color? borderColor;
+  final Color? iconColor;
+  final Color? hintColor;
+  final Color? textColor;
   final IconData leadingIcon;
   final double paddingHorizontal;
   final double iconSize;
@@ -48,80 +50,97 @@ class MarketSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg = backgroundColor ?? AppColors.surface;
+    final bc = borderColor ?? AppColors.border;
+    final ic = iconColor ?? AppColors.textMuted;
+    final hc = hintColor ?? AppColors.textLight;
+    final tc = textColor ?? AppColors.textMain;
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, value, _) {
         final hasValue = value.text.isNotEmpty;
 
-        return Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: borderColor),
-            boxShadow: showShadow ? AppShadows.soft : null,
-          ),
-          child: Row(
-            children: [
-              SizedBox(width: paddingHorizontal),
-              Icon(
-                leadingIcon,
-                size: iconSize,
-                color: iconColor,
+        return Focus(
+          child: Builder(builder: (context) {
+            final focused = Focus.of(context).hasFocus;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              height: height < AppSpacing.touchTarget
+                  ? AppSpacing.touchTarget
+                  : height,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(
+                    color: focused ? AppColors.primary : bc,
+                    width: focused ? 2 : 1),
+                boxShadow: showShadow ? AppShadows.soft : null,
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  onChanged: onChanged,
-                  onSubmitted: onSubmitted,
-                  textInputAction: TextInputAction.search,
-                  textAlignVertical: TextAlignVertical.center,
-                  style: AppTypography.bodyMain.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w600,
+              child: Row(
+                children: [
+                  SizedBox(width: paddingHorizontal),
+                  Icon(
+                    leadingIcon,
+                    size: iconSize,
+                    color: ic,
                   ),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    hintText: hintText,
-                    hintStyle: AppTypography.bodyMain.copyWith(
-                      color: hintColor,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      onChanged: onChanged,
+                      onSubmitted: onSubmitted,
+                      textInputAction: TextInputAction.search,
+                      textAlignVertical: TextAlignVertical.center,
+                      style: AppTypography.bodyMain.copyWith(
+                        color: tc,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
+                        filled: false,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        hintText: hintText,
+                        hintStyle: AppTypography.bodyMain.copyWith(
+                          color: hc,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              if (hasValue && onClear != null)
-                IconButton(
-                  onPressed: onClear,
-                  icon: const Icon(
-                    Icons.cancel_rounded,
-                    size: 19,
-                    color: AppColors.textLight,
-                  ),
-                  tooltip: context.tr('Clear search'),
-                  splashRadius: 18,
-                ),
-              if (onScanTap != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: IconButton(
-                    onPressed: onScanTap,
-                    icon: const Icon(
-                      Icons.qr_code_scanner_rounded,
-                      size: 20,
-                      color: AppColors.primary,
+                  if (hasValue && onClear != null)
+                    IconButton(
+                      onPressed: onClear,
+                      icon: Icon(
+                        Icons.cancel_rounded,
+                        size: 19,
+                        color: AppColors.textLight,
+                      ),
+                      tooltip: context.tr('Clear search'),
+                      splashRadius: 18,
                     ),
-                    tooltip: context.tr('Scan barcode'),
-                    splashRadius: 18,
-                  ),
-                ),
-            ],
-          ),
+                  if (onScanTap != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: IconButton(
+                        onPressed: onScanTap,
+                        icon: Icon(
+                          Icons.qr_code_scanner_rounded,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                        tooltip: context.tr('Scan barcode'),
+                        splashRadius: 18,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
         );
       },
     );

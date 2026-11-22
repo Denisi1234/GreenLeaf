@@ -50,8 +50,8 @@ List<_SectionInfo> _tabs(String lang) {
     ),
     _SectionInfo(
       SettingsSection.language,
-      Icons.translate_rounded,
-      t('Language', 'Lugha'),
+      Icons.palette_outlined,
+      t('Theme & language', 'Mandhari na lugha'),
     ),
     _SectionInfo(
       SettingsSection.data,
@@ -125,12 +125,12 @@ class _SettingsPageState extends State<SettingsPage> {
           'Mpangilio wa risiti, nembo na uchapishaji'
         ),
       SettingsSection.language => (
-          'Language and regional preferences',
-          'Lugha na mapendeleo ya eneo'
+          'App theme, language and regional preferences',
+          'Mandhari ya programu, lugha na mipangilio ya eneo'
         ),
       SettingsSection.data => (
-          'Cloud connection, sync and backups',
-          'Muunganisho wa wingu, usawazishaji na nakala'
+          'Daily SMS reports and backups',
+          'Ripoti za SMS na nakala za akiba'
         ),
       SettingsSection.account => (
           'Profile, password and security',
@@ -193,11 +193,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: ListView.separated(
                         itemCount: filtered.length,
                         separatorBuilder: (_, __) =>
-                            const Divider(height: 1, color: AppColors.borderLight),
+                            Divider(height: 1, color: AppColors.borderLight),
                         itemBuilder: (context, index) {
                           final tab = filtered[index];
                           final active = wide && tab.section == selected;
-                          const palettes = [
+                          final palettes = [
                             (AppColors.kpiRoseBg, AppColors.kpiRose),
                             (AppColors.kpiSkyBg, AppColors.kpiSky),
                             (AppColors.kpiAmberBg, AppColors.kpiAmber),
@@ -231,7 +231,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                       style: AppTypography.label)),
                               trailing: wide
                                   ? null
-                                  : const Icon(Icons.chevron_right_rounded,
+                                  : Icon(Icons.chevron_right_rounded,
                                       size: 20, color: AppColors.textMuted),
                               onTap: () => _openDetail(tab.section),
                             ),

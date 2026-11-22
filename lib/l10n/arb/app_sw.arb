@@ -1878,5 +1878,20 @@
   "{p0}h ago": "Saa {p0} zilizopita",
   "{p0}m ago": "Dakika {p0} zilizopita",
   "{p0}–{p1} of {p2}": "{p0}–{p1} kati ya {p2}",
-  "© 2026 TrackMauzo. All rights reserved.": "© 2026 TrackMauzo. Haki zote zimehifadhiwa."
+  "© 2026 TrackMauzo. All rights reserved.": "© 2026 TrackMauzo. Haki zote zimehifadhiwa.",
+  "Catalog view": "Mwonekano wa bidhaa",
+  "Detailed tiles": "Vigae vyenye maelezo",
+  "Compact tiles": "Vigae vidogo",
+  "List view": "Orodha",
+  "Edit quantity": "Badilisha kiasi",
+  "Update quantity": "Sasisha kiasi",
+  "Available: {p0}": "Zilizopo: {p0}",
+  "Enter a whole quantity greater than zero.": "Weka idadi kamili iliyo kubwa kuliko sifuri.",
+  "Quantity exceeds available stock.": "Kiasi kinazidi bidhaa zilizopo.",
+  "Remove every item from the current sale?": "Ondoa bidhaa zote kwenye mauzo haya?",
+  "Could not clear sale": "Imeshindikana kufuta mauzo",
+  "Stock changed": "Hifadhi imebadilika",
+  "Review the available quantity and try again.": "Kagua kiasi kilichopo kisha ujaribu tena.",
+  "{p0} each": "{p0} kila moja",
+  "Remove item": "Ondoa bidhaa"
 }

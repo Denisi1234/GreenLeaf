@@ -161,7 +161,7 @@ class StatementRowTile extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(borderRadius: AppCorners.control),
         title: Text(_t('Delete line?', 'Futa mstari?')),
         content: Text(
           _t(

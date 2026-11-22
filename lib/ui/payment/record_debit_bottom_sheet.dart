@@ -30,7 +30,7 @@ class RecordDebitBottomSheet extends StatelessWidget {
     final newBalance = currentBalance + total;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppRadius.extraRounded),
@@ -62,7 +62,7 @@ class RecordDebitBottomSheet extends StatelessWidget {
                   color: AppColors.surfaceSecondary,
                   borderRadius: BorderRadius.circular(AppRadius.standard),
                 ),
-                child: const Icon(Icons.account_balance_wallet_outlined,
+                child: Icon(Icons.account_balance_wallet_outlined,
                     color: AppColors.ink, size: 20),
               ),
               const SizedBox(width: 10),
@@ -109,7 +109,7 @@ class RecordDebitBottomSheet extends StatelessWidget {
                   label: _dual(strings, 'Current balance', 'Deni la sasa'),
                   value: _money(currentBalance),
                 ),
-                const Divider(
+                Divider(
                     height: 14, thickness: 1, color: AppColors.divider),
                 _RowLine(
                   label: _dual(
@@ -136,9 +136,9 @@ class RecordDebitBottomSheet extends StatelessWidget {
           const SizedBox(height: 18),
           Material(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
+            borderRadius: BorderRadius.circular(AppRadius.button),
             child: InkWell(
-              borderRadius: BorderRadius.circular(AppRadius.pill),
+              borderRadius: BorderRadius.circular(AppRadius.button),
               highlightColor: Colors.transparent,
               splashColor: AppColors.primaryDeep.withValues(alpha: 0.4),
               onTap: () => Navigator.of(context).pop(true),

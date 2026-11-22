@@ -8,6 +8,7 @@ import '../more/more_page.dart';
 import '../products/product_management_page.dart';
 import '../reports/dashboard_page.dart';
 import '../widgets/app_design.dart';
+import '../widgets/app_theme_palette.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../more/settings_page.dart';
@@ -26,21 +27,22 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell>
     with SingleTickerProviderStateMixin {
-  static const _transitionDuration = Duration(milliseconds: 300);
+  static const _transitionDuration = Duration(milliseconds: 180);
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late MarketTab _currentTab;
   MarketTab? _previousTab;
   bool _moveForward = true;
   late final AnimationController _transitionController;
 
   late final List<Widget> _pages = [
-    const DashboardPage(useSharedShell: true),
-    const ProductManagementPage(useSharedShell: true),
+    DashboardPage(useSharedShell: true),
+    ProductManagementPage(useSharedShell: true),
     SalesPage(
       useSharedShell: true,
       onOpenInventory: () => _handleTabChange(MarketTab.products),
     ),
-    const MorePage(useSharedShell: true),
+    MorePage(useSharedShell: true),
   ];
 
   @override
@@ -62,6 +64,15 @@ class _AppShellState extends State<AppShell>
 
   void _handleTabChange(MarketTab tab) {
     if (tab == _currentTab) return;
+
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _transitionController.stop();
+      setState(() {
+        _currentTab = tab;
+        _previousTab = null;
+      });
+      return;
+    }
 
     final oldTab = _currentTab;
     setState(() {
@@ -86,19 +97,6 @@ class _AppShellState extends State<AppShell>
         return strings.sales;
       case MarketTab.more:
         return strings.more;
-    }
-  }
-
-  String _headerSubtitleForTab(MarketTab tab, AppStrings strings) {
-    switch (tab) {
-      case MarketTab.dashboard:
-        return strings.dashboardSubtitle;
-      case MarketTab.products:
-        return strings.productsSubtitle;
-      case MarketTab.sales:
-        return strings.salesSubtitle;
-      case MarketTab.more:
-        return strings.moreSubtitle;
     }
   }
 
@@ -136,15 +134,13 @@ class _AppShellState extends State<AppShell>
                 if (isCurrent) {
                   opacity = incomingCurve;
                   scale = 0.994 + (0.006 * incomingCurve);
-                  dx = (_moveForward ? 0.048 : -0.048) *
+                  dx = (_moveForward ? 0.012 : -0.012) *
                       (1 - incomingCurve) *
                       width;
                 } else if (isPrevious) {
                   opacity = 1 - (outgoingCurve * 0.92);
                   scale = 1 - (0.012 * outgoingCurve);
-                  dx = (_moveForward ? -0.022 : 0.022) *
-                      outgoingCurve *
-                      width;
+                  dx = (_moveForward ? -0.006 : 0.006) * outgoingCurve * width;
                 }
               }
 
@@ -174,45 +170,80 @@ class _AppShellState extends State<AppShell>
       },
     );
 
+    final palette = AppThemePalette.of(context);
     final mainColumn = Column(
       children: [
         MarketPageHeader(
           title: _headerTitleForTab(_currentTab, strings),
-          subtitle: _headerSubtitleForTab(_currentTab, strings),
           showBackButton: false,
-          leading: null,
+          leading: useRail
+              ? null
+              : Tooltip(
+                  message: MaterialLocalizations.of(context)
+                      .openAppDrawerTooltip,
+                  child: HeaderActionButton(
+                    icon: Icons.menu_rounded,
+                    background: palette.surface,
+                    foreground: palette.ink,
+                    borderColor: palette.border,
+                    onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                  ),
+                ),
           centerTitle: false,
-          titleSize: 22,
+          titleSize: 20,
           titleWeight: FontWeight.w800,
           showBorder: true,
-          actions: const [],
+          actions: [
+            if (canOpenSettings)
+              Tooltip(
+                message: strings.settings,
+                child: HeaderActionButton(
+                  icon: Icons.settings_outlined,
+                  background: palette.surface,
+                  foreground: palette.ink,
+                  borderColor: palette.border,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SettingsPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
         ),
         Expanded(child: contentStack),
       ],
     );
 
     return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: palette.pageBackground,
+      drawer: useRail
+          ? null
+          : MarketAppDrawer(
+              selectedTab: _currentTab,
+              onSelectTab: _handleTabChange,
+            ),
       body: useRail
           ? Row(
               children: [
                 NavigationRail(
                   extended: extendedRail,
-                  backgroundColor: AppColors.headerSurface,
+                  backgroundColor: palette.headerSurface,
                   selectedIndex: _currentTab.index,
                   onDestinationSelected: (idx) =>
                       _handleTabChange(MarketTab.values[idx]),
-                  indicatorColor:
-                      AppColors.primary.withValues(alpha: 0.14),
-                  selectedIconTheme:
-                      const IconThemeData(color: AppColors.primaryDeep),
+                  indicatorColor: palette.primary.withValues(alpha: 0.14),
+                  selectedIconTheme: IconThemeData(color: palette.primaryDeep),
                   selectedLabelTextStyle: AppTypography.bodySmall.copyWith(
-                    color: AppColors.primaryDeep,
+                    color: palette.primaryDeep,
                     fontWeight: FontWeight.w800,
                   ),
-                  unselectedIconTheme:
-                      const IconThemeData(color: AppColors.textMuted),
+                  unselectedIconTheme: IconThemeData(color: palette.textMuted),
                   unselectedLabelTextStyle: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textBody,
+                    color: palette.textBody,
                     fontWeight: FontWeight.w600,
                   ),
                   leading: Padding(
@@ -267,7 +298,7 @@ class _AppShellState extends State<AppShell>
                     ),
                   ],
                 ),
-                const VerticalDivider(width: 1, color: AppColors.divider),
+                VerticalDivider(width: 1, color: AppColors.divider),
                 Expanded(child: mainColumn),
               ],
             )

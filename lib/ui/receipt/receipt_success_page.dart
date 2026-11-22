@@ -149,7 +149,7 @@ class ReceiptSuccessPage extends StatelessWidget {
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
-                                                AppRadius.pill),
+                                                AppRadius.button),
                                           ),
                                         ),
                                         icon: const Icon(Icons.add_rounded),
@@ -172,7 +172,7 @@ class ReceiptSuccessPage extends StatelessWidget {
                                           side: BorderSide.none,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
-                                                AppRadius.pill),
+                                                AppRadius.button),
                                           ),
                                         ),
                                         icon: const Icon(Icons.print_rounded),
@@ -199,7 +199,7 @@ class ReceiptSuccessPage extends StatelessWidget {
                                           side: BorderSide.none,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
-                                                AppRadius.pill),
+                                                AppRadius.button),
                                           ),
                                         ),
                                         icon: const Icon(

@@ -62,7 +62,8 @@ class MoneyMetric extends StatelessWidget {
 }
 
 class SegmentedTabs extends StatelessWidget {
-  const SegmentedTabs({super.key, required this.controller, required this.labels});
+  const SegmentedTabs(
+      {super.key, required this.controller, required this.labels});
 
   final TabController controller;
   final List<String> labels;
@@ -78,9 +79,9 @@ class SegmentedTabs extends StatelessWidget {
       ),
       child: TabBar(
         controller: controller,
-        indicator: const BoxDecoration(
+        indicator: BoxDecoration(
           color: AppColors.primary,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppCorners.control,
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,

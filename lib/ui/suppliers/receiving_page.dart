@@ -35,7 +35,8 @@ class ReceivingPage extends StatefulWidget {
     );
   }
 
-  static Future<void> _confirmDelete(BuildContext context, Receiving receiving) async {
+  static Future<void> _confirmDelete(
+      BuildContext context, Receiving receiving) async {
     if (receiving.id == null) return;
     final store = context.read<PosLocalStore>();
     final sw = store.languageCode == 'sw';
@@ -95,8 +96,9 @@ class _ReceivingPageState extends State<ReceivingPage> {
       ),
     );
     final now = DateTime.now();
-    final thisMonthReceivings = receivings.where((r) =>
-        r.date.year == now.year && r.date.month == now.month).toList();
+    final thisMonthReceivings = receivings
+        .where((r) => r.date.year == now.year && r.date.month == now.month)
+        .toList();
     final thisMonthTotal = thisMonthReceivings.fold<double>(
       0,
       (sum, receiving) => sum + receiving.total,
@@ -120,7 +122,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
               children: [
                 MarketPageHeader(
                   title: t('Goods received', 'Bidhaa zilizopokelewa'),
-                  subtitle: t('Deliveries, stock-in records, and supplier purchase orders',
+                  subtitle: t(
+                      'Deliveries, stock-in records, and supplier purchase orders',
                       'Usambazaji, rekodi za kuingiza mzigo na manunuzi ya wasambazaji'),
                   transparentBackButton: true,
                   onBack: () => Navigator.of(context).maybePop(),
@@ -144,7 +147,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                               SizedBox(
                                 width: width,
                                 child: WorkspaceMetric(
-                                  label: t('Total received value', 'Jumla ya thamani'),
+                                  label: t('Total received value',
+                                      'Jumla ya thamani'),
                                   value: ReceivingPage._money(totalValue),
                                   icon: Icons.inventory_2_outlined,
                                   sharp: false,
@@ -156,7 +160,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                               SizedBox(
                                 width: width,
                                 child: WorkspaceMetric(
-                                  label: t('Total deliveries', 'Idadi ya upokeaji'),
+                                  label: t(
+                                      'Total deliveries', 'Idadi ya upokeaji'),
                                   value: '${receivings.length}',
                                   icon: Icons.local_shipping_outlined,
                                   sharp: false,
@@ -168,7 +173,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                               SizedBox(
                                 width: width,
                                 child: WorkspaceMetric(
-                                  label: t('Total units added', 'Jumla ya vipande'),
+                                  label: t(
+                                      'Total units added', 'Jumla ya vipande'),
                                   value: formatQuantity(totalUnits),
                                   icon: Icons.all_inbox_rounded,
                                   sharp: false,
@@ -180,7 +186,8 @@ class _ReceivingPageState extends State<ReceivingPage> {
                               SizedBox(
                                 width: width,
                                 child: WorkspaceMetric(
-                                  label: t('This month value', 'Thamani mwezi huu'),
+                                  label: t(
+                                      'This month value', 'Thamani mwezi huu'),
                                   value: ReceivingPage._money(thisMonthTotal),
                                   icon: Icons.calendar_today_outlined,
                                   sharp: false,
@@ -221,7 +228,7 @@ class _ReceivingPageState extends State<ReceivingPage> {
                           _searchController.clear();
                           setState(() => _query = '');
                         },
-                        radius: 0,
+                        radius: AppRadius.input,
                         showShadow: false,
                         backgroundColor: AppColors.surface,
                       ),
@@ -265,7 +272,7 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                       context, filtered[i]),
                                 ),
                                 if (i != filtered.length - 1)
-                                  const Divider(
+                                  Divider(
                                       height: 1, color: AppColors.divider),
                               ],
                             ],

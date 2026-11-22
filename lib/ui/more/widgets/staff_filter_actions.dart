@@ -41,10 +41,8 @@ class StaffRoleFilterChip extends StatelessWidget {
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: selectedRole == null
-              ? AppColors.surface
-              : AppColors.primary,
-          borderRadius: BorderRadius.zero,
+          color: selectedRole == null ? AppColors.surface : AppColors.primary,
+          borderRadius: AppCorners.control,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -52,17 +50,14 @@ class StaffRoleFilterChip extends StatelessWidget {
             Icon(
               Icons.filter_alt_outlined,
               size: 16,
-              color: selectedRole == null
-                  ? AppColors.textMuted
-                  : Colors.white,
+              color: selectedRole == null ? AppColors.textMuted : Colors.white,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: selectedRole == null
-                    ? AppColors.textMuted
-                    : Colors.white,
+                color:
+                    selectedRole == null ? AppColors.textMuted : Colors.white,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
               ),
@@ -71,9 +66,7 @@ class StaffRoleFilterChip extends StatelessWidget {
             Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 18,
-              color: selectedRole == null
-                  ? AppColors.textMuted
-                  : Colors.white,
+              color: selectedRole == null ? AppColors.textMuted : Colors.white,
             ),
           ],
         ),
@@ -98,13 +91,13 @@ class StaffChoicePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: Container(
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppCorners.control,
         ),
         child: Center(
           child: Text(
@@ -140,7 +133,7 @@ class StaffSheetAction extends StatelessWidget {
     final color = isDestructive ? AppColors.danger : AppColors.textMain;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         child: Row(
@@ -156,7 +149,7 @@ class StaffSheetAction extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
               color: AppColors.textLight,
               size: 20,

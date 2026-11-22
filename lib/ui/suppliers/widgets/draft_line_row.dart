@@ -32,16 +32,16 @@ class DraftLineRow extends StatelessWidget {
       isDense: true,
       hintText: hint,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      border: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+      border: OutlineInputBorder(
+        borderRadius: AppCorners.control,
         borderSide: BorderSide(color: AppColors.border),
       ),
-      enabledBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: AppCorners.control,
         borderSide: BorderSide(color: AppColors.border),
       ),
-      focusedBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: AppCorners.control,
         borderSide: BorderSide(color: AppColors.primary, width: 1.2),
       ),
     );
@@ -50,8 +50,7 @@ class DraftLineRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final quantity = TextFormField(
-      initialValue:
-          line.quantity <= 0 ? '' : formatQuantity(line.quantity),
+      initialValue: line.quantity <= 0 ? '' : formatQuantity(line.quantity),
       textAlign: TextAlign.right,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
@@ -61,8 +60,8 @@ class DraftLineRow extends StatelessWidget {
         line.unit.toLowerCase() == 'pcs' ? '' : line.unit,
       ).copyWith(labelText: isSwahili ? 'Idadi' : 'Quantity'),
       onChanged: (value) {
-        line.quantity =
-            roundQuantity(double.tryParse(value.trim().replaceAll(',', '')) ?? 0);
+        line.quantity = roundQuantity(
+            double.tryParse(value.trim().replaceAll(',', '')) ?? 0);
         onChanged();
       },
     );
@@ -82,7 +81,7 @@ class DraftLineRow extends StatelessWidget {
     final remove = IconButton(
       tooltip: isSwahili ? 'Ondoa bidhaa' : 'Remove item',
       onPressed: onDelete,
-      icon: const Icon(Icons.delete_outline_rounded,
+      icon: Icon(Icons.delete_outline_rounded,
           color: AppColors.dangerDeep, size: 20),
     );
     final total = Column(crossAxisAlignment: CrossAxisAlignment.end, children: [

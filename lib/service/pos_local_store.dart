@@ -58,7 +58,7 @@ part 'store/pos_checkout_store.dart';
 
 const _defaultStoreId = 'store-default';
 const Duration _eastAfricaOffset = Duration(hours: 3);
-const String _defaultLanguageCode = 'sw';
+const String _defaultLanguageCode = 'en';
 
 const _staffPermissionCatalog = <String>[
   'View Sales',
@@ -172,6 +172,7 @@ class PosLocalStore extends ChangeNotifier
   TaxSettings _taxSettings = const TaxSettings();
   Timer? _midnightRefreshTimer;
   Timer? _dailySmsTimer;
+  Timer? _autoSyncTimer;
 
   @override
   String _languageCode = _defaultLanguageCode;
@@ -375,6 +376,7 @@ class PosLocalStore extends ChangeNotifier
     } catch (_) {}
     _midnightRefreshTimer?.cancel();
     _dailySmsTimer?.cancel();
+    _autoSyncTimer?.cancel();
     super.dispose();
   }
 
@@ -522,8 +524,26 @@ class PosLocalStore extends ChangeNotifier
     _updateCartTotals();
     _scheduleMidnightRefresh();
     _scheduleDailySmsCheck();
+    _scheduleAutoSync();
     _isInitialized = true;
     notifyListeners();
+  }
+
+  /// Runs silent, automatic background cloud sync every 2 minutes when online
+  /// and authenticated — no manual sync button required.
+  void _scheduleAutoSync() {
+    _autoSyncTimer?.cancel();
+    _autoSyncTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+      if (!_isInitialized || _disposed) return;
+      final db = _cloudApi ?? _database;
+      if (db is PosHybridDatabase &&
+          db.api.token != null &&
+          db.api.token!.isNotEmpty) {
+        unawaited(
+          db.retryFailed().then((_) => db.syncNow(pull: true)).catchError((_) {}),
+        );
+      }
+    });
   }
 
   void _scheduleMidnightRefresh() {
@@ -579,10 +599,12 @@ class PosLocalStore extends ChangeNotifier
     if (eatNow.hour > targetHour ||
         (eatNow.hour == targetHour && eatNow.minute >= targetMinute)) {
       final result = await DailySalesReportService.sendDailyReport(store: this);
-      if (result.success) {
-        // Record sent date so we don't duplicate
+      // Only mark as sent automatically when actually delivered by the backend
+      // SMS gateway (never mark as sent when offline local fallback is returned).
+      if (result.success && result.deliveredByServer) {
         await setStorePreferences(
-            _storePreferences.copyWith(lastDailySmsDate: todayStr));
+          _storePreferences.copyWith(lastDailySmsDate: todayStr),
+        );
       }
     }
   }

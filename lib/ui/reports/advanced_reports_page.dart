@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:aza_pos/l10n/app_localization.dart';
+import 'package:flutter/material.dart';
 
 import '../widgets/app_design.dart';
 import '../widgets/common/market_empty_state.dart';
@@ -8,8 +8,8 @@ import '../widgets/common/market_search_field.dart';
 import 'enhanced_report_page.dart';
 import 'pos_report_catalog.dart';
 
-/// Full-width, sharp, borderless ERP hub for all advanced / specialized reports
-/// (Graphical, Detailed, Accounting, Operations, Multi-Store).
+/// Clean, searchable catalog of all 60+ specialized reports
+/// (Graphical, Summary, Detailed, Inventory, Accounting, Operations, Multi-Store).
 class AdvancedReportsPage extends StatefulWidget {
   const AdvancedReportsPage({super.key});
 
@@ -149,53 +149,6 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
     }
   }
 
-  (IconData, Color, Color) _groupStyle(ReportGroup group) {
-    switch (group) {
-      case ReportGroup.graphical:
-        return (
-          Icons.bar_chart_rounded,
-          AppColors.primaryDeep,
-          AppColors.primaryLight,
-        );
-      case ReportGroup.summary:
-        return (
-          Icons.summarize_outlined,
-          AppColors.kpiSuccess,
-          AppColors.kpiSuccessBg,
-        );
-      case ReportGroup.detailed:
-        return (
-          Icons.receipt_long_outlined,
-          AppColors.kpiSky,
-          AppColors.kpiSkyBg,
-        );
-      case ReportGroup.inventory:
-        return (
-          Icons.inventory_2_outlined,
-          AppColors.kpiAmber,
-          AppColors.kpiAmberBg,
-        );
-      case ReportGroup.accounting:
-        return (
-          Icons.account_balance_outlined,
-          AppColors.kpiRose,
-          AppColors.kpiRoseBg,
-        );
-      case ReportGroup.operations:
-        return (
-          Icons.insights_rounded,
-          AppColors.kpiViolet,
-          AppColors.kpiVioletBg,
-        );
-      case ReportGroup.multiStore:
-        return (
-          Icons.storefront_outlined,
-          AppColors.kpiSuccess,
-          AppColors.kpiSuccessBg,
-        );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -204,203 +157,219 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
         children: [
           MarketPageHeader(
             title: context.tr('Advanced reports'),
-            subtitle: context.tr(
-              'Graphical, detailed, accounting, tax & multi-store reports',
-            ),
             showBackButton: true,
             centerTitle: false,
-            titleSize: 22,
+            titleSize: 20,
             titleWeight: FontWeight.w800,
             showBorder: true,
           ),
           Expanded(
             child: SafeArea(
               top: false,
-              child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-              child: MarketSearchField(
-                controller: _searchController,
-                hintText: context.tr('Filter all reports...'),
-                onChanged: (v) => _queryNotifier.value = v,
-                onClear: () {
-                  _searchController.clear();
-                  _queryNotifier.value = '';
-                },
-                height: 48,
-                radius: 0,
-                backgroundColor: AppColors.surface,
-                borderColor: AppColors.border,
-                paddingHorizontal: 14,
-              ),
-            ),
-            Expanded(
-              child: ValueListenableBuilder<String>(
-                valueListenable: _queryNotifier,
-                builder: (context, query, _) {
-                  final needle = query.trim().toLowerCase();
-                  final filtered = posReports.where((report) {
-                    if (needle.isEmpty) return true;
-                    return '${report.title} ${report.group.label} ${context.tr(report.title)} ${context.tr(report.group.label)}'
-                        .toLowerCase()
-                        .contains(needle);
-                  }).toList();
-
-                  final groups = ReportGroup.values
-                      .where((g) => filtered.any((r) => r.group == g))
-                      .toList();
-
-                  if (groups.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 24,
-                      ),
-                      child: MarketEmptyState(
-                        icon: Icons.search_off_rounded,
-                        title: context.tr('No matching reports'),
-                        message: context.tr(
-                          'Try a different keyword or clear your search to browse all reports.',
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 680),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: MarketSearchField(
+                          controller: _searchController,
+                          hintText: context.tr('Filter all reports...'),
+                          onChanged: (v) => _queryNotifier.value = v,
+                          onClear: () {
+                            _searchController.clear();
+                            _queryNotifier.value = '';
+                          },
+                          height: 48,
+                          radius: 0,
+                          backgroundColor: AppColors.surface,
+                          borderColor: AppColors.border,
+                          paddingHorizontal: 14,
                         ),
-                        actionLabel: context.tr('Clear search'),
-                        actionIcon: Icons.filter_alt_off_rounded,
-                        onAction: () {
-                          _searchController.clear();
-                          _queryNotifier.value = '';
-                        },
                       ),
-                    );
-                  }
+                      Expanded(
+                        child: ValueListenableBuilder<String>(
+                          valueListenable: _queryNotifier,
+                          builder: (context, query, _) {
+                            final needle = query.trim().toLowerCase();
+                            final filtered = posReports.where((report) {
+                              if (needle.isEmpty) return true;
+                              return '${report.title} ${report.group.label} ${context.tr(report.title)} ${context.tr(report.group.label)}'
+                                  .toLowerCase()
+                                  .contains(needle);
+                            }).toList();
 
-                  return ListView.separated(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
-                    itemCount: groups.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 18),
-                    itemBuilder: (context, gIdx) {
-                      final group = groups[gIdx];
-                      final items =
-                          filtered.where((r) => r.group == group).toList();
-                      final style = _groupStyle(group);
+                            final groups = ReportGroup.values
+                                .where((g) => filtered.any((r) => r.group == g))
+                                .toList();
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                            child: Row(
-                              children: [
-                                Text(
-                                  context.tr(group.label).toUpperCase(),
-                                  style: AppTypography.label.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.7,
-                                    color: AppColors.textMuted,
-                                  ),
+                            if (groups.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 24,
                                 ),
-                                const Spacer(),
-                                Text(
-                                  '${items.length}',
-                                  style: AppTypography.label.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textMuted,
+                                child: MarketEmptyState(
+                                  icon: Icons.search_off_rounded,
+                                  title: context.tr('No matching reports'),
+                                  message: context.tr(
+                                    'Try a different keyword or clear your search to browse all reports.',
                                   ),
+                                  actionLabel: context.tr('Clear search'),
+                                  actionIcon: Icons.filter_alt_off_rounded,
+                                  onAction: () {
+                                    _searchController.clear();
+                                    _queryNotifier.value = '';
+                                  },
                                 ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            clipBehavior: Clip.antiAlias,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.standard),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: Column(
-                                children: [
-                                  for (var i = 0; i < items.length; i++) ...[
-                                    if (i > 0)
-                                      const Divider(
-                                        height: 1,
-                                        indent: 66,
-                                        color: AppColors.border,
+                              );
+                            }
+
+                            return ListView.separated(
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 10, 16, 28),
+                              itemCount: groups.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 22),
+                              itemBuilder: (context, gIdx) {
+                                final group = groups[gIdx];
+                                final items = filtered
+                                    .where((r) => r.group == group)
+                                    .toList();
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        6,
+                                        0,
+                                        6,
+                                        8,
                                       ),
-                                    InkWell(
-                                      key: ValueKey('report-${items[i].title}'),
-                                      onTap: () {
-                                        FocusScope.of(context).unfocus();
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute<void>(
-                                            builder: (_) => EnhancedReportPage(
-                                              report: items[i],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 13,
+                                      child: Text(
+                                        context.tr(group.label).toUpperCase(),
+                                        style: AppTypography.label.copyWith(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.8,
+                                          color: AppColors.textMuted,
                                         ),
-                                        child: Row(
+                                      ),
+                                    ),
+                                    Container(
+                                      clipBehavior: Clip.antiAlias,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.standard,
+                                        ),
+                                        border:
+                                            Border.all(color: AppColors.border),
+                                        boxShadow: AppShadows.soft,
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: Column(
                                           children: [
-                                            Container(
-                                              width: 38,
-                                              height: 38,
-                                              decoration: BoxDecoration(
-                                                color: style.$3,
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        AppRadius.sharp),
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Icon(
-                                                _iconForReport(items[i]),
-                                                color: style.$2,
-                                                size: 19,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 14),
-                                            Expanded(
-                                              child: Text(
-                                                context.tr(items[i].title),
-                                                style: AppTypography.bodyMain
-                                                    .copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.ink,
+                                            for (var i = 0;
+                                                i < items.length;
+                                                i++) ...[
+                                              if (i > 0)
+                                                Divider(
+                                                  height: 1,
+                                                  indent: 52,
+                                                  color: AppColors.divider,
+                                                ),
+                                              InkWell(
+                                                key: ValueKey(
+                                                  'report-${items[i].title}',
+                                                ),
+                                                onTap: () {
+                                                  FocusScope.of(context)
+                                                      .unfocus();
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute<void>(
+                                                      builder: (_) =>
+                                                          EnhancedReportPage(
+                                                        report: items[i],
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                child: ConstrainedBox(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minHeight: 52,
+                                                  ),
+                                                  child: Padding(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 13,
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          _iconForReport(
+                                                            items[i],
+                                                          ),
+                                                          size: 21,
+                                                          color: AppColors
+                                                              .textMain,
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 14,
+                                                        ),
+                                                        Expanded(
+                                                          child: Text(
+                                                            context.tr(
+                                                              items[i].title,
+                                                            ),
+                                                            style: AppTypography
+                                                                .bodyMain
+                                                                .copyWith(
+                                                              fontSize: 15,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color:
+                                                                  AppColors.ink,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        Icon(
+                                                          Icons
+                                                              .chevron_right_rounded,
+                                                          size: 20,
+                                                          color: AppColors
+                                                              .textLight,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            const Icon(
-                                              Icons.chevron_right_rounded,
-                                              size: 20,
-                                              color: AppColors.textMuted,
-                                            ),
+                                            ],
                                           ],
                                         ),
                                       ),
                                     ),
                                   ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
-      ),
           ),
         ],
       ),

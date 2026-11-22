@@ -6,20 +6,28 @@ import 'package:provider/provider.dart';
 import '../../../l10n/app_strings.dart';
 import '../../../service/pos_local_store.dart';
 import '../../more/about_app_page.dart';
+import '../../more/advanced_features_page.dart';
 import '../../more/customers_page.dart';
 import '../../more/expenses_tracking_page.dart';
 import '../../more/help_support_page.dart';
+import '../../more/settings_page.dart';
 import '../app_design.dart';
+import '../app_theme_palette.dart';
 import '../business/business_category_widgets.dart';
 import '../common/logout_confirmation_dialog.dart';
+import '../market_bottom_nav.dart';
 
 class MarketAppDrawer extends StatelessWidget {
   const MarketAppDrawer({
     super.key,
     this.selectedItem = 'Home',
+    this.selectedTab,
+    this.onSelectTab,
   });
 
   final String selectedItem;
+  final MarketTab? selectedTab;
+  final ValueChanged<MarketTab>? onSelectTab;
 
   List<_DrawerItemData> _supportItems(AppStrings strings) {
     return [
@@ -30,38 +38,231 @@ class MarketAppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final drawerWidth = MediaQuery.of(context).size.width * 0.85;
+    final drawerWidth =
+        (MediaQuery.sizeOf(context).width * 0.84).clamp(260.0, 340.0);
     final store = context.watch<PosLocalStore>();
     final strings = AppStrings.of(store.languageCode);
+    final palette = AppThemePalette.of(context);
+    final isSwahili = store.languageCode == 'sw';
+    final canOpenSettings = store.hasPermission('System Settings');
+    final hasAdvancedAccess = const [
+      'Manage Inventory',
+      'Manage Payments',
+      'View Reports',
+      'System Settings',
+      'Manage Staff',
+    ].any(store.hasPermission);
+
+    final navTabs = <(MarketTab, String, IconData)>[
+      (MarketTab.dashboard, strings.dashboard, Icons.bar_chart_rounded),
+      (MarketTab.products, strings.inventory, Icons.inventory_2_outlined),
+      (MarketTab.sales, strings.sales, Icons.point_of_sale_outlined),
+      (MarketTab.more, strings.more, Icons.grid_view_outlined),
+    ];
 
     return Drawer(
       width: drawerWidth,
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       shape: const RoundedRectangleBorder(),
       child: SafeArea(
         child: Column(
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.xxl, AppSpacing.xxl,
-                  AppSpacing.xxl, AppSpacing.lg),
+              padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl,
+                  AppSpacing.xl, AppSpacing.md),
               child: _DrawerProfileHeader(),
             ),
+            Divider(color: palette.divider, height: 1),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
+                    AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (onSelectTab != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                        child: Text(
+                          (isSwahili ? 'URAMBAZAJI' : 'NAVIGATION'),
+                          style: AppTypography.label.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: palette.textMuted,
+                          ),
+                        ),
+                      ),
+                      for (final (tab, label, icon) in navTabs)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: _DrawerActionTile(
+                            icon: icon,
+                            label: label,
+                            isSelected: selectedTab == tab,
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              onSelectTab!(tab);
+                            },
+                          ),
+                        ),
+                      if (hasAdvancedAccess)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: _DrawerActionTile(
+                            icon: Icons.tune_rounded,
+                            label: isSwahili
+                                ? 'Vipengele vya juu'
+                                : 'Advanced tools',
+                            isSelected: false,
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const AdvancedFeaturesPage(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      if (canOpenSettings)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: _DrawerActionTile(
+                            icon: Icons.settings_outlined,
+                            label: strings.settings,
+                            isSelected: false,
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const SettingsPage(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: AppSpacing.md),
+                      Divider(color: palette.divider, height: 1),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      child: Text(
+                        (isSwahili ? 'MANDHARI' : 'THEME'),
+                        style: AppTypography.label.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: palette.textMuted,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: AppThemePreset.presets.map((preset) {
+                          final active =
+                              store.storePreferences.appTheme == preset.id;
+                          return ChoiceChip(
+                            label: Text(
+                              isSwahili ? preset.nameSw : preset.nameEn,
+                              style: AppTypography.helperText.copyWith(
+                                color: active ? Colors.white : palette.ink,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            avatar: Icon(
+                              preset.icon,
+                              size: 15,
+                              color: active ? Colors.white : palette.textMuted,
+                            ),
+                            selected: active,
+                            showCheckmark: false,
+                            selectedColor: palette.primary,
+                            backgroundColor: palette.surfaceSecondary,
+                            side: BorderSide(
+                              color: active ? palette.primary : palette.border,
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onSelected: (_) {
+                              if (active) return;
+                              store.setStorePreferences(
+                                store.storePreferences
+                                    .copyWith(appTheme: preset.id),
+                              );
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Divider(color: palette.divider, height: 1),
+                    const SizedBox(height: AppSpacing.md),
                     _DrawerSection(
                       items: _supportItems(strings),
                       selectedItem: selectedItem,
                     ),
-                    const SizedBox(height: AppSpacing.xl),
-                    const Divider(color: AppColors.divider, height: 1),
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.lg),
+                    Divider(color: palette.divider, height: 1),
+                    const SizedBox(height: AppSpacing.lg),
                     const _LogoutButton(),
                   ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerActionTile extends StatelessWidget {
+  const _DrawerActionTile({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppThemePalette.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.standard),
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isSelected ? palette.primaryLight : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? palette.primary : palette.textMuted,
+              size: 22,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyMain.copyWith(
+                  color: isSelected ? palette.primary : palette.ink,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
             ),
@@ -105,7 +306,7 @@ class _DrawerProfileHeader extends StatelessWidget {
             radius: 44,
             backgroundColor: AppColors.surface,
             child: profile.logoPath == null
-                ? const Icon(
+                ? Icon(
                     Icons.storefront_rounded,
                     color: AppColors.primary,
                     size: 40,
@@ -232,7 +433,7 @@ class _DrawerTile extends StatelessWidget {
               Container(
                 width: 6,
                 height: 6,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
@@ -292,7 +493,7 @@ class _LogoutButton extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.logout_rounded,
               color: AppColors.ink,
               size: 24,

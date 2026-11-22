@@ -72,7 +72,8 @@ class CustomerHeroCard extends StatelessWidget {
                         ),
                         if (customer.tags.isEmpty)
                           CustomerPill(
-                            label: customerDual(strings, 'No tags', 'Hakuna lebo'),
+                            label:
+                                customerDual(strings, 'No tags', 'Hakuna lebo'),
                             color: AppColors.textMuted,
                             background: AppColors.surfaceSecondary,
                           )
@@ -91,7 +92,7 @@ class CustomerHeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(height: 1, thickness: 1, color: AppColors.divider),
+          Divider(height: 1, thickness: 1, color: AppColors.divider),
           const SizedBox(height: 10),
           CustomerDetailRow(
             icon: Icons.call_outlined,
@@ -141,7 +142,7 @@ class CustomerPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
       ),
       child: Text(
         label,

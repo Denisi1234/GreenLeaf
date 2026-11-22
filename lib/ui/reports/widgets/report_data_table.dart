@@ -38,7 +38,7 @@ class ReportDataTable extends StatelessWidget {
             constraints: BoxConstraints(minWidth: constraints.maxWidth),
             child: DataTable(
               headingRowColor:
-                  const WidgetStatePropertyAll(AppColors.surfaceSecondary),
+                  WidgetStatePropertyAll(AppColors.surfaceSecondary),
               headingTextStyle:
                   AppTypography.tableHeader.copyWith(color: AppColors.textBody),
               dataTextStyle: AppTypography.bodySmall,
@@ -56,8 +56,8 @@ class ReportDataTable extends StatelessWidget {
                   DataColumn(
                     label: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 180),
-                      child:
-                          Text(context.tr(table.columns[index].label), maxLines: 2),
+                      child: Text(context.tr(table.columns[index].label),
+                          maxLines: 2),
                     ),
                     numeric: table.columns[index].money,
                     onSort: (_, ascending) => onSort(index, ascending),
@@ -66,14 +66,20 @@ class ReportDataTable extends StatelessWidget {
               rows: [
                 for (var rowIndex = 0; rowIndex < pageRows.length; rowIndex++)
                   DataRow(
-                    color: WidgetStatePropertyAll(rowIndex.isOdd
-                        ? AppColors.surfaceSecondary.withValues(alpha: 0.45)
-                        : AppColors.surface),
+                    color: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.hovered)) {
+                        return AppColors.surfaceHover;
+                      }
+                      return rowIndex.isOdd
+                          ? AppColors.surfaceSecondary.withValues(alpha: 0.45)
+                          : AppColors.surface;
+                    }),
                     cells: [
                       for (final index in visibleIndexes)
                         DataCell(ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 260),
-                          child: _buildCell(context,
+                          child: _buildCell(
+                            context,
                             index < pageRows[rowIndex].length
                                 ? pageRows[rowIndex][index]
                                 : null,
@@ -92,9 +98,12 @@ class ReportDataTable extends StatelessWidget {
 
   Widget _buildCell(BuildContext context, Object? value, ReportColumn column) {
     if (value is num) {
-      final formatted = NumberFormat('#,##0.##', context.strings.languageCode).format(value);
+      final formatted =
+          NumberFormat('#,##0.##', context.strings.languageCode).format(value);
       return Text(
-        column.money ? context.tr('TSH {p0}', args: {'p0': formatted}) : formatted,
+        column.money
+            ? context.tr('TSH {p0}', args: {'p0': formatted})
+            : formatted,
         style: AppTypography.bodySmall.copyWith(
           fontWeight: column.money ? FontWeight.w700 : FontWeight.w500,
           color: value < 0 ? AppColors.dangerDeep : AppColors.ink,

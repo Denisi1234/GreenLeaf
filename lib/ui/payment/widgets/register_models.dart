@@ -39,7 +39,7 @@ class RegisterFlatCard extends StatelessWidget {
       padding: padding,
       showShadow: false,
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       child: child,
     );
   }

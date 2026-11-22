@@ -7,12 +7,12 @@ class MarketTable extends StatelessWidget {
     super.key,
     required this.columns,
     required this.rows,
-    this.headerColor = AppColors.surfaceSecondary,
+    this.headerColor,
   });
 
   final List<String> columns;
   final List<List<Widget>> rows;
-  final Color headerColor;
+  final Color? headerColor;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class MarketTable extends StatelessWidget {
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            color: headerColor,
+            color: headerColor ?? AppColors.surfaceSecondary,
             borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppRadius.standard)),
             border: Border.all(color: AppColors.border),
@@ -55,8 +55,8 @@ class MarketTable extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surface,
               border: Border(
-                left: const BorderSide(color: AppColors.border),
-                right: const BorderSide(color: AppColors.border),
+                left: BorderSide(color: AppColors.border),
+                right: BorderSide(color: AppColors.border),
                 bottom: BorderSide(
                   color: AppColors.border,
                   width: isLast ? 1 : 0.5,

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_strings.dart';
@@ -27,7 +26,7 @@ class ExpenseReceiptCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasReceipt = path != null && path!.isNotEmpty;
     return MarketSurfaceCard(
-      radius: 0,
+      radius: AppRadius.input,
       borderColor: AppColors.border,
       showShadow: false,
       padding: const EdgeInsets.all(16),
@@ -47,7 +46,7 @@ class ExpenseReceiptCard extends StatelessWidget {
             Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                   child: Image(
                     image: appImageProvider(context, path!),
                     width: 64,
@@ -57,7 +56,7 @@ class ExpenseReceiptCard extends StatelessWidget {
                       width: 64,
                       height: 64,
                       color: AppColors.surfaceSecondary,
-                      child: const Icon(Icons.image_not_supported_outlined,
+                      child: Icon(Icons.image_not_supported_outlined,
                           color: AppColors.textLight),
                     ),
                   ),
@@ -90,10 +89,10 @@ class ExpenseReceiptCard extends StatelessWidget {
                 onPressed: onPick,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: AppColors.border),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppCorners.control,
                   ),
                 ),
                 icon: const Icon(Icons.add_a_photo_outlined, size: 18),
@@ -129,7 +128,7 @@ class ExpenseFormDropdown extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -141,7 +140,7 @@ class ExpenseFormDropdown extends StatelessWidget {
               child: DropdownButton<String>(
                 value: value,
                 isExpanded: true,
-                icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                icon: Icon(Icons.keyboard_arrow_down_rounded,
                     color: AppColors.textLight),
                 items: items
                     .map((e) => DropdownMenuItem(
@@ -176,12 +175,12 @@ class ExpenseChoicePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryLight : AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppCorners.control,
           border: Border.all(
             color: selected
                 ? AppColors.primary.withValues(alpha: 0.35)

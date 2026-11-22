@@ -15,13 +15,14 @@ final class SmsService
         $senderId = (string) ($smsConfig['sender_id'] ?? 'POS');
         $endpoint = (string) ($smsConfig['endpoint'] ?? 'https://messaging-service.co.tz/api/sms/v1/text/single');
 
-        if ($username === '' || $password === '') {
+        $normalizedPhone = $this->normalizePhone($phone);
+        if ($username === '' || $password === '' || $normalizedPhone === '') {
             return false;
         }
 
         $payload = json_encode([
             'from' => $senderId,
-            'to' => $phone,
+            'to' => $normalizedPhone,
             'text' => $message,
         ], JSON_THROW_ON_ERROR);
 
@@ -46,5 +47,18 @@ final class SmsService
         curl_close($ch);
 
         return $code >= 200 && $code < 300;
+    }
+
+    private function normalizePhone(string $raw): string
+    {
+        $digits = preg_replace('/\D+/', '', $raw) ?? '';
+        if ($digits === '') {
+            return '';
+        }
+        // Convert local Tanzanian format (06xxxxxxxx / 07xxxxxxxx) to 255xxxxxxxxx
+        if (strlen($digits) === 10 && str_starts_with($digits, '0')) {
+            return '255' . substr($digits, 1);
+        }
+        return $digits;
     }
 }

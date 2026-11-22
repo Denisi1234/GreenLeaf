@@ -73,7 +73,7 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
             side: BorderSide.none,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppCorners.control,
             ),
           ),
           icon: const Icon(Icons.add_rounded),
@@ -88,7 +88,7 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 48),
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(borderRadius: AppCorners.control),
       ),
       icon: _saving
           ? const SizedBox(
@@ -114,7 +114,8 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
                   child: Column(children: [
                 MarketPageHeader(
                   title: _t('New receiving', 'Upokeaji mpya'),
-                  subtitle: _t('Record a supplier delivery and update inventory',
+                  subtitle: _t(
+                      'Record a supplier delivery and update inventory',
                       'Rekodi usambazaji na sasisha hifadhi'),
                   transparentBackButton: true,
                   onBack: () => Navigator.of(context).maybePop(),
@@ -144,19 +145,21 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
                   }
                   return Column(children: [
                     Expanded(
-                        child:
-                            ListView(padding: const EdgeInsets.all(16), children: [
-                      _deliveryDetailsCard(supplierName),
-                      const SizedBox(height: 24),
-                      items,
-                      const SizedBox(height: 20),
-                      _summaryCard(),
-                    ])),
+                        child: ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                          _deliveryDetailsCard(supplierName),
+                          const SizedBox(height: 24),
+                          items,
+                          const SizedBox(height: 20),
+                          _summaryCard(),
+                        ])),
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                           color: AppColors.surface,
-                          border: Border(top: BorderSide(color: AppColors.border))),
+                          border:
+                              Border(top: BorderSide(color: AppColors.border))),
                       child: save,
                     ),
                   ]);
@@ -202,11 +205,11 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
                 border: Border.all(
                   color: AppColors.border,
                 ),
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppCorners.control,
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.local_shipping_outlined,
                     size: 18,
                     color: AppColors.textMuted,
@@ -298,7 +301,7 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
               onDelete: () => setState(() => _lines.removeAt(i)),
             ),
             if (i != _lines.length - 1)
-              const Divider(height: 1, color: AppColors.divider),
+              Divider(height: 1, color: AppColors.divider),
           ],
         ],
       ),
@@ -331,7 +334,7 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.divider),
+          Divider(height: 1, color: AppColors.divider),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             child: Row(
@@ -463,4 +466,3 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
     }
   }
 }
-

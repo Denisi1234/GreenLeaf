@@ -99,7 +99,7 @@ class FixedAssetsPage extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(
                                           AppRadius.standard),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.domain_rounded,
                                       color: AppColors.kpiSky,
                                       size: 36,
@@ -155,7 +155,7 @@ class FixedAssetsPage extends StatelessWidget {
                           child: Column(
                             children: [
                               _tableHeader(t),
-                              const Divider(
+                              Divider(
                                   height: 1, color: AppColors.divider),
                               for (var i = 0; i < assets.length; i++) ...[
                                 AssetRowTile(
@@ -171,7 +171,7 @@ class FixedAssetsPage extends StatelessWidget {
                                       _confirmDelete(context, assets[i], sw),
                                 ),
                                 if (i != assets.length - 1)
-                                  const Divider(
+                                  Divider(
                                       height: 1, color: AppColors.divider),
                               ],
                             ],

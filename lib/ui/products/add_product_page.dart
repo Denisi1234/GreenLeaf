@@ -123,7 +123,7 @@ class _AddProductPageState extends State<AddProductPage> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink, size: 24),
+          icon: Icon(Icons.arrow_back_rounded, color: AppColors.ink, size: 24),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -168,12 +168,12 @@ class _AddProductPageState extends State<AddProductPage> {
                           MarketFormField(
                             label: context.tr('Item Name'),
                             isRequired: true,
-                            radius: 0,
+                            radius: AppRadius.input,
                             fillColor: AppColors.surface,
                             controller: _controller.nameController,
                             hintText: context.tr(
                                 'e.g., White Rice 1kg, Coca-Cola 350ml'),
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                                 Icons.inventory_2_outlined,
                                 color: AppColors.textMuted,
                                 size: 20),
@@ -185,17 +185,17 @@ class _AddProductPageState extends State<AddProductPage> {
                           const SizedBox(height: 16),
                           MarketFormField(
                             label: context.tr('Barcode / SKU'),
-                            radius: 0,
+                            radius: AppRadius.input,
                             fillColor: AppColors.surface,
                             controller: _controller.codeController,
                             hintText:
                                 context.tr('Scan or type barcode'),
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                                 Icons.qr_code_2_rounded,
                                 color: AppColors.textMuted,
                                 size: 20),
                             suffixIcon: IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                   Icons.qr_code_scanner_rounded,
                                   color: AppColors.primary),
                               tooltip: context.tr('Scan barcode'),
@@ -206,7 +206,7 @@ class _AddProductPageState extends State<AddProductPage> {
                           MarketDropdownField<String>(
                             label: context.tr('Category'),
                             isRequired: true,
-                            radius: 0,
+                            radius: AppRadius.input,
                             fillColor: AppColors.surface,
                             labelAction: InkWell(
                               onTap: () => _controller
@@ -218,7 +218,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                     horizontal: 4, vertical: 2),
                                 child: Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                         Icons
                                             .add_circle_outline_rounded,
                                         size: 15,
@@ -261,7 +261,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                 value: '__new__',
                                 child: Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                         Icons
                                             .add_circle_outline_rounded,
                                         color: AppColors.primaryDeep,
@@ -313,7 +313,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                   MarketDropdownField<String>(
                                     label: t('Selling unit',
                                         'Kipimo cha kuuzia'),
-                                    radius: 0,
+                                    radius: AppRadius.input,
                                     fillColor: AppColors.surface,
                                     value: _controller.selectedUnit,
                                     items: [
@@ -358,7 +358,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.scale_outlined,
                                           size: 20,
                                           color: AppColors.textMuted,
@@ -424,7 +424,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                               ? '${context.tr('Sale Price')} ($unit)'
                                               : context.tr('Sale Price'),
                                           isRequired: true,
-                                          radius: 0,
+                                          radius: AppRadius.input,
                                           fillColor:
                                               AppColors.surface,
                                           controller: _controller
@@ -457,7 +457,7 @@ class _AddProductPageState extends State<AddProductPage> {
                                               ? '${context.tr('Purchase Price')} ($unit)'
                                               : context
                                                   .tr('Purchase Price'),
-                                          radius: 0,
+                                          radius: AppRadius.input,
                                           fillColor:
                                               AppColors.surface,
                                           controller: _controller
@@ -480,14 +480,14 @@ class _AddProductPageState extends State<AddProductPage> {
                                         : context.tr(
                                             'Initial Stock Quantity'),
                                     isRequired: true,
-                                    radius: 0,
+                                    radius: AppRadius.input,
                                     fillColor: AppColors.surface,
                                     controller:
                                         _controller.stockController,
                                     hintText: _controller.allowFractional
                                         ? '100'
                                         : '1',
-                                    prefixIcon: const Icon(
+                                    prefixIcon: Icon(
                                       Icons
                                           .production_quantity_limits_rounded,
                                       color: AppColors.textMuted,
@@ -552,7 +552,7 @@ class _AddProductPageState extends State<AddProductPage> {
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surface,
                 border: Border(top: BorderSide(color: AppColors.border, width: 1)),
               ),

@@ -64,9 +64,9 @@ class MarketHeaderActionButtons extends StatelessWidget {
     this.onNotificationTap,
     this.onSettingsTap,
     this.showSettings = false,
-    this.notificationBackground = AppColors.surface,
-    this.notificationForeground = AppColors.textMain,
-    this.notificationBorderColor = AppColors.border,
+    this.notificationBackground,
+    this.notificationForeground,
+    this.notificationBorderColor,
     this.showNotificationDot = false,
     this.spacing = AppSpacing.sm,
   });
@@ -74,22 +74,25 @@ class MarketHeaderActionButtons extends StatelessWidget {
   final VoidCallback? onNotificationTap;
   final VoidCallback? onSettingsTap;
   final bool showSettings;
-  final Color notificationBackground;
-  final Color notificationForeground;
-  final Color notificationBorderColor;
+  final Color? notificationBackground;
+  final Color? notificationForeground;
+  final Color? notificationBorderColor;
   final bool showNotificationDot;
   final double spacing;
 
   @override
   Widget build(BuildContext context) {
+    final bg = notificationBackground ?? AppColors.surface;
+    final fg = notificationForeground ?? AppColors.textMain;
+    final bc = notificationBorderColor ?? AppColors.border;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         HeaderActionButton(
           icon: Icons.notifications_none_rounded,
-          background: notificationBackground,
-          foreground: notificationForeground,
-          borderColor: notificationBorderColor,
+          background: bg,
+          foreground: fg,
+          borderColor: bc,
           showDot: showNotificationDot,
           onTap: onNotificationTap,
         ),
@@ -97,9 +100,9 @@ class MarketHeaderActionButtons extends StatelessWidget {
           SizedBox(width: spacing),
           HeaderActionButton(
             icon: Icons.settings_outlined,
-            background: notificationBackground,
-            foreground: notificationForeground,
-            borderColor: notificationBorderColor,
+            background: bg,
+            foreground: fg,
+            borderColor: bc,
             onTap: onSettingsTap,
           ),
         ],

@@ -39,7 +39,7 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded,
+                Icon(Icons.info_outline_rounded,
                     size: 16, color: AppColors.textMuted),
                 const SizedBox(width: 8),
                 Expanded(
@@ -156,7 +156,7 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
   ) =>
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
@@ -234,7 +234,7 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(24),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.warningLight,
                           shape: BoxShape.circle,
                         ),

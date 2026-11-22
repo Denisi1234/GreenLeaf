@@ -96,5 +96,28 @@
       <action android:name="android.intent.action.VIEW" />
       <data android:scheme="https" />
     </intent>
+    <!-- Google Play Store rating -->
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:scheme="market" />
+    </intent>
+    <!-- Email & Phone support -->
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:scheme="mailto" />
+    </intent>
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:scheme="tel" />
+    </intent>
+    <!-- SMS daily report delivery -->
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:scheme="sms" />
+    </intent>
+    <intent>
+      <action android:name="android.intent.action.SENDTO" />
+      <data android:scheme="smsto" />
+    </intent>
   </queries>
 </manifest>

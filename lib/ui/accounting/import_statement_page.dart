@@ -74,11 +74,12 @@ class _ImportStatementPageState extends State<ImportStatementPage> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceSecondary,
-                              borderRadius: BorderRadius.zero,
+                              borderRadius: AppCorners.control,
                               border: Border.all(color: AppColors.border),
                             ),
                             child: Text(
-                              context.tr('2026-01-31, M-Pesa deposit, 150000\n2026-02-01, Supplier payment, -45000'),
+                              context.tr(
+                                  '2026-01-31, M-Pesa deposit, 150000\n2026-02-01, Supplier payment, -45000'),
                               style: AppTypography.helperText.copyWith(
                                 color: AppColors.textBody,
                                 fontWeight: FontWeight.w600,
@@ -102,21 +103,20 @@ class _ImportStatementPageState extends State<ImportStatementPage> {
                             controller: _controller,
                             maxLines: 10,
                             minLines: 6,
-                            decoration:  InputDecoration(
-                              hintText: context.tr('2026-01-31, M-Pesa deposit, 150000'),
+                            decoration: InputDecoration(
+                              hintText: context
+                                  .tr('2026-01-31, M-Pesa deposit, 150000'),
                               alignLabelWithHint: true,
-                              border: const OutlineInputBorder(
-                                borderRadius: BorderRadius.zero,
-                                borderSide:
-                                    BorderSide(color: AppColors.border),
+                              border: OutlineInputBorder(
+                                borderRadius: AppCorners.control,
+                                borderSide: BorderSide(color: AppColors.border),
                               ),
-                              enabledBorder: const OutlineInputBorder(
-                                borderRadius: BorderRadius.zero,
-                                borderSide:
-                                    BorderSide(color: AppColors.border),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: AppCorners.control,
+                                borderSide: BorderSide(color: AppColors.border),
                               ),
-                              focusedBorder: const OutlineInputBorder(
-                                borderRadius: BorderRadius.zero,
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: AppCorners.control,
                                 borderSide: BorderSide(
                                     color: AppColors.primary, width: 1.4),
                               ),

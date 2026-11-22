@@ -29,7 +29,7 @@ class SuspendedSalesSheet extends StatelessWidget {
     final timeFormat = DateFormat('hh:mm a, dd MMM');
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppRadius.extraRounded),
@@ -59,7 +59,7 @@ class SuspendedSalesSheet extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.pause_circle_outline_rounded,
+              Icon(Icons.pause_circle_outline_rounded,
                   color: AppColors.textMuted, size: 22),
               const SizedBox(width: 12),
               Expanded(

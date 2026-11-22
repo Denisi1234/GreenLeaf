@@ -120,7 +120,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                       children: [
                         MarketSurfaceCard(
                           padding: const EdgeInsets.all(16),
-                          radius: 0,
+                          radius: AppRadius.input,
                           showShadow: false,
                           borderColor: AppColors.border,
                           child: Column(
@@ -154,20 +154,20 @@ class _AssetFormPageState extends State<AssetFormPage> {
                               InkWell(
                                 onTap: _pickDate,
                                 child: InputDecorator(
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: null,
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.zero,
+                                      borderRadius: AppCorners.control,
                                       borderSide:
                                           BorderSide(color: AppColors.border),
                                     ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.zero,
+                                      borderRadius: AppCorners.control,
                                       borderSide:
                                           BorderSide(color: AppColors.border),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.zero,
+                                      borderRadius: AppCorners.control,
                                       borderSide: BorderSide(
                                           color: AppColors.primary, width: 1.4),
                                     ),
@@ -206,7 +206,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                                           ],
                                         ),
                                       ),
-                                      const Icon(Icons.calendar_today_outlined,
+                                      Icon(Icons.calendar_today_outlined,
                                           size: 18, color: AppColors.textMuted),
                                     ],
                                   ),
@@ -218,7 +218,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                         const SizedBox(height: 12),
                         MarketSurfaceCard(
                           padding: const EdgeInsets.all(16),
-                          radius: 0,
+                          radius: AppRadius.input,
                           showShadow: false,
                           borderColor: AppColors.border,
                           child: Column(
@@ -279,7 +279,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                         const SizedBox(height: 12),
                         MarketSurfaceCard(
                           padding: EdgeInsets.zero,
-                          radius: 0,
+                          radius: AppRadius.input,
                           showShadow: false,
                           borderColor: AppColors.border,
                           child: Column(
@@ -309,7 +309,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                                   ],
                                 ),
                               ),
-                              const Divider(
+                              Divider(
                                   height: 1, color: AppColors.divider),
                               Padding(
                                 padding:
@@ -346,7 +346,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.surface,
                     border: Border(
                         top: BorderSide(color: AppColors.border, width: 1)),
@@ -360,7 +360,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                           color: AppColors.kpiDangerBg,
                           foregroundColor: AppColors.kpiDanger,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           onTap: () => Navigator.of(context).maybePop(),
                           height: 48,
                         ),
@@ -373,7 +373,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                           icon: Icons.check_rounded,
                           variant: MarketButtonVariant.primary,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           height: 48,
                           onTap: _save,
                         ),
@@ -444,8 +444,10 @@ class _AssetFormPageState extends State<AssetFormPage> {
           ? _t('Asset Added', 'Mali Imeongezwa')
           : _t('Asset Updated', 'Mali Imesasishwa'),
       message: isNew
-          ? _t('$assetName added successfully', '$assetName imeongezwa kikamilifu')
-          : _t('$assetName updated successfully', '$assetName imesasishwa kikamilifu'),
+          ? _t('$assetName added successfully',
+              '$assetName imeongezwa kikamilifu')
+          : _t('$assetName updated successfully',
+              '$assetName imesasishwa kikamilifu'),
       type: MarketNoticeType.success,
     );
     nav.maybePop();

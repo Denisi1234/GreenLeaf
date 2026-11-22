@@ -541,8 +541,8 @@ class _PaymentPageState extends State<PaymentPage> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 54),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.pill),
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppCorners.control,
         ),
       ),
       icon: _savingSale
@@ -588,8 +588,8 @@ class _PaymentPageState extends State<PaymentPage> {
             backgroundColor: AppColors.kpiDangerBg,
             foregroundColor: AppColors.kpiDanger,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.pill),
+            shape: const RoundedRectangleBorder(
+              borderRadius: AppCorners.control,
             ),
           ),
           icon: const Icon(Icons.delete_sweep_outlined, size: 19),
@@ -696,7 +696,7 @@ class _PaymentPageState extends State<PaymentPage> {
                         ])),
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                           color: AppColors.surface,
                           border: Border(
                               top: BorderSide(color: AppColors.border))),

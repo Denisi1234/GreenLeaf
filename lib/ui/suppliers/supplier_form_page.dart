@@ -159,7 +159,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.surface,
                     border: Border(
                         top: BorderSide(color: AppColors.border, width: 1)),
@@ -173,7 +173,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                           color: AppColors.kpiDangerBg,
                           foregroundColor: AppColors.kpiDanger,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           onTap: () => Navigator.of(context).maybePop(),
                           height: 48,
                         ),
@@ -188,7 +188,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                           icon: Icons.check_rounded,
                           variant: MarketButtonVariant.primary,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           height: 48,
                           onTap: _save,
                         ),
@@ -222,7 +222,8 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
         ? _t('Supplier Updated', 'Msambazaji Amesasishwa')
         : _t('Supplier Added', 'Msambazaji Ameongezwa');
     final successMsg = isEdit
-        ? _t('Supplier updated successfully', 'Msambazaji amesasishwa kikamilifu')
+        ? _t('Supplier updated successfully',
+            'Msambazaji amesasishwa kikamilifu')
         : _t('Supplier added successfully', 'Msambazaji ameongezwa kikamilifu');
 
     final saved = await store.saveSupplier(supplier);
@@ -251,7 +252,8 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
     );
     if (!confirmed || !mounted) return;
     final deleteTitle = _t('Supplier Deleted', 'Msambazaji Amefutwa');
-    final deleteMsg = _t('Supplier deleted successfully', 'Msambazaji amefutwa kikamilifu');
+    final deleteMsg =
+        _t('Supplier deleted successfully', 'Msambazaji amefutwa kikamilifu');
     await context.read<PosLocalStore>().deleteSupplier(widget.supplier!.id!);
     if (!mounted) return;
     showMarketNotice(

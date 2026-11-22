@@ -33,8 +33,8 @@ class MarketButton extends StatefulWidget {
     this.radius = AppRadius.pill,
     this.paddingHorizontal = AppSpacing.xl,
     this.boxShadow,
-    this.fontSize,
-    this.fontWeight,
+    this.fontSize = 15,
+    this.fontWeight = FontWeight.w700,
     this.iconSize = 18,
     this.iconSpacing = AppSpacing.sm,
   });
@@ -187,7 +187,7 @@ class _MarketButtonState extends State<MarketButton> {
       case MarketButtonVariant.danger:
         return (AppColors.dangerDeep, Colors.white, null);
       case MarketButtonVariant.secondary:
-        return (AppColors.surfaceSecondary, AppColors.textBody, null);
+        return (AppColors.surface, AppColors.textBody, AppColors.border);
       case MarketButtonVariant.ghost:
         return (Colors.transparent, AppColors.textBody, null);
     }
@@ -197,6 +197,11 @@ class _MarketButtonState extends State<MarketButton> {
   Widget build(BuildContext context) {
     final disabled = widget.onTap == null || _running;
     final (bg, fg, border) = _resolveColors();
+    final textHeight =
+        MediaQuery.textScalerOf(context).scale(widget.fontSize ?? 14) * 2.4 +
+            16;
+    final effectiveHeight =
+        textHeight > widget.height ? textHeight : widget.height;
 
     return Container(
       decoration: BoxDecoration(
@@ -204,7 +209,7 @@ class _MarketButtonState extends State<MarketButton> {
         boxShadow: widget.boxShadow,
       ),
       child: SizedBox(
-        height: widget.height,
+        height: effectiveHeight,
         width: widget.isFullWidth ? double.infinity : null,
         child: FilledButton(
           onPressed: disabled ? null : _invoke,
@@ -214,7 +219,7 @@ class _MarketButtonState extends State<MarketButton> {
             disabledBackgroundColor: _running ? bg : AppColors.border,
             disabledForegroundColor: _running ? fg : AppColors.textLight,
             padding: EdgeInsets.symmetric(horizontal: widget.paddingHorizontal),
-            minimumSize: Size(0, widget.height),
+            minimumSize: Size(0, effectiveHeight),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(widget.radius),
             ),
@@ -242,7 +247,7 @@ class _MarketButtonState extends State<MarketButton> {
                 child: Text(
                   widget.label,
                   textAlign: TextAlign.center,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.bodyMain.copyWith(
                     color: disabled && !_running ? AppColors.textLight : fg,

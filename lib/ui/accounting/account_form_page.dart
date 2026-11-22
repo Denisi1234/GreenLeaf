@@ -100,15 +100,15 @@ class _AccountFormPageState extends State<AccountFormPage> {
                               decoration: InputDecoration(
                                 labelText: _t('Type', 'Aina'),
                                 border: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
+                                  borderRadius: AppCorners.control,
                                 ),
-                                enabledBorder: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: AppCorners.control,
                                   borderSide:
                                       BorderSide(color: AppColors.border),
                                 ),
-                                focusedBorder: const OutlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: AppCorners.control,
                                   borderSide: BorderSide(
                                       color: AppColors.primary, width: 1.4),
                                 ),
@@ -170,7 +170,7 @@ class _AccountFormPageState extends State<AccountFormPage> {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface,
                   border: Border(
                       top: BorderSide(color: AppColors.border, width: 1)),
@@ -184,7 +184,7 @@ class _AccountFormPageState extends State<AccountFormPage> {
                         color: AppColors.kpiDangerBg,
                         foregroundColor: AppColors.kpiDanger,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.input,
                         onTap: () => Navigator.of(context).maybePop(),
                         height: 48,
                       ),
@@ -197,7 +197,7 @@ class _AccountFormPageState extends State<AccountFormPage> {
                         icon: Icons.check_rounded,
                         variant: MarketButtonVariant.primary,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.input,
                         height: 48,
                         onTap: () {
                           if (!_formKey.currentState!.validate()) return;

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
+import '../widgets/market_shared_widgets.dart';
 import 'auth_shell.dart';
 
 class LoginPage extends StatefulWidget {
@@ -50,6 +51,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     final store = context.read<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
     final ok = await store.login(
       _phoneController.text.trim(),
       _passwordController.text,
@@ -58,14 +60,28 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     setState(() => _busy = false);
 
-    if (ok) return;
+    if (ok) {
+      showMarketNotice(
+        context,
+        title: strings.isSwahili ? 'Karibu tena' : 'Signed in',
+        message: strings.isSwahili
+            ? 'Umeingia kwenye akaunti yako kwa mafanikio.'
+            : 'Welcome back to Aza POS.',
+        type: MarketNoticeType.success,
+      );
+      return;
+    }
 
-    final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
-    setState(() {
-      _error = store.lastAuthError == 'user_not_found'
-          ? strings.userNotFound
-          : strings.loginFailed;
-    });
+    final errorMessage = store.lastAuthError == 'user_not_found'
+        ? strings.userNotFound
+        : strings.loginFailed;
+    setState(() => _error = errorMessage);
+    showMarketNotice(
+      context,
+      title: strings.isSwahili ? 'Imeshindwa kuingia' : 'Sign in failed',
+      message: errorMessage,
+      type: MarketNoticeType.error,
+    );
   }
 
   @override

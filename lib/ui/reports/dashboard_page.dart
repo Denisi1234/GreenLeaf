@@ -10,6 +10,7 @@ import '../../utils/currency_formatter.dart';
 import '../more/add_expense_page.dart';
 import '../sales/order_history_page.dart';
 import '../widgets/app_design.dart';
+import '../widgets/app_theme_palette.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'enhanced_report_page.dart';
 import 'pos_report_catalog.dart';
@@ -132,7 +133,7 @@ class _DashboardPageState extends State<DashboardPage> {
         : context.tr('{p0}% {p1} Today', args: {'p0': (((todaySales - yesterdaySales) / yesterdaySales) * 100).abs().toStringAsFixed(0), 'p1': context.tr(hasGrowth ? 'Growth' : 'Dip')});
 
     return Scaffold(
-      backgroundColor: AppColors.pageBackground, // Soft light-blue grey matching the app theme
+      backgroundColor: AppThemePalette.of(context).pageBackground,
       drawer: widget.useSharedShell ? null : const MarketAppDrawer(selectedItem: 'Dashboard'),
       body: SafeArea(
         top: !widget.useSharedShell,

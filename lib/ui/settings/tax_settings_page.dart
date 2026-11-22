@@ -70,7 +70,8 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                       taxableSales: taxableSales,
                       taxCollected: taxCollected,
                       taxRatePercent: _draft.ratePercent,
-                      taxLabel: _draft.taxLabel.isEmpty ? 'VAT' : _draft.taxLabel,
+                      taxLabel:
+                          _draft.taxLabel.isEmpty ? 'VAT' : _draft.taxLabel,
                       isEnabled: _draft.enabled,
                       isSwahili: _isSwahili,
                     ),
@@ -127,8 +128,8 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                           Switch(
                             value: _draft.enabled,
                             activeThumbColor: AppColors.primary,
-                            onChanged: (value) => setState(() =>
-                                _draft = _draft.copyWith(enabled: value)),
+                            onChanged: (value) => setState(
+                                () => _draft = _draft.copyWith(enabled: value)),
                           ),
                         ],
                       ),
@@ -159,17 +160,16 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                               hintText: context.tr('VAT'),
                               initialValue: _draft.taxLabel,
                               fillColor: AppColors.pageBackground,
-                              radius: 0,
+                              radius: AppRadius.input,
                               onChanged: (value) => _draft =
                                   _draft.copyWith(taxLabel: value.trim()),
                             ),
                             const SizedBox(height: AppSpacing.md),
                             MarketFormField(
-                              label:
-                                  _t('Tax rate (%)', 'Kiwango cha kodi (%)'),
+                              label: _t('Tax rate (%)', 'Kiwango cha kodi (%)'),
                               hintText: '18',
                               fillColor: AppColors.pageBackground,
-                              radius: 0,
+                              radius: AppRadius.input,
                               initialValue: _draft.ratePercent == 0
                                   ? ''
                                   : _draft.ratePercent.toStringAsFixed(2),
@@ -187,10 +187,10 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                               hintText:
                                   _t('e.g. 123-456-789', 'mf. 123-456-789'),
                               fillColor: AppColors.pageBackground,
-                              radius: 0,
+                              radius: AppRadius.input,
                               initialValue: _draft.taxId,
-                              onChanged: (value) => _draft =
-                                  _draft.copyWith(taxId: value.trim()),
+                              onChanged: (value) =>
+                                  _draft = _draft.copyWith(taxId: value.trim()),
                             ),
                           ],
                         ),
@@ -231,7 +231,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                                     .copyWith(color: AppColors.textMuted),
                               ),
                             ),
-                            const Divider(height: 1, color: AppColors.divider),
+                            Divider(height: 1, color: AppColors.divider),
                             SwitchListTile(
                               contentPadding: EdgeInsets.zero,
                               value: _draft.trackExpenseTax,
@@ -265,7 +265,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                           : _t('Save tax settings',
                               'Hifadhi mipangilio ya kodi'),
                       icon: Icons.check_rounded,
-                      radius: 0,
+                      radius: AppRadius.input,
                       onTap: _saving ? null : _save,
                     ),
                   ],
@@ -290,7 +290,9 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
       showMarketNotice(
         context,
         title: sw ? 'Mipangilio ya kodi' : 'Tax settings',
-        message: sw ? 'Mipangilio ya kodi imehifadhiwa kikamilifu' : 'Tax settings saved successfully',
+        message: sw
+            ? 'Mipangilio ya kodi imehifadhiwa kikamilifu'
+            : 'Tax settings saved successfully',
         type: MarketNoticeType.success,
       );
       navigator.pop();

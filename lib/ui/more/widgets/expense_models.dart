@@ -53,7 +53,7 @@ class CategoryStyle {
   final IconData icon;
   final Color color;
 
-  static const _known = <String, CategoryStyle>{
+  static Map<String, CategoryStyle> get _known => <String, CategoryStyle>{
     'Operations': CategoryStyle(Icons.settings_outlined, AppColors.primary),
     'Inventory': CategoryStyle(Icons.inventory_2_outlined, AppColors.toneTeal),
     'Rent': CategoryStyle(Icons.home_work_outlined, AppColors.ink),
@@ -70,6 +70,6 @@ class CategoryStyle {
 
   static CategoryStyle forName(String name) {
     return _known[name] ??
-        const CategoryStyle(Icons.receipt_long_outlined, AppColors.textMuted);
+        CategoryStyle(Icons.receipt_long_outlined, AppColors.textMuted);
   }
 }

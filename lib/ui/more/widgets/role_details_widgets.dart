@@ -34,7 +34,7 @@ class RolePermissionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: readOnly ? null : () => onChanged(!granted),
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -43,7 +43,8 @@ class RolePermissionTile extends StatelessWidget {
             Checkbox(
               value: granted,
               onChanged: readOnly ? null : onChanged,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: AppCorners.control),
               activeColor: AppColors.primary,
             ),
             const SizedBox(width: 8),
@@ -52,7 +53,7 @@ class RolePermissionTile extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 10),
                 child: Text(
                   data.label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.ink,
                     fontSize: 14.5,
                     fontWeight: FontWeight.w600,
@@ -87,7 +88,7 @@ class AssignedStaffTile extends StatelessWidget {
             backgroundColor: avatarColor,
             child: Text(
               data.initials,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.ink,
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
@@ -101,7 +102,7 @@ class AssignedStaffTile extends StatelessWidget {
               children: [
                 Text(
                   data.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.ink,
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
@@ -111,7 +112,7 @@ class AssignedStaffTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     data.email,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 12.5,
                     ),
@@ -121,7 +122,7 @@ class AssignedStaffTile extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     data.phone,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 12,
                     ),
@@ -157,7 +158,7 @@ class RolePermissionNote extends StatelessWidget {
               color: AppColors.kpiSkyBg,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.shield_outlined,
               color: AppColors.kpiSky,
               size: 18,
@@ -166,8 +167,9 @@ class RolePermissionNote extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              context.tr('Changes to permissions will apply immediately to all staff assigned to this role.'),
-              style: const TextStyle(
+              context.tr(
+                  'Changes to permissions will apply immediately to all staff assigned to this role.'),
+              style: TextStyle(
                 color: AppColors.ink,
                 fontSize: 13,
                 height: 1.4,

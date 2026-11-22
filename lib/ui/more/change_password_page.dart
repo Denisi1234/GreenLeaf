@@ -199,11 +199,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                     width: 34,
                                     height: 34,
                                     alignment: Alignment.center,
-                                    decoration: const BoxDecoration(
+                                    decoration: BoxDecoration(
                                       color: AppColors.surfaceSecondary,
-                                      borderRadius: BorderRadius.zero,
+                                      borderRadius: AppCorners.control,
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                         Icons.lock_outline_rounded,
                                         color: AppColors.primary,
                                         size: 18),
@@ -326,7 +326,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                       horizontal: 12, vertical: 10),
                                   decoration: BoxDecoration(
                                     color: AppColors.dangerLight,
-                                    borderRadius: BorderRadius.zero,
+                                    borderRadius: AppCorners.control,
                                     border: Border.all(
                                       color: AppColors.danger
                                           .withValues(alpha: 0.16),
@@ -456,7 +456,7 @@ class _StrengthMeter extends StatelessWidget {
                     color: strength.level > index / 3
                         ? strength.color
                         : AppColors.surfaceHover,
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppCorners.control,
                   ),
                 ),
               ),
@@ -562,7 +562,7 @@ class _PasswordField extends StatelessWidget {
             hintText: hint,
             hintStyle:
                 AppTypography.bodyMain.copyWith(color: AppColors.textLight),
-            prefixIcon: const Icon(Icons.lock_outline_rounded,
+            prefixIcon: Icon(Icons.lock_outline_rounded,
                 color: AppColors.textLight, size: 20),
             suffixIcon: IconButton(
               tooltip: obscure
@@ -581,24 +581,24 @@ class _PasswordField extends StatelessWidget {
             fillColor: AppColors.pageBackground,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            border: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+            border: OutlineInputBorder(
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.border),
             ),
-            enabledBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.border),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.danger, width: 1.5),
             ),
             focusedErrorBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppCorners.control,
               borderSide: BorderSide(color: AppColors.danger, width: 1.5),
             ),
           ),
@@ -623,9 +623,9 @@ class _SaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: onTap == null ? AppColors.border : AppColors.primary,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: InkWell(
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         highlightColor: Colors.transparent,
         splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
         onTap: onTap,

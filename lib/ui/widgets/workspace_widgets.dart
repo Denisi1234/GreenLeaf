@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_design.dart';
+import 'app_theme_palette.dart';
 
 /// Shared surfaces for operational screens. Color is reserved for status and
 /// actions; content stays neutral so dense records remain easy to scan.
@@ -20,26 +21,29 @@ class WorkspacePanel extends StatelessWidget {
   final Color? backgroundColor;
 
   @override
-  Widget build(BuildContext context) => Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: backgroundColor ?? AppColors.surface,
-          border: borderless ? null : Border.all(color: AppColors.border),
-          borderRadius: sharp
-              ? BorderRadius.zero
-              : BorderRadius.circular(AppRadius.standard),
-          boxShadow: borderless
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-        ),
-        child: Padding(padding: padding, child: child),
-      );
+  Widget build(BuildContext context) {
+    final palette = AppThemePalette.of(context);
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: backgroundColor ?? palette.surface,
+        border: borderless ? null : Border.all(color: palette.border),
+        borderRadius: sharp
+            ? BorderRadius.zero
+            : BorderRadius.circular(AppRadius.standard),
+        boxShadow: borderless
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
 }
 
 class WorkspaceHeading extends StatelessWidget {
@@ -63,7 +67,7 @@ class WorkspaceHeading extends StatelessWidget {
                     .copyWith(color: AppColors.textMuted)),
           ],
         );
-        if (constraints.maxWidth < 520) {
+        if (constraints.maxWidth < 720) {
           return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -84,7 +88,7 @@ class WorkspaceMetric extends StatelessWidget {
       required this.label,
       required this.value,
       required this.icon,
-      this.color = AppColors.ink,
+      this.color,
       this.sharp = false,
       this.borderless = false,
       this.backgroundColor});
@@ -92,30 +96,48 @@ class WorkspaceMetric extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final Color color;
+  final Color? color;
   final bool sharp;
   final bool borderless;
   final Color? backgroundColor;
 
   @override
-  Widget build(BuildContext context) => WorkspacePanel(
-        padding: const EdgeInsets.all(16),
-        sharp: sharp,
-        borderless: borderless,
-        backgroundColor: backgroundColor,
-        child: Row(children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(label, style: AppTypography.label),
-                const SizedBox(height: 6),
-                Text(value, style: AppTypography.h3.copyWith(color: color)),
-              ])),
-        ]),
-      );
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 380;
+    final effectiveColor = color ?? AppColors.ink;
+    return WorkspacePanel(
+      padding: EdgeInsets.all(compact ? 12 : 16),
+      sharp: sharp,
+      borderless: borderless,
+      backgroundColor: backgroundColor,
+      child: Row(children: [
+        Icon(icon, color: effectiveColor, size: compact ? 18 : 22),
+        SizedBox(width: compact ? 8 : 12),
+        Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.label,
+              ),
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: AppTypography.h3.copyWith(color: effectiveColor),
+                ),
+              ),
+            ])),
+      ]),
+    );
+  }
 }
 
 class WorkspaceStatus extends StatelessWidget {
@@ -192,7 +214,7 @@ class _WorkspaceRegisterState extends State<WorkspaceRegister> {
                         columns: widget.columns,
                         rows: rows,
                         showCheckboxColumn: false,
-                        headingRowColor: const WidgetStatePropertyAll(
+                        headingRowColor: WidgetStatePropertyAll(
                             AppColors.surfaceSecondary),
                         headingTextStyle: AppTypography.tableHeader,
                         dataTextStyle: AppTypography.bodySmall,

@@ -69,6 +69,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
   OverlayEntry? _flyToCartOverlay;
   int _cartAnimationTicket = 0;
   Timer? _successTimer;
+  ProductCardLayout _catalogLayout = ProductCardLayout.detailed;
 
   @override
   void initState() {
@@ -95,6 +96,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
   }
 
   void _triggerFlyToCartAnimation(ProductItem product, Offset startOffset) {
+    if (MediaQuery.disableAnimationsOf(context)) return;
     _flyToCartOverlay?.remove();
     _flyToCartOverlay = null;
 
@@ -128,7 +130,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                     child: Container(
                       width: 40,
                       height: 40,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
@@ -214,7 +216,8 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
       showMarketNotice(
         context,
         title: context.tr('Barcode not found'),
-        message: context.tr('No product matched barcode {p0}', args: {'p0': code}),
+        message:
+            context.tr('No product matched barcode {p0}', args: {'p0': code}),
         type: MarketNoticeType.warning,
       );
       return;
@@ -311,13 +314,14 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
         return SafeArea(
           top: !widget.useSharedShell,
           child: ColoredBox(
-            color: AppColors.pageBackground,
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 1100;
+                final wide = constraints.maxWidth >= 900;
 
-                final holdActions = Row(
-                  mainAxisSize: MainAxisSize.min,
+                final holdActions = Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     if (store.cartItems.isNotEmpty) ...[
                       OutlinedButton.icon(
@@ -344,7 +348,8 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                             vertical: 10,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.button),
                           ),
                         ),
                         icon: const Icon(
@@ -356,7 +361,6 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
-                      const SizedBox(width: 8),
                     ],
                     Stack(
                       clipBehavior: Clip.none,
@@ -372,7 +376,8 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                               vertical: 10,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.button),
                             ),
                           ),
                           icon: const Icon(
@@ -394,7 +399,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.kpiDanger,
+                                color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: AppColors.surface,
@@ -480,8 +485,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                                 vertical: 4,
                               ),
                               minimumSize: Size.zero,
-                              tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
                               context.tr('Clear filters'),
@@ -491,6 +495,26 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                               ),
                             ),
                           ),
+                        PopupMenuButton<ProductCardLayout>(
+                          tooltip: context.tr('Catalog view'),
+                          onSelected: (value) =>
+                              setState(() => _catalogLayout = value),
+                          itemBuilder: (_) => [
+                            for (final entry in {
+                              ProductCardLayout.detailed: 'Detailed tiles',
+                              ProductCardLayout.compact: 'Compact tiles',
+                              ProductCardLayout.list: 'List view',
+                            }.entries)
+                              CheckedPopupMenuItem(
+                                value: entry.key,
+                                checked: _catalogLayout == entry.key,
+                                child: Text(context.tr(entry.value)),
+                              ),
+                          ],
+                          icon: Icon(_catalogLayout == ProductCardLayout.list
+                              ? Icons.view_list_outlined
+                              : Icons.grid_view_outlined),
+                        ),
                         PopupMenuButton<String>(
                           tooltip: context.tr('Sort products'),
                           initialValue: _viewModel.sortBy,
@@ -502,13 +526,11 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                             ),
                             PopupMenuItem(
                               value: 'price-low',
-                              child:
-                                  Text(context.tr('Price: low to high')),
+                              child: Text(context.tr('Price: low to high')),
                             ),
                             PopupMenuItem(
                               value: 'price-high',
-                              child:
-                                  Text(context.tr('Price: high to low')),
+                              child: Text(context.tr('Price: high to low')),
                             ),
                           ],
                           icon: const Icon(Icons.sort_rounded),
@@ -584,27 +606,56 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                                 )
                               : LayoutBuilder(
                                   builder: (context, gridConstraints) {
+                                    if (_catalogLayout ==
+                                        ProductCardLayout.list) {
+                                      return ListView.separated(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 16),
+                                        itemCount: products.length,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 8),
+                                        itemBuilder: (_, index) => ProductCard(
+                                          product: products[index],
+                                          layout: _catalogLayout,
+                                          onTapDown: (details) =>
+                                              _handleProductTap(
+                                                  products[index], details),
+                                        ),
+                                      );
+                                    }
+                                    final dense = _catalogLayout ==
+                                        ProductCardLayout.compact;
                                     final columns = (gridConstraints.maxWidth /
-                                            205)
+                                            (dense ? 160 : 205))
                                         .floor()
-                                        .clamp(2, 6);
+                                        .clamp(2, dense ? 8 : 6);
                                     return GridView.builder(
                                       itemCount: products.length,
-                                      padding: const EdgeInsets.only(bottom: 16),
+                                      padding:
+                                          const EdgeInsets.only(bottom: 16),
                                       gridDelegate:
                                           SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount: columns,
-                                        mainAxisExtent: MediaQuery.textScalerOf(
+                                        mainAxisExtent: dense
+                                            ? 156 +
+                                                (MediaQuery.textScalerOf(
+                                                                    context)
+                                                                .scale(14) -
+                                                            14)
+                                                        .clamp(0, 40) *
+                                                    3
+                                            : MediaQuery.textScalerOf(
                                                       context,
                                                     ).scale(1) >
-                                                1.2
-                                            ? 256
-                                            : 224,
+                                                    1.2
+                                                ? 256
+                                                : 224,
                                         mainAxisSpacing: 12,
                                         crossAxisSpacing: 12,
                                       ),
                                       itemBuilder: (_, index) => ProductCard(
                                         product: products[index],
+                                        layout: _catalogLayout,
                                         onTapDown: (details) =>
                                             _handleProductTap(
                                           products[index],
@@ -644,9 +695,9 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                           children: [
                             Expanded(child: browser),
                             if (wide) ...[
-                              const SizedBox(width: 24),
+                              const SizedBox(width: 20),
                               SizedBox(
-                                width: 350,
+                                width: constraints.maxWidth < 1100 ? 310 : 350,
                                 child: SalesCartPanel(checkout: checkout),
                               ),
                             ],
@@ -658,7 +709,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                           padding: const EdgeInsets.only(top: 8),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.check_circle_outline_rounded,
                                 size: 18,
                                 color: AppColors.primaryDeep,

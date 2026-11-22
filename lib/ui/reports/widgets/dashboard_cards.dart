@@ -67,13 +67,19 @@ class TodaySaleOverviewCard extends StatelessWidget {
                     color: AppColors.textMuted,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  formattedSale,
-                  style: GoogleFonts.manrope(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.ink,
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    formattedSale,
+                    maxLines: 1,
+                    style: GoogleFonts.manrope(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.8,
+                      color: AppColors.ink,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -94,12 +100,16 @@ class TodaySaleOverviewCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 5),
-                    Text(
-                      growthText,
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: hasGrowth ? AppColors.success : AppColors.danger,
+                    Flexible(
+                      child: Text(
+                        growthText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: hasGrowth ? AppColors.success : AppColors.danger,
+                        ),
                       ),
                     ),
                   ],
@@ -249,7 +259,7 @@ class SaleOverviewChartPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: _compact(values[i]),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10.5,
             fontWeight: FontWeight.w700,
             color: AppColors.textSecondary,
@@ -287,23 +297,27 @@ class ExpensesSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.kpiDangerBg,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(
-                context.tr('Expenses (Today)'),
-                style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
+              Expanded(
+                child: Text(
+                  context.tr('Expenses (Today)'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
                 ),
               ),
-              const Spacer(),
               if (onAddExpense != null)
                 TextButton(
                   onPressed: onAddExpense,
@@ -314,6 +328,8 @@ class ExpensesSummaryCard extends StatelessWidget {
                   ),
                   child: Text(
                     context.tr('Add expense'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.manrope(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
@@ -324,12 +340,17 @@ class ExpensesSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            formattedAmount,
-            style: GoogleFonts.manrope(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: AppColors.kpiDanger,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              formattedAmount,
+              maxLines: 1,
+              style: GoogleFonts.manrope(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.kpiDanger,
+              ),
             ),
           ),
         ],
@@ -370,13 +391,17 @@ class MostUsedReportsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                context.tr('Most Used Reports'),
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
-                  letterSpacing: -0.1,
+              Expanded(
+                child: Text(
+                  context.tr('Most Used Reports'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.manrope(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                    letterSpacing: -0.1,
+                  ),
                 ),
               ),
               TextButton(
@@ -398,40 +423,48 @@ class MostUsedReportsCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ReportIconItem(
-                label: context.tr('Sales'),
-                icon: Icons.receipt_long_rounded,
-                badgeSymbol: '%',
-                badgeColor: AppColors.kpiRose,
-                bgColor: AppColors.kpiRoseBg,
-                iconColor: AppColors.kpiRose,
-                onTap: onSalesTap,
+              Expanded(
+                child: ReportIconItem(
+                  label: context.tr('Sales'),
+                  icon: Icons.receipt_long_rounded,
+                  badgeSymbol: '%',
+                  badgeColor: AppColors.primaryDeep,
+                  bgColor: AppColors.surfaceSecondary,
+                  iconColor: AppColors.ink,
+                  onTap: onSalesTap,
+                ),
               ),
-              ReportIconItem(
-                label: context.tr('Purchases'),
-                icon: Icons.assignment_outlined,
-                badgeSymbol: null,
-                bgColor: AppColors.kpiSkyBg,
-                iconColor: AppColors.kpiSky,
-                onTap: onPurchasesTap,
+              Expanded(
+                child: ReportIconItem(
+                  label: context.tr('Purchases'),
+                  icon: Icons.assignment_outlined,
+                  badgeSymbol: null,
+                  bgColor: AppColors.surfaceSecondary,
+                  iconColor: AppColors.ink,
+                  onTap: onPurchasesTap,
+                ),
               ),
-              ReportIconItem(
-                label: context.tr('Bal. Sheet'),
-                icon: Icons.balance_rounded,
-                badgeSymbol: null,
-                bgColor: AppColors.kpiAmberBg,
-                iconColor: AppColors.kpiAmber,
-                onTap: onBalSheetTap,
+              Expanded(
+                child: ReportIconItem(
+                  label: context.tr('Bal. Sheet'),
+                  icon: Icons.balance_rounded,
+                  badgeSymbol: null,
+                  bgColor: AppColors.surfaceSecondary,
+                  iconColor: AppColors.ink,
+                  onTap: onBalSheetTap,
+                ),
               ),
-              ReportIconItem(
-                label: context.tr('Profit & Loss'),
-                icon: Icons.trending_up_rounded,
-                badgeSymbol: null,
-                bgColor: AppColors.kpiDangerBg,
-                iconColor: AppColors.kpiDanger,
-                onTap: onProfitLossTap,
+              Expanded(
+                child: ReportIconItem(
+                  label: context.tr('Profit & Loss'),
+                  icon: Icons.trending_up_rounded,
+                  badgeSymbol: null,
+                  bgColor: AppColors.surfaceSecondary,
+                  iconColor: AppColors.ink,
+                  onTap: onProfitLossTap,
+                ),
               ),
             ],
           ),
@@ -447,9 +480,9 @@ class ReportIconItem extends StatelessWidget {
     required this.icon,
     this.badgeSymbol,
     this.hasCrown = false,
-    this.badgeColor = AppColors.kpiRose,
-    this.bgColor = AppColors.kpiRoseBg,
-    this.iconColor = AppColors.ink,
+    this.badgeColor,
+    this.bgColor,
+    this.iconColor,
     required this.onTap,
   });
 
@@ -457,9 +490,9 @@ class ReportIconItem extends StatelessWidget {
   final IconData icon;
   final String? badgeSymbol;
   final bool hasCrown;
-  final Color badgeColor;
-  final Color bgColor;
-  final Color iconColor;
+  final Color? badgeColor;
+  final Color? bgColor;
+  final Color? iconColor;
   final VoidCallback onTap;
 
   @override
@@ -478,14 +511,14 @@ class ReportIconItem extends StatelessWidget {
                   width: 44,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: bgColor,
+                    color: bgColor ?? AppColors.kpiRoseBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     icon,
                     size: 24,
-                    color: iconColor,
+                    color: iconColor ?? AppColors.ink,
                   ),
                 ),
                 if (hasCrown)
@@ -495,7 +528,7 @@ class ReportIconItem extends StatelessWidget {
                     child: Container(
                       width: 14,
                       height: 14,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.kpiViolet,
                         shape: BoxShape.circle,
                       ),
@@ -516,7 +549,7 @@ class ReportIconItem extends StatelessWidget {
                       ),
                       child: Text(
                         badgeSymbol!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w800,
                           color: AppColors.ink,
@@ -529,6 +562,9 @@ class ReportIconItem extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: GoogleFonts.manrope(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -748,7 +784,7 @@ class AlertRow extends StatelessWidget {
         ),
         if (onTap != null) ...[
           const SizedBox(width: 6),
-          const Icon(
+          Icon(
             Icons.chevron_right_rounded,
             size: 18,
             color: AppColors.textMuted,

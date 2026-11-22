@@ -13,7 +13,10 @@ class StorePreferences {
     this.openCashDrawerOnPrint = false,
     this.enableAdvancedAccounting = false,
     this.requireOpenShiftForSales = false,
+    this.appTheme = 'light',
   });
+
+  static const themeOptions = <String>['light', 'slate', 'warm', 'dark'];
 
   static const dateFormatOptions = <String>[
     'MMM d, yyyy',
@@ -38,6 +41,7 @@ class StorePreferences {
   final bool openCashDrawerOnPrint;
   final bool enableAdvancedAccounting;
   final bool requireOpenShiftForSales;
+  final String appTheme;
 
   bool get uses24HourTime => timeFormat == '24h';
 
@@ -55,6 +59,7 @@ class StorePreferences {
     bool? openCashDrawerOnPrint,
     bool? enableAdvancedAccounting,
     bool? requireOpenShiftForSales,
+    String? appTheme,
   }) {
     return StorePreferences(
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
@@ -74,6 +79,7 @@ class StorePreferences {
           enableAdvancedAccounting ?? this.enableAdvancedAccounting,
       requireOpenShiftForSales:
           requireOpenShiftForSales ?? this.requireOpenShiftForSales,
+      appTheme: appTheme ?? this.appTheme,
     );
   }
 
@@ -85,6 +91,7 @@ class StorePreferences {
     final openDrawer = json['openCashDrawerOnPrint'];
     final advAcc = json['enableAdvancedAccounting'];
     final reqShift = json['requireOpenShiftForSales'];
+    final rawTheme = (json['appTheme'] as String? ?? 'light').trim().toLowerCase();
     return StorePreferences(
       lowStockThreshold:
           ((json['lowStockThreshold'] as num?)?.toInt() ?? 20).clamp(0, 100000),
@@ -115,6 +122,7 @@ class StorePreferences {
           reqShift == 1 ||
           reqShift == '1' ||
           (reqShift is String && reqShift.toLowerCase() == 'true'),
+      appTheme: themeOptions.contains(rawTheme) ? rawTheme : 'light',
     );
   }
 
@@ -132,5 +140,6 @@ class StorePreferences {
         'openCashDrawerOnPrint': openCashDrawerOnPrint,
         'enableAdvancedAccounting': enableAdvancedAccounting,
         'requireOpenShiftForSales': requireOpenShiftForSales,
+        'appTheme': appTheme,
       };
 }

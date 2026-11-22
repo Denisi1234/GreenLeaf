@@ -60,7 +60,7 @@ class StaffBasicInfoTab extends StatelessWidget {
                           ),
                   ),
                   child: avatarPath == null
-                      ? const Icon(
+                      ? Icon(
                           Icons.person_rounded,
                           color: AppColors.primary,
                           size: 50,
@@ -81,7 +81,7 @@ class StaffBasicInfoTab extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.photo_camera_outlined,
                       color: AppColors.textMuted,
                       size: 18,

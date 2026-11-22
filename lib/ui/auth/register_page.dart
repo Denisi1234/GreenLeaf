@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../service/php_api_client.dart';
 import '../../service/pos_local_store.dart';
+import '../widgets/market_shared_widgets.dart';
 import 'auth_shell.dart';
 
 enum _RegisterStep {
@@ -30,7 +31,6 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _storeNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -49,7 +49,6 @@ class _RegisterPageState extends State<RegisterPage> {
   void dispose() {
     _countdownTimer?.cancel();
     _nameController.dispose();
-    _storeNameController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -59,6 +58,19 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void _clearError() {
     if (_error != null) setState(() => _error = null);
+  }
+
+  void _showError(String message, AppStrings strings) {
+    setState(() {
+      _busy = false;
+      _error = message;
+    });
+    showMarketNotice(
+      context,
+      title: strings.isSwahili ? 'Usajili umeshindwa' : 'Registration failed',
+      message: message,
+      type: MarketNoticeType.error,
+    );
   }
 
   String _friendlyApiError(ApiException e, AppStrings strings) {
@@ -114,12 +126,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _requestRegistrationOtp() async {
+    final store = context.read<PosLocalStore>();
+    final strings = AppStrings.of(store.languageCode);
+
     if (_step == _RegisterStep.details) {
       if (!_formKey.currentState!.validate()) return;
       if (_passwordController.text != _confirmPasswordController.text) {
-        setState(() => _error = AppStrings.of(
-              context.read<PosLocalStore>().languageCode,
-            ).passwordsDoNotMatch);
+        _showError(strings.passwordsDoNotMatch, strings);
         return;
       }
     }
@@ -130,17 +143,15 @@ class _RegisterPageState extends State<RegisterPage> {
       _error = null;
     });
 
-    final store = context.read<PosLocalStore>();
-    final strings = AppStrings.of(store.languageCode);
     final api = store.cloudApi;
 
     if (api == null) {
-      setState(() {
-        _busy = false;
-        _error = strings.isSwahili
+      _showError(
+        strings.isSwahili
             ? 'Usajili unahitaji muunganisho wa intaneti.'
-            : 'Registration requires an internet connection.';
-      });
+            : 'Registration requires an internet connection.',
+        strings,
+      );
       return;
     }
 
@@ -159,27 +170,33 @@ class _RegisterPageState extends State<RegisterPage> {
           _step = _RegisterStep.verifyOtp;
           _error = null;
         });
+        showMarketNotice(
+          context,
+          title: strings.isSwahili ? 'Namba imetumwa' : 'Verification code sent',
+          message: strings.isSwahili
+              ? 'Angalia SMS yako kwa namba ya uthibitisho yenye tarakimu 6.'
+              : 'Check your SMS for the 6-digit verification code.',
+          type: MarketNoticeType.success,
+        );
       } else {
-        setState(() {
-          _error = strings.isSwahili
+        _showError(
+          strings.isSwahili
               ? 'Imeshindwa kutuma namba ya uthibitisho. Hakikisha namba yako ya simu.'
-              : 'Could not send the verification code. Please check your phone number.';
-        });
+              : 'Could not send the verification code. Please check your phone number.',
+          strings,
+        );
       }
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = _friendlyApiError(e, strings);
-      });
+      _showError(_friendlyApiError(e, strings), strings);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = strings.isSwahili
+      _showError(
+        strings.isSwahili
             ? 'Hakuna muunganisho wa intaneti. Tafadhali jaribu tena.'
-            : 'No internet connection. Please check your connection and try again.';
-      });
+            : 'No internet connection. Please check your connection and try again.',
+        strings,
+      );
     }
   }
 
@@ -189,11 +206,12 @@ class _RegisterPageState extends State<RegisterPage> {
     final code = _otpController.text.trim();
 
     if (code.length != 6) {
-      setState(() {
-        _error = strings.isSwahili
+      _showError(
+        strings.isSwahili
             ? 'Ingiza namba ya uthibitisho yenye tarakimu 6.'
-            : 'Enter the 6-digit verification code.';
-      });
+            : 'Enter the 6-digit verification code.',
+        strings,
+      );
       return;
     }
 
@@ -205,12 +223,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
     final api = store.cloudApi;
     if (api == null) {
-      setState(() {
-        _busy = false;
-        _error = strings.isSwahili
+      _showError(
+        strings.isSwahili
             ? 'Usajili unahitaji muunganisho wa intaneti.'
-            : 'Registration requires an internet connection.';
-      });
+            : 'Registration requires an internet connection.',
+        strings,
+      );
       return;
     }
 
@@ -222,7 +240,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
       final ok = await store.registerLive(
         name: _nameController.text.trim(),
-        storeName: _storeNameController.text.trim(),
         phone: _phoneController.text.trim(),
         password: _passwordController.text,
         otpToken: otpToken,
@@ -232,30 +249,34 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() => _busy = false);
 
       if (ok) {
+        showMarketNotice(
+          context,
+          title: strings.isSwahili ? 'Akaunti imeundwa' : 'Account created',
+          message: strings.isSwahili
+              ? 'Karibu Aza POS! Akaunti yako iko tayari.'
+              : 'Welcome to Aza POS! Your account is ready.',
+          type: MarketNoticeType.success,
+        );
         return;
       }
 
-      setState(() {
-        if (store.lastAuthError == 'phone_taken') {
-          _error = strings.phoneTaken;
-        } else {
-          _error = store.lastAuthError ?? strings.loginFailed;
-        }
-      });
+      _showError(
+        store.lastAuthError == 'phone_taken'
+            ? strings.phoneTaken
+            : (store.lastAuthError ?? strings.loginFailed),
+        strings,
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = _friendlyApiError(e, strings);
-      });
+      _showError(_friendlyApiError(e, strings), strings);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = strings.isSwahili
+      _showError(
+        strings.isSwahili
             ? 'Imeshindwa kuthibitisha namba. Hakikisha una intaneti na ujaribu tena.'
-            : 'Could not verify the code. Check your internet connection and try again.';
-      });
+            : 'Could not verify the code. Check your internet connection and try again.',
+        strings,
+      );
     }
   }
 
@@ -324,25 +345,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // 2. Business / Shop Name
-                AuthFieldLabel(
-                  text: strings.isSwahili ? 'Jina la Duka' : 'Business / Shop Name',
-                ),
-                TextFormField(
-                  controller: _storeNameController,
-                  enabled: !_busy,
-                  textInputAction: TextInputAction.next,
-                  onChanged: (_) => _clearError(),
-                  decoration: InputDecoration(
-                    hintText: strings.isSwahili
-                        ? 'Mfano: Aza Minimarket'
-                        : 'e.g. Aza Minimarket',
-                    prefixIcon: const Icon(Icons.storefront_outlined),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 3. Phone Number
+                // 2. Phone Number
                 AuthFieldLabel(text: strings.phoneNumber),
                 TextFormField(
                   controller: _phoneController,
@@ -527,34 +530,42 @@ class _RegisterPageState extends State<RegisterPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            TextButton(
-              onPressed: _busy
-                  ? null
-                  : () => setState(() {
-                        _step = _RegisterStep.details;
-                        _otpController.clear();
-                        _error = null;
-                      }),
-              child: Text(
-                strings.isSwahili ? 'Badili namba' : 'Change number',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
+            Flexible(
+              child: TextButton(
+                onPressed: _busy
+                    ? null
+                    : () => setState(() {
+                          _step = _RegisterStep.details;
+                          _otpController.clear();
+                          _error = null;
+                        }),
+                child: Text(
+                  strings.isSwahili ? 'Badili namba' : 'Change number',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMuted,
+                  ),
                 ),
               ),
             ),
-            TextButton(
-              onPressed: (_busy || _resendCountdown > 0)
-                  ? null
-                  : _requestRegistrationOtp,
-              child: Text(
-                _resendCountdown > 0
-                    ? (strings.isSwahili
-                        ? 'Tuma tena (${_resendCountdown}s)'
-                        : 'Resend (${_resendCountdown}s)')
-                    : (strings.isSwahili ? 'Tuma OTP tena' : 'Resend OTP'),
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.w700,
+            Flexible(
+              child: TextButton(
+                onPressed: (_busy || _resendCountdown > 0)
+                    ? null
+                    : _requestRegistrationOtp,
+                child: Text(
+                  _resendCountdown > 0
+                      ? (strings.isSwahili
+                          ? 'Tuma tena (${_resendCountdown}s)'
+                          : 'Resend (${_resendCountdown}s)')
+                      : (strings.isSwahili ? 'Tuma OTP tena' : 'Resend OTP'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),

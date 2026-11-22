@@ -7,12 +7,14 @@ import '../../widgets/market_shared_widgets.dart';
 import 'staff_details_sections.dart';
 
 class ManageStaffSheet {
-  static void show(BuildContext context, PosLocalStore store, StaffRoleData role) {
+  static void show(
+      BuildContext context, PosLocalStore store, StaffRoleData role) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => _ManageStaffSheetContent(role: role, store: store),
+      builder: (sheetContext) =>
+          _ManageStaffSheetContent(role: role, store: store),
     );
   }
 }
@@ -24,14 +26,15 @@ class _ManageStaffSheetContent extends StatelessWidget {
   final PosLocalStore store;
 
   void _showMoveDialog(BuildContext context, StaffMemberData staff) {
-    final availableRoles = store.staffRoles.where((r) => r.id != staff.roleId).toList();
+    final availableRoles =
+        store.staffRoles.where((r) => r.id != staff.roleId).toList();
     if (availableRoles.isEmpty) return;
 
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(borderRadius: AppCorners.control),
         title: Text(
           context.tr('Move {p0}', args: {'p0': staff.name}),
           style: const TextStyle(fontWeight: FontWeight.w700),
@@ -44,13 +47,15 @@ class _ManageStaffSheetContent extends StatelessWidget {
                   title: Text(targetRole.title),
                   subtitle: Text(targetRole.subtitle),
                   onTap: () async {
-                    await store.saveStaffMember(staff.copyWith(roleId: targetRole.id));
+                    await store
+                        .saveStaffMember(staff.copyWith(roleId: targetRole.id));
                     if (context.mounted) {
                       Navigator.of(dialogContext).pop();
                       showMarketNotice(
                         context,
                         title: context.tr('Staff Moved'),
-                        message: context.tr('{p0} moved to {p1}', args: {'p0': staff.name, 'p1': targetRole.title}),
+                        message: context.tr('{p0} moved to {p1}',
+                            args: {'p0': staff.name, 'p1': targetRole.title}),
                       );
                     }
                   },
@@ -64,13 +69,15 @@ class _ManageStaffSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final assignedStaff = store.staffMembers.where((s) => s.roleId == role.id).toList();
-    final otherStaff = store.staffMembers.where((s) => s.roleId != role.id).toList();
+    final assignedStaff =
+        store.staffMembers.where((s) => s.roleId == role.id).toList();
+    final otherStaff =
+        store.staffMembers.where((s) => s.roleId != role.id).toList();
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
       ),
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
       child: SafeArea(
@@ -83,16 +90,20 @@ class _ManageStaffSheetContent extends StatelessWidget {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                 ),
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              context.tr('Staff in {p0} ({p1})', args: {'p0': role.title, 'p1': assignedStaff.length}),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.ink),
+              context.tr('Staff in {p0} ({p1})',
+                  args: {'p0': role.title, 'p1': assignedStaff.length}),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink),
             ),
             const SizedBox(height: 12),
             if (assignedStaff.isEmpty)
@@ -100,7 +111,7 @@ class _ManageStaffSheetContent extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   context.tr('No staff assigned to this role yet.'),
-                  style: const TextStyle(color: AppColors.textMuted),
+                  style: TextStyle(color: AppColors.textMuted),
                 ),
               )
             else
@@ -117,8 +128,12 @@ class _ManageStaffSheetContent extends StatelessWidget {
             if (otherStaff.isNotEmpty) ...[
               const SizedBox(height: 14),
               Text(
-                context.tr('Other Staff ({p0})', args: {'p0': otherStaff.length}),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink),
+                context
+                    .tr('Other Staff ({p0})', args: {'p0': otherStaff.length}),
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink),
               ),
               const SizedBox(height: 10),
               ...otherStaff.map(
@@ -164,7 +179,10 @@ class _StaffTile extends StatelessWidget {
             backgroundColor: avatarColorForName(staff.name),
             child: Text(
               staff.initials,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.ink),
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink),
             ),
           ),
           const SizedBox(width: 12),
@@ -174,18 +192,24 @@ class _StaffTile extends StatelessWidget {
               children: [
                 Text(
                   staff.name,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink),
                 ),
                 Text(
                   staff.phone.isNotEmpty ? staff.phone : staff.email,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  style:
+                      TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
               ],
             ),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: AppColors.textMuted),
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            icon:
+                Icon(Icons.more_vert_rounded, color: AppColors.textMuted),
+            shape:
+                const RoundedRectangleBorder(borderRadius: AppCorners.control),
             onSelected: (val) {
               if (val == 'move') {
                 onMove();
@@ -194,8 +218,11 @@ class _StaffTile extends StatelessWidget {
               }
             },
             itemBuilder: (_) => [
-              PopupMenuItem(value: 'move', child: Text(context.tr('Move to another role'))),
-              PopupMenuItem(value: 'delete', child: Text(context.tr('Remove staff'))),
+              PopupMenuItem(
+                  value: 'move',
+                  child: Text(context.tr('Move to another role'))),
+              PopupMenuItem(
+                  value: 'delete', child: Text(context.tr('Remove staff'))),
             ],
           ),
         ],

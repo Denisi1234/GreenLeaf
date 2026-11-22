@@ -63,7 +63,7 @@ class CashRegisterClosedView extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.point_of_sale_outlined, color: AppColors.ink, size: 22),
+                  Icon(Icons.point_of_sale_outlined, color: AppColors.ink, size: 22),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -136,7 +136,7 @@ class CashRegisterClosedView extends StatelessWidget {
                     onTap: () => onOpenShiftDetail(store, history[i]),
                   ),
                   if (i != history.length - 1 && i != 19)
-                    const Divider(height: 1, color: AppColors.divider),
+                    Divider(height: 1, color: AppColors.divider),
                 ],
               ],
             ),

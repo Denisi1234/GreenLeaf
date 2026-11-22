@@ -22,7 +22,9 @@ class DebtorActions {
       showMarketNotice(
         context,
         title: _dual(strings, 'No phone number', 'Hakuna namba ya simu'),
-        message: _dual(strings, 'Please update customer phone before sending a reminder.',
+        message: _dual(
+            strings,
+            'Please update customer phone before sending a reminder.',
             'Tafadhali weka namba ya simu ya mteja kwanza.'),
         type: MarketNoticeType.warning,
       );
@@ -32,7 +34,7 @@ class DebtorActions {
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(borderRadius: AppCorners.control),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -43,9 +45,9 @@ class DebtorActions {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                 ),
               ),
             ),
@@ -56,42 +58,55 @@ class DebtorActions {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _dual(strings, 'Send Payment Reminder', 'Tuma Kikumbusho cha Deni'),
+                    _dual(strings, 'Send Payment Reminder',
+                        'Tuma Kikumbusho cha Deni'),
                     style: AppTypography.cardHeader,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${customer.name} · ${formatMoney(customer.debitBalance)}',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.textMuted),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366), size: 22),
-              title: Text(_dual(strings, 'Send via WhatsApp', 'Tuma kupitia WhatsApp')),
+              leading: const Icon(Icons.chat_bubble_rounded,
+                  color: Color(0xFF25D366), size: 22),
+              title: Text(
+                  _dual(strings, 'Send via WhatsApp', 'Tuma kupitia WhatsApp')),
               subtitle: Text(
-                _dual(strings, 'Opens WhatsApp with customized message', 'Hufungua WhatsApp na ujumbe wa deni'),
-                style: AppTypography.helperText.copyWith(color: AppColors.textLight),
+                _dual(strings, 'Opens WhatsApp with customized message',
+                    'Hufungua WhatsApp na ujumbe wa deni'),
+                style: AppTypography.helperText
+                    .copyWith(color: AppColors.textLight),
               ),
               onTap: () => Navigator.of(ctx).pop('whatsapp'),
             ),
             ListTile(
-              leading: const Icon(Icons.message_rounded, color: AppColors.primary, size: 22),
+              leading: Icon(Icons.message_rounded,
+                  color: AppColors.primary, size: 22),
               title: Text(_dual(strings, 'Send via SMS', 'Tuma kupitia SMS')),
               subtitle: Text(
-                _dual(strings, 'Opens standard SMS messaging app', 'Hufungua app ya ujumbe wa simu'),
-                style: AppTypography.helperText.copyWith(color: AppColors.textLight),
+                _dual(strings, 'Opens standard SMS messaging app',
+                    'Hufungua app ya ujumbe wa simu'),
+                style: AppTypography.helperText
+                    .copyWith(color: AppColors.textLight),
               ),
               onTap: () => Navigator.of(ctx).pop('sms'),
             ),
             ListTile(
-              leading: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.dangerDeep, size: 22),
-              title: Text(_dual(strings, 'Share Statement PDF', 'Shiriki Taarifa (PDF)')),
+              leading: Icon(Icons.picture_as_pdf_rounded,
+                  color: AppColors.dangerDeep, size: 22),
+              title: Text(_dual(
+                  strings, 'Share Statement PDF', 'Shiriki Taarifa (PDF)')),
               subtitle: Text(
-                _dual(strings, 'Generate official PDF account statement', 'Tengeneza ripoti rasmi ya deni'),
-                style: AppTypography.helperText.copyWith(color: AppColors.textLight),
+                _dual(strings, 'Generate official PDF account statement',
+                    'Tengeneza ripoti rasmi ya deni'),
+                style: AppTypography.helperText
+                    .copyWith(color: AppColors.textLight),
               ),
               onTap: () => Navigator.of(ctx).pop('pdf'),
             ),
@@ -112,8 +127,11 @@ class DebtorActions {
       if (!ok && context.mounted) {
         showMarketNotice(
           context,
-          title: _dual(strings, 'Cannot open WhatsApp', 'Imeshindwa kufungua WhatsApp'),
-          message: _dual(strings, 'WhatsApp is not installed or available on this device.',
+          title: _dual(
+              strings, 'Cannot open WhatsApp', 'Imeshindwa kufungua WhatsApp'),
+          message: _dual(
+              strings,
+              'WhatsApp is not installed or available on this device.',
               'WhatsApp haipatikani kwenye simu au kifaa hiki.'),
           type: MarketNoticeType.warning,
         );
@@ -151,7 +169,7 @@ class DebtorActions {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(borderRadius: AppCorners.control),
         title: Text(
           _dual(strings, 'Clear All Debts?', 'Futa Madeni Yote?'),
           style: AppTypography.cardHeader,
@@ -173,7 +191,8 @@ class DebtorActions {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.dangerDeep,
               foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: AppCorners.control),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(_dual(strings, 'Clear All', 'Futa Yote')),

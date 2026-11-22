@@ -41,7 +41,7 @@ class ProductFilterBar extends StatelessWidget {
             onChanged: onSearchChanged,
             onClear: onSearchClear,
             height: 48,
-            radius: 0,
+            radius: AppRadius.input,
             backgroundColor: AppColors.surface,
             borderColor: AppColors.border,
             paddingHorizontal: 14,

@@ -61,7 +61,8 @@ class PresetPeriodMenu extends StatelessWidget {
     return PopupMenuButton<PresetPeriod>(
       tooltip: context.tr('Quick date ranges'),
       onSelected: onPresetSelected,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.input))),
       itemBuilder: (context) => [
         for (final preset in PresetPeriod.values)
           PopupMenuItem(
@@ -69,7 +70,7 @@ class PresetPeriodMenu extends StatelessWidget {
             child: Row(
               children: [
                 if (selectedPreset == preset)
-                  const Icon(Icons.check_rounded,
+                  Icon(Icons.check_rounded,
                       size: 16, color: AppColors.primary)
                 else
                   const SizedBox(width: 16),
@@ -90,16 +91,16 @@ class PresetPeriodMenu extends StatelessWidget {
           ),
       ],
       child: Container(
-        height: 42,
+        height: AppSpacing.touchTarget,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.input)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.bolt_rounded,
               size: 16,
               color: AppColors.primary,
@@ -114,7 +115,7 @@ class PresetPeriodMenu extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(
+            Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 16,
               color: AppColors.textMuted,

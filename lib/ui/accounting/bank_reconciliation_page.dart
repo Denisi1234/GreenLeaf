@@ -55,12 +55,13 @@ class BankReconciliationPage extends StatelessWidget {
                   IconButton(
                     tooltip: t('Import statement', 'Ingiza taarifa'),
                     onPressed: () => _openImport(context),
-                    icon: const Icon(Icons.upload_file_outlined, color: AppColors.ink),
+                    icon: Icon(Icons.upload_file_outlined,
+                        color: AppColors.ink),
                   ),
                   IconButton(
                     tooltip: t('Add line', 'Ongeza mstari'),
                     onPressed: () => _openAddLine(context),
-                    icon: const Icon(Icons.add_rounded, color: AppColors.ink),
+                    icon: Icon(Icons.add_rounded, color: AppColors.ink),
                   ),
                 ],
               ),
@@ -82,7 +83,7 @@ class BankReconciliationPage extends StatelessWidget {
                                   : (entries.isEmpty
                                       ? AppColors.surfaceSecondary
                                       : AppColors.kpiDangerBg),
-                              borderRadius: BorderRadius.zero,
+                              borderRadius: AppCorners.control,
                             ),
                             child: Icon(
                               unmatched.isEmpty && entries.isNotEmpty
@@ -104,9 +105,11 @@ class BankReconciliationPage extends StatelessWidget {
                               children: [
                                 Text(
                                   entries.isEmpty
-                                      ? t('No reconciliation data', 'Hakuna data ya upatanishi')
+                                      ? t('No reconciliation data',
+                                          'Hakuna data ya upatanishi')
                                       : (unmatched.isEmpty
-                                          ? t('All lines matched', 'Mistari yote imeoanishwa')
+                                          ? t('All lines matched',
+                                              'Mistari yote imeoanishwa')
                                           : t(
                                               '${unmatched.length} line${unmatched.length == 1 ? '' : 's'} unmatched',
                                               'Mistari ${unmatched.length} haijaoanishwa',
@@ -150,7 +153,7 @@ class BankReconciliationPage extends StatelessWidget {
                               label: t('Auto match', 'Oanisha'),
                               icon: Icons.auto_fix_high_rounded,
                               isFullWidth: false,
-                              radius: 0,
+                              radius: AppRadius.input,
                               onTap: () => _autoMatch(context),
                             ),
                           ],
@@ -177,7 +180,7 @@ class BankReconciliationPage extends StatelessWidget {
                           child: MarketButton(
                             label: t('Add line', 'Ongeza mstari'),
                             icon: Icons.add_rounded,
-                            radius: 0,
+                            radius: AppRadius.input,
                             onTap: () => _openAddLine(context),
                           ),
                         ),
@@ -189,7 +192,7 @@ class BankReconciliationPage extends StatelessWidget {
                             color: AppColors.kpiVioletBg,
                             foregroundColor: AppColors.kpiViolet,
                             borderColor: null,
-                            radius: 0,
+                            radius: AppRadius.input,
                             onTap: () => _openImport(context),
                           ),
                         ),
@@ -216,14 +219,15 @@ class BankReconciliationPage extends StatelessWidget {
                         child: Column(
                           children: [
                             _tableHeader(t),
-                            const Divider(height: 1, color: AppColors.divider),
+                            Divider(height: 1, color: AppColors.divider),
                             for (var i = 0; i < entries.length; i++) ...[
                               StatementRowTile(
                                 entry: entries[i],
                                 isSwahili: sw,
                               ),
                               if (i != entries.length - 1)
-                                const Divider(height: 1, color: AppColors.divider),
+                                Divider(
+                                    height: 1, color: AppColors.divider),
                             ],
                           ],
                         ),

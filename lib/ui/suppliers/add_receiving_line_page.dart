@@ -194,13 +194,13 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 10),
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: AppColors.kpiSkyBg,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.inventory_2_outlined,
+                                    Icon(Icons.inventory_2_outlined,
                                         size: 16, color: AppColors.kpiSky),
                                     const SizedBox(width: 6),
                                     Text(
@@ -293,13 +293,13 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                                 children: [
                                   Expanded(
                                     child: MarketFormField(
-                                      label: _t(
-                                          'Quantity received ($_unit)',
+                                      label: _t('Quantity received ($_unit)',
                                           'Idadi iliyopokelewa ($_unit)'),
                                       hintText: '1',
                                       controller: _qtyController,
-                                      keyboardType: const TextInputType
-                                          .numberWithOptions(decimal: true),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                              decimal: true),
                                       onChanged: (_) => setState(() {}),
                                     ),
                                   ),
@@ -310,8 +310,9 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                                           'Gharama kwa $_unit (TSh)'),
                                       hintText: '0',
                                       controller: _costController,
-                                      keyboardType: const TextInputType
-                                          .numberWithOptions(decimal: true),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                              decimal: true),
                                       onChanged: (_) => setState(() {}),
                                     ),
                                   ),
@@ -339,8 +340,8 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                                                 : AppColors.ink,
                                             fontWeight: FontWeight.w700,
                                           ),
-                                          onSelected: (_) => setState(
-                                              () => _packName = name),
+                                          onSelected: (_) =>
+                                              setState(() => _packName = name),
                                         ))
                                     .toList(),
                               ),
@@ -353,8 +354,9 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                                           'Idadi ya $_packName'),
                                       hintText: '1',
                                       controller: _packQtyController,
-                                      keyboardType: const TextInputType
-                                          .numberWithOptions(decimal: true),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                              decimal: true),
                                       onChanged: (_) => setState(() {}),
                                     ),
                                   ),
@@ -365,8 +367,9 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                                           '$_unit kwa 1 $_packName'),
                                       hintText: '100',
                                       controller: _packSizeController,
-                                      keyboardType: const TextInputType
-                                          .numberWithOptions(decimal: true),
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                              decimal: true),
                                       onChanged: (_) => setState(() {}),
                                     ),
                                   ),
@@ -452,7 +455,7 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.surface,
                     border: Border(
                         top: BorderSide(color: AppColors.border, width: 1)),
@@ -466,7 +469,7 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                           color: AppColors.kpiDangerBg,
                           foregroundColor: AppColors.kpiDanger,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           onTap: () => Navigator.of(context).maybePop(),
                           height: 48,
                         ),
@@ -480,7 +483,7 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                           icon: Icons.check_rounded,
                           variant: MarketButtonVariant.primary,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           height: 48,
                           onTap: _save,
                         ),
@@ -620,7 +623,7 @@ class StockPickerPage extends StatelessWidget {
                                       ),
                                     ),
                                     if (i != items.length - 1)
-                                      const Divider(
+                                      Divider(
                                           height: 1, color: AppColors.divider),
                                   ],
                                 ],

@@ -8,16 +8,23 @@ import 'package:aza_pos/service/pos_local_store.dart';
 import 'ui/auth/auth_wrapper.dart';
 import 'ui/widgets/app_design.dart';
 import 'ui/widgets/app_theme.dart';
+import 'ui/widgets/app_theme_palette.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
 
-  static ThemeData? _cachedTheme;
+  static final Map<String, ThemeData> _cachedThemes = {};
 
-  static ThemeData _getTheme() {
-    if (_cachedTheme != null) return _cachedTheme!;
-    const baseInk = AppColors.ink;
-    final baseTextTheme = Typography.material2021().black.apply(
+  static ThemeData _getTheme(String themeId) {
+    final palette = AppThemePalette.forId(themeId);
+    AppColors.applyPalette(palette);
+    final existing = _cachedThemes[palette.id];
+    if (existing != null) return existing;
+    final baseInk = palette.ink;
+    final baseTextTheme = (palette.isDark
+            ? Typography.material2021().white
+            : Typography.material2021().black)
+        .apply(
           bodyColor: baseInk,
           displayColor: baseInk,
         );
@@ -83,14 +90,18 @@ class App extends StatelessWidget {
         fontWeight: FontWeight.w600,
       ),
     );
-    _cachedTheme = buildOsposTheme(appTextTheme);
-    return _cachedTheme!;
+    final theme = buildOsposTheme(appTextTheme, themeId: palette.id);
+    _cachedThemes[palette.id] = theme;
+    return theme;
   }
 
   @override
   Widget build(BuildContext context) {
     final languageCode =
         context.select<PosLocalStore, String>((s) => s.languageCode);
+    final appTheme = context
+        .select<PosLocalStore, String>((s) => s.storePreferences.appTheme);
+    AppColors.applyPalette(AppThemePalette.forId(appTheme));
     Intl.defaultLocale = languageCode;
 
     return MaterialApp(
@@ -98,16 +109,27 @@ class App extends StatelessWidget {
       title: 'Aza POS',
       locale: Locale(languageCode),
       supportedLocales: const [
-        Locale('sw'),
         Locale('en'),
+        Locale('sw'),
       ],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      themeAnimationDuration: Duration.zero,
-      theme: _getTheme(),
+      themeAnimationDuration: const Duration(milliseconds: 180),
+      theme: _getTheme(appTheme),
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        final clampedScaler = media.textScaler.clamp(
+          minScaleFactor: 0.85,
+          maxScaleFactor: 1.25,
+        );
+        return MediaQuery(
+          data: media.copyWith(textScaler: clampedScaler),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: const AuthWrapper(),
     );
   }

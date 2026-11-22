@@ -61,7 +61,7 @@ class StockAlertCard extends StatelessWidget {
             children: [
               for (int i = 0; i < items.length; i++) ...[
                 if (i > 0)
-                  const Divider(
+                  Divider(
                     height: 1,
                     thickness: 1,
                     color: AppColors.surfaceSecondary,

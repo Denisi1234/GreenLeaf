@@ -51,6 +51,18 @@ mixin PosAuthStore on ChangeNotifier {
     return StaffCredentials.verifyPassword(password, salt: salt, hash: hash);
   }
 
+  bool _phoneMatches(String storedPhone, String inputIdentifier) {
+    final a = storedPhone.replaceAll(RegExp(r'[^0-9]'), '');
+    final b = inputIdentifier.replaceAll(RegExp(r'[^0-9]'), '');
+    if (a.isEmpty || b.isEmpty) return false;
+    if (a == b) return true;
+    // Compare last 9 digits so 07XXXXXXXX, 2557XXXXXXXX, and +2557XXXXXXXX match.
+    if (a.length >= 9 && b.length >= 9) {
+      return a.substring(a.length - 9) == b.substring(b.length - 9);
+    }
+    return a.endsWith(b) || b.endsWith(a);
+  }
+
     Future<bool> login(String identifier, String password) async {
       _lastAuthError = null;
       final trimmed = identifier.trim().replaceAll(RegExp(r'\s+'), '');
@@ -63,10 +75,7 @@ mixin PosAuthStore on ChangeNotifier {
       for (final staff in _staffMembers) {
         final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
         final staffUser = staff.username.trim().replaceAll(RegExp(r'\s+'), '');
-        if (staffPhone.isNotEmpty &&
-            (staffPhone == trimmed ||
-                staffPhone.endsWith(trimmed) ||
-                trimmed.endsWith(staffPhone))) {
+        if (staffPhone.isNotEmpty && _phoneMatches(staffPhone, trimmed)) {
           member = staff;
           break;
         }
@@ -93,13 +102,29 @@ mixin PosAuthStore on ChangeNotifier {
               token: api.token ?? '',
               user: api.user,
             );
+            if (_cloudApi != null) {
+              _cloudApi!.storeId = _activeStoreId;
+              _cloudApi!.onSynced = () {
+                if (!_disposed && _isInitialized) {
+                  reloadFromLocal();
+                }
+              };
+              _cloudApi!.startAutoSync();
+            }
             await refreshFromServer();
 
-            // After refreshing from server, verify user now exists locally
+            final serverUserId = api.user['id'] as String?;
+            final expectedStaffId =
+                serverUserId != null ? 'staff-$serverUserId' : null;
+
+            // After refreshing from server, match the staff member by server ID,
+            // normalized phone number, or username.
             for (final staff in _staffMembers) {
               final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
               final staffUser = staff.username.trim().replaceAll(RegExp(r'\s+'), '');
-              if ((staffPhone.isNotEmpty && (staffPhone == trimmed || staffPhone.endsWith(trimmed) || trimmed.endsWith(staffPhone))) ||
+              if ((expectedStaffId != null && staff.id == expectedStaffId) ||
+                  (serverUserId != null && staff.id == serverUserId) ||
+                  (staffPhone.isNotEmpty && _phoneMatches(staffPhone, trimmed)) ||
                   (staffUser.isNotEmpty && staffUser.toLowerCase() == trimmed.toLowerCase())) {
                 member = staff;
                 break;
@@ -107,11 +132,30 @@ mixin PosAuthStore on ChangeNotifier {
             }
 
             if (member != null) {
-              _isLoggedIn = true;
-              _currentUserId = member.id;
-              notifyListeners();
-              return true;
+              // Cache local password hash so offline re-login works on this device.
+              final credentials = _hashPassword(password);
+              final updatedMember = member.copyWith(
+                passwordHash: credentials.hash,
+                passwordSalt: credentials.salt,
+                updatedAt: DateTime.now().toIso8601String(),
+              );
+              final idx =
+                  _staffMembers.indexWhere((s) => s.id == updatedMember.id);
+              if (idx != -1) {
+                _staffMembers[idx] = updatedMember;
+                await _database.saveStaffMember({
+                  ..._staffMemberToMap(updatedMember),
+                  'store_id': _activeStoreId,
+                });
+              }
+              _currentUserId = updatedMember.id;
+            } else {
+              _currentUserId = serverUserId;
             }
+
+            _isLoggedIn = true;
+            notifyListeners();
+            return true;
           } on ApiException catch (error) {
             if (error.status == 401) {
               _lastAuthError = 'invalid_password';

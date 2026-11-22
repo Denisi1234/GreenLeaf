@@ -81,7 +81,8 @@ class CustomerDebitSection extends StatelessWidget {
                   ),
                   if (hasDebt) ...[
                     CustomerDebitAction(
-                      label: customerDual(strings, 'Statement (PDF)', 'Taarifa (PDF)'),
+                      label: customerDual(
+                          strings, 'Statement (PDF)', 'Taarifa (PDF)'),
                       icon: Icons.picture_as_pdf_rounded,
                       color: AppColors.kpiVioletBg,
                       foregroundColor: AppColors.kpiViolet,
@@ -168,7 +169,8 @@ class CustomerDebitSection extends StatelessWidget {
     if (applied == null) {
       showMarketNotice(
         context,
-        title: customerDual(strings, 'Payment not applied', 'Malipo hayajatumika'),
+        title:
+            customerDual(strings, 'Payment not applied', 'Malipo hayajatumika'),
         message: customerDual(
           strings,
           'The amount must be between 1 and the outstanding balance.',
@@ -206,23 +208,23 @@ class CustomerDebitAction extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.icon = Icons.payments_rounded,
-    this.color = AppColors.primary,
+    this.color,
     this.foregroundColor = Colors.white,
   });
 
   final String label;
   final VoidCallback onTap;
   final IconData icon;
-  final Color color;
+  final Color? color;
   final Color foregroundColor;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color,
-      borderRadius: BorderRadius.zero,
+      color: color ?? AppColors.primary,
+      borderRadius: AppCorners.control,
       child: InkWell(
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         highlightColor: Colors.transparent,
         onTap: onTap,
         child: Container(
@@ -249,7 +251,8 @@ class CustomerDebitAction extends StatelessWidget {
 }
 
 class CustomerLedgerRow extends StatelessWidget {
-  const CustomerLedgerRow({super.key, required this.entry, required this.strings});
+  const CustomerLedgerRow(
+      {super.key, required this.entry, required this.strings});
 
   final DebitEntry entry;
   final AppStrings strings;
@@ -264,7 +267,8 @@ class CustomerLedgerRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.standard),
-        border: const Border.fromBorderSide(BorderSide(color: AppColors.border)),
+        border:
+            Border.fromBorderSide(BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [

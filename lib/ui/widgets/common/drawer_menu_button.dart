@@ -5,19 +5,20 @@ import '../app_design.dart';
 class DrawerMenuButton extends StatelessWidget {
   const DrawerMenuButton({
     super.key,
-    this.iconColor = AppColors.ink,
+    this.iconColor,
     this.backgroundColor = Colors.transparent,
     this.borderColor = Colors.transparent,
     this.shadowColor = Colors.transparent,
   });
 
-  final Color iconColor;
+  final Color? iconColor;
   final Color backgroundColor;
   final Color borderColor;
   final Color shadowColor;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveIconColor = iconColor ?? AppColors.ink;
     return Builder(
       builder: (context) => InkWell(
         borderRadius: BorderRadius.circular(AppRadius.standard),
@@ -27,11 +28,11 @@ class DrawerMenuButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _DrawerMenuLine(width: 30, color: iconColor),
+              _DrawerMenuLine(width: 30, color: effectiveIconColor),
               const SizedBox(height: 6),
-              _DrawerMenuLine(width: 20, color: iconColor),
+              _DrawerMenuLine(width: 20, color: effectiveIconColor),
               const SizedBox(height: 6),
-              _DrawerMenuLine(width: 30, color: iconColor),
+              _DrawerMenuLine(width: 30, color: effectiveIconColor),
             ],
           ),
         ),

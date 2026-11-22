@@ -92,8 +92,8 @@ void showMarketNotice(
   MarketNoticeType type = MarketNoticeType.success,
   Duration? duration,
 }) {
-  final overlay = Overlay.maybeOf(context, rootOverlay: true) ??
-      Overlay.maybeOf(context);
+  final overlay =
+      Overlay.maybeOf(context, rootOverlay: true) ?? Overlay.maybeOf(context);
   if (overlay == null) return;
 
   try {
@@ -107,9 +107,12 @@ void showMarketNotice(
           ? const Duration(milliseconds: 3400)
           : const Duration(milliseconds: 2600));
 
-  final backgroundColor = type == MarketNoticeType.success
-      ? AppColors.successBright
-      : AppColors.dangerBright;
+  final backgroundColor = switch (type) {
+    MarketNoticeType.success => AppColors.successDeep,
+    MarketNoticeType.warning => AppColors.kpiAmber,
+    MarketNoticeType.info => AppColors.primary,
+    MarketNoticeType.error => AppColors.dangerDeep,
+  };
 
   final icon = switch (type) {
     MarketNoticeType.success => Icons.check_circle_rounded,
@@ -243,95 +246,98 @@ class _AnimatedMarketToastState extends State<_AnimatedMarketToast>
   @override
   Widget build(BuildContext context) {
     final hasTitle = widget.title.isNotEmpty;
-    final hasMessage = widget.message.isNotEmpty && widget.message != widget.title;
+    final hasMessage =
+        widget.message.isNotEmpty && widget.message != widget.title;
 
     return SlideTransition(
       position: _slide,
       child: FadeTransition(
         opacity: _opacity,
-        child: GestureDetector(
-          onTap: _dismiss,
-          onVerticalDragEnd: (details) {
-            if ((details.primaryVelocity ?? 0) > 80) {
-              _dismiss();
-            }
-          },
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              decoration: BoxDecoration(
-                color: widget.backgroundColor,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.backgroundColor.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+        child: Semantics(
+          liveRegion: true,
+          child: GestureDetector(
+            onTap: _dismiss,
+            onVerticalDragEnd: (details) {
+              if ((details.primaryVelocity ?? 0) > 80) {
+                _dismiss();
+              }
+            },
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                decoration: BoxDecoration(
+                  color: widget.backgroundColor,
+                  borderRadius: BorderRadius.circular(AppRadius.modal),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      widget.icon,
-                      color: Colors.white,
-                      size: 18,
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        widget.icon,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (hasTitle)
-                          Text(
-                            widget.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (hasTitle)
+                            Text(
+                              widget.title,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                height: 1.2,
+                              ),
                             ),
-                          ),
-                        if (hasMessage) ...[
-                          if (hasTitle) const SizedBox(height: 2),
-                          Text(
-                            widget.message,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.helperText.copyWith(
-                              color: hasTitle
-                                  ? Colors.white.withValues(alpha: 0.82)
-                                  : Colors.white,
-                              fontSize: hasTitle ? 12 : 13,
-                              fontWeight:
-                                  hasTitle ? FontWeight.w500 : FontWeight.w600,
-                              height: 1.3,
+                          if (hasMessage) ...[
+                            if (hasTitle) const SizedBox(height: 2),
+                            Text(
+                              widget.message,
+                              style: AppTypography.helperText.copyWith(
+                                color: hasTitle
+                                    ? Colors.white.withValues(alpha: 0.82)
+                                    : Colors.white,
+                                fontSize: hasTitle ? 12 : 13,
+                                fontWeight: hasTitle
+                                    ? FontWeight.w500
+                                    : FontWeight.w600,
+                                height: 1.3,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.close_rounded,
-                    size: 16,
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: context.tr('Close'),
+                      onPressed: _dismiss,
+                      icon: const Icon(Icons.close_rounded,
+                          size: 18, color: Colors.white),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

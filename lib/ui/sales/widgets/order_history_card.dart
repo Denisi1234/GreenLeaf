@@ -117,7 +117,7 @@ class OrderCardState extends State<OrderCard> {
                         color: AppColors.surfaceSecondary,
                         borderRadius: BorderRadius.circular(AppRadius.sharp),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.shopping_bag_outlined,
                         color: AppColors.primary,
                         size: 24,
@@ -187,14 +187,14 @@ class OrderCardState extends State<OrderCard> {
             ),
           ),
           if (_expanded) ...[
-            const Divider(height: 1, color: AppColors.borderLight),
+            Divider(height: 1, color: AppColors.borderLight),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.person_outline_rounded,
+                      Icon(Icons.person_outline_rounded,
                           size: 18, color: AppColors.textMuted),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
@@ -254,7 +254,7 @@ class OrderCardState extends State<OrderCard> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.payments_outlined,
+                        Icon(Icons.payments_outlined,
                             size: 20, color: AppColors.primary),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
@@ -402,8 +402,7 @@ class OrderCardState extends State<OrderCard> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.all(Radius.circular(AppRadius.pill)),
+                      borderRadius: AppCorners.control,
                     ),
                   ),
                   child: Text(
@@ -420,8 +419,7 @@ class OrderCardState extends State<OrderCard> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 18, vertical: 10),
                     shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.all(Radius.circular(AppRadius.pill)),
+                      borderRadius: AppCorners.control,
                     ),
                   ),
                   onPressed: () async {

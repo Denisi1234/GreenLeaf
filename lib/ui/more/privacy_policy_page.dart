@@ -28,33 +28,35 @@ class PrivacyPolicyPage extends StatelessWidget {
                         children:  [
                           SettingsCard(
                             icon: Icons.privacy_tip_outlined,
-                            title: context.tr('Aza POS Privacy Policy'),
-                            description: context.tr('Last updated: May 2026'),
+                            title: context.tr('Aza POS Privacy Notice'),
+                            description: context.tr(
+                              'Azmur Group Limited • Last updated: November 2026',
+                            ),
                             children: [
                               _Section(
                                 title: context.tr('1. Information We Collect'),
                                 content:
-                                    'We collect information you provide directly to us when you set up your store, such as your name, email address, business details, and sales records.',
+                                    'Azmur Group Limited collects only the information you provide to operate Aza POS, including your name, phone number, business profile, staff roles, inventory, sales transactions, optional customer records, and optional product or receipt photos.',
                               ),
                               _Section(
                                 title: context.tr('2. How We Use Your Information'),
                                 content:
-                                    'We use the information we collect to provide, maintain, and improve our point-of-sale services, process transactions, and generate business reports.',
+                                    'We use your information strictly to provide offline-first point-of-sale checkout, inventory and accounting management, SMS verification codes, optional daily sales summaries, and cloud backup across your authorized store devices.',
                               ),
                               _Section(
-                                title: context.tr('3. Data Security'),
+                                title: context.tr('3. Data Storage & Security'),
                                 content:
-                                    'We implement industry-standard security measures to protect your business and personal information from unauthorized access, disclosure, or destruction.',
+                                    'Store records are saved locally in private device storage. When cloud backup is enabled, data is protected with HTTPS encryption in transit, secure password encryption, and staff access permissions.',
                               ),
                               _Section(
                                 title: context.tr('4. Information Sharing'),
                                 content:
-                                    'We do not sell your personal or business information to third parties. Data stays on your device unless you turn on online backup.',
+                                    'Azmur Group Limited never sells your personal or business data and uses no third-party advertising tools. Data is shared only with authorized infrastructure and SMS delivery providers strictly to operate the service.',
                               ),
                               _Section(
-                                title: context.tr('5. Your Choices'),
+                                title: context.tr('5. Your Rights & Account Deletion'),
                                 content:
-                                    'You can update your store information at any time through Settings. You may also sign out or remove local data from your device.',
+                                    'You can update store details, export CSV/PDF reports, or clear local data from your device at any time. To request permanent cloud account deletion or ask privacy questions, contact Azmur Group Limited at info@azmur.co.tz.',
                               ),
                             ],
                           ),

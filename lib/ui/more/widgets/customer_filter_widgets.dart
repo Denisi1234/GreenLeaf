@@ -29,22 +29,23 @@ class CustomerCreditBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.dangerLight,
-      borderRadius: BorderRadius.zero,
+      color: AppColors.warningLight,
+      borderRadius: AppCorners.control,
       child: InkWell(
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         highlightColor: Colors.transparent,
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.zero,
-            border: Border.all(color: AppColors.danger.withValues(alpha: 0.16)),
+            borderRadius: AppCorners.control,
+            border:
+                Border.all(color: AppColors.kpiAmber.withValues(alpha: 0.16)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.account_balance_wallet_outlined,
-                  color: AppColors.danger, size: 18),
+              Icon(Icons.account_balance_wallet_outlined,
+                  color: AppColors.kpiAmber, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -54,7 +55,7 @@ class CustomerCreditBanner extends StatelessWidget {
                       _dual(strings, 'Outstanding customer credit',
                           'Madeni ya wateja'),
                       style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.danger,
+                        color: AppColors.kpiAmber,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -68,7 +69,7 @@ class CustomerCreditBanner extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.helperText.copyWith(
-                        color: AppColors.danger,
+                        color: AppColors.kpiAmber,
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
                       ),
@@ -80,13 +81,13 @@ class CustomerCreditBanner extends StatelessWidget {
               Text(
                 _formatMoney(amount),
                 style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.danger,
+                  color: AppColors.kpiAmber,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.danger, size: 18),
+              Icon(Icons.chevron_right_rounded,
+                  color: AppColors.kpiAmber, size: 18),
             ],
           ),
         ),
@@ -126,7 +127,7 @@ class CustomerFilterRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 color: selected ? AppColors.primary : AppColors.surface,
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppCorners.control,
               ),
               child: Text(
                 filter.label(strings),
@@ -171,9 +172,9 @@ class CustomerSortCard extends StatelessWidget {
           Container(
             width: 34,
             height: 34,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
+              borderRadius: AppCorners.control,
             ),
             child: Icon(sort.icon, color: AppColors.primary, size: 18),
           ),
@@ -206,14 +207,14 @@ class CustomerSortCard extends StatelessWidget {
             IconButton(
               tooltip: _dual(strings, 'Clear filters', 'Ondoa vichujio'),
               onPressed: onClear,
-              icon: const Icon(Icons.filter_alt_off_rounded,
+              icon: Icon(Icons.filter_alt_off_rounded,
                   color: AppColors.textMuted, size: 20),
               visualDensity: VisualDensity.compact,
             ),
           IconButton(
             tooltip: _dual(strings, 'Sort', 'Panga'),
             onPressed: onPick,
-            icon: const Icon(Icons.tune_rounded,
+            icon: Icon(Icons.tune_rounded,
                 color: AppColors.textMuted, size: 20),
             visualDensity: VisualDensity.compact,
           ),

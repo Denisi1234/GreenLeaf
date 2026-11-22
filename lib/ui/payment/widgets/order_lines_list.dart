@@ -34,12 +34,12 @@ class OrderLinesList extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.remove_shopping_cart_outlined,
+              Icon(Icons.remove_shopping_cart_outlined,
                   size: 36, color: AppColors.textLight),
               const SizedBox(height: 10),
               Text(
                 context.tr('No items in this counter yet'),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.ink,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -129,7 +129,7 @@ class _CounterLineTile extends StatelessWidget {
                 ),
                 child: Text(
                   '−${line.discountPercent.toStringAsFixed(0)}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     color: AppColors.successDeep,
@@ -146,12 +146,12 @@ class _CounterLineTile extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.edit_outlined,
+                      Icon(Icons.edit_outlined,
                           size: 13, color: AppColors.primary),
                       const SizedBox(width: 3),
                       Text(
                         context.tr('Discount / Price'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
@@ -182,7 +182,7 @@ class _CounterLineTile extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.borderLight)),
       ),
       child: LayoutBuilder(builder: (context, constraints) {
@@ -264,7 +264,7 @@ class _QuantityStepper extends StatelessWidget {
                 height: 44,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border.symmetric(
                     vertical: BorderSide(color: AppColors.borderLight),
                   ),

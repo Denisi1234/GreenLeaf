@@ -31,22 +31,22 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
         child: Container(
           height: 38,
           padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.surfaceSecondary,
-            borderRadius: BorderRadius.zero,
+            borderRadius: AppCorners.control,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (_exporting) ...[
-                const SizedBox(
+                SizedBox(
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: AppColors.ink)),
                 const SizedBox(width: 8),
               ] else ...[
-                const Icon(Icons.ios_share_outlined,
+                Icon(Icons.ios_share_outlined,
                     size: 16, color: AppColors.ink),
                 const SizedBox(width: 8),
               ],
@@ -135,7 +135,7 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
                         avatar: Icon(_formatIcon(format), size: 16),
                         label: Text(format.label),
                         shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero),
+                            borderRadius: AppCorners.control),
                         labelStyle: AppTypography.helperText.copyWith(
                           fontWeight: FontWeight.w600,
                           color: AppColors.ink,
@@ -177,7 +177,7 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
                                 avatar: Icon(_formatIcon(format), size: 16),
                                 label: Text(format.label),
                                 shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.zero),
+                                    borderRadius: AppCorners.control),
                                 labelStyle: AppTypography.helperText.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.ink,
@@ -319,7 +319,7 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
@@ -327,9 +327,9 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
             Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surfaceSecondary,
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppCorners.control,
               ),
               child: Icon(icon, size: 20, color: AppColors.primary),
             ),
@@ -348,7 +348,7 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
+            Icon(Icons.chevron_right_rounded,
                 size: 20, color: AppColors.textLight),
           ],
         ),

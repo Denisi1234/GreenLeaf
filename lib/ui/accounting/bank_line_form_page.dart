@@ -91,7 +91,8 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
                                     label: _t('Money out', 'Pesa imetoka'),
                                     selected: !_inflow,
                                     color: AppColors.danger,
-                                    onTap: () => setState(() => _inflow = false),
+                                    onTap: () =>
+                                        setState(() => _inflow = false),
                                   ),
                                 ),
                               ],
@@ -100,19 +101,19 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
                             InkWell(
                               onTap: _pickDate,
                               child: InputDecorator(
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
+                                    borderRadius: AppCorners.control,
                                     borderSide:
                                         BorderSide(color: AppColors.border),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
+                                    borderRadius: AppCorners.control,
                                     borderSide:
                                         BorderSide(color: AppColors.border),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
+                                    borderRadius: AppCorners.control,
                                     borderSide: BorderSide(
                                         color: AppColors.primary, width: 1.4),
                                   ),
@@ -132,8 +133,8 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
                                           Text(_t('Date', 'Tarehe'),
                                               style: AppTypography.helperText
                                                   .copyWith(
-                                                      color: AppColors
-                                                          .textMuted)),
+                                                      color:
+                                                          AppColors.textMuted)),
                                           const SizedBox(height: 2),
                                           Text(
                                             _date
@@ -148,7 +149,7 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.calendar_today_outlined,
+                                    Icon(Icons.calendar_today_outlined,
                                         size: 18, color: AppColors.textMuted),
                                   ],
                                 ),
@@ -172,8 +173,8 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                       decimal: true),
-                              validator: (v) => (double.tryParse((v ?? '')
-                                              .replaceAll(',', '')) ??
+                              validator: (v) => (double.tryParse(
+                                              (v ?? '').replaceAll(',', '')) ??
                                           0) <=
                                       0
                                   ? _t('Enter a valid amount',
@@ -212,7 +213,7 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface,
                   border: Border(
                       top: BorderSide(color: AppColors.border, width: 1)),
@@ -226,7 +227,7 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
                         color: AppColors.kpiDangerBg,
                         foregroundColor: AppColors.kpiDanger,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.input,
                         onTap: _saving
                             ? null
                             : () => Navigator.of(context).maybePop(),
@@ -244,7 +245,7 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
                         icon: Icons.check_rounded,
                         variant: MarketButtonVariant.primary,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.input,
                         height: 48,
                         onTap: _saving ? null : _save,
                       ),

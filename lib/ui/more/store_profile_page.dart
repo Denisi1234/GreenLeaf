@@ -135,7 +135,7 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
     if (!store.isInitialized) {
       return Scaffold(
         backgroundColor: AppColors.pageBackground,
-        body:  MarketLoadingView(
+        body: MarketLoadingView(
           message: context.tr('Loading Store Profile…'),
           subMessage: 'Retrieving business configuration and assets',
         ),
@@ -197,7 +197,7 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 12),
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: AppCorners.control,
                           ),
                         ),
                         icon: const Icon(Icons.upload_outlined, size: 18),
@@ -321,7 +321,8 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(
                   t('Enable Advanced Accounting', 'Washa Uhasibu wa Kina'),
-                  style: AppTypography.bodyMain.copyWith(fontWeight: FontWeight.w600),
+                  style: AppTypography.bodyMain
+                      .copyWith(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
                   t(
@@ -335,7 +336,8 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
                     ? null
                     : (value) async {
                         await store.setStorePreferences(
-                          store.preferences.copyWith(enableAdvancedAccounting: value),
+                          store.preferences
+                              .copyWith(enableAdvancedAccounting: value),
                         );
                       },
               ),

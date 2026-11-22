@@ -62,7 +62,7 @@ class _AccountsPageState extends State<AccountsPage>
                   IconButton(
                     tooltip: _t('New journal entry', 'Kumbukumbu mpya'),
                     onPressed: () => _openJournalForm(context),
-                    icon: const Icon(Icons.add_rounded, color: AppColors.ink),
+                    icon: Icon(Icons.add_rounded, color: AppColors.ink),
                   ),
                 ],
               ),
@@ -70,10 +70,7 @@ class _AccountsPageState extends State<AccountsPage>
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: SegmentedTabs(
                   controller: _tabs,
-                  labels: [
-                    _t('Accounts', 'Akaunti'),
-                    _t('Journal', 'Daftari')
-                  ],
+                  labels: [_t('Accounts', 'Akaunti'), _t('Journal', 'Daftari')],
                 ),
               ),
               Expanded(
@@ -140,7 +137,7 @@ class _AccountsPageState extends State<AccountsPage>
             child: Column(
               children: [
                 _tableHeader(),
-                const Divider(height: 1, color: AppColors.divider),
+                Divider(height: 1, color: AppColors.divider),
                 for (var i = 0; i < rows.length; i++) ...[
                   AccountRowTile(
                     code: rows[i].code,
@@ -154,7 +151,7 @@ class _AccountsPageState extends State<AccountsPage>
                     ),
                   ),
                   if (i != rows.length - 1)
-                    const Divider(height: 1, color: AppColors.divider),
+                    Divider(height: 1, color: AppColors.divider),
                 ],
               ],
             ),
@@ -229,11 +226,11 @@ class _AccountsPageState extends State<AccountsPage>
                 Container(
                   width: 52,
                   height: 52,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppCorners.control,
                   ),
-                  child: const Icon(Icons.menu_book_outlined,
+                  child: Icon(Icons.menu_book_outlined,
                       size: 26, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 12),
@@ -292,13 +289,13 @@ class _AccountsPageState extends State<AccountsPage>
                         IconButton(
                           tooltip: _t('Delete', 'Futa'),
                           onPressed: () => _confirmDeleteJournal(entry),
-                          icon: const Icon(Icons.delete_outline_rounded,
+                          icon: Icon(Icons.delete_outline_rounded,
                               size: 18, color: AppColors.textMuted),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
-                    const Divider(height: 1, color: AppColors.divider),
+                    Divider(height: 1, color: AppColors.divider),
                     const SizedBox(height: 6),
                     for (final line in entry.lines)
                       Padding(
@@ -312,7 +309,7 @@ class _AccountsPageState extends State<AccountsPage>
                                 color: line.debit > 0
                                     ? AppColors.surfaceSecondary
                                     : AppColors.successLight,
-                                borderRadius: BorderRadius.zero,
+                                borderRadius: AppCorners.control,
                               ),
                               child: Text(
                                 line.debit > 0 ? 'DR' : 'CR',
@@ -397,7 +394,8 @@ class _AccountsPageState extends State<AccountsPage>
     showMarketNotice(
       context,
       title: _t('Entry Deleted', 'Kumbukumbu Imefutwa'),
-      message: _t('Journal entry was removed.', 'Kumbukumbu ya daftari imeondolewa.'),
+      message: _t(
+          'Journal entry was removed.', 'Kumbukumbu ya daftari imeondolewa.'),
       type: MarketNoticeType.success,
     );
   }

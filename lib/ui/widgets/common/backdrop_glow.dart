@@ -7,7 +7,7 @@ class BackdropGlow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const IgnorePointer(
+    return IgnorePointer(
       child: ColoredBox(color: AppColors.pageBackground),
     );
   }

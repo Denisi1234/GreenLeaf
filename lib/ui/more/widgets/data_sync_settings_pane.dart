@@ -11,12 +11,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../service/daily_sales_report_service.dart';
 import '../../../service/pos_local_store.dart';
-import '../../../utils/currency_formatter.dart';
-import '../../../utils/quantity_formatter.dart';
 import '../../widgets/app_design.dart';
 import '../settings_layout.dart';
 
-/// Data storage, cloud sync and backup pane.
+/// Daily SMS reports, backups, and maintenance pane.
+/// Cloud sync runs silently and automatically in the background.
 class DataSyncSettingsPane extends StatefulWidget {
   const DataSyncSettingsPane({super.key});
 
@@ -26,37 +25,23 @@ class DataSyncSettingsPane extends StatefulWidget {
 
 class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
   bool _busy = false;
-  bool _loadingHealth = true;
-  int _pending = 0;
-  int _failed = 0;
+  final TextEditingController _phoneController = TextEditingController();
+  bool _phoneInitialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadHealth());
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadHealth() async {
-    if (!mounted) return;
-    final store = context.read<PosLocalStore>();
-    try {
-      final health = await store.syncHealth();
-      if (!mounted) return;
-      setState(() {
-        _pending = health.pending;
-        _failed = health.failed;
-        _loadingHealth = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loadingHealth = false);
-    }
-  }
-
-  Future<void> _sendTestSms(PosLocalStore store) async {
+  Future<void> _sendDailySms(PosLocalStore store) async {
+    final overridePhone = _phoneController.text.trim();
     setState(() => _busy = true);
     final DailySmsResult result;
     try {
-      result = await store.sendDailySmsNow();
+      result = await store.sendDailySmsNow(
+        overridePhone: overridePhone.isNotEmpty ? overridePhone : null,
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() => _busy = false);
@@ -66,25 +51,26 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
     if (!mounted) return;
     setState(() => _busy = false);
 
-    // If a target phone and SMS text were generated for local delivery
-    if (result.targetPhone != null && result.smsText != null) {
-      final uri = Uri(
+    // If not delivered by the backend SMS gateway, open the native SMS app
+    // pre-filled with the recipient and today's sales summary.
+    if (!result.deliveredByServer &&
+        result.targetPhone != null &&
+        result.smsText != null) {
+      final smsUri = Uri(
         scheme: 'sms',
         path: result.targetPhone!,
         queryParameters: <String, String>{'body': result.smsText!},
       );
+      var launched = false;
       try {
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri);
-        } else {
-          await SharePlus.instance.share(
-            ShareParams(
-              text: result.smsText!,
-              subject: 'Ripoti ya Mauzo ya Leo',
-            ),
-          );
-        }
+        launched = await launchUrl(
+          smsUri,
+          mode: LaunchMode.externalApplication,
+        );
       } catch (_) {
+        launched = false;
+      }
+      if (!launched) {
         await SharePlus.instance.share(
           ShareParams(
             text: result.smsText!,
@@ -100,13 +86,11 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
 
   Future<void> _run(
     Future<void> Function() action,
-    String okMessage, {
-    bool refreshHealth = true,
-  }) async {
+    String okMessage,
+  ) async {
     setState(() => _busy = true);
     try {
       await action();
-      if (refreshHealth) await _loadHealth();
       if (mounted) showSettingsResult(context, okMessage);
     } catch (error) {
       if (mounted) showSettingsResult(context, error.toString(), error: true);
@@ -215,155 +199,19 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
     final store = context.watch<PosLocalStore>();
     final lang = store.languageCode;
     String t(String en, String sw) => settingsText(lang, en, sw);
-    final connected = store.cloudApi != null;
-    final error = store.lastPersistenceError;
-    final inventoryUnits = roundQuantity(
-        store.inventory.fold<double>(0, (sum, item) => sum + item.stockCount));
-    final recordedRevenue =
-        store.orders.fold<double>(0, (sum, order) => sum + order.total);
-    final hasQueue = connected || _pending > 0 || _failed > 0;
+
+    if (!_phoneInitialized) {
+      _phoneController.text =
+          DailySalesReportService.resolveRecipientPhone(store);
+      _phoneInitialized = true;
+    }
+
+    final previewMessage =
+        DailySalesReportService.buildDailyReportMessage(store: store);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
-        SettingsCard(
-          icon: Icons.cloud_sync_outlined,
-          title: t('Storage & sync', 'Hifadhi na usawazishaji'),
-          description: connected
-              ? t('Your data is safely backed up online with Aza POS.',
-                  'Data yako inahifadhiwa mtandaoni kwa usalama na Aza POS.')
-              : t('Your data is saved on this device only.',
-                  'Data yako inahifadhiwa kwenye kifaa hiki pekee.'),
-          trailing: SettingsStatusPill(
-            label: connected
-                ? t('Connected', 'Imeunganishwa')
-                : t('Offline', 'Nje ya mtandao'),
-            positive: connected,
-          ),
-          children: [
-            SettingsInfoRow(
-              label: t('Storage mode', 'Aina ya hifadhi'),
-              value: connected
-                  ? t('Online backup', 'Hifadhi ya mtandaoni')
-                  : t('This device', 'Kifaa hiki'),
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
-              label: t('Sync queue', 'Foleni ya usawazishaji'),
-              value: _loadingHealth
-                  ? t('Checking...', 'Inakagua...')
-                  : hasQueue
-                      ? t(
-                          '$_pending pending • $_failed failed',
-                          '$_pending zinasubiri • $_failed zimeshindikana',
-                        )
-                      : t('No pending changes',
-                          'Hakuna mabadiliko yanayosubiri'),
-            ),
-            if (hasQueue) ...[
-              const Divider(height: 1),
-              SettingsInfoRow(
-                label: t('Queue health', 'Afya ya foleni'),
-                value: _failed == 0
-                    ? t('Healthy', 'Nzuri')
-                    : t('Needs attention', 'Inahitaji uangalizi'),
-                valueColor: _failed == 0
-                    ? AppColors.successDeep
-                    : AppColors.warningDeep,
-              ),
-            ],
-            if (error != null && error.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.dangerLight,
-                  borderRadius: BorderRadius.zero,
-                  border: Border.all(color: AppColors.dangerBorder),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.error_outline_rounded,
-                        color: AppColors.danger, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        error,
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.dangerDeep),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (connected) ...[
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  FilledButton.icon(
-                    onPressed: _busy
-                        ? null
-                        : () => _run(
-                              store.refreshFromServer,
-                              t('Data synced', 'Data imesawazishwa'),
-                            ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      side: BorderSide.none,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
-                      ),
-                    ),
-                    icon: _busy
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Icon(Icons.sync_rounded, size: 18),
-                    label: Text(
-                      t('Sync now', 'Sawazisha sasa'),
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  if (_failed > 0)
-                    FilledButton.icon(
-                      onPressed: _busy
-                          ? null
-                          : () => _run(
-                                store.retryFailedSync,
-                                t('Failed changes retried',
-                                    'Mabadiliko yameshawazishwa tena'),
-                              ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.kpiAmberBg,
-                        foregroundColor: AppColors.kpiAmber,
-                        side: BorderSide.none,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                        ),
-                      ),
-                      icon: const Icon(Icons.replay_rounded, size: 18),
-                      label: Text(
-                        t('Retry failed', 'Jaribu tena'),
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ],
-        ),
         SettingsCard(
           icon: Icons.sms_outlined,
           title: t('Daily SMS report', 'Ripoti ya SMS ya kila siku'),
@@ -401,12 +249,46 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                     },
             ),
             const Divider(height: 1),
+            const SizedBox(height: 12),
+            SettingsField(
+              label: t('Owner phone number', 'Namba ya simu ya mmiliki'),
+              hint: t(
+                'e.g. 0712345678 or +255712345678',
+                'mf. 0712345678 au +255712345678',
+              ),
+              child: TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  hintText: '0712345678',
+                  filled: true,
+                  fillColor: AppColors.pageBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             SettingsField(
               label: t('Delivery time', 'Muda wa kutuma'),
               hint: t('24-hour clock, e.g. 21:00', 'Saa 24, mf. 21:00'),
               child: DropdownButtonFormField<String>(
                 key: ValueKey(
-                    'sms-${store.storePreferences.dailySmsTime}-$lang'),
+                  'sms-${store.storePreferences.dailySmsTime}-$lang',
+                ),
                 initialValue: store.storePreferences.dailySmsTime,
                 items: [
                   for (final time in const [
@@ -429,72 +311,66 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
               ),
             ),
             const SizedBox(height: 14),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.pageBackground,
+                borderRadius: BorderRadius.circular(AppRadius.sharp),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t('Live SMS preview', 'Mfano wa SMS ya leo'),
+                    style: AppTypography.label.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    previewMessage,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.ink,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 48,
+              width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _busy ? null : () => _sendTestSms(store),
+                onPressed: _busy ? null : () => _sendDailySms(store),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.kpiSuccess,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                 ),
                 icon: _busy
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.send_rounded, size: 18),
-                label: Text(t('Send daily report via SMS', 'Tuma ripoti kwa SMS')),
+                label: Text(
+                  t('Send daily report via SMS', 'Tuma ripoti kwa SMS'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-        SettingsCard(
-          icon: Icons.storage_outlined,
-          title: t('Data summary', 'Muhtasari wa data'),
-          description: t('What is currently available on this device.',
-              'Kilichopo kwenye kifaa hiki kwa sasa.'),
-          children: [
-            SettingsInfoRow(
-              label: t('Products', 'Bidhaa'),
-              value: '${store.inventory.length}',
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
-              label: t('Stock units', 'Vipimo vya bidhaa'),
-              value: formatQuantity(inventoryUnits),
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
-              label: t('Sales recorded', 'Mauzo yaliyorekodiwa'),
-              value: '${store.orders.length}',
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
-              label: t('Sales value', 'Thamani ya mauzo'),
-              value: formatCurrencyWithPrefix(recordedRevenue),
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
-              label: t('Customers', 'Wateja'),
-              value: '${store.customers.length}',
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
-              label: t('Debtors', 'Wadaiwa'),
-              value: '${store.debtorCount}',
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
-              label: t('Staff members', 'Wafanyakazi'),
-              value: '${store.staffMembers.length}',
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
-              label: t('Expenses', 'Matumizi'),
-              value: '${store.expenses.length}',
             ),
           ],
         ),
@@ -507,14 +383,6 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
           ),
           children: [
             SettingsInfoRow(
-              label: t('Records in backup', 'Rekodi kwenye nakala'),
-              value: t(
-                '${store.orders.length} sales • ${store.customers.length} customers • ${store.inventory.length} products',
-                'mauzo ${store.orders.length} • wateja ${store.customers.length} • bidhaa ${store.inventory.length}',
-              ),
-            ),
-            const Divider(height: 1),
-            SettingsInfoRow(
               label: t('Includes', 'Inajumuisha'),
               value: t(
                 'Profile, sales, stock, customers, credit ledger, expenses, staff',
@@ -522,24 +390,25 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
               ),
             ),
             const SizedBox(height: 14),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: FilledButton.icon(
+            SizedBox(
+              height: 48,
+              child: OutlinedButton.icon(
                 onPressed: _busy ? null : () => _exportBackup(store),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.kpiSkyBg,
-                  foregroundColor: AppColors.kpiSky,
-                  side: BorderSide.none,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.ink,
+                  backgroundColor: AppColors.surface,
+                  side: BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                 ),
                 icon: const Icon(Icons.ios_share_rounded, size: 18),
                 label: Text(
                   t('Export backup', 'Hamisha nakala'),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -553,30 +422,33 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
             'Sasisha kumbukumbu za ndani bila kubadilisha data yako.',
           ),
           children: [
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: FilledButton.icon(
+            SizedBox(
+              height: 48,
+              child: OutlinedButton.icon(
                 onPressed: _busy
                     ? null
                     : () => _run(
                           store.reloadFromLocal,
-                          t('Local data refreshed',
-                              'Data ya ndani imesasishwa'),
+                          t(
+                            'Local data refreshed',
+                            'Data ya ndani imesasishwa',
+                          ),
                         ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.kpiVioletBg,
-                  foregroundColor: AppColors.kpiViolet,
-                  side: BorderSide.none,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.ink,
+                  backgroundColor: AppColors.surface,
+                  side: BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                 ),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: Text(
                   t('Reload local data', 'Pakia data upya'),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),

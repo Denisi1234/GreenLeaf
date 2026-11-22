@@ -80,7 +80,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -122,8 +122,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
                           return LayoutBuilder(
                             builder: (context, constraints) {
-                              final artSize = (constraints.maxHeight * 0.44)
-                                  .clamp(200.0, 310.0);
+                              final artSize = (constraints.maxHeight * 0.42)
+                                  .clamp(130.0, 290.0);
 
                               return SingleChildScrollView(
                                 physics: const BouncingScrollPhysics(),
@@ -212,7 +212,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     // 4. Primary Brand Pill Button ("Get Started" / "Continue")
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           colors: [AppColors.primaryDeep, AppColors.primary],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
@@ -261,8 +261,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     // 5. Secondary Bottom Link ("Already have an account? Sign in")
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
                             isSwahili
@@ -363,7 +364,7 @@ class _TopBar extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.translate_rounded,
                       size: 15,
                       color: AppColors.primaryDeep,
@@ -378,7 +379,7 @@ class _TopBar extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 2),
-                    const Icon(
+                    Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 16,
                       color: AppColors.textLight,

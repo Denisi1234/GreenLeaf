@@ -8,7 +8,7 @@ class MetricGrid extends StatelessWidget {
   const MetricGrid({super.key, required this.metrics});
   final List<MetricData> metrics;
 
-  static const _palette = [
+  static final _palette = [
     (AppColors.kpiSkyBg, AppColors.kpiSky), // Sky
     (AppColors.kpiSuccessBg, AppColors.kpiSuccess), // Emerald
     (AppColors.kpiAmberBg, AppColors.kpiAmber), // Amber
@@ -18,7 +18,8 @@ class MetricGrid extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) {
         final columns = (constraints.maxWidth / 220).floor().clamp(1, 4);
         final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
         return Wrap(spacing: 12, runSpacing: 12, children: [
@@ -27,12 +28,11 @@ class MetricGrid extends StatelessWidget {
         ]);
       });
 
-  Widget _buildMetricCard(BuildContext context, MetricData metric, double width, int index) {
+  Widget _buildMetricCard(
+      BuildContext context, MetricData metric, double width, int index) {
     final colors = _palette[index % _palette.length];
-    final bg = metric.tint != Colors.transparent && metric.tint != Colors.white
-        ? metric.tint
-        : colors.$1;
-    final primaryColor = metric.iconColor != AppColors.ink && metric.iconColor != Colors.transparent
+    final primaryColor = metric.iconColor != AppColors.ink &&
+            metric.iconColor != Colors.transparent
         ? metric.iconColor
         : colors.$2;
 
@@ -41,8 +41,9 @@ class MetricGrid extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.zero,
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.borderLight),
+          borderRadius: BorderRadius.circular(AppRadius.card),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +54,7 @@ class MetricGrid extends StatelessWidget {
                   child: Text(
                     context.tr(metric.title),
                     style: AppTypography.label.copyWith(
-                      color: primaryColor,
+                      color: AppColors.textMuted,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -63,8 +64,8 @@ class MetricGrid extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: AppColors.surface.withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.zero,
+                    color: primaryColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(AppRadius.sharp),
                   ),
                   child: Icon(metric.icon, size: 18, color: primaryColor),
                 ),
@@ -77,7 +78,8 @@ class MetricGrid extends StatelessWidget {
               child: Text(
                 metric.value,
                 style: AppTypography.h3.copyWith(
-                  color: metric.valueColor != Colors.transparent && metric.valueColor != AppColors.ink
+                  color: metric.valueColor != Colors.transparent &&
+                          metric.valueColor != AppColors.ink
                       ? metric.valueColor
                       : AppColors.ink,
                   fontSize: 22,

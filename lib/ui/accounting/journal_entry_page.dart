@@ -137,7 +137,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface,
                   border: Border(
                       top: BorderSide(color: AppColors.border, width: 1)),
@@ -151,7 +151,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
                         color: AppColors.kpiDangerBg,
                         foregroundColor: AppColors.kpiDanger,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.input,
                         onTap: () => Navigator.of(context).maybePop(),
                         height: 48,
                       ),
@@ -164,7 +164,7 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
                         icon: Icons.check_rounded,
                         variant: MarketButtonVariant.primary,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.input,
                         height: 48,
                         onTap: () => _save(store),
                       ),
@@ -296,14 +296,14 @@ class JournalLineCard extends StatelessWidget {
               labelText: _t('Account', 'Akaunti'),
               isDense: true,
               border: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppCorners.control,
               ),
-              enabledBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppCorners.control,
                 borderSide: BorderSide(color: AppColors.border),
               ),
-              focusedBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppCorners.control,
                 borderSide: BorderSide(color: AppColors.primary, width: 1.4),
               ),
             ),
@@ -334,14 +334,14 @@ class JournalLineCard extends StatelessWidget {
                     labelText: _t('Debit', 'Deni'),
                     isDense: true,
                     border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: AppCorners.control,
                     ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide:
                           BorderSide(color: AppColors.primary, width: 1.4),
                     ),
@@ -364,14 +364,14 @@ class JournalLineCard extends StatelessWidget {
                     labelText: _t('Credit', 'Mkopo'),
                     isDense: true,
                     border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: AppCorners.control,
                     ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.zero,
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppCorners.control,
                       borderSide:
                           BorderSide(color: AppColors.primary, width: 1.4),
                     ),

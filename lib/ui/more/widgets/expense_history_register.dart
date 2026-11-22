@@ -67,7 +67,7 @@ class ExpenseHistoryRegister extends StatelessWidget {
                       onPressed: expense.id == null
                           ? null
                           : () => onConfirmDelete(context, store, expense),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline_rounded,
                         size: 19,
                         color: AppColors.dangerDeep,

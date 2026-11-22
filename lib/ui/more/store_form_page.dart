@@ -72,7 +72,7 @@ class _StoreFormPageState extends State<StoreFormPage> {
                         padding: const EdgeInsets.all(18),
                         showShadow: false,
                         borderColor: AppColors.border,
-                        radius: 0,
+                        radius: AppRadius.input,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -86,10 +86,10 @@ class _StoreFormPageState extends State<StoreFormPage> {
                             const SizedBox(height: 16),
                             MarketFormField(
                               label: _t('Store name', 'Jina la duka'),
-                              hintText:
-                                  _t('e.g. Main branch, Town outlet', 'mf. Tawi kuu, Duka la mjini'),
+                              hintText: _t('e.g. Main branch, Town outlet',
+                                  'mf. Tawi kuu, Duka la mjini'),
                               controller: _name,
-                              radius: 0,
+                              radius: AppRadius.input,
                               validator: (v) => (v == null || v.trim().isEmpty)
                                   ? _t('Enter store name', 'Weka jina la duka')
                                   : null,
@@ -97,9 +97,10 @@ class _StoreFormPageState extends State<StoreFormPage> {
                             const SizedBox(height: 14),
                             MarketFormField(
                               label: _t('Address / location', 'Anwani / eneo'),
-                              hintText: _t('Street, city or physical location', 'Mtaa, jiji au eneo'),
+                              hintText: _t('Street, city or physical location',
+                                  'Mtaa, jiji au eneo'),
                               controller: _address,
-                              radius: 0,
+                              radius: AppRadius.input,
                             ),
                             const SizedBox(height: 14),
                             MarketFormField(
@@ -107,7 +108,7 @@ class _StoreFormPageState extends State<StoreFormPage> {
                               hintText: _t('Phone number or email',
                                   'Namba ya simu au barua pepe'),
                               controller: _contact,
-                              radius: 0,
+                              radius: AppRadius.input,
                             ),
                           ],
                         ),
@@ -119,7 +120,7 @@ class _StoreFormPageState extends State<StoreFormPage> {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface,
                   border: Border(
                       top: BorderSide(color: AppColors.border, width: 1)),
@@ -133,7 +134,7 @@ class _StoreFormPageState extends State<StoreFormPage> {
                         color: AppColors.kpiDangerBg,
                         foregroundColor: AppColors.kpiDanger,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.input,
                         onTap: _saving
                             ? null
                             : () => Navigator.of(context).maybePop(),
@@ -150,7 +151,7 @@ class _StoreFormPageState extends State<StoreFormPage> {
                         icon: Icons.check_rounded,
                         variant: MarketButtonVariant.primary,
                         borderColor: null,
-                        radius: 0,
+                        radius: AppRadius.input,
                         height: 48,
                         onTap: _saving ? null : _save,
                       ),

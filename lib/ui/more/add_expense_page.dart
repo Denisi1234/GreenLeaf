@@ -72,9 +72,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
     if (expense != null) {
       _titleController.text = expense.title;
       _amountController.text = expense.amount.toStringAsFixed(0);
-      _taxController.text = expense.taxAmount > 0
-          ? expense.taxAmount.toStringAsFixed(0)
-          : '';
+      _taxController.text =
+          expense.taxAmount > 0 ? expense.taxAmount.toStringAsFixed(0) : '';
       _vendorController.text = expense.vendor;
       _notesController.text = expense.notes ?? '';
       _selectedDate = expense.date;
@@ -341,7 +340,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                   },
                                 ),
                                 const SizedBox(height: 16),
-                                _fieldLabel(_dual(strings, 'Tax / VAT (optional)',
+                                _fieldLabel(_dual(
+                                    strings,
+                                    'Tax / VAT (optional)',
                                     'Kodi / VAT (hiari)')),
                                 const SizedBox(height: 6),
                                 TextFormField(
@@ -421,19 +422,19 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                 const SizedBox(height: 6),
                                 InkWell(
                                   onTap: _pickDate,
-                                  borderRadius: BorderRadius.zero,
+                                  borderRadius: AppCorners.control,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 14, vertical: 14),
                                     decoration: BoxDecoration(
                                       color: AppColors.surfaceSecondary,
-                                      borderRadius: BorderRadius.zero,
+                                      borderRadius: AppCorners.control,
                                       border:
                                           Border.all(color: AppColors.border),
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                             Icons.calendar_month_outlined,
                                             size: 20,
                                             color: AppColors.textMuted),
@@ -442,7 +443,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                                           child: Text(dateLabel,
                                               style: AppTypography.bodyMedium),
                                         ),
-                                        const Icon(
+                                        Icon(
                                             Icons.keyboard_arrow_down_rounded,
                                             color: AppColors.textLight),
                                       ],
@@ -512,7 +513,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.surface,
                     border: Border(
                         top: BorderSide(color: AppColors.border, width: 1)),
@@ -526,7 +527,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                           color: AppColors.kpiDangerBg,
                           foregroundColor: AppColors.kpiDanger,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           onTap: _isSaving
                               ? null
                               : () => Navigator.of(context).pop(),
@@ -547,7 +548,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                           icon: _isSaving ? null : Icons.check_rounded,
                           variant: MarketButtonVariant.primary,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           height: 48,
                           onTap: _isSaving ? null : _saveExpense,
                         ),
@@ -580,24 +581,24 @@ class _AddExpensePageState extends State<AddExpensePage> {
       filled: true,
       fillColor: AppColors.surfaceSecondary,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+      border: OutlineInputBorder(
+        borderRadius: AppCorners.control,
         borderSide: BorderSide(color: AppColors.border),
       ),
-      enabledBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: AppCorners.control,
         borderSide: BorderSide(color: AppColors.border),
       ),
-      focusedBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: AppCorners.control,
         borderSide: BorderSide(color: AppColors.primary, width: 1.4),
       ),
       errorBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         borderSide: BorderSide(color: AppColors.danger),
       ),
       focusedErrorBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         borderSide: BorderSide(color: AppColors.danger, width: 1.4),
       ),
     );

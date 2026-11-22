@@ -55,7 +55,7 @@ class CustomerCard extends StatelessWidget {
                 width: 46,
                 height: 46,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surfaceSecondary,
                   borderRadius:
                       BorderRadius.all(Radius.circular(AppRadius.sharp)),
@@ -169,7 +169,7 @@ class CustomerCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Icon(Icons.chevron_right_rounded,
+                  Icon(Icons.chevron_right_rounded,
                       color: AppColors.textLight, size: 20),
                 ],
               ),
@@ -199,7 +199,7 @@ class _MetricChip extends StatelessWidget {
     return Flexible(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surfaceSecondary,
           borderRadius: BorderRadius.all(Radius.circular(6)),
         ),
@@ -278,9 +278,9 @@ class AddCustomerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.primary,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
+      borderRadius: BorderRadius.circular(AppRadius.button),
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        borderRadius: BorderRadius.circular(AppRadius.button),
         splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
         highlightColor: Colors.transparent,
         onTap: onTap,

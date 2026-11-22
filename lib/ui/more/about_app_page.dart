@@ -53,7 +53,7 @@ class AboutAppPage extends StatelessWidget {
                               width: 44,
                               height: 44,
                               fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(
+                              errorBuilder: (_, __, ___) => Icon(
                                 Icons.point_of_sale_rounded,
                                 size: 36,
                                 color: AppColors.kpiRose,
@@ -89,7 +89,7 @@ class AboutAppPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          const Divider(height: 1, color: AppColors.borderLight),
+                          Divider(height: 1, color: AppColors.borderLight),
                           const SizedBox(height: 20),
                           InkWell(
                             onTap: () => showLicensePage(

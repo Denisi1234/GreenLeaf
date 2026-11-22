@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../service/pos_local_store.dart';
 import '../../../service/store_preferences.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/app_theme_palette.dart';
 import '../settings_layout.dart';
 
 /// Language and date/time preference pane.
@@ -96,6 +97,95 @@ class _LanguageSettingsPaneState extends State<LanguageSettingsPane> {
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
         SettingsCard(
+          icon: Icons.palette_outlined,
+          title: t('Appearance & theme', 'Muonekano na mandhari'),
+          description: t(
+            'Switch between light, low-glare slate, warm paper, or dark mode.',
+            'Chagua kati ya mwanga safi, bluu tulivu, karatasi laini, au giza.',
+          ),
+          children: [
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: AppThemePreset.presets.map((preset) {
+                final selected = preferences.appTheme == preset.id;
+                final p = preset.palette;
+                return InkWell(
+                  onTap: _savingPreferences || selected
+                      ? null
+                      : () => _updatePreferences(
+                            store,
+                            preferences.copyWith(appTheme: preset.id),
+                            t(
+                              'Theme changed to ${preset.nameEn}',
+                              'Mandhari yamebadilishwa kuwa ${preset.nameSw}',
+                            ),
+                          ),
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                  child: Container(
+                    width: 156,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: p.pageBackground,
+                      borderRadius: BorderRadius.circular(AppRadius.standard),
+                      border: Border.all(
+                        color: selected ? p.primary : p.border,
+                        width: selected ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: p.surface,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: p.border),
+                              ),
+                              alignment: Alignment.center,
+                              child: Icon(preset.icon, size: 14, color: p.primary),
+                            ),
+                            const Spacer(),
+                            if (selected)
+                              Icon(Icons.check_circle_rounded,
+                                  size: 18, color: p.primary),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          t(preset.nameEn, preset.nameSw),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: p.ink,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          t(preset.subtitleEn, preset.subtitleSw),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.helperText.copyWith(
+                            color: p.textMuted,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SettingsCard(
           icon: Icons.translate_rounded,
           title: t('App language', 'Lugha ya programu'),
           description: t('Changes apply immediately across the app.',
@@ -108,7 +198,8 @@ class _LanguageSettingsPaneState extends State<LanguageSettingsPane> {
                   selected: lang == code,
                   busy: _pending == code,
                   title: name,
-                  subtitle: code == 'en' ? t('International', 'Kimataifa') : region,
+                  subtitle:
+                      code == 'en' ? t('International', 'Kimataifa') : region,
                   onTap: () => _apply(store, code),
                 ),
               ),
@@ -206,16 +297,16 @@ class ChoiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected ? AppColors.kpiSkyBg : AppColors.pageBackground,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: InkWell(
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         onTap: onTap,
         child: AnimatedContainer(
           duration: AppDurations.fast,
           constraints: const BoxConstraints(minHeight: 56),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: const BoxDecoration(
-            borderRadius: BorderRadius.zero,
+            borderRadius: AppCorners.control,
           ),
           child: Row(
             children: [
@@ -227,9 +318,7 @@ class ChoiceTile extends StatelessWidget {
                       title,
                       style: AppTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: selected
-                            ? AppColors.kpiSky
-                            : AppColors.textMain,
+                        color: selected ? AppColors.kpiSky : AppColors.textMain,
                       ),
                     ),
                     Text(subtitle, style: AppTypography.caption),
@@ -247,8 +336,7 @@ class ChoiceTile extends StatelessWidget {
                   selected
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
-                  color:
-                      selected ? AppColors.primary : AppColors.textLight,
+                  color: selected ? AppColors.primary : AppColors.textLight,
                 ),
             ],
           ),

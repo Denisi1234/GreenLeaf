@@ -43,7 +43,7 @@ class PaymentCustomerSelector extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
-              child: const Icon(
+              child: Icon(
                 Icons.person_outline_rounded,
                 color: AppColors.kpiSky,
                 size: 19,
@@ -78,7 +78,7 @@ class PaymentCustomerSelector extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                 ),
               ),
               child: Text(

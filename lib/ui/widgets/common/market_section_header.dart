@@ -7,14 +7,14 @@ class MarketSectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.trailing,
-    this.titleColor = AppColors.ink,
+    this.titleColor,
     this.titleSize,
     this.titleWeight,
   });
 
   final String title;
   final Widget trailing;
-  final Color titleColor;
+  final Color? titleColor;
   final double? titleSize;
   final FontWeight? titleWeight;
 
@@ -28,7 +28,7 @@ class MarketSectionHeader extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.sectionHeader.copyWith(
-              color: titleColor,
+              color: titleColor ?? AppColors.ink,
               fontSize: titleSize,
               fontWeight: titleWeight,
             ),

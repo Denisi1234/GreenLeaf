@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
+import '../widgets/market_shared_widgets.dart';
 import 'auth_shell.dart';
 
 enum _ResetStep {
@@ -59,6 +60,20 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     if (_error != null) setState(() => _error = null);
   }
 
+  void _showError(String message) {
+    final isSwahili = context.read<PosLocalStore>().languageCode == 'sw';
+    setState(() {
+      _busy = false;
+      _error = message;
+    });
+    showMarketNotice(
+      context,
+      title: isSwahili ? 'Imeshindwa' : 'Failed',
+      message: message,
+      type: MarketNoticeType.error,
+    );
+  }
+
   void _startResendTimer() {
     _countdownTimer?.cancel();
     setState(() => _resendCountdown = 60);
@@ -73,9 +88,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   }
 
   Future<void> _requestOtp() async {
+    final store = context.read<PosLocalStore>();
+    final isSwahili = store.languageCode == 'sw';
     final rawPhone = _phoneController.text.trim();
     if (rawPhone.isEmpty || rawPhone.replaceAll(RegExp(r'\D'), '').length < 8) {
-      setState(() => _error = 'Weka namba sahihi ya simu');
+      _showError(isSwahili ? 'Weka namba sahihi ya simu' : 'Enter a valid phone number');
       return;
     }
 
@@ -85,16 +102,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       _error = null;
     });
 
-    final store = context.read<PosLocalStore>();
-
     // OTPs must always be issued and verified by the backend so the client
     // never holds or trusts a code it generated itself.
     final api = store.cloudApi;
     if (api == null) {
-      setState(() {
-        _busy = false;
-        _error = 'Kuweka upya nenosiri kunahitaji muunganisho wa mtandao.';
-      });
+      _showError(
+        isSwahili
+            ? 'Kuweka upya nenosiri kunahitaji muunganisho wa mtandao.'
+            : 'Password reset requires an internet connection.',
+      );
       return;
     }
 
@@ -115,18 +131,33 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         _step = _ResetStep.enterOtp;
         _error = null;
       });
+      showMarketNotice(
+        context,
+        title: isSwahili ? 'Namba imetumwa' : 'Verification code sent',
+        message: isSwahili
+            ? 'Angalia SMS yako kwa namba ya uthibitisho yenye tarakimu 6.'
+            : 'Check your SMS for the 6-digit verification code.',
+        type: MarketNoticeType.success,
+      );
     } else {
-      setState(() {
-        _error =
-            'Imeshindwa kutuma SMS. Hakikisha salio au namba ya simu ipo sawa.';
-      });
+      _showError(
+        isSwahili
+            ? 'Imeshindwa kutuma SMS. Hakikisha salio au namba ya simu ipo sawa.'
+            : 'Could not send SMS. Please check your phone number and try again.',
+      );
     }
   }
 
   Future<void> _verifyOtpCode() async {
+    final store = context.read<PosLocalStore>();
+    final isSwahili = store.languageCode == 'sw';
     final inputOtp = _otpController.text.trim();
     if (inputOtp.length != 6) {
-      setState(() => _error = 'Ingiza namba ya uthibitisho yenye tarakimu 6');
+      _showError(
+        isSwahili
+            ? 'Ingiza namba ya uthibitisho yenye tarakimu 6'
+            : 'Enter the 6-digit verification code',
+      );
       return;
     }
 
@@ -136,7 +167,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       _error = null;
     });
 
-    final store = context.read<PosLocalStore>();
     final api = store.cloudApi;
     String? resetToken;
 
@@ -160,25 +190,45 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         _step = _ResetStep.newPassword;
         _error = null;
       });
+      showMarketNotice(
+        context,
+        title: isSwahili ? 'Imethibitishwa' : 'Code verified',
+        message: isSwahili
+            ? 'Sasa weka nenosiri lako jipya.'
+            : 'Now enter your new password.',
+        type: MarketNoticeType.success,
+      );
     } else {
-      setState(() {
-        _error = api == null
-            ? 'Uthibitisho unahitaji muunganisho wa intaneti.'
-            : 'Namba ya uthibitisho si sahihi';
-      });
+      _showError(
+        api == null
+            ? (isSwahili
+                ? 'Uthibitisho unahitaji muunganisho wa intaneti.'
+                : 'Verification requires an internet connection.')
+            : (isSwahili
+                ? 'Namba ya uthibitisho si sahihi'
+                : 'Incorrect verification code'),
+      );
     }
   }
 
   Future<void> _saveNewPassword() async {
+    final store = context.read<PosLocalStore>();
+    final isSwahili = store.languageCode == 'sw';
     final newPass = _passwordController.text;
     final confirmPass = _confirmPasswordController.text;
 
     if (newPass.length < 6) {
-      setState(() => _error = 'Nenosiri lazima liwe na herufi zisizopungua 6');
+      _showError(
+        isSwahili
+            ? 'Nenosiri lazima liwe na herufi zisizopungua 6'
+            : 'Password must be at least 6 characters',
+      );
       return;
     }
     if (newPass != confirmPass) {
-      setState(() => _error = 'Nenosiri hazifanani');
+      _showError(
+        isSwahili ? 'Nenosiri hazifanani' : 'Passwords do not match',
+      );
       return;
     }
 
@@ -188,7 +238,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       _error = null;
     });
 
-    final store = context.read<PosLocalStore>();
     final rawPhone = _phoneController.text.trim();
     final api = store.cloudApi;
     final resetToken = _backendResetToken;
@@ -211,13 +260,21 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     if (ok) {
       setState(() => _step = _ResetStep.success);
+      showMarketNotice(
+        context,
+        title: isSwahili ? 'Nenosiri limebadilishwa' : 'Password updated',
+        message: isSwahili
+            ? 'Sasa unaweza kuingia kwa nenosiri lako jipya.'
+            : 'You can now sign in with your new password.',
+        type: MarketNoticeType.success,
+      );
     } else {
       final strings = AppStrings.of(store.languageCode);
-      setState(() {
-        _error = store.lastAuthError == 'user_not_found'
+      _showError(
+        store.lastAuthError == 'user_not_found'
             ? strings.userNotFound
-            : strings.loginFailed;
-      });
+            : strings.loginFailed,
+      );
     }
   }
 
@@ -231,7 +288,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(
+          Center(
             child: CircleAvatar(
               radius: 36,
               backgroundColor: AppColors.surfaceSecondary,

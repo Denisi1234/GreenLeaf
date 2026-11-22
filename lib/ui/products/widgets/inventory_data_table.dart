@@ -3,8 +3,7 @@ import 'package:aza_pos/l10n/app_localization.dart';
 import '../../../utils/quantity_formatter.dart';
 import '../inventory_product_item.dart';
 import '../../widgets/app_design.dart';
-import '../../widgets/app_image.dart';
-import '../../widgets/product_art/product_art.dart';
+import '../../widgets/common/product_thumbnail.dart';
 import '../../widgets/workspace_widgets.dart';
 import 'product_cards.dart';
 
@@ -42,7 +41,8 @@ class InventoryDataTable extends StatelessWidget {
               minWidth: tableConstraints.maxWidth,
             ),
             child: DataTable(
-              headingRowColor: const WidgetStatePropertyAll(AppColors.surfaceSecondary),
+              headingRowColor:
+                  WidgetStatePropertyAll(AppColors.surfaceSecondary),
               headingTextStyle: AppTypography.tableHeader,
               dataTextStyle: AppTypography.bodySmall,
               horizontalMargin: 20,
@@ -88,29 +88,9 @@ class InventoryDataTable extends StatelessWidget {
                                         color: AppColors.border, width: 1),
                                   ),
                                   clipBehavior: Clip.antiAlias,
-                                  child: (item.imagePath != null &&
-                                          item.imagePath!.trim().isNotEmpty)
-                                      ? Image(
-                                          image: appImageProvider(
-                                              context, item.imagePath!),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Padding(
-                                            padding: const EdgeInsets.all(4),
-                                            child: FittedBox(
-                                              fit: BoxFit.contain,
-                                              child: ProductArt(
-                                                  type: item.artType),
-                                            ),
-                                          ),
-                                        )
-                                      : Padding(
-                                          padding: const EdgeInsets.all(4),
-                                          child: FittedBox(
-                                            fit: BoxFit.contain,
-                                            child:
-                                                ProductArt(type: item.artType),
-                                          ),
-                                        ),
+                                  child: ProductThumbnail(
+                                      name: item.name,
+                                      imagePath: item.imagePath),
                                 ),
                                 const SizedBox(width: 12),
                                 Flexible(
@@ -123,8 +103,7 @@ class InventoryDataTable extends StatelessWidget {
                                         item.name,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style:
-                                            AppTypography.bodySmall.copyWith(
+                                        style: AppTypography.bodySmall.copyWith(
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -218,7 +197,7 @@ class InventoryDataTable extends StatelessWidget {
                                   IconButton(
                                     tooltip: context.tr('Delete item'),
                                     onPressed: () => onDelete!(item),
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.delete_outline_rounded,
                                       color: AppColors.dangerDeep,
                                       size: 19,

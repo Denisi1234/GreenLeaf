@@ -40,7 +40,8 @@ class StoresPage extends StatelessWidget {
                   IconButton(
                     tooltip: t('Add store', 'Ongeza duka'),
                     onPressed: () => _openStoreForm(context),
-                    icon: const Icon(Icons.add_business_outlined, color: AppColors.ink),
+                    icon: Icon(Icons.add_business_outlined,
+                        color: AppColors.ink),
                   ),
                 ],
               ),
@@ -58,9 +59,10 @@ class StoresPage extends StatelessWidget {
 
                     // Primary Add Action
                     MarketButton(
-                      label: t('Add new branch / store', 'Ongeza duka au tawi jipya'),
+                      label: t('Add new branch / store',
+                          'Ongeza duka au tawi jipya'),
                       icon: Icons.add_business_outlined,
-                      radius: 0,
+                      radius: AppRadius.input,
                       onTap: () => _openStoreForm(context),
                     ),
                     const SizedBox(height: 20),
@@ -71,7 +73,8 @@ class StoresPage extends StatelessWidget {
                         Expanded(
                           child: Text(
                             t('All retail locations', 'Matawi yote'),
-                            style: AppTypography.sectionHeader.copyWith(color: AppColors.ink),
+                            style: AppTypography.sectionHeader
+                                .copyWith(color: AppColors.ink),
                           ),
                         ),
                         Text(
@@ -97,12 +100,14 @@ class StoresPage extends StatelessWidget {
                             StoreRowTile(
                               store: stores[i],
                               active: stores[i].id == activeId,
-                              canDelete: stores[i].id != 'store-default' && stores.length > 1,
+                              canDelete: stores[i].id != 'store-default' &&
+                                  stores.length > 1,
                               isSwahili: sw,
                               onEdit: () => _openStoreForm(context, stores[i]),
                             ),
                             if (i != stores.length - 1)
-                              const Divider(height: 1, color: AppColors.divider),
+                              Divider(
+                                  height: 1, color: AppColors.divider),
                           ],
                         ],
                       ),

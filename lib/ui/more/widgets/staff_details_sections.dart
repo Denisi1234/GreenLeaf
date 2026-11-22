@@ -54,7 +54,7 @@ class StaffProfileHero extends StatelessWidget {
                 child: path == null || path.isEmpty
                     ? Text(
                         member.initials,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.ink,
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
@@ -79,12 +79,14 @@ class StaffProfileHero extends StatelessWidget {
                       runSpacing: 6,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        StaffStatusPill(status: member.status, strings: strings),
+                        StaffStatusPill(
+                            status: member.status, strings: strings),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                          decoration: const BoxDecoration(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
                             color: AppColors.surfaceSecondary,
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: AppCorners.control,
                           ),
                           child: Text(
                             role?.title ?? 'No Role',
@@ -102,7 +104,7 @@ class StaffProfileHero extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -125,7 +127,9 @@ class StaffProfileHero extends StatelessWidget {
               Expanded(
                 child: StaffHeroStat(
                   label: context.tr('Login ID'),
-                  value: member.username.isEmpty ? context.tr('None') : member.username,
+                  value: member.username.isEmpty
+                      ? context.tr('None')
+                      : member.username,
                   icon: Icons.alternate_email_rounded,
                 ),
               ),
@@ -202,7 +206,7 @@ class StaffInfoSection extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) const Divider(height: 18, color: AppColors.borderLight),
+            if (i > 0) Divider(height: 18, color: AppColors.borderLight),
             Row(
               children: [
                 Icon(rows[i].icon, size: 18, color: AppColors.textMuted),
@@ -272,15 +276,17 @@ class StaffAccessSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.tr('Permissions & Capability'),
-                  style: AppTypography.bodyMain.copyWith(fontWeight: FontWeight.w800),
+                  style: AppTypography.bodyMain
+                      .copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
               if (isOwner)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppCorners.control,
                   ),
                   child: Text(
                     context.tr('Full access'),
@@ -326,7 +332,7 @@ class StaffAccessTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: granted ? AppColors.successLight : AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         border: Border.all(
           color: granted
               ? AppColors.success.withValues(alpha: 0.4)
@@ -337,7 +343,9 @@ class StaffAccessTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            granted ? Icons.check_circle_outline_rounded : Icons.lock_outline_rounded,
+            granted
+                ? Icons.check_circle_outline_rounded
+                : Icons.lock_outline_rounded,
             size: 14,
             color: granted ? AppColors.successDeep : AppColors.textMuted,
           ),
@@ -389,7 +397,7 @@ class StaffStatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         border: Border.all(color: border),
       ),
       child: Text(

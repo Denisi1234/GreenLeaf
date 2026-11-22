@@ -85,7 +85,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
                 value: '− TSh $discount',
                 valueColor: AppColors.successDeep),
           ],
-          const Divider(height: 32, color: AppColors.border),
+          Divider(height: 32, color: AppColors.border),
           Text(context.tr('Total due'), style: AppTypography.label),
           const SizedBox(height: 6),
           SizedBox(
@@ -116,8 +116,8 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
                         horizontal: 16,
                         vertical: 10,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppCorners.control,
                       ),
                     ),
                     icon: const Icon(Icons.discount_outlined, size: 18),
@@ -132,12 +132,12 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
                   IconButton(
                     tooltip: context.tr('Remove discount'),
                     onPressed: onRemoveDiscount,
-                    icon: const Icon(Icons.close_rounded,
+                    icon: Icon(Icons.close_rounded,
                         color: AppColors.dangerDeep),
                   ),
               ],
             ),
-          const Divider(height: 32, color: AppColors.border),
+          Divider(height: 32, color: AppColors.border),
           Text(context.tr('Payment method'), style: AppTypography.sectionHeader),
           const SizedBox(height: 12),
           Wrap(
@@ -205,7 +205,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
               onPressed: onExactCash,
               child: Text(
                 context.tr('Use exact amount'),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.kpiSky,
                   fontWeight: FontWeight.w700,
                 ),
@@ -233,7 +233,7 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
               style: AppTypography.bodySmall
                   .copyWith(color: AppColors.textMuted, height: 1.5),
             ),
-          const Divider(height: 32, color: AppColors.border),
+          Divider(height: 32, color: AppColors.border),
           // Split payments component
           PaymentSplitSection(
             splitPayments: splitPayments,
@@ -286,7 +286,7 @@ class _PaymentSummaryRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.textMuted,

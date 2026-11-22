@@ -199,6 +199,10 @@ class _ManagementStore extends PosLocalStore {
 
 Future<_ManagementStore> _mount(WidgetTester tester, Widget page,
     {double width = 1440}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = Size(width, 900);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
   await tester.binding.setSurfaceSize(Size(width, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   final handler = FlutterError.onError;
@@ -238,7 +242,7 @@ Future<void> capture(WidgetTester tester, String name) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(configureUiTestFonts);
-  for (final width in [360.0, 1440.0]) {
+  for (final width in [320.0, 768.0, 1024.0, 1440.0]) {
     final pages = <String, Widget>{
       'customers': const CustomersPage(),
       'customer-details': const CustomerDetailsPage(customerId: 'c1'),

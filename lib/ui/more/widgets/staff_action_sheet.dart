@@ -28,9 +28,9 @@ class StaffActionSheet {
       builder: (sheetContext) {
         final role = store.staffRoleById(member.roleId);
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.zero,
+            borderRadius: AppCorners.control,
           ),
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
           child: SafeArea(
@@ -107,12 +107,12 @@ class StaffActionSheet {
                     onOpenRole();
                   },
                 ),
-                const Divider(height: 24, color: AppColors.divider),
+                Divider(height: 24, color: AppColors.divider),
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 8),
                   child: Text(
                     staffDual(strings, 'SET STATUS', 'WEKA HALI'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textLight,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -174,9 +174,9 @@ class StaffActionSheet {
           builder: (context, controller) {
             final roles = store.staffRoles;
             return Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppCorners.control,
               ),
               child: ListView(
                 controller: controller,
@@ -226,19 +226,19 @@ class StaffActionSheet {
                             horizontal: 12,
                             vertical: 8,
                           ),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.kpiSkyBg,
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: AppCorners.control,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.add_rounded,
+                              Icon(Icons.add_rounded,
                                   color: AppColors.kpiSky, size: 18),
                               const SizedBox(width: 4),
                               Text(
                                 staffDual(strings, 'New', 'Mpya'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AppColors.kpiSky,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w800,

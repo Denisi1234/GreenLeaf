@@ -8,9 +8,9 @@ import '../widgets/common/market_notice.dart';
 /// configuration screens (grouped cards, label/field rows, sticky save bar).
 
 // Legacy palette aliases (kept for screens that still import them).
-const settingsInk = AppColors.ink;
-const settingsBorder = AppColors.border;
-const settingsMuted = AppColors.textMuted;
+Color get settingsInk => AppColors.ink;
+Color get settingsBorder => AppColors.border;
+Color get settingsMuted => AppColors.textMuted;
 
 /// Settings screens now inherit the global OSPOS theme. Kept for callers that
 /// still wrap their pages with `Theme(data: settingsTheme(...))`.
@@ -43,12 +43,14 @@ class SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.standard),
-        border: const Border.fromBorderSide(BorderSide(color: AppColors.border)),
+        border:
+            Border.fromBorderSide(BorderSide(color: AppColors.border)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -100,26 +102,27 @@ class SettingsIconBox extends StatelessWidget {
   const SettingsIconBox({
     super.key,
     required this.icon,
-    this.color = AppColors.kpiSky,
-    this.background = AppColors.kpiSkyBg,
+    this.color,
+    this.background,
     this.size = 38,
   });
 
   final IconData icon;
-  final Color color;
-  final Color background;
+  final Color? color;
+  final Color? background;
   final double size;
 
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: background,
+        color: background ?? AppColors.kpiSkyBg,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Icon(icon, color: color, size: size * 0.52),
+      child: Icon(icon, color: color ?? AppColors.kpiSky, size: size * 0.52),
     );
   }
 }
@@ -218,13 +221,13 @@ class SettingsSwitchTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Material(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         child: SwitchListTile.adaptive(
           value: value,
           onChanged: onChanged,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppCorners.control,
             side: BorderSide(color: AppColors.border),
           ),
           title: Text(
@@ -308,7 +311,7 @@ class SettingsStatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -349,7 +352,7 @@ class SettingsSaveButton extends StatelessWidget {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           side: BorderSide.none,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape: const RoundedRectangleBorder(borderRadius: AppCorners.control),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
         icon: const Icon(Icons.check_rounded, size: 18),
@@ -395,7 +398,7 @@ class SettingsSaveBar extends StatelessWidget {
               key: const ValueKey('save-bar'),
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surface,
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
@@ -422,7 +425,7 @@ class SettingsSaveBar extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 10),
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: AppCorners.control,
                         ),
                       ),
                       child: Text(
@@ -440,7 +443,7 @@ class SettingsSaveBar extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 18, vertical: 10),
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: AppCorners.control,
                         ),
                       ),
                       child: busy
@@ -470,9 +473,7 @@ void showSettingsResult(BuildContext context, String message,
     {bool error = false}) {
   showMarketNotice(
     context,
-    title: error
-        ? context.tr('Save Failed')
-        : context.tr('Settings Updated'),
+    title: error ? context.tr('Save Failed') : context.tr('Settings Updated'),
     message: message,
     type: error ? MarketNoticeType.error : MarketNoticeType.success,
   );

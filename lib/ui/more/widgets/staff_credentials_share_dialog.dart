@@ -71,7 +71,8 @@ Please keep your login credentials secure.''';
         await SharePlus.instance.share(
           ShareParams(
             text: message,
-            subject: isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials',
+            subject:
+                isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials',
           ),
         );
       }
@@ -79,7 +80,8 @@ Please keep your login credentials secure.''';
       await SharePlus.instance.share(
         ShareParams(
           text: message,
-          subject: isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials',
+          subject:
+              isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials',
         ),
       );
     }
@@ -115,9 +117,9 @@ Please keep your login credentials secure.''';
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 480),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppCorners.control,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -132,11 +134,12 @@ Please keep your login credentials secure.''';
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.kpiSuccess,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: AppCorners.control,
                     ),
-                    child: const Icon(Icons.sms_outlined, color: Colors.white, size: 22),
+                    child: const Icon(Icons.sms_outlined,
+                        color: Colors.white, size: 22),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -144,7 +147,8 @@ Please keep your login credentials secure.''';
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _t('Staff credentials created', 'Taarifa za mfanyakazi zimeundwa'),
+                          _t('Staff credentials created',
+                              'Taarifa za mfanyakazi zimeundwa'),
                           style: AppTypography.h3.copyWith(
                             color: AppColors.kpiSuccess,
                             fontWeight: FontWeight.w800,
@@ -165,7 +169,8 @@ Please keep your login credentials secure.''';
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: AppColors.kpiSuccess),
+                    icon: Icon(Icons.close_rounded,
+                        color: AppColors.kpiSuccess),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -191,22 +196,29 @@ Please keep your login credentials secure.''';
                     decoration: BoxDecoration(
                       color: AppColors.surfaceSecondary,
                       border: Border.all(color: AppColors.border),
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: AppCorners.control,
                     ),
                     child: Column(
                       children: [
-                        _buildCredentialRow(_t('Staff name', 'Jina'), staffName),
-                        const Divider(height: 16, color: AppColors.divider),
+                        _buildCredentialRow(
+                            _t('Staff name', 'Jina'), staffName),
+                        Divider(height: 16, color: AppColors.divider),
                         _buildCredentialRow(_t('Role', 'Nafasi'), roleTitle),
-                        const Divider(height: 16, color: AppColors.divider),
-                        _buildCredentialRow(_t('Username', 'Jina la kuingia'), username, isBold: true),
+                        Divider(height: 16, color: AppColors.divider),
+                        _buildCredentialRow(
+                            _t('Username', 'Jina la kuingia'), username,
+                            isBold: true),
                         if (password.isNotEmpty) ...[
-                          const Divider(height: 16, color: AppColors.divider),
-                          _buildCredentialRow(_t('Password', 'Nenosiri'), password, isBold: true, isHighlight: true),
+                          Divider(height: 16, color: AppColors.divider),
+                          _buildCredentialRow(
+                              _t('Password', 'Nenosiri'), password,
+                              isBold: true, isHighlight: true),
                         ],
                         if (phone.isNotEmpty) ...[
-                          const Divider(height: 16, color: AppColors.divider),
-                          _buildCredentialRow(_t('Phone (SMS target)', 'Simu ya kutuma SMS'), phone),
+                          Divider(height: 16, color: AppColors.divider),
+                          _buildCredentialRow(
+                              _t('Phone (SMS target)', 'Simu ya kutuma SMS'),
+                              phone),
                         ],
                       ],
                     ),
@@ -220,7 +232,7 @@ Please keep your login credentials secure.''';
                         child: MarketButton(
                           label: _t('Send SMS', 'Tuma SMS'),
                           icon: Icons.send_rounded,
-                          radius: 0,
+                          radius: AppRadius.input,
                           onTap: () => _sendViaSms(context),
                         ),
                       ),
@@ -232,7 +244,7 @@ Please keep your login credentials secure.''';
                           color: AppColors.kpiSkyBg,
                           foregroundColor: AppColors.kpiSky,
                           borderColor: null,
-                          radius: 0,
+                          radius: AppRadius.input,
                           onTap: () => _share(context),
                         ),
                       ),
@@ -247,11 +259,11 @@ Please keep your login credentials secure.''';
                         foregroundColor: AppColors.kpiViolet,
                         side: BorderSide.none,
                         shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero),
+                            borderRadius: AppCorners.control),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => _copy(context),
-                      icon: const Icon(Icons.copy_rounded,
+                      icon: Icon(Icons.copy_rounded,
                           size: 16, color: AppColors.kpiViolet),
                       label: Text(
                         _t('Copy message to clipboard', 'Nakili ujumbe'),
@@ -271,7 +283,8 @@ Please keep your login credentials secure.''';
     );
   }
 
-  Widget _buildCredentialRow(String label, String value, {bool isBold = false, bool isHighlight = false}) {
+  Widget _buildCredentialRow(String label, String value,
+      {bool isBold = false, bool isHighlight = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

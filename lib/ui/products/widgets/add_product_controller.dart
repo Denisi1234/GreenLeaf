@@ -182,7 +182,7 @@ class AddProductController {
             onPressed: () => Navigator.of(dialogContext).pop(),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textMuted,
-              side: const BorderSide(color: AppColors.borderInput),
+              side: BorderSide(color: AppColors.borderInput),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),

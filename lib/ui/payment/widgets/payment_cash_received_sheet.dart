@@ -159,7 +159,7 @@ class _PaymentCashReceivedSheetState extends State<PaymentCashReceivedSheet> {
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 48),
                     shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: AppCorners.control,
                     ),
                   ),
                   child: Text(
@@ -197,7 +197,7 @@ class _CashSummaryRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.textMuted,

@@ -162,7 +162,7 @@ class ExpenseCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.storefront_outlined,
+                          Icon(Icons.storefront_outlined,
                               size: 12, color: AppColors.textLight),
                           const SizedBox(width: 4),
                           Flexible(
@@ -182,7 +182,7 @@ class ExpenseCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.image_outlined,
+                          Icon(Icons.image_outlined,
                               size: 12, color: AppColors.primary),
                           const SizedBox(width: 4),
                           Text(
@@ -240,7 +240,7 @@ class ExpenseCard extends StatelessWidget {
                         constraints: const BoxConstraints(),
                         tooltip:
                             expenseDual(strings, 'Edit expense', 'Hariri matumizi'),
-                        icon: const Icon(Icons.edit_outlined,
+                        icon: Icon(Icons.edit_outlined,
                             color: AppColors.primary, size: 18),
                       ),
                       if (onDelete != null) ...[
@@ -252,7 +252,7 @@ class ExpenseCard extends StatelessWidget {
                           constraints: const BoxConstraints(),
                           tooltip:
                               expenseDual(strings, 'Delete expense', 'Futa matumizi'),
-                          icon: const Icon(Icons.delete_outline_rounded,
+                          icon: Icon(Icons.delete_outline_rounded,
                               color: AppColors.textLight, size: 18),
                         ),
                       ],
@@ -330,9 +330,9 @@ class AddExpenseFloatingButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.primary,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
+      borderRadius: BorderRadius.circular(AppRadius.button),
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        borderRadius: BorderRadius.circular(AppRadius.button),
         splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
         highlightColor: Colors.transparent,
         onTap: onTap,

@@ -107,7 +107,7 @@ class SupplierRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Icon(Icons.chevron_right_rounded,
+                Icon(Icons.chevron_right_rounded,
                     size: 18, color: AppColors.textLight),
               ],
             ),

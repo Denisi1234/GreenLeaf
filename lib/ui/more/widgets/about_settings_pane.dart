@@ -10,6 +10,7 @@ import '../help_support_page.dart';
 import '../privacy_policy_page.dart';
 import '../settings_layout.dart';
 import '../terms_of_service_page.dart';
+import 'rate_app_dialog.dart';
 
 /// About app, legal, and license links pane.
 class AboutSettingsPane extends StatelessWidget {
@@ -77,6 +78,11 @@ class AboutSettingsPane extends StatelessWidget {
           title: t('Help & legal', 'Msaada na sheria'),
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
           children: [
+            AboutLink(
+              icon: Icons.star_outline_rounded,
+              label: t('Rate & review Aza POS', 'Kadiria Aza POS'),
+              onTap: () => showRateAppDialog(context),
+            ),
             link(Icons.help_outline_rounded, t('Help & support', 'Msaada'),
                 const HelpSupportPage()),
             link(
@@ -123,9 +129,9 @@ class AboutLink extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: AppColors.pageBackground,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         child: InkWell(
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppCorners.control,
           onTap: onTap,
           child: Container(
             constraints: const BoxConstraints(minHeight: 52),
@@ -143,7 +149,7 @@ class AboutLink extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded,
+                Icon(Icons.chevron_right_rounded,
                     color: AppColors.textLight),
               ],
             ),

@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_design.dart';
+import 'app_theme_palette.dart';
 
-/// Global Material theme mirroring the OSPOS "UI maturity" styling:
-/// neutral text, green primary actions and active states, 10px controls,
-/// 12px dialogs, 14–18px cards and 42–44px touch targets.
-ThemeData buildOsposTheme(TextTheme textTheme) {
+/// Shared POS theme: neutral surfaces, restrained accents and consistent controls.
+ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
+  final palette = AppThemePalette.forId(themeId);
   const controlRadius = BorderRadius.all(Radius.circular(AppRadius.standard));
   const pillRadius = BorderRadius.all(Radius.circular(AppRadius.pill));
-  const minControl = Size(64, AppSpacing.controlHeight);
   final fontFamily = GoogleFonts.manrope().fontFamily;
 
   // All TextStyles inside ThemeData must have `inherit: false` so they match
@@ -17,7 +16,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
   TextStyle style({
     required double fontSize,
     required FontWeight fontWeight,
-    Color color = AppColors.ink,
+    Color? color,
     double? letterSpacing,
     double? height,
   }) {
@@ -26,7 +25,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       fontFamily: fontFamily,
       fontSize: fontSize,
       fontWeight: fontWeight,
-      color: color,
+      color: color ?? palette.ink,
       letterSpacing: letterSpacing,
       height: height,
       textBaseline: TextBaseline.alphabetic,
@@ -38,24 +37,24 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
   final labelStyle = style(
     fontSize: 14,
     fontWeight: FontWeight.w700,
-    color: AppColors.ink,
+    color: palette.ink,
     letterSpacing: 0.1,
   );
 
   OutlineInputBorder inputBorder(Color color, [double width = 1]) =>
       OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: controlRadius,
         borderSide: BorderSide(color: color, width: width),
       );
 
   final colorScheme = ColorScheme.fromSeed(
-    seedColor: AppColors.primary,
-    brightness: Brightness.light,
+    seedColor: palette.primary,
+    brightness: palette.brightness,
   ).copyWith(
-    primary: AppColors.primary,
+    primary: palette.primary,
     onPrimary: Colors.white,
-    primaryContainer: AppColors.surfaceSecondary,
-    onPrimaryContainer: AppColors.primaryDeep,
+    primaryContainer: palette.surfaceSecondary,
+    onPrimaryContainer: palette.primaryDeep,
     secondary: AppColors.success,
     onSecondary: Colors.white,
     secondaryContainer: AppColors.successLight,
@@ -65,16 +64,16 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
     onError: Colors.white,
     errorContainer: AppColors.dangerLight,
     onErrorContainer: AppColors.dangerDeep,
-    surface: AppColors.surface,
-    onSurface: AppColors.ink,
-    onSurfaceVariant: AppColors.textMuted,
-    surfaceContainerLowest: AppColors.surface,
-    surfaceContainerLow: AppColors.surfaceSecondary,
-    surfaceContainer: AppColors.surfaceSecondary,
-    surfaceContainerHigh: AppColors.surfaceHover,
-    surfaceContainerHighest: AppColors.surfaceHover,
-    outline: AppColors.border,
-    outlineVariant: AppColors.borderLight,
+    surface: palette.surface,
+    onSurface: palette.ink,
+    onSurfaceVariant: palette.textMuted,
+    surfaceContainerLowest: palette.surface,
+    surfaceContainerLow: palette.surfaceSecondary,
+    surfaceContainer: palette.surfaceSecondary,
+    surfaceContainerHigh: palette.surfaceSecondary,
+    surfaceContainerHighest: palette.surfaceSecondary,
+    outline: palette.border,
+    outlineVariant: palette.divider,
     surfaceTint: Colors.transparent,
     shadow: Colors.black12,
     scrim: AppColors.backdrop,
@@ -82,44 +81,48 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
 
   return ThemeData(
     useMaterial3: true,
+    brightness: palette.brightness,
+    extensions: [palette],
     fontFamily: fontFamily,
     textTheme: textTheme,
     primaryTextTheme: textTheme,
     colorScheme: colorScheme,
-    scaffoldBackgroundColor: AppColors.pageBackground,
-    canvasColor: AppColors.pageBackground,
+    scaffoldBackgroundColor: palette.pageBackground,
+    canvasColor: palette.pageBackground,
+    cardColor: palette.surface,
+    dividerColor: palette.divider,
     splashFactory: InkSparkle.splashFactory,
-    hoverColor: AppColors.surfaceHover,
-    highlightColor: AppColors.surfaceHover,
+    hoverColor: palette.surfaceSecondary,
+    highlightColor: palette.surfaceSecondary,
     visualDensity: VisualDensity.standard,
     materialTapTargetSize: MaterialTapTargetSize.padded,
-    iconTheme: const IconThemeData(color: AppColors.textMuted, size: 22),
-    primaryIconTheme: const IconThemeData(color: AppColors.ink, size: 22),
+    iconTheme: IconThemeData(color: palette.textMuted, size: 22),
+    primaryIconTheme: IconThemeData(color: palette.ink, size: 22),
 
-    // Top bar – soft cyan-tinted header using AppColors.headerSurface
+    // Top bar – clean header using active theme headerSurface
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.headerSurface,
-      foregroundColor: AppColors.ink,
+      backgroundColor: palette.headerSurface,
+      foregroundColor: palette.ink,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0.5,
-      shadowColor: AppColors.border,
+      shadowColor: palette.border,
       centerTitle: false,
       toolbarHeight: 56,
-      iconTheme: const IconThemeData(color: AppColors.textBody),
-      actionsIconTheme: const IconThemeData(color: AppColors.textBody),
+      iconTheme: IconThemeData(color: palette.textBody),
+      actionsIconTheme: IconThemeData(color: palette.textBody),
       titleTextStyle: style(
-        color: AppColors.ink,
+        color: palette.ink,
         fontSize: 19,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.5,
       ),
-      shape: const Border(bottom: BorderSide(color: AppColors.border)),
+      shape: Border(bottom: BorderSide(color: palette.border)),
     ),
 
     // .module_item cards
-    cardTheme: const CardThemeData(
-      color: AppColors.surface,
+    cardTheme: CardThemeData(
+      color: palette.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -152,7 +155,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       barrierColor: AppColors.backdrop,
     ),
 
-    bottomSheetTheme: const BottomSheetThemeData(
+    bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       modalBackgroundColor: AppColors.surface,
@@ -166,7 +169,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
     ),
 
     // Drawer (#ospos-sidebar-collapse)
-    drawerTheme: const DrawerThemeData(
+    drawerTheme: DrawerThemeData(
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       scrimColor: AppColors.backdrop,
@@ -197,17 +200,22 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       focusedErrorBorder: inputBorder(AppColors.danger, 1.4),
     ),
 
-    // Buttons – 42px min height, pill radius (matching Item/Auth/Sales CTAs)
+    // Unified pill button design matching the primary "Add item" button across the entire app.
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         disabledBackgroundColor: AppColors.border,
         disabledForegroundColor: AppColors.textLight,
-        minimumSize: minControl,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        minimumSize: const Size(64, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: const RoundedRectangleBorder(borderRadius: pillRadius),
-        textStyle: labelStyle,
+        textStyle: style(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          letterSpacing: 0.1,
+        ),
         elevation: 0,
       ),
     ),
@@ -217,10 +225,15 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         foregroundColor: Colors.white,
         disabledBackgroundColor: AppColors.border,
         disabledForegroundColor: AppColors.textLight,
-        minimumSize: minControl,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        minimumSize: const Size(64, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: const RoundedRectangleBorder(borderRadius: pillRadius),
-        textStyle: labelStyle,
+        textStyle: style(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          letterSpacing: 0.1,
+        ),
         elevation: 0,
         shadowColor: Colors.transparent,
       ),
@@ -229,17 +242,23 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.textSecondary,
         backgroundColor: AppColors.surface,
-        minimumSize: minControl,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        side: const BorderSide(color: AppColors.border),
+        minimumSize: const Size(64, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        side: BorderSide(color: AppColors.border),
         shape: const RoundedRectangleBorder(borderRadius: pillRadius),
-        textStyle: labelStyle,
+        textStyle: style(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textSecondary,
+          letterSpacing: 0.1,
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: AppColors.textBody,
-        minimumSize: const Size(48, AppSpacing.controlHeight),
+        foregroundColor: AppColors.primaryDeep,
+        minimumSize: const Size(48, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         shape: const RoundedRectangleBorder(borderRadius: pillRadius),
         textStyle: labelStyle,
       ),
@@ -248,27 +267,25 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       style: IconButton.styleFrom(
         foregroundColor: AppColors.textBody,
         minimumSize: const Size(AppSpacing.touchTarget, AppSpacing.touchTarget),
-        shape: const RoundedRectangleBorder(borderRadius: controlRadius),
+        shape: const CircleBorder(),
       ),
     ),
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       elevation: 2,
       focusElevation: 2,
       hoverElevation: 3,
       highlightElevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(AppRadius.tile)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: pillRadius),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
-        minimumSize: const WidgetStatePropertyAll(minControl),
+        minimumSize: const WidgetStatePropertyAll(Size(64, 44)),
         shape: const WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: controlRadius),
+          RoundedRectangleBorder(borderRadius: pillRadius),
         ),
-        side: const WidgetStatePropertyAll(
+        side: WidgetStatePropertyAll(
           BorderSide(color: AppColors.border),
         ),
         backgroundColor: WidgetStateProperty.resolveWith(
@@ -291,7 +308,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       selectedColor: AppColors.primaryLight,
       disabledColor: AppColors.surfaceHover,
       checkmarkColor: AppColors.primaryDeep,
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide(color: AppColors.border),
       shape: const RoundedRectangleBorder(borderRadius: controlRadius),
       labelStyle: style(
         color: AppColors.textSecondary,
@@ -320,7 +337,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         borderRadius: controlRadius,
         border: Border.all(color: AppColors.primary, width: 1.5),
       ),
-      overlayColor: const WidgetStatePropertyAll(AppColors.surfaceHover),
+      overlayColor: WidgetStatePropertyAll(AppColors.surfaceHover),
     ),
 
     // Bottom navigation – soft cyan header surface matching top bar (no white)
@@ -352,7 +369,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         ),
       ),
     ),
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: AppColors.headerSurface,
       selectedItemColor: AppColors.primaryDeep,
       unselectedItemColor: AppColors.textMuted,
@@ -399,7 +416,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
     ),
 
     dataTableTheme: DataTableThemeData(
-      headingRowColor: const WidgetStatePropertyAll(AppColors.surfaceSecondary),
+      headingRowColor: WidgetStatePropertyAll(AppColors.surfaceSecondary),
       headingTextStyle: style(
         fontSize: 12,
         fontWeight: FontWeight.w700,
@@ -412,8 +429,17 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         color: AppColors.textBody,
       ),
       dividerThickness: 1,
-      headingRowHeight: 44,
-      dataRowMinHeight: 44,
+      headingRowHeight: 48,
+      dataRowMinHeight: 52,
+      dataRowColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.primaryLight;
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return AppColors.surfaceHover;
+        }
+        return null;
+      }),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.tile),
@@ -425,7 +451,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       color: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 6,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: controlRadius,
         side: BorderSide(color: AppColors.border),
       ),
@@ -435,7 +461,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         color: AppColors.textBody,
       ),
     ),
-    menuTheme: const MenuThemeData(
+    menuTheme: MenuThemeData(
       style: MenuStyle(
         backgroundColor: WidgetStatePropertyAll(AppColors.surface),
         surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
@@ -478,7 +504,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       fillColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected) ? AppColors.primary : null,
       ),
-      side: const BorderSide(color: AppColors.textLight, width: 1.5),
+      side: BorderSide(color: AppColors.textLight, width: 1.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
     ),
     radioTheme: RadioThemeData(
@@ -488,24 +514,25 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
             : AppColors.textLight,
       ),
     ),
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
+    progressIndicatorTheme: ProgressIndicatorThemeData(
       color: AppColors.primary,
       linearTrackColor: AppColors.surfaceHover,
       circularTrackColor: AppColors.surfaceHover,
     ),
-    sliderTheme: const SliderThemeData(
+    sliderTheme: SliderThemeData(
       activeTrackColor: AppColors.primary,
       inactiveTrackColor: AppColors.primarySoft,
       thumbColor: AppColors.primary,
     ),
-    badgeTheme: const BadgeThemeData(
+    badgeTheme: BadgeThemeData(
       backgroundColor: AppColors.primary,
       textColor: Colors.white,
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: AppColors.ink,
+        color: palette.isDark ? palette.surfaceSecondary : AppColors.ink,
         borderRadius: BorderRadius.circular(AppRadius.sharp),
+        border: palette.isDark ? Border.all(color: palette.border) : null,
       ),
       textStyle: style(
         color: Colors.white,
@@ -513,7 +540,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         fontWeight: FontWeight.w600,
       ),
     ),
-    dividerTheme: const DividerThemeData(
+    dividerTheme: DividerThemeData(
       color: AppColors.divider,
       thickness: 1,
       space: 1,
@@ -529,14 +556,14 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       actionTextColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: pillRadius),
     ),
-    datePickerTheme: const DatePickerThemeData(
+    datePickerTheme: DatePickerThemeData(
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(AppRadius.modal)),
       ),
     ),
-    textSelectionTheme: const TextSelectionThemeData(
+    textSelectionTheme: TextSelectionThemeData(
       cursorColor: AppColors.primary,
       selectionColor: Color(0x3822B8C4),
       selectionHandleColor: AppColors.primary,

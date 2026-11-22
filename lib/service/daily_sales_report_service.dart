@@ -115,16 +115,9 @@ class DailySalesReportService {
     return 'Habari $ownerName, muhtasari wa mauzo ya leo$storeTitle ni TSh $todayFormatted.$comparisonText\nAsante kwa kutumia Aza POS.';
   }
 
-  /// Sends the daily SMS report to the owner's phone.
-  static Future<DailySmsResult> sendDailyReport({
-    required PosLocalStore store,
-    String? overridePhone,
-  }) async {
-    // Resolve phone
-    var phone = (overridePhone != null && overridePhone.trim().isNotEmpty)
-        ? overridePhone.trim()
-        : store.profile.contactNumber.trim();
-
+  /// Resolves the best available recipient phone number for the daily SMS.
+  static String resolveRecipientPhone(PosLocalStore store) {
+    var phone = store.profile.contactNumber.trim();
     if (phone.isEmpty && store.currentUser != null) {
       phone = store.currentUser!.phone.trim();
     }
@@ -143,12 +136,23 @@ class DailySalesReportService {
         phone = ownerStaff.first.phone.trim();
       }
     }
+    return phone;
+  }
+
+  /// Sends the daily SMS report to the owner's phone.
+  static Future<DailySmsResult> sendDailyReport({
+    required PosLocalStore store,
+    String? overridePhone,
+  }) async {
+    final phone = (overridePhone != null && overridePhone.trim().isNotEmpty)
+        ? overridePhone.trim()
+        : resolveRecipientPhone(store);
 
     if (phone.isEmpty) {
       return const DailySmsResult(
         success: false,
         message:
-            'Hakuna namba ya simu ya mmiliki iliyowekwa kwenye Store Profile au Staff.',
+            'Hakuna namba ya simu iliyowekwa. Weka namba ya mmiliki kwanza.',
       );
     }
 
@@ -156,25 +160,28 @@ class DailySalesReportService {
     final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
     final smsText = buildDailyReportMessage(store: store);
 
-    // If cloud API is available, try server SMS first
+    // If cloud API is available, try server SMS gateway first
     if (api != null) {
       try {
         final sent = await api.sendSms(phone: cleanPhone, text: smsText);
         if (sent) {
           return DailySmsResult(
             success: true,
-            message: 'Ripoti ya leo imetumwa kwa SMS kwenda $cleanPhone kwa mafanikio.',
+            deliveredByServer: true,
+            message:
+                'Ripoti ya leo imetumwa kwa SMS kwenda $cleanPhone kwa mafanikio.',
             smsText: smsText,
           );
         }
       } catch (_) {
-        // Fall back below
+        // Fall back to device SMS composer below
       }
     }
 
-    // Local device SMS launcher fallback
+    // Local device SMS composer fallback
     return DailySmsResult(
       success: true,
+      deliveredByServer: false,
       message: 'Ujumbe wa ripoti ya leo umeandaliwa kwa $cleanPhone.',
       smsText: smsText,
       targetPhone: cleanPhone,
@@ -186,11 +193,13 @@ class DailySmsResult {
   const DailySmsResult({
     required this.success,
     required this.message,
+    this.deliveredByServer = false,
     this.smsText,
     this.targetPhone,
   });
 
   final bool success;
+  final bool deliveredByServer;
   final String message;
   final String? smsText;
   final String? targetPhone;

@@ -2,92 +2,113 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../business_category_config.dart';
+import 'app_theme_palette.dart';
 
-/// Design tokens ported from the OSPOS signature theme with full light gray background.
+/// Shared visual language for sales, management and reporting workspaces.
+/// Driven dynamically by the active [AppThemePalette] so all 4 themes
+/// (Crisp Light, Cool Slate, Warm Paper, Dark Shift) apply app-wide.
 class AppColors {
-  // Brand / action colors (Cyan & Teal identity matching OpenSourcePOS #22B8C4 and brand #68CADD)
-  static const primary = Color(0xFF22B8C4);
-  static const primaryDeep = Color(0xFF1396A1);
+  static AppThemePalette _palette = AppThemePalette.light;
+
+  static AppThemePalette get activePalette => _palette;
+  static bool get isDark => _palette.isDark;
+
+  static void applyPalette(AppThemePalette palette) {
+    _palette = palette;
+  }
+
+  // Brand / action colors
+  static Color get primary => _palette.primary;
+  static Color get primaryDeep => _palette.primaryDeep;
   static const primaryBright = Color(0xFF68CADD);
-  static const primaryLight = Color(0xFFCBE6F0);
-  static const primarySoft = Color(0xFFE0EEF5);
+  static Color get primaryLight => _palette.primaryLight;
+  static Color get primarySoft => _palette.surface;
 
   // Brand identity
   static const brand = Color(0xFF22B8C4);
   static const drawerHeader = Color(0xFF182735);
 
-  // Neutral text scale (Crisp dark text on low-glare cyan-slate surfaces)
-  static const ink = Color(0xFF111827);
-  static const textMain = Color(0xFF1F2937);
-  static const textStrong = Color(0xFF000000);
-  static const textBody = Color(0xFF374151);
-  static const textSecondary = Color(0xFF4B5563);
-  static const textMuted = Color(0xFF6B7280);
-  static const textLight = Color(0xFF9CA3AF);
-  static const textPlaceholder = Color(0xFF9CA3AF);
+  // Neutral text scale (Adapts automatically across light & dark themes)
+  static Color get ink => _palette.ink;
+  static Color get textMain => _palette.ink;
+  static Color get textStrong => _palette.ink;
+  static Color get textBody => _palette.textBody;
+  static Color get textSecondary => _palette.textBody;
+  static Color get textMuted => _palette.textMuted;
+  static Color get textLight => _palette.textMuted;
+  static Color get textPlaceholder => _palette.textMuted;
 
-  // Background & surface (Low-glare cool cyan-slate palette — zero stark white)
-  static const pageBackground = Color(0xFFD6E6F0); // Soft cool blue-slate canvas (#D6E6F0)
-  static const surface = primarySoft;              // Low-glare cyan-tinted card surface (#E0EEF5)
-  static const surfaceSecondary = Color(0xFFD3E4EE); // Subtle nested slate surface
-  static const surfaceHover = Color(0xFFC4DAE8);     // Hover / pressed tint
-  static const cardWhite = surface;
-  static const surfaceSubtle = surfaceSecondary;
-  static const kpiSurface = primarySoft;
-  static const headerSurface = primaryLight; // Soft cyan top header, bottom nav & rail (#CBE6F0)
-  static const sectionSurface = primarySoft; // Soft low-glare grouped section surface (#E0EEF5)
+  // Neutral low-glare work surfaces
+  static Color get pageBackground => _palette.pageBackground;
+  static Color get surface => _palette.surface;
+  static Color get surfaceSecondary => _palette.surfaceSecondary;
+  static Color get surfaceHover => _palette.surfaceSecondary;
+  static Color get cardWhite => _palette.surface;
+  static Color get surfaceSubtle => _palette.surfaceSecondary;
+  static Color get kpiSurface => _palette.surface;
+  static Color get headerSurface => _palette.headerSurface;
+  static Color get sectionSurface => _palette.surface;
 
-  // Borders & dividers (Clean cool-blue hairlines matching low-glare surfaces)
-  static const border = Color(0xFFB0CBDB);
-  static const borderLight = Color(0xFFBFD5E3);
-  static const borderInput = Color(0xFFA6C3D5);
-  static const divider = Color(0xFFBBD1E0);
+  // Borders & dividers
+  static Color get border => _palette.border;
+  static Color get borderLight => _palette.divider;
+  static Color get borderInput => _palette.border;
+  static Color get divider => _palette.divider;
 
-  // Feedback colors (Clear and high contrast)
+  // Feedback colors (Clear and high contrast across light & dark themes)
   static const success = Color(0xFF10B981);
   static const successBright = Color(0xFF059669);
-  static const successDeep = Color(0xFF047857);
-  static const successLight = Color(0xFFD1FAE5);
+  static Color get successDeep =>
+      _palette.isDark ? const Color(0xFF34D399) : const Color(0xFF047857);
+  static Color get successLight =>
+      _palette.isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5);
   static const warning = Color(0xFFF59E0B);
-  static const warningDeep = Color(0xFFD97706);
-  static const warningLight = Color(0xFFFEF3C7);
+  static Color get warningDeep =>
+      _palette.isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
+  static Color get warningLight =>
+      _palette.isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7);
   static const danger = Color(0xFFEF4444);
   static const dangerBright = Color(0xFFDC2626);
-  static const dangerDeep = Color(0xFFB91C1C);
-  static const dangerLight = Color(0xFFFEE2E2);
+  static Color get dangerDeep =>
+      _palette.isDark ? const Color(0xFFF87171) : const Color(0xFFB91C1C);
+  static Color get dangerLight =>
+      _palette.isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2);
   static const dangerBorder = Color(0xFFFCA5A5);
   static const info = Color(0xFF22B8C4);
-  static const infoLight = Color(0xFFE0F4F8);
+  static Color get infoLight =>
+      _palette.isDark ? const Color(0xFF133A42) : const Color(0xFFE0F4F8);
 
-  // KPI pastel surfaces & deep accents (shared across Inventory, Expenses, Accounting, Tax & Register KPIs)
-  static const kpiRoseBg = Color(0xFFFCE7F3);
-  static const kpiRose = Color(0xFFBE185D);
-  static const kpiSkyBg = Color(0xFFE0F2FE);
-  static const kpiSky = Color(0xFF0369A1);
-  static const kpiAmberBg = Color(0xFFFEF3C7);
-  static const kpiAmber = Color(0xFFB45309);
-  static const kpiDangerBg = Color(0xFFFEE2E2);
-  static const kpiDanger = Color(0xFFB91C1C);
-  static const kpiVioletBg = Color(0xFFEDE9FE);
-  static const kpiViolet = Color(0xFF6D28D9);
-  static const kpiSuccessBg = Color(0xFFD1FAE5);
-  static const kpiSuccess = Color(0xFF047857);
-  static const kpiNeutralBg = Color(0xFFD3E4EE);
-  static const kpiNeutral = textMuted;
+  // KPI surfaces & restrained accents
+  static Color get kpiRoseBg => surface;
+  static Color get kpiRose =>
+      _palette.isDark ? const Color(0xFFF472B6) : const Color(0xFFBE185D);
+  static Color get kpiSkyBg => surface;
+  static Color get kpiSky => primaryDeep;
+  static Color get kpiAmberBg => surface;
+  static Color get kpiAmber =>
+      _palette.isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309);
+  static Color get kpiDangerBg => surface;
+  static Color get kpiDanger => dangerDeep;
+  static Color get kpiVioletBg => surface;
+  static Color get kpiViolet => ink;
+  static Color get kpiSuccessBg => surface;
+  static Color get kpiSuccess => successDeep;
+  static Color get kpiNeutralBg => surfaceSecondary;
+  static Color get kpiNeutral => textMuted;
 
-  // KPI tones (aligned with the KPI accent palette)
-  static const toneViolet = kpiViolet;
-  static const toneIndigo = kpiSky;
-  static const toneTeal = primary;
-  static const toneLime = kpiSuccess;
-  static const toneRose = kpiRose;
-  static const toneAmber = kpiAmber;
+  // KPI tones
+  static Color get toneViolet => kpiViolet;
+  static Color get toneIndigo => kpiSky;
+  static Color get toneTeal => primary;
+  static Color get toneLime => kpiSuccess;
+  static Color get toneRose => kpiRose;
+  static Color get toneAmber => kpiAmber;
 
   // Reports page specific colors
-  static const reportsInk = ink;
-  static const reportsMuted = textMuted;
-  static const reportsBorder = border;
-  static const reportsBlue = primary;
+  static Color get reportsInk => ink;
+  static Color get reportsMuted => textMuted;
+  static Color get reportsBorder => border;
+  static Color get reportsBlue => primary;
   static const reportsGreen = success;
 
   // Chart colors
@@ -96,15 +117,15 @@ class AppColors {
   static const chart3 = Color(0xFF22B8C4);
   static const chart4 = Color(0xFFF59E0B);
   static const chart5 = Color(0xFF6B7280);
-  static const chartGrid = Color(0xFFD1D5DB);
-  static const chartLabel = textMuted;
+  static Color get chartGrid => divider;
+  static Color get chartLabel => textMuted;
 
   // Overlays
   static const backdrop = Color(0x66000000);
 
   // Legacy aliases (for compatibility)
-  static const mutedText = textMuted;
-  static const textMedium = textMuted;
+  static Color get mutedText => textMuted;
+  static Color get textMedium => textMuted;
   static const green = success;
 
   static Color categoryPrimary(BusinessCategory category) =>
@@ -122,102 +143,104 @@ class AppTypography {
   static const String fontFamily = 'Manrope';
 
   // .dash-page-title / #page_title
-  static TextStyle h1 = GoogleFonts.manrope(
-    fontSize: 24,
-    fontWeight: FontWeight.w800,
-    color: AppColors.ink,
-    letterSpacing: -0.5,
-  );
+  static TextStyle get h1 => GoogleFonts.manrope(
+        fontSize: 24,
+        fontWeight: FontWeight.w800,
+        color: AppColors.ink,
+        letterSpacing: -0.5,
+      );
 
-  static TextStyle h2 = GoogleFonts.manrope(
-    fontSize: 22,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textStrong,
-    letterSpacing: -0.4,
-  );
+  static TextStyle get h2 => GoogleFonts.manrope(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textStrong,
+        letterSpacing: -0.4,
+      );
 
   // .dash-card-title
-  static TextStyle h3 = GoogleFonts.manrope(
-    fontSize: 18,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textStrong,
-    letterSpacing: -0.2,
-  );
+  static TextStyle get h3 => GoogleFonts.manrope(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textStrong,
+        letterSpacing: -0.2,
+      );
 
-  static TextStyle sectionHeader = GoogleFonts.manrope(
-    fontSize: 16,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textStrong,
-    letterSpacing: -0.1,
-  );
+  static TextStyle get sectionHeader => GoogleFonts.manrope(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textStrong,
+        letterSpacing: -0.1,
+      );
 
-  static TextStyle cardHeader = GoogleFonts.manrope(
-    fontSize: 16,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textStrong,
-  );
+  static TextStyle get cardHeader => GoogleFonts.manrope(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textStrong,
+      );
 
-  static TextStyle tableHeader = GoogleFonts.manrope(
-    fontSize: 12,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textMuted,
-    letterSpacing: 0.4,
-  );
+  static TextStyle get tableHeader => GoogleFonts.manrope(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textMuted,
+        letterSpacing: 0.4,
+      );
 
-  static TextStyle bodyMain = GoogleFonts.manrope(
-    fontSize: 15,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textMain,
-  );
+  static TextStyle get bodyMain => GoogleFonts.manrope(
+        fontSize: 15,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textMain,
+      );
 
-  static TextStyle bodyMedium = GoogleFonts.manrope(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textBody,
-  );
+  static TextStyle get bodyMedium => GoogleFonts.manrope(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textBody,
+      );
 
-  static TextStyle bodySmall = GoogleFonts.manrope(
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textBody,
-  );
+  static TextStyle get bodySmall => GoogleFonts.manrope(
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textBody,
+      );
 
   // .dash-kpi-label
-  static TextStyle label = GoogleFonts.manrope(
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textMuted,
-    letterSpacing: 0.1,
-  );
+  static TextStyle get label => GoogleFonts.manrope(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textMuted,
+        letterSpacing: 0.1,
+      );
 
-  static TextStyle helperText = GoogleFonts.manrope(
-    fontSize: 11,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textLight,
-  );
+  static TextStyle get helperText => GoogleFonts.manrope(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textLight,
+      );
 
   // .dash-kpi-value
-  static TextStyle kpiValue = GoogleFonts.manrope(
-    fontSize: 22,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textStrong,
-    height: 1.15,
-  );
+  static TextStyle get kpiValue => GoogleFonts.manrope(
+        fontSize: 24,
+        fontWeight: FontWeight.w800,
+        color: AppColors.ink,
+        letterSpacing: -0.4,
+        height: 1.15,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      );
 
   // .dash-kpi-foot
-  static TextStyle kpiFoot = GoogleFonts.manrope(
-    fontSize: 11,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textMuted,
-  );
+  static TextStyle get kpiFoot => GoogleFonts.manrope(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textMuted,
+      );
 
   // Legacy aliases (for compatibility)
-  static TextStyle cardTitle = cardHeader;
-  static TextStyle caption = GoogleFonts.manrope(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textMuted,
-  );
+  static TextStyle get cardTitle => cardHeader;
+  static TextStyle get caption => GoogleFonts.manrope(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textMuted,
+      );
 }
 
 class AppSpacing {
@@ -240,7 +263,7 @@ class AppSpacing {
 
   // Touch targets (mobile responsiveness audit)
   static const touchTarget = 44.0;
-  static const controlHeight = 42.0;
+  static const controlHeight = 44.0;
 }
 
 class AppRadius {
@@ -256,9 +279,14 @@ class AppRadius {
   static const card = tile;
   static const dashCard = extraRounded;
   static const kpiCard = rounded;
-  static const button = standard;
+  static const button = pill;
   static const input = standard;
   static const iconBox = 11.0; // .dash-kpi-icon
+}
+
+/// Constant shapes shared by forms, action sheets and management controls.
+class AppCorners {
+  static const control = BorderRadius.all(Radius.circular(AppRadius.input));
 }
 
 class AppShadows {
@@ -302,12 +330,12 @@ class AppShadows {
 }
 
 class AppDecorations {
-  /// `.dash-card` – white card, hairline border, soft lift.
+  /// `.dash-card` – low-glare card, crisp daylight-proof border, soft lift.
   static BoxDecoration card({double radius = AppRadius.dashCard}) =>
       BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(color: AppColors.border),
         boxShadow: AppShadows.medium,
       );
 
@@ -319,11 +347,13 @@ class AppDecorations {
         boxShadow: AppShadows.soft,
       );
 
-  /// `.dash-kpi-card` – lavender KPI surface.
-  static BoxDecoration kpi({Color color = AppColors.kpiSurface}) =>
+  /// `.dash-kpi-card` – crisp KPI tile with daylight-proof border & soft lift.
+  static BoxDecoration kpi({Color? color}) =>
       BoxDecoration(
-        color: color,
+        color: color ?? AppColors.kpiSurface,
         borderRadius: BorderRadius.circular(AppRadius.kpiCard),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.soft,
       );
 
   /// `.dash-kpi-icon` – rounded tone square.

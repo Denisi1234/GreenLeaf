@@ -106,7 +106,7 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppCorners.control,
                   ),
                 ),
                 icon: const Icon(Icons.key_rounded, size: 18),
@@ -134,12 +134,12 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppCorners.control,
                   ),
                 ),
                 onPressed: _busy ? null : () => _confirmSignOut(store),
                 icon: _busy
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(

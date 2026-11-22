@@ -190,16 +190,16 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
                 fillColor: AppColors.pageBackground,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
+                border: OutlineInputBorder(
+                  borderRadius: AppCorners.control,
                   borderSide: BorderSide(color: AppColors.border),
                 ),
-                enabledBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: AppCorners.control,
                   borderSide: BorderSide(color: AppColors.border),
                 ),
-                focusedBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: AppCorners.control,
                   borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),
@@ -261,16 +261,16 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
                 fillColor: AppColors.pageBackground,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
+                border: OutlineInputBorder(
+                  borderRadius: AppCorners.control,
                   borderSide: BorderSide(color: AppColors.border),
                 ),
-                enabledBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: AppCorners.control,
                   borderSide: BorderSide(color: AppColors.border),
                 ),
-                focusedBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: AppCorners.control,
                   borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),

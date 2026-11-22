@@ -22,7 +22,7 @@ enum StaffStatusFilter {
 }
 
 Color avatarColorForStaffName(String name) {
-  const colors = <Color>[
+  final colors = <Color>[
     AppColors.kpiDangerBg,
     AppColors.surfaceSecondary,
     AppColors.surfaceSecondary,

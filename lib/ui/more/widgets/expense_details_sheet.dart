@@ -62,7 +62,7 @@ class ExpenseDetailSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(borderRadius: AppCorners.control),
       builder: (ctx) => ExpenseDetailSheet(
         expense: expense,
         strings: strings,
@@ -88,9 +88,9 @@ class ExpenseDetailSheet extends StatelessWidget {
                 child: Container(
                   width: 40,
                   height: 4,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: AppCorners.control,
                   ),
                 ),
               ),
@@ -157,7 +157,7 @@ class ExpenseDetailSheet extends StatelessWidget {
                         fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 ClipRRect(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                   child: Image(
                     image: appImageProvider(context, expense.receiptPath!),
                     height: 160,
@@ -166,7 +166,7 @@ class ExpenseDetailSheet extends StatelessWidget {
                     errorBuilder: (_, __, ___) => Container(
                       height: 60,
                       color: AppColors.surfaceSecondary,
-                      child: const Icon(Icons.image_not_supported_outlined,
+                      child: Icon(Icons.image_not_supported_outlined,
                           color: AppColors.textLight),
                     ),
                   ),
@@ -183,7 +183,7 @@ class ExpenseDetailSheet extends StatelessWidget {
                         side: BorderSide.none,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: AppCorners.control,
                         ),
                       ),
                       onPressed: () {
@@ -207,14 +207,15 @@ class ExpenseDetailSheet extends StatelessWidget {
                           side: BorderSide.none,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: AppCorners.control,
                           ),
                         ),
                         onPressed: () {
                           Navigator.of(context).pop();
                           onDelete();
                         },
-                        icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                        icon:
+                            const Icon(Icons.delete_outline_rounded, size: 18),
                         label: Text(
                           expenseDual(strings, 'Delete', 'Futa'),
                           style: const TextStyle(fontWeight: FontWeight.w700),

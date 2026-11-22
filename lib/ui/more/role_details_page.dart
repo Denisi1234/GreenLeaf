@@ -53,7 +53,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
               backgroundColor: AppColors.kpiDangerBg,
               foregroundColor: AppColors.kpiDanger,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppCorners.control,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
@@ -73,7 +73,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
               elevation: 0,
               side: BorderSide.none,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+                borderRadius: AppCorners.control,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             ),
@@ -102,7 +102,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
       showMarketNotice(
         context,
         title: context.tr('Role Updated'),
-        message: context.tr('{p0} role details updated.', args: {'p0': updatedTitle}),
+        message: context
+            .tr('{p0} role details updated.', args: {'p0': updatedTitle}),
         type: MarketNoticeType.success,
       );
     }
@@ -115,7 +116,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
       showMarketNotice(
         context,
         title: context.tr('Role In Use'),
-        message: context.tr('Move staff to another role before deleting this one.'),
+        message:
+            context.tr('Move staff to another role before deleting this one.'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -140,7 +142,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
     showMarketNotice(
       context,
       title: context.tr('Role Deleted'),
-      message: context.tr('{p0} role has been removed.', args: {'p0': role.title}),
+      message:
+          context.tr('{p0} role has been removed.', args: {'p0': role.title}),
       type: MarketNoticeType.success,
     );
     Navigator.of(context).pop();
@@ -165,7 +168,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                 ),
                 Expanded(
                   child: Center(
-                    child: Text(context.tr('The selected role does not exist.')),
+                    child:
+                        Text(context.tr('The selected role does not exist.')),
                   ),
                 ),
               ],
@@ -194,7 +198,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                 actions: [
                   PopupMenuButton<String>(
                     tooltip: context.tr('Role actions'),
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: AppCorners.control),
                     onSelected: (value) {
                       if (value == 'rename') _renameRole(role);
                       if (value == 'delete') _deleteRole(role);
@@ -224,7 +229,7 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                     children: [
                       Text(
                         context.tr('Permissions'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.ink,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -235,7 +240,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: permissionCatalog.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           mainAxisExtent: 38,
                           crossAxisSpacing: 12,
@@ -244,7 +250,8 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                         itemBuilder: (context, index) {
                           final permission = permissionCatalog[index];
                           return RolePermissionTile(
-                            data: PermissionData(name: permission, label: permission),
+                            data: PermissionData(
+                                name: permission, label: permission),
                             granted: checkedPermissions.contains(permission),
                             readOnly: role.isOwnerAdmin,
                             onChanged: (value) {
@@ -254,20 +261,22 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                               } else {
                                 current.remove(permission);
                               }
-                              store.updateStaffRolePermissions(role.id, current.toList());
+                              store.updateStaffRolePermissions(
+                                  role.id, current.toList());
                             },
                           );
                         },
                       ),
                       const SizedBox(height: 18),
-                      const Divider(height: 1, color: AppColors.border),
+                      Divider(height: 1, color: AppColors.border),
                       const SizedBox(height: 18),
                       Row(
                         children: [
                           Expanded(
                             child: Text(
-                              context.tr('Assigned Staff ({p0})', args: {'p0': assignedStaff.length}),
-                              style: const TextStyle(
+                              context.tr('Assigned Staff ({p0})',
+                                  args: {'p0': assignedStaff.length}),
+                              style: TextStyle(
                                 color: AppColors.ink,
                                 fontSize: 16.5,
                                 fontWeight: FontWeight.w700,
@@ -275,10 +284,11 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => ManageStaffSheet.show(context, store, role),
+                            onTap: () =>
+                                ManageStaffSheet.show(context, store, role),
                             child: Text(
                               context.tr('Manage'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.w700,
@@ -293,11 +303,11 @@ class _RoleDetailsPageState extends State<RoleDetailsPage> {
                           padding: const EdgeInsets.all(14),
                           backgroundColor: AppColors.pageBackground,
                           borderColor: AppColors.border,
-                          radius: 0,
+                          radius: AppRadius.input,
                           showShadow: false,
                           child: Text(
                             context.tr('No staff assigned to this role yet.'),
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textMuted,
                               fontSize: 13.5,
                               fontWeight: FontWeight.w500,

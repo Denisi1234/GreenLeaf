@@ -21,9 +21,9 @@ class StaffTabSelector extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18),
       padding: const EdgeInsets.all(4),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surfaceHover,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
       ),
       child: Row(
         children: List.generate(tabs.length, (index) {
@@ -36,7 +36,7 @@ class StaffTabSelector extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: selected ? AppColors.surface : Colors.transparent,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: AppCorners.control,
                   boxShadow: selected ? AppShadows.soft : null,
                 ),
                 child: Text(
@@ -74,7 +74,7 @@ class StaffFormSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.input,
       showShadow: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,7 +193,7 @@ class StaffAppDropdown<T> extends StatelessWidget {
             items: items,
             onChanged: onChanged,
             isExpanded: true,
-            icon: const Icon(
+            icon: Icon(
               Icons.keyboard_arrow_down_rounded,
               color: AppColors.textMuted,
             ),
@@ -211,21 +211,23 @@ class StaffAppDropdown<T> extends StatelessWidget {
               fillColor: AppColors.surfaceSecondary,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              errorText: errorText == null ? null : context.strings.message(errorText!),
+              errorText: errorText == null
+                  ? null
+                  : context.strings.message(errorText!),
               errorStyle: AppTypography.helperText.copyWith(
                 color: AppColors.danger,
                 fontWeight: FontWeight.w600,
               ),
-              border: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
+              border: OutlineInputBorder(
+                borderRadius: AppCorners.control,
                 borderSide: BorderSide(color: AppColors.border),
               ),
-              enabledBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppCorners.control,
                 borderSide: BorderSide(color: AppColors.border),
               ),
-              focusedBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.zero,
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppCorners.control,
                 borderSide: BorderSide(color: AppColors.primary),
               ),
             ),
@@ -253,17 +255,17 @@ class StaffDateField extends StatelessWidget {
     final hasValue = value.isNotEmpty;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppCorners.control,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.calendar_today_outlined,
               color: AppColors.textMuted,
               size: 20,
@@ -271,7 +273,9 @@ class StaffDateField extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                hasValue ? formatHireDate(value) : context.tr('Select hire date'),
+                hasValue
+                    ? formatHireDate(value)
+                    : context.tr('Select hire date'),
                 style: AppTypography.bodyMain.copyWith(
                   color: hasValue ? AppColors.textMain : AppColors.textLight,
                   fontWeight: hasValue ? FontWeight.w600 : FontWeight.w500,
@@ -281,14 +285,14 @@ class StaffDateField extends StatelessWidget {
             if (onClear != null)
               GestureDetector(
                 onTap: onClear,
-                child: const Icon(
+                child: Icon(
                   Icons.close_rounded,
                   color: AppColors.textMuted,
                   size: 20,
                 ),
               )
             else
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textMuted,
                 size: 22,
@@ -316,12 +320,12 @@ class StaffFormChoicePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: AppCorners.control,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? AppColors.primaryLight : AppColors.pageBackground,
-          borderRadius: BorderRadius.zero,
+          borderRadius: AppCorners.control,
           border: Border.all(
             color: selected
                 ? AppColors.primary.withValues(alpha: 0.28)
@@ -351,7 +355,7 @@ class StaffPermissionRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppCorners.control,
         border: Border.all(color: AppColors.borderLight),
       ),
       child: Row(
@@ -359,7 +363,7 @@ class StaffPermissionRow extends StatelessWidget {
           Container(
             width: 22,
             height: 22,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.successLight,
               shape: BoxShape.circle,
             ),
@@ -403,7 +407,7 @@ class StaffInfoCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       backgroundColor: AppColors.surfaceSecondary,
       borderColor: AppColors.primary.withValues(alpha: 0.16),
-      radius: 0,
+      radius: AppRadius.input,
       showShadow: false,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,7 +458,7 @@ class StaffSaveBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
@@ -469,11 +473,9 @@ class StaffSaveBar extends StatelessWidget {
                 color: AppColors.kpiDangerBg,
                 foregroundColor: AppColors.kpiDanger,
                 borderColor: null,
-                radius: 0,
+                radius: AppRadius.input,
                 height: 48,
-                onTap: isSaving
-                    ? null
-                    : () => Navigator.of(context).maybePop(),
+                onTap: isSaving ? null : () => Navigator.of(context).maybePop(),
               ),
             ),
             const SizedBox(width: 12),
@@ -490,7 +492,7 @@ class StaffSaveBar extends StatelessWidget {
                     : Icons.save_outlined,
                 variant: MarketButtonVariant.primary,
                 borderColor: null,
-                radius: 0,
+                radius: AppRadius.input,
                 height: 48,
                 onTap: onSave ?? () {},
               ),

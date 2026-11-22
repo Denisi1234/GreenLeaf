@@ -46,7 +46,7 @@ class SupplierPickerPage extends StatelessWidget {
                     IconButton(
                       tooltip: t('Add supplier', 'Ongeza msambazaji'),
                       onPressed: () => _createSupplier(context),
-                      icon: const Icon(Icons.person_add_alt_1_rounded,
+                      icon: Icon(Icons.person_add_alt_1_rounded,
                           color: AppColors.ink),
                     ),
                   ],
@@ -177,7 +177,7 @@ class SupplierPickerPage extends StatelessWidget {
                                                 ],
                                               ),
                                             ),
-                                            const Icon(
+                                            Icon(
                                                 Icons.chevron_right_rounded,
                                                 color: AppColors.textLight,
                                                 size: 20),
@@ -186,7 +186,7 @@ class SupplierPickerPage extends StatelessWidget {
                                       ),
                                     ),
                                     if (i != suppliers.length - 1)
-                                      const Divider(
+                                      Divider(
                                           height: 1, color: AppColors.divider),
                                   ],
                                 ],
