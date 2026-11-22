@@ -32,16 +32,37 @@ class ProductFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarketSearchField(
-      controller: searchController,
-      hintText: context.tr('Search by name, code or barcode'),
-      onChanged: onSearchChanged,
-      onClear: onSearchClear,
-      height: 48,
-      radius: 0,
-      backgroundColor: AppColors.surface,
-      borderColor: AppColors.border,
-      paddingHorizontal: 14,
+    return Row(
+      children: [
+        Expanded(
+          child: MarketSearchField(
+            controller: searchController,
+            hintText: context.tr('Search by name, code or barcode'),
+            onChanged: onSearchChanged,
+            onClear: onSearchClear,
+            height: 48,
+            radius: 0,
+            backgroundColor: AppColors.surface,
+            borderColor: AppColors.border,
+            paddingHorizontal: 14,
+          ),
+        ),
+        if (hasFilters) ...[
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onResetFilters,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryDeep,
+              minimumSize: const Size(44, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            child: Text(
+              context.tr('Reset'),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -21,6 +21,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(OnboardingPage), findsOneWidget);
-    expect(find.text('TrackMauzo'), findsOneWidget);
+    expect(find.text('Aza POS'), findsOneWidget);
   });
 }

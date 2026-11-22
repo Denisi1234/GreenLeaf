@@ -321,12 +321,12 @@ class ProductEmptyState extends StatelessWidget {
   const ProductEmptyState({
     super.key,
     required this.query,
-    required this.onAddTap,
+    this.onAddTap,
     required this.onClearFilter,
   });
 
   final String query;
-  final VoidCallback onAddTap;
+  final VoidCallback? onAddTap;
   final VoidCallback onClearFilter;
 
   @override
@@ -341,9 +341,12 @@ class ProductEmptyState extends StatelessWidget {
       message: hasFilter
           ? context.tr('Try searching with a different name or item code.')
           : context.tr('Use Add item to register your first product.'),
-      actionLabel:
-          hasFilter ? context.tr('Clear Search') : context.tr('Add item'),
-      actionIcon: hasFilter ? Icons.filter_alt_off_rounded : Icons.add_rounded,
+      actionLabel: hasFilter
+          ? context.tr('Clear Search')
+          : (onAddTap != null ? context.tr('Add item') : null),
+      actionIcon: hasFilter
+          ? Icons.filter_alt_off_rounded
+          : (onAddTap != null ? Icons.add_rounded : null),
       onAction: hasFilter ? onClearFilter : onAddTap,
     );
   }

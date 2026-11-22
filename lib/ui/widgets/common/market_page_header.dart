@@ -162,30 +162,33 @@ class _BackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final foreground = isGradient ? Colors.white : AppColors.ink;
 
-    return Semantics(
-      button: true,
-      label: context.tr('Back'),
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: 48,
-          height: 48,
-          alignment: Alignment.center,
-          decoration: transparent
-              ? null
-              : BoxDecoration(
-                  color: isGradient
-                      ? Colors.white.withValues(alpha: 0.16)
-                      : AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.standard),
-                  border: Border.all(
+    return Tooltip(
+      message: MaterialLocalizations.of(context).backButtonTooltip,
+      child: Semantics(
+        button: true,
+        label: context.tr('Back'),
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: transparent
+                ? null
+                : BoxDecoration(
                     color: isGradient
-                        ? Colors.white.withValues(alpha: 0.18)
-                        : AppColors.border,
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.standard),
+                    border: Border.all(
+                      color: isGradient
+                          ? Colors.white.withValues(alpha: 0.18)
+                          : AppColors.border,
+                    ),
                   ),
-                ),
-          child: _LongArrowIcon(color: foreground, size: 26),
+            child: _LongArrowIcon(color: foreground, size: 26),
+          ),
         ),
       ),
     );

@@ -572,7 +572,9 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                               WorkspacePanel(
                                 child: ProductEmptyState(
                                   query: hasFilters ? 'filters' : '',
-                                  onAddTap: _openAddProductPage,
+                                  onAddTap: canManageInventory
+                                      ? _openAddProductPage
+                                      : null,
                                   onClearFilter: _resetFilters,
                                 ),
                               )
