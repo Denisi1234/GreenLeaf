@@ -10,8 +10,11 @@ import 'ui/widgets/app_design.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting();
-  await AppNotificationService.instance.initialize();
+  try {
+    await initializeDateFormatting();
+  } catch (e) {
+    debugPrint('[main] Date formatting init warning: $e');
+  }
   final store = PosLocalStore();
   runApp(
     MultiProvider(
@@ -25,6 +28,11 @@ Future<void> main() async {
       child: AppBootstrapper(store: store),
     ),
   );
+  // Initialize local notifications after the first frame so permission dialogs
+  // or OEM notification quirks can never block or crash app startup.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    AppNotificationService.instance.initialize();
+  });
 }
 
 class AppBootstrapper extends StatefulWidget {

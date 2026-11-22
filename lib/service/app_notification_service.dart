@@ -35,41 +35,45 @@ class AppNotificationService {
   }) async {
     if (_initialized) return;
 
-    // Android settings - ic_launcher is guaranteed to exist
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    try {
+      // Android settings - ic_launcher is guaranteed to exist
+      const androidSettings =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // Darwin / iOS settings
-    const darwinSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+      // Darwin / iOS settings
+      const darwinSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
 
-    // Linux settings
-    const linuxSettings =
-        LinuxInitializationSettings(defaultActionName: 'Open notification');
+      // Linux settings
+      const linuxSettings =
+          LinuxInitializationSettings(defaultActionName: 'Open notification');
 
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: darwinSettings,
-      macOS: darwinSettings,
-      linux: linuxSettings,
-    );
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: darwinSettings,
+        macOS: darwinSettings,
+        linux: linuxSettings,
+      );
 
-    await _plugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: onNotificationTap,
-    );
+      await _plugin.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: onNotificationTap,
+      );
 
-    // Request permissions for Android 13+
-    await requestPermissions();
+      // Request permissions for Android 13+
+      await requestPermissions();
 
-    // Create high-importance Android channels
-    await _createAndroidChannels();
+      // Create high-importance Android channels
+      await _createAndroidChannels();
 
-    _initialized = true;
-    debugPrint('[AppNotificationService] Initialized successfully');
+      _initialized = true;
+      debugPrint('[AppNotificationService] Initialized successfully');
+    } catch (e) {
+      debugPrint('[AppNotificationService] Initialization skipped: $e');
+    }
   }
 
   Future<bool> requestPermissions() async {
