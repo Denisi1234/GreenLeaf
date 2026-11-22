@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import '../ui/receipt/receipt_document.dart';
+import '../utils/quantity_formatter.dart';
 
 enum ThermalPaperWidth {
   mm58(58, 32),
@@ -93,7 +94,8 @@ class EscPosReceiptBuilder {
     // Line items
     for (final line in receipt.order.lines) {
       writeWrapped(line.itemName);
-      final qtyPrice = '${line.quantity} x ${receipt.money(line.unitPriceValue)}';
+      final qtyPrice =
+          '${formatQtyForReceipt(line.quantity, line.unit)} x ${receipt.money(line.unitPriceValue)}';
       final lineTotal = receipt.money(line.lineTotal);
       writeLine(_columns('  $qtyPrice', lineTotal, cols));
     }
@@ -137,7 +139,7 @@ class EscPosReceiptBuilder {
   }) {
     final cols = paperWidth.columns;
     final buf = BytesBuilder(copy: false);
-    final name = storeName.trim().isEmpty ? 'TrackMauzo POS' : storeName.trim();
+    final name = storeName.trim().isEmpty ? 'Aza POS' : storeName.trim();
 
     buf.add([0x1B, 0x40]); // ESC @
     buf.add([0x1B, 0x61, 1]); // Center
@@ -156,7 +158,7 @@ class EscPosReceiptBuilder {
     buf.add(ascii.encode('${_columns('Status', 'READY', cols)}\n'));
     buf.add(ascii.encode('${'-' * cols}\n'));
     buf.add([0x1B, 0x61, 1]);
-    buf.add(ascii.encode('TrackMauzo Printer OK\n'));
+    buf.add(ascii.encode('Aza POS Printer OK\n'));
     buf.add([0x1B, 0x64, 4]);
     buf.add([0x1D, 0x56, 66, 0]);
     return buf.toBytes();

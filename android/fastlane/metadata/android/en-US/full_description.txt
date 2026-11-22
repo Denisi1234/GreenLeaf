@@ -1,6 +1,6 @@
-TrackMauzo
+Aza POS
 
-TrackMauzo is an offline point-of-sale and business management app for small shops and growing stores.
+Aza POS is an offline point-of-sale and business management app for small shops and growing stores.
 It helps you manage sales, inventory, customers, receipts, reports, and store operations in one place.
 
 Key features:
@@ -11,4 +11,4 @@ Key features:
 * Receipt printing and sharing
 * Reports, insights, and business summaries
 
-TrackMauzo is designed to keep your day-to-day shop operations simple, organized, and easy to review.
+Aza POS is designed to keep your day-to-day shop operations simple, organized, and easy to review.

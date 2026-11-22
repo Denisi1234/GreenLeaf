@@ -45,8 +45,32 @@ class SalesService extends ChangeNotifier {
 
   bool addToCart(ProductItem product) => _store.addToCart(product);
 
-  bool addToCartQuantity(ProductItem product, int quantity) =>
-      _store.addToCartQuantity(product, quantity);
+  bool addToCartQuantity(
+    ProductItem product,
+    double quantity, {
+    double? customPrice,
+  }) =>
+      _store.addToCartQuantity(product, quantity, customPrice: customPrice);
+
+  bool removeQuantityFromCart(
+    ProductItem product,
+    double quantity, {
+    double? customPrice,
+  }) =>
+      _store.removeQuantityFromCart(product, quantity, customPrice: customPrice);
+
+  bool setCartItemQuantity(
+    ProductItem product,
+    double quantity, {
+    double? customPrice,
+    double? matchCustomPrice,
+  }) =>
+      _store.setCartItemQuantity(
+        product,
+        quantity,
+        customPrice: customPrice,
+        matchCustomPrice: matchCustomPrice,
+      );
 
   bool removeSingleFromCart(ProductItem product) =>
       _store.removeSingleFromCart(product);

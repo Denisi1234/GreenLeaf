@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 /// Scans barcodes via Android ML Kit Code Scanner when available, falling back
 /// cleanly to a USB/Bluetooth HID keyboard scanner & manual entry dialog.

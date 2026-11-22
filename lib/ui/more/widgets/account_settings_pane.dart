@@ -97,15 +97,23 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
           children: [
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
+              child: FilledButton.icon(
                 onPressed: () => _changePassword(store),
-                style: OutlinedButton.styleFrom(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.kpiSkyBg,
+                  foregroundColor: AppColors.kpiSky,
+                  side: BorderSide.none,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,
                   ),
                 ),
                 icon: const Icon(Icons.key_rounded, size: 18),
-                label: Text(t('Change password', 'Badilisha nenosiri')),
+                label: Text(
+                  t('Change password', 'Badilisha nenosiri'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ],
@@ -118,11 +126,13 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
           children: [
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.ink,
-                  backgroundColor: AppColors.surfaceSecondary,
-                  side: const BorderSide(color: AppColors.border),
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  foregroundColor: AppColors.kpiDanger,
+                  backgroundColor: AppColors.kpiDangerBg,
+                  side: BorderSide.none,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,
                   ),
@@ -133,10 +143,13 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.ink),
+                            strokeWidth: 2, color: AppColors.kpiDanger),
                       )
                     : const Icon(Icons.logout_rounded, size: 18),
-                label: Text(t('Sign out', 'Ondoka')),
+                label: Text(
+                  t('Sign out', 'Ondoka'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ],

@@ -7,8 +7,6 @@ mixin PosRegisterStore on ChangeNotifier {
   List<RegisterShift> get _registerShifts;
   List<CashMovement> get _cashMovements;
   List<CompletedOrder> get _orders;
-  StorePreferences get _storePreferences;
-  AppProfileData get _profile;
 
   Future<void> _reloadRegister() async {
     final storedShifts = await _database.loadRegisterShifts(_activeStoreId);

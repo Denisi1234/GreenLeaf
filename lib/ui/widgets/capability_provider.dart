@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/ui/models/capability.dart';
+import 'package:aza_pos/ui/models/capability.dart';
 
 class CapabilityProvider extends InheritedWidget {
   final Set<Capability> capabilities;

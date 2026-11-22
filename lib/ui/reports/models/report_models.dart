@@ -67,7 +67,7 @@ class StockAlertItem {
 
   final String name;
   final String category;
-  final int stockCount;
+  final double stockCount;
   final String statusLabel;
   final StockAlertSeverity severity;
 }
@@ -96,7 +96,7 @@ class ProductTally {
   });
 
   final String title;
-  int quantity;
+  double quantity;
   double revenue;
   final IconData icon;
   final List<Color> colors;

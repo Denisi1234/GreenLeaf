@@ -1,4 +1,3 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -47,7 +46,7 @@ class AboutSettingsPane extends StatelessWidget {
       children: [
         SettingsCard(
           icon: Icons.info_outline_rounded,
-          title: context.tr('TrackMauzo'),
+          title: 'Aza POS',
           description: t(
             'Point of sale for small shops — the B2C edition of Open Source POS.',
             'Mfumo wa mauzo kwa maduka madogo — toleo la B2C la Open Source POS.',
@@ -95,7 +94,7 @@ class AboutSettingsPane extends StatelessWidget {
               label: t('Open-source licenses', 'Leseni za programu'),
               onTap: () => showLicensePage(
                 context: context,
-                applicationName: 'TrackMauzo',
+                applicationName: 'Aza POS',
                 applicationVersion: '1.0.0 (1)',
               ),
             ),
@@ -123,7 +122,7 @@ class AboutLink extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: AppColors.surfaceSecondary,
+        color: AppColors.pageBackground,
         borderRadius: BorderRadius.zero,
         child: InkWell(
           borderRadius: BorderRadius.zero,
@@ -131,10 +130,6 @@ class AboutLink extends StatelessWidget {
           child: Container(
             constraints: const BoxConstraints(minHeight: 52),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.zero,
-              border: Border.all(color: AppColors.border),
-            ),
             child: Row(
               children: [
                 SettingsIconBox(icon: icon, size: 34),

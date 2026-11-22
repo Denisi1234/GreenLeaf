@@ -66,7 +66,7 @@ class MarketBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 52,
+          height: 54,
           child: Row(
             children: items.map((item) {
               final selected = item.tab == currentTab;
@@ -98,37 +98,42 @@ class _NavItemButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // In screenshot: active item has dark teal/forest green icon with dot indicator, inactive has grey icon and bold black label
-    const primaryTabColor = AppColors.kpiSuccess; // Dark teal green from reference
+    // Active item uses brand cyan accent on headerSurface; inactive uses muted icon and dark body label.
+    const primaryTabColor = AppColors.primaryDeep;
     const inactiveIconColor = AppColors.textMuted;
     const labelColor = AppColors.textBody;
 
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            selected ? item.activeIcon : item.icon,
-            color: selected ? primaryTabColor : inactiveIconColor,
-            size: 23,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            item.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.caption.copyWith(
-              color: selected ? primaryTabColor : labelColor,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
-              fontSize: 10,
-              letterSpacing: 0.2,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        focusColor: Colors.transparent,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              selected ? item.activeIcon : item.icon,
+              color: selected ? primaryTabColor : inactiveIconColor,
+              size: 23,
             ),
-          ),
-        ],
+            const SizedBox(height: 3),
+            Text(
+              item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.caption.copyWith(
+                color: selected ? primaryTabColor : labelColor,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                fontSize: 10,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

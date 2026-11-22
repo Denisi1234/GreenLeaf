@@ -1,9 +1,9 @@
 import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:track_mauzo/app.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
-import 'package:track_mauzo/ui/auth/onboarding_page.dart';
+import 'package:aza_pos/app.dart';
+import 'package:aza_pos/service/pos_local_store.dart';
+import 'package:aza_pos/ui/auth/onboarding_page.dart';
 
 void main() {
   testWidgets('renders clean onboarding page with carousel and controls', (WidgetTester tester) async {

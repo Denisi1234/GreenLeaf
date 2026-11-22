@@ -1,7 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../widgets/app_design.dart';
 class TodaySaleOverviewCard extends StatelessWidget {
   const TodaySaleOverviewCard({super.key, 
@@ -237,7 +238,7 @@ class SaleOverviewChartPainter extends CustomPainter {
     // Dots & live value labels
     final dotPaint = Paint()
       ..color = hasData ? AppColors.kpiSky : AppColors.textLight;
-    final innerWhite = Paint()..color = Colors.white;
+    final innerWhite = Paint()..color = AppColors.surface;
     final pts = [p0, p1, p2];
 
     for (var i = 0; i < pts.length; i++) {
@@ -285,9 +286,9 @@ class ExpensesSummaryCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.kpiDangerBg,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,21 +305,19 @@ class ExpensesSummaryCard extends StatelessWidget {
               ),
               const Spacer(),
               if (onAddExpense != null)
-                InkWell(
-                  onTap: onAddExpense,
-                  borderRadius: BorderRadius.circular(4),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 2,
-                      vertical: 2,
-                    ),
-                    child: Text(
-                      context.tr('Add expense'),
-                      style: GoogleFonts.manrope(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.kpiSky,
-                      ),
+                TextButton(
+                  onPressed: onAddExpense,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(44, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    tapTargetSize: MaterialTapTargetSize.padded,
+                  ),
+                  child: Text(
+                    context.tr('Add expense'),
+                    style: GoogleFonts.manrope(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.kpiSky,
                     ),
                   ),
                 ),
@@ -380,8 +379,12 @@ class MostUsedReportsCard extends StatelessWidget {
                   letterSpacing: -0.1,
                 ),
               ),
-              InkWell(
-                onTap: onSeeAllTap,
+              TextButton(
+                onPressed: onSeeAllTap,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                ),
                 child: Text(
                   context.tr('See All'),
                   style: GoogleFonts.manrope(
@@ -416,19 +419,16 @@ class MostUsedReportsCard extends StatelessWidget {
               ),
               ReportIconItem(
                 label: context.tr('Bal. Sheet'),
-                icon: Icons.receipt_outlined,
-                badgeSymbol: '₹',
-                hasCrown: true,
-                badgeColor: AppColors.warning,
+                icon: Icons.balance_rounded,
+                badgeSymbol: null,
                 bgColor: AppColors.kpiAmberBg,
                 iconColor: AppColors.kpiAmber,
                 onTap: onBalSheetTap,
               ),
               ReportIconItem(
                 label: context.tr('Profit & Loss'),
-                icon: Icons.description_outlined,
-                badgeSymbol: '1L',
-                badgeColor: AppColors.danger,
+                icon: Icons.trending_up_rounded,
+                badgeSymbol: null,
                 bgColor: AppColors.kpiDangerBg,
                 iconColor: AppColors.kpiDanger,
                 onTap: onProfitLossTap,
@@ -546,12 +546,15 @@ class ReportIconItem extends StatelessWidget {
 // Card 4: Store Alerts (Always shows all real-time alerts)
 // ---------------------------------------------------------------------------
 class StoreAlertsCard extends StatelessWidget {
-  const StoreAlertsCard({super.key, 
+  const StoreAlertsCard({
+    super.key,
     required this.outOfStockCount,
     required this.lowStockCount,
     required this.pendingCreditCount,
     required this.outOfStockItems,
     required this.lowStockItems,
+    this.onStockAlertTap,
+    this.onDebtAlertTap,
   });
 
   final int outOfStockCount;
@@ -559,6 +562,8 @@ class StoreAlertsCard extends StatelessWidget {
   final int pendingCreditCount;
   final List<dynamic> outOfStockItems;
   final List<dynamic> lowStockItems;
+  final VoidCallback? onStockAlertTap;
+  final VoidCallback? onDebtAlertTap;
 
   @override
   Widget build(BuildContext context) {
@@ -621,8 +626,10 @@ class StoreAlertsCard extends StatelessWidget {
                 icon: Icons.cancel_rounded,
                 color: AppColors.danger,
                 bgColor: AppColors.kpiDangerBg,
-                title: context.tr('{p0} items are completely Out of Stock', args: {'p0': outOfStockCount}),
+                title: context.tr('{p0} items are completely Out of Stock',
+                    args: {'p0': outOfStockCount}),
                 subtitle: outOfStockItems.take(2).map((p) => p.name).join(', '),
+                onTap: onStockAlertTap,
               ),
             ),
 
@@ -634,8 +641,14 @@ class StoreAlertsCard extends StatelessWidget {
                 icon: Icons.warning_amber_rounded,
                 color: AppColors.warning,
                 bgColor: AppColors.kpiAmberBg,
-                title: context.tr('{p0} items are Low on Stock', args: {'p0': lowStockCount}),
-                subtitle: lowStockItems.take(2).map((p) => '${p.name} (${p.stockCount} left)').join(', '),
+                title: context.tr('{p0} items are Low on Stock',
+                    args: {'p0': lowStockCount}),
+                subtitle: lowStockItems
+                    .take(2)
+                    .map((p) =>
+                        '${p.name} (${formatStockWithUnit(p.stockCount, p.unit)} left)')
+                    .join(', '),
+                onTap: onStockAlertTap,
               ),
             ),
 
@@ -647,8 +660,11 @@ class StoreAlertsCard extends StatelessWidget {
                 icon: Icons.account_balance_wallet_outlined,
                 color: AppColors.kpiSky,
                 bgColor: AppColors.kpiSkyBg,
-                title: context.tr('{p0} customers have outstanding debt', args: {'p0': pendingCreditCount}),
-                subtitle: context.tr('Tap to review debtor ledger and collect payments'),
+                title: context.tr('{p0} customers have outstanding debt',
+                    args: {'p0': pendingCreditCount}),
+                subtitle: context.tr(
+                    'Tap to review debtor ledger and collect payments'),
+                onTap: onDebtAlertTap,
               ),
             ),
 
@@ -671,12 +687,14 @@ class StoreAlertsCard extends StatelessWidget {
 }
 
 class AlertRow extends StatelessWidget {
-  const AlertRow({super.key, 
+  const AlertRow({
+    super.key,
     required this.icon,
     required this.color,
     required this.bgColor,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   final IconData icon;
@@ -684,10 +702,11 @@ class AlertRow extends StatelessWidget {
   final Color bgColor;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
@@ -727,7 +746,24 @@ class AlertRow extends StatelessWidget {
             ],
           ),
         ),
+        if (onTap != null) ...[
+          const SizedBox(width: 6),
+          const Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: AppColors.textMuted,
+          ),
+        ],
       ],
+    );
+    if (onTap == null) return row;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sharp),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: row,
+      ),
     );
   }
 }

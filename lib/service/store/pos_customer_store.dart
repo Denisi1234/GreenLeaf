@@ -122,6 +122,7 @@ mixin PosCustomerStore on ChangeNotifier {
     notifyListeners();
   }
 
+  // ignore: unused_element
   CustomerData _customerFromMap(Map<String, Object?> map) {
     return CustomerData(
       id: map['id'] as String? ?? '',

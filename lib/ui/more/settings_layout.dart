@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../widgets/app_design.dart';
 import '../widgets/common/market_notice.dart';
@@ -45,10 +45,17 @@ class SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
-        border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: const Border.fromBorderSide(BorderSide(color: AppColors.border)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Padding(
         padding: padding,
@@ -93,8 +100,8 @@ class SettingsIconBox extends StatelessWidget {
   const SettingsIconBox({
     super.key,
     required this.icon,
-    this.color = AppColors.textBody,
-    this.background = AppColors.surfaceSecondary,
+    this.color = AppColors.kpiSky,
+    this.background = AppColors.kpiSkyBg,
     this.size = 38,
   });
 
@@ -110,7 +117,7 @@ class SettingsIconBox extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, color: color, size: size * 0.52),
     );
@@ -339,6 +346,9 @@ class SettingsSaveButton extends StatelessWidget {
       child: FilledButton.icon(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          side: BorderSide.none,
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         ),
@@ -407,13 +417,28 @@ class SettingsSaveBar extends StatelessWidget {
                     TextButton(
                       onPressed: busy ? null : onDiscard,
                       style: TextButton.styleFrom(
-                          foregroundColor: AppColors.dangerDeep),
-                      child: Text(discardLabel),
+                        backgroundColor: AppColors.kpiDangerBg,
+                        foregroundColor: AppColors.kpiDanger,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
+                      ),
+                      child: Text(
+                        discardLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
                       onPressed: busy ? null : onSave,
                       style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        side: BorderSide.none,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 10),
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.zero,
                         ),
@@ -427,7 +452,11 @@ class SettingsSaveBar extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             )
-                          : Text(saveLabel),
+                          : Text(
+                              saveLabel,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700),
+                            ),
                     ),
                   ],
                 ),

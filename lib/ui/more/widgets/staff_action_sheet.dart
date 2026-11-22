@@ -227,19 +227,19 @@ class StaffActionSheet {
                             vertical: 8,
                           ),
                           decoration: const BoxDecoration(
-                            color: AppColors.surfaceSecondary,
+                            color: AppColors.kpiSkyBg,
                             borderRadius: BorderRadius.zero,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.add_rounded,
-                                  color: AppColors.primary, size: 18),
+                                  color: AppColors.kpiSky, size: 18),
                               const SizedBox(width: 4),
                               Text(
                                 staffDual(strings, 'New', 'Mpya'),
                                 style: const TextStyle(
-                                  color: AppColors.primaryDeep,
+                                  color: AppColors.kpiSky,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w800,
                                 ),

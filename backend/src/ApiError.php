@@ -42,8 +42,18 @@ final class ApiValidator
         return $digits;
     }
 
-    public static function stockState(int $stock): string
+    public static function normalizeQuantity(float $value): int|float
     {
-        return $stock === 0 ? 'outOfStock' : ($stock <= 10 ? 'lowStock' : 'inStock');
+        $rounded = round($value, 3);
+        if (abs($rounded) < 0.0005) {
+            return 0;
+        }
+        $whole = (int) round($rounded);
+        return abs($rounded - $whole) < 0.0005 ? $whole : $rounded;
+    }
+
+    public static function stockState(int|float $stock): string
+    {
+        return $stock <= 0 ? 'outOfStock' : ($stock <= 10 ? 'lowStock' : 'inStock');
     }
 }

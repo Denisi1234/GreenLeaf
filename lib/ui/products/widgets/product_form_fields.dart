@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.title});
@@ -42,17 +42,17 @@ class PhotoUploadTile extends StatelessWidget {
 
     if (hasImage) {
       return Container(
-        height: 140,
+        height: 160,
         width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
           border: Border.all(color: AppColors.border),
         ),
         child: Stack(
           fit: StackFit.expand,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(AppRadius.standard),
               child: Image.file(File(imagePath!), fit: BoxFit.cover),
             ),
             Positioned(
@@ -77,38 +77,35 @@ class PhotoUploadTile extends StatelessWidget {
 
     return InkWell(
       onTap: onPickTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(AppRadius.standard),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
           border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: AppColors.kpiSkyBg,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.add_a_photo_outlined, color: AppColors.kpiSky, size: 22),
+            const Icon(
+              Icons.add_a_photo_outlined,
+              color: AppColors.primaryDeep,
+              size: 24,
             ),
             const SizedBox(height: 8),
             Text(
               context.tr('Upload item photo'),
               style: GoogleFonts.manrope(
-                fontSize: 13,
+                fontSize: 13.5,
                 fontWeight: FontWeight.w700,
-                color: AppColors.kpiSky,
+                color: AppColors.primaryDeep,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               context.tr('PNG, JPG up to 5MB'),
-              style: GoogleFonts.manrope(fontSize: 11, color: AppColors.textLight),
+              style: GoogleFonts.manrope(fontSize: 11.5, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -143,9 +140,10 @@ class ExpiryTrackingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Column(
@@ -155,9 +153,9 @@ class ExpiryTrackingCard extends StatelessWidget {
               const Icon(
                 Icons.event_busy_rounded,
                 size: 20,
-                color: AppColors.kpiSky,
+                color: AppColors.textMuted,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,7 +163,7 @@ class ExpiryTrackingCard extends StatelessWidget {
                     Text(
                       context.tr('Track expiry date'),
                       style: GoogleFonts.manrope(
-                        fontSize: 13,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.ink,
                       ),
@@ -174,7 +172,7 @@ class ExpiryTrackingCard extends StatelessWidget {
                     Text(
                       context.tr('Receive alerts when this item is about to expire'),
                       style: GoogleFonts.manrope(
-                        fontSize: 11,
+                        fontSize: 11.5,
                         color: AppColors.textMuted,
                       ),
                     ),

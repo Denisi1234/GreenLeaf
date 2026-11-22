@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../widgets/app_design.dart';
+import '../widgets/common/market_page_header.dart';
+import '../widgets/common/market_search_field.dart';
 import 'advanced_reports_page.dart';
 import 'enhanced_report_page.dart';
 import 'pos_report_catalog.dart';
@@ -19,13 +21,11 @@ class ReportsCatalogPage extends StatefulWidget {
 
 class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
   final _searchController = TextEditingController();
-  final _searchFocusNode = FocusNode();
   final _queryNotifier = ValueNotifier<String>('');
 
   @override
   void dispose() {
     _searchController.dispose();
-    _searchFocusNode.dispose();
     _queryNotifier.dispose();
     super.dispose();
   }
@@ -45,8 +45,8 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
     final essentialReports = <_EssentialReportItem>[
       _EssentialReportItem(
         Icons.point_of_sale_outlined,
-        AppColors.kpiSky, // Blue
-        AppColors.kpiSkyBg,
+        AppColors.primaryDeep, // Cyan
+        AppColors.primaryLight,
         context.tr('Sales Summary'),
         context.tr('Daily revenue, volume and net sales'),
         _findReport(ReportData.sales),
@@ -111,80 +111,40 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(
-        title: Text(
-          context.tr('Reports'),
-          style: AppTypography.cardHeader.copyWith(
-            fontWeight: FontWeight.w800,
-            color: AppColors.ink,
+      body: Column(
+        children: [
+          MarketPageHeader(
+            title: context.tr('Reports'),
+            subtitle: context.tr('Sales, stock and financial reports'),
+            showBackButton: true,
+            centerTitle: false,
+            titleSize: 22,
+            titleWeight: FontWeight.w800,
+            showBorder: true,
           ),
-        ),
-        backgroundColor: AppColors.headerSurface,
-        foregroundColor: AppColors.ink,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: AppColors.divider),
-        ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: Column(
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Column(
           children: [
-            // Full-width sharp borderless ERP filter bar
-            Container(
-              color: AppColors.surface,
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-              child: TextField(
+            // Consistent sharp search bar matching Items, Sales & More pages
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+              child: MarketSearchField(
                 controller: _searchController,
-                focusNode: _searchFocusNode,
+                hintText: context.tr('Find a report'),
                 onChanged: (v) => _queryNotifier.value = v,
-                textInputAction: TextInputAction.search,
-                style: AppTypography.bodyMain,
-                decoration: InputDecoration(
-                  hintText: context.tr('Find a report'),
-                  hintStyle: AppTypography.label,
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    size: 18,
-                    color: AppColors.textMuted,
-                  ),
-                  suffixIcon: ValueListenableBuilder<String>(
-                    valueListenable: _queryNotifier,
-                    builder: (_, q, __) => q.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              _queryNotifier.value = '';
-                            },
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                  filled: true,
-                  fillColor: AppColors.pageBackground,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 11,
-                  ),
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: AppColors.ink, width: 1),
-                  ),
-                ),
+                onClear: () {
+                  _searchController.clear();
+                  _queryNotifier.value = '';
+                },
+                height: 48,
+                radius: 0,
+                backgroundColor: AppColors.surface,
+                borderColor: AppColors.border,
+                paddingHorizontal: 14,
               ),
             ),
-            const Divider(height: 1, color: AppColors.divider),
             Expanded(
               child: ValueListenableBuilder<String>(
                 valueListenable: _queryNotifier,
@@ -199,12 +159,12 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                   return ListView(
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
                     children: [
                       // Essential reports section
                       if (filtered.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
                           child: Row(
                             children: [
                               Text(
@@ -226,92 +186,101 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                             ],
                           ),
                         ),
-                        Material(
-                          color: AppColors.sectionSurface,
-                          borderRadius: BorderRadius.zero,
-                          child: Column(
-                            children: [
-                              for (var i = 0; i < filtered.length; i++) ...[
-                                if (i > 0)
-                                  const Divider(
-                                    height: 1,
-                                    indent: 68,
-                                    color: AppColors.divider,
-                                  ),
-                                InkWell(
-                                  onTap: () {
-                                    _searchFocusNode.unfocus();
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => EnhancedReportPage(
-                                          report: filtered[i].report,
+                        Container(
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.standard),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: Column(
+                              children: [
+                                for (var i = 0; i < filtered.length; i++) ...[
+                                  if (i > 0)
+                                    const Divider(
+                                      height: 1,
+                                      indent: 66,
+                                      color: AppColors.border,
+                                    ),
+                                  InkWell(
+                                    onTap: () {
+                                      FocusScope.of(context).unfocus();
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => EnhancedReportPage(
+                                            report: filtered[i].report,
+                                          ),
                                         ),
+                                      );
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 14,
                                       ),
-                                    );
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 14,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 38,
-                                          height: 38,
-                                          decoration: BoxDecoration(
-                                            color: filtered[i].badgeBg,
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 38,
+                                            height: 38,
+                                            decoration: BoxDecoration(
+                                              color: filtered[i].badgeBg,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      AppRadius.sharp),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              filtered[i].icon,
+                                              color: filtered[i].iconColor,
+                                              size: 19,
+                                            ),
                                           ),
-                                          alignment: Alignment.center,
-                                          child: Icon(
-                                            filtered[i].icon,
-                                            color: filtered[i].iconColor,
-                                            size: 19,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                filtered[i].title,
-                                                style: AppTypography.bodyMain
-                                                    .copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                  color: AppColors.ink,
+                                          const SizedBox(width: 14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  filtered[i].title,
+                                                  style: AppTypography.bodyMain
+                                                      .copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppColors.ink,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                filtered[i].subtitle,
-                                                style: AppTypography.label,
-                                              ),
-                                            ],
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  filtered[i].subtitle,
+                                                  style: AppTypography.label,
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        const Icon(
-                                          Icons.chevron_right_rounded,
-                                          size: 20,
-                                          color: AppColors.textMuted,
-                                        ),
-                                      ],
+                                          const SizedBox(width: 8),
+                                          const Icon(
+                                            Icons.chevron_right_rounded,
+                                            size: 20,
+                                            color: AppColors.textMuted,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
                       ],
                       // Advanced reports hub section
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
                         child: Row(
                           children: [
                             Text(
@@ -333,69 +302,79 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
                           ],
                         ),
                       ),
-                      Material(
-                        color: AppColors.sectionSurface,
-                        borderRadius: BorderRadius.zero,
-                        child: InkWell(
-                          onTap: () {
-                            _searchFocusNode.unfocus();
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const AdvancedReportsPage(),
+                      Container(
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.standard),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              FocusScope.of(context).unfocus();
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const AdvancedReportsPage(),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 14,
                               ),
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.kpiSkyBg,
-                                    borderRadius: BorderRadius.circular(8),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.kpiVioletBg,
+                                      borderRadius: BorderRadius.circular(
+                                          AppRadius.sharp),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.analytics_outlined,
+                                      color: AppColors.kpiViolet,
+                                      size: 19,
+                                    ),
                                   ),
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    Icons.analytics_outlined,
-                                    color: AppColors.kpiSky,
-                                    size: 19,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        context.tr('Advanced reports'),
-                                        style: AppTypography.bodyMain.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.ink,
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          context.tr('Advanced reports'),
+                                          style:
+                                              AppTypography.bodyMain.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.ink,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        context.tr(
-                                          'Graphical, detailed, accounting, tax & multi-store reports',
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          context.tr(
+                                            'Graphical, detailed, accounting, tax & multi-store reports',
+                                          ),
+                                          style: AppTypography.label,
                                         ),
-                                        style: AppTypography.label,
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 20,
-                                  color: AppColors.textMuted,
-                                ),
-                              ],
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 20,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -407,6 +386,9 @@ class _ReportsCatalogPageState extends State<ReportsCatalogPage> {
             ),
           ],
         ),
+      ),
+          ),
+        ],
       ),
     );
   }

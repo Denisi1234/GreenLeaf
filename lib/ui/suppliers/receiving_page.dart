@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/supplier_model.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/quantity_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
@@ -27,9 +28,9 @@ class ReceivingPage extends StatefulWidget {
   }) {
     return MarketSurfaceCard(
       padding: padding,
-      showShadow: false,
+      showShadow: true,
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       child: child,
     );
   }
@@ -87,9 +88,11 @@ class _ReceivingPageState extends State<ReceivingPage> {
       0,
       (sum, receiving) => sum + receiving.total,
     );
-    final totalUnits = receivings.fold<int>(
-      0,
-      (sum, receiving) => sum + receiving.itemCount,
+    final totalUnits = roundQuantity(
+      receivings.fold<double>(
+        0,
+        (sum, receiving) => sum + receiving.itemCount,
+      ),
     );
     final now = DateTime.now();
     final thisMonthReceivings = receivings.where((r) =>
@@ -144,7 +147,7 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                   label: t('Total received value', 'Jumla ya thamani'),
                                   value: ReceivingPage._money(totalValue),
                                   icon: Icons.inventory_2_outlined,
-                                  sharp: true,
+                                  sharp: false,
                                   borderless: true,
                                   backgroundColor: AppColors.kpiSuccessBg,
                                   color: AppColors.kpiSuccess,
@@ -156,7 +159,7 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                   label: t('Total deliveries', 'Idadi ya upokeaji'),
                                   value: '${receivings.length}',
                                   icon: Icons.local_shipping_outlined,
-                                  sharp: true,
+                                  sharp: false,
                                   borderless: true,
                                   backgroundColor: AppColors.kpiSkyBg,
                                   color: AppColors.kpiSky,
@@ -166,9 +169,9 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                 width: width,
                                 child: WorkspaceMetric(
                                   label: t('Total units added', 'Jumla ya vipande'),
-                                  value: '$totalUnits',
+                                  value: formatQuantity(totalUnits),
                                   icon: Icons.all_inbox_rounded,
-                                  sharp: true,
+                                  sharp: false,
                                   borderless: true,
                                   backgroundColor: AppColors.kpiRoseBg,
                                   color: AppColors.kpiRose,
@@ -180,7 +183,7 @@ class _ReceivingPageState extends State<ReceivingPage> {
                                   label: t('This month value', 'Thamani mwezi huu'),
                                   value: ReceivingPage._money(thisMonthTotal),
                                   icon: Icons.calendar_today_outlined,
-                                  sharp: true,
+                                  sharp: false,
                                   borderless: true,
                                   backgroundColor: AppColors.kpiAmberBg,
                                   color: AppColors.kpiAmber,

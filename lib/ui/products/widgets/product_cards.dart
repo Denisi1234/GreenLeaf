@@ -1,10 +1,12 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../utils/currency_formatter.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../notifications/notifications_page.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/app_image.dart';
 import '../../widgets/market_shared_widgets.dart';
 import '../inventory_product_item.dart';
 
@@ -16,52 +18,110 @@ class ProductItemRowCard extends StatelessWidget {
   const ProductItemRowCard({
     super.key,
     required this.product,
+    this.lowStockThreshold = 5,
     this.onTap,
+    this.onAdjustStock,
     this.onDelete,
   });
 
   final InventoryProductItem product;
+  final int lowStockThreshold;
   final VoidCallback? onTap;
+  final VoidCallback? onAdjustStock;
   final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
-    final isLowStock = product.stockCount <= 5 && product.stockCount > 0;
+    final isLowStock =
+        product.stockCount <= lowStockThreshold && product.stockCount > 0;
     final isOutOfStock = product.stockCount <= 0;
+    final isSwahili = context.strings.isSwahili;
+    final isMeasured =
+        product.allowFractional || product.unit.toLowerCase() != 'pcs';
+    final packEquiv = formatPackEquivalent(
+      product.stockCount,
+      product.unit,
+      packName: product.packName,
+      packSize: product.packSize,
+    );
+    final hasImage =
+        product.imagePath != null && product.imagePath!.trim().isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        product.name,
-                        style: GoogleFonts.manrope(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textMain,
-                        ),
-                      ),
+            padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 88,
+                    constraints: const BoxConstraints(minHeight: 82),
+                    decoration: BoxDecoration(
+                      color: AppColors.pageBackground,
+                      borderRadius: BorderRadius.circular(AppRadius.sharp),
+                      border: Border.all(color: AppColors.border, width: 1),
                     ),
-                    if (onTap != null || onDelete != null)
-                      PopupMenuButton<String>(
+                    clipBehavior: Clip.antiAlias,
+                    child: hasImage
+                        ? Image(
+                            image: appImageProvider(context, product.imagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                child: ProductArt(type: product.artType),
+                              ),
+                            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: FittedBox(
+                              fit: BoxFit.contain,
+                              child: ProductArt(type: product.artType),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              product.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.manrope(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textMain,
+                              ),
+                            ),
+                          ),
+                          if (onTap != null ||
+                              onAdjustStock != null ||
+                              onDelete != null)
+                            PopupMenuButton<String>(
                         onSelected: (val) {
                           if (val == 'edit') onTap?.call();
+                          if (val == 'adjust') onAdjustStock?.call();
                           if (val == 'delete') onDelete?.call();
                         },
                         padding: EdgeInsets.zero,
@@ -82,6 +142,22 @@ class ProductItemRowCard extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Text(
                                     context.tr('Edit Item'),
+                                    style: GoogleFonts.manrope(
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (onAdjustStock != null)
+                            PopupMenuItem(
+                              value: 'adjust',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.tune_rounded,
+                                      size: 18, color: AppColors.primaryDeep),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    isSwahili ? 'Rekebisha stoo' : 'Adjust stock',
                                     style: GoogleFonts.manrope(
                                         fontWeight: FontWeight.w600),
                                   ),
@@ -158,11 +234,13 @@ class ProductItemRowCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          formatProductPrice(product.sellingPrice),
+                          isMeasured
+                              ? '${formatProductPrice(product.sellingPrice)} / ${product.unit}'
+                              : formatProductPrice(product.sellingPrice),
                           style: GoogleFonts.manrope(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textMain,
+                            color: AppColors.successDeep,
                           ),
                         ),
                       ],
@@ -198,7 +276,8 @@ class ProductItemRowCard extends StatelessWidget {
                             Text(
                               isOutOfStock
                                   ? context.tr('Out of stock')
-                                  : '${product.stockCount} ${product.unit}',
+                                  : formatStockWithUnit(
+                                      product.stockCount, product.unit),
                               style: GoogleFonts.manrope(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -211,6 +290,15 @@ class ProductItemRowCard extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (packEquiv != null)
+                          Text(
+                            '≈ $packEquiv',
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -219,8 +307,13 @@ class ProductItemRowCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+),
+),
+),
+);
   }
 }
 
@@ -239,67 +332,19 @@ class ProductEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasFilter = query.isNotEmpty;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      alignment: Alignment.center,
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.zero,
-              color: AppColors.borderLight,
-              border: Border.all(color: AppColors.borderInput, width: 1),
-            ),
-            alignment: Alignment.center,
-            child: const Icon(
-              Icons.inventory_2_outlined,
-              size: 32,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            hasFilter
-                ? context.tr('No items match your search')
-                : context.tr('No items found in stock'),
-            style: GoogleFonts.manrope(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textMain,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            hasFilter
-                ? context.tr('Try searching with a different name or item code.')
-                : context.tr('Use Add item to register your first product.'),
-            textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (hasFilter)
-            OutlinedButton(
-              onPressed: onClearFilter,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.dangerDeep,
-                side: const BorderSide(color: AppColors.dangerBorder),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                ),
-              ),
-              child: Text(
-                context.tr('Clear Search'),
-                style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-              ),
-            ),
-        ],
-      ),
+    return MarketEmptyState(
+      showCard: false,
+      icon: hasFilter ? Icons.search_off_rounded : Icons.inventory_2_outlined,
+      title: hasFilter
+          ? context.tr('No items match your search')
+          : context.tr('No items found in stock'),
+      message: hasFilter
+          ? context.tr('Try searching with a different name or item code.')
+          : context.tr('Use Add item to register your first product.'),
+      actionLabel:
+          hasFilter ? context.tr('Clear Search') : context.tr('Add item'),
+      actionIcon: hasFilter ? Icons.filter_alt_off_rounded : Icons.add_rounded,
+      onAction: hasFilter ? onClearFilter : onAddTap,
     );
   }
 }

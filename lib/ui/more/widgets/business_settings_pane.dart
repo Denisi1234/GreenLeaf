@@ -35,9 +35,17 @@ class _BusinessSummaryCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       padding: const EdgeInsets.all(14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: AppColors.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -45,14 +53,14 @@ class _BusinessSummaryCard extends StatelessWidget {
             width: 48,
             height: 48,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
+            decoration: BoxDecoration(
+              color: AppColors.kpiSkyBg,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               _initials(profile.storeName),
               style: AppTypography.cardHeader.copyWith(
-                color: AppColors.primaryDeep,
+                color: AppColors.kpiSky,
                 fontSize: 16,
               ),
             ),

@@ -216,7 +216,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 height: 38,
                                 decoration: BoxDecoration(
                                   color: palette.$1,
-                                  borderRadius: BorderRadius.zero,
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 alignment: Alignment.center,
                                 child: Icon(tab.icon,

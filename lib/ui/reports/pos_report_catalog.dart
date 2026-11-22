@@ -4,7 +4,7 @@ enum ReportGroup {
   detailed('Detailed Reports'),
   inventory('Inventory Reports'),
   accounting('Accounting & Register'),
-  operations('TrackMauzo Reports'),
+  operations('Aza POS Reports'),
   multiStore('Multi-Store Reports');
 
   const ReportGroup(this.label);

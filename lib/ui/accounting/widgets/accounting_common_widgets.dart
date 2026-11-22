@@ -17,9 +17,9 @@ class LedgerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
       padding: padding,
-      showShadow: false,
+      showShadow: true,
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       child: child,
     );
   }
@@ -70,22 +70,21 @@ class SegmentedTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         border: Border.all(color: AppColors.border),
       ),
       child: TabBar(
         controller: controller,
-        indicator: BoxDecoration(
-          color: AppColors.surface,
+        indicator: const BoxDecoration(
+          color: AppColors.primary,
           borderRadius: BorderRadius.zero,
-          border: Border.all(color: AppColors.border),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
-        labelColor: AppColors.ink,
+        labelColor: Colors.white,
         unselectedLabelColor: AppColors.textMuted,
         labelStyle:
             AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),

@@ -7,6 +7,7 @@ import 'receipt_settings.dart';
 import 'tax_settings.dart';
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
+import '../utils/quantity_formatter.dart';
 
 class PosCloudDatabase extends PosLocalDatabase {
   PosCloudDatabase(this.api);
@@ -76,7 +77,7 @@ class PosCloudDatabase extends PosLocalDatabase {
 
   @override
   Future<void> adjustInventoryStock(
-    Map<String, int> deltas,
+    Map<String, num> deltas,
     String storeId, {
     int lowStockThreshold = 20,
   }) async {
@@ -100,8 +101,9 @@ class PosCloudDatabase extends PosLocalDatabase {
       if (entry.value == 0) continue;
       final remote = byCode[entry.key];
       if (remote == null) continue;
-      final current = (remote['stock_count'] as num?)?.toInt() ?? 0;
-      final next = (current + entry.value).clamp(0, 1 << 31).toInt();
+      final current = (remote['stock_count'] as num?)?.toDouble() ?? 0.0;
+      final next =
+          roundQuantity((current + entry.value.toDouble()).clamp(0.0, 1e12).toDouble());
       final state = next <= 0
           ? InventoryStockState.outOfStock
           : next <= lowStockThreshold
@@ -314,6 +316,7 @@ class PosCloudDatabase extends PosLocalDatabase {
               'unit_cost': line.unitCost,
               'art_type': line.artType.name,
               'image_path': line.imagePath,
+              'item_unit': line.unit,
             },
         ],
       };

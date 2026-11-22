@@ -149,7 +149,8 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                 ),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 30),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -161,101 +162,159 @@ class _CreateCustomerPageState extends State<CreateCustomerPage> {
                             trailing: const SizedBox.shrink(),
                           ),
                           const SizedBox(height: 10),
-                          _CustomerField(
-                            label: _dual(
-                                strings, 'Customer name', 'Jina la mteja'),
-                            hint: _dual(strings, 'Enter customer name',
-                                'Weka jina la mteja'),
-                            controller: _nameController,
-                            icon: Icons.person_outline_rounded,
-                            textCapitalization: TextCapitalization.words,
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                    ? _dual(
-                                        strings,
-                                        'Customer name is required',
-                                        'Jina la mteja linahitajika')
-                                    : null,
-                          ),
-                          const SizedBox(height: 14),
-                          _CustomerField(
-                            label:
-                                _dual(strings, 'Phone number', 'Namba ya simu'),
-                            hint: _dual(strings, 'Enter phone number',
-                                'Weka namba ya simu'),
-                            controller: _phoneController,
-                            icon: Icons.call_outlined,
-                            keyboardType: TextInputType.phone,
-                            validator: (value) =>
-                                (value == null || value.trim().isEmpty)
-                                    ? _dual(strings, 'Phone number is required',
-                                        'Namba ya simu inahitajika')
-                                    : null,
-                          ),
-                          const SizedBox(height: 14),
-                          _CustomerField(
-                            label: _dual(strings, 'Email', 'Barua pepe'),
-                            hint: _dual(strings, 'Optional email address',
-                                'Barua pepe (si lazima)'),
-                            controller: _emailController,
-                            icon: Icons.alternate_email_rounded,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (value) {
-                              final email = (value ?? '').trim();
-                              if (email.isEmpty) return null;
-                              final valid =
-                                  RegExp(r'^[\w.+-]+@([\w-]+\.)+[\w-]{2,}$')
-                                      .hasMatch(email);
-                              return valid
-                                  ? null
-                                  : _dual(
-                                      strings,
-                                      'Enter a valid email address',
-                                      'Weka barua pepe sahihi');
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          _CustomerField(
-                            label: _dual(strings, 'Address', 'Anwani'),
-                            hint: _dual(strings, 'Optional physical address',
-                                'Anwani (si lazima)'),
-                            controller: _addressController,
-                            icon: Icons.location_on_outlined,
-                            maxLines: 3,
-                          ),
-                          const SizedBox(height: 18),
-                          Text(
-                            _dual(strings, 'Tags', 'Lebo'),
-                            style: AppTypography.label,
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              for (final tag in kCustomerTagOptions)
-                                _TagChip(
-                                  label: tag,
-                                  selected: _tags.contains(tag),
-                                  onTap: () => _toggleTag(tag),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.standard),
+                              border: Border.all(color: AppColors.border),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: 28),
-                          _SaveButton(
-                            saving: _isSaving,
-                            label: _isSaving
-                                ? _dual(strings, 'Saving...', 'Inahifadhi...')
-                                : _isEdit
-                                    ? _dual(strings, 'Save changes',
-                                        'Hifadhi mabadiliko')
-                                    : _dual(strings, 'Create customer',
-                                        'Unda mteja'),
-                            onTap: _isSaving ? null : _saveCustomer,
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _CustomerField(
+                                  label: _dual(strings, 'Customer name',
+                                      'Jina la mteja'),
+                                  hint: _dual(strings, 'Enter customer name',
+                                      'Weka jina la mteja'),
+                                  controller: _nameController,
+                                  icon: Icons.person_outline_rounded,
+                                  textCapitalization: TextCapitalization.words,
+                                  validator: (value) => (value == null ||
+                                          value.trim().isEmpty)
+                                      ? _dual(
+                                          strings,
+                                          'Customer name is required',
+                                          'Jina la mteja linahitajika')
+                                      : null,
+                                ),
+                                const SizedBox(height: 14),
+                                _CustomerField(
+                                  label: _dual(strings, 'Phone number',
+                                      'Namba ya simu'),
+                                  hint: _dual(strings, 'Enter phone number',
+                                      'Weka namba ya simu'),
+                                  controller: _phoneController,
+                                  icon: Icons.call_outlined,
+                                  keyboardType: TextInputType.phone,
+                                  validator: (value) => (value == null ||
+                                          value.trim().isEmpty)
+                                      ? _dual(
+                                          strings,
+                                          'Phone number is required',
+                                          'Namba ya simu inahitajika')
+                                      : null,
+                                ),
+                                const SizedBox(height: 14),
+                                _CustomerField(
+                                  label:
+                                      _dual(strings, 'Email', 'Barua pepe'),
+                                  hint: _dual(
+                                      strings,
+                                      'Optional email address',
+                                      'Barua pepe (si lazima)'),
+                                  controller: _emailController,
+                                  icon: Icons.alternate_email_rounded,
+                                  keyboardType: TextInputType.emailAddress,
+                                  validator: (value) {
+                                    final email = (value ?? '').trim();
+                                    if (email.isEmpty) return null;
+                                    final valid = RegExp(
+                                            r'^[\w.+-]+@([\w-]+\.)+[\w-]{2,}$')
+                                        .hasMatch(email);
+                                    return valid
+                                        ? null
+                                        : _dual(
+                                            strings,
+                                            'Enter a valid email address',
+                                            'Weka barua pepe sahihi');
+                                  },
+                                ),
+                                const SizedBox(height: 14),
+                                _CustomerField(
+                                  label: _dual(strings, 'Address', 'Anwani'),
+                                  hint: _dual(
+                                      strings,
+                                      'Optional physical address',
+                                      'Anwani (si lazima)'),
+                                  controller: _addressController,
+                                  icon: Icons.location_on_outlined,
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _dual(strings, 'Tags', 'Lebo'),
+                                  style: AppTypography.label,
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    for (final tag in kCustomerTagOptions)
+                                      _TagChip(
+                                        label: tag,
+                                        selected: _tags.contains(tag),
+                                        onTap: () => _toggleTag(tag),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                        top: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: MarketButton(
+                          label: _dual(strings, 'Cancel', 'Ghairi'),
+                          color: AppColors.kpiDangerBg,
+                          foregroundColor: AppColors.kpiDanger,
+                          borderColor: null,
+                          radius: 0,
+                          onTap: _isSaving
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          height: 48,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: _SaveButton(
+                          saving: _isSaving,
+                          label: _isSaving
+                              ? _dual(strings, 'Saving...', 'Inahifadhi...')
+                              : _isEdit
+                                  ? _dual(strings, 'Save changes',
+                                      'Hifadhi mabadiliko')
+                                  : _dual(strings, 'Create customer',
+                                      'Unda mteja'),
+                          onTap: _isSaving ? null : _saveCustomer,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -283,24 +342,20 @@ class _TagChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-          ),
+          color: selected ? AppColors.primary : AppColors.pageBackground,
+          borderRadius: BorderRadius.zero,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (selected) ...[
-              const Icon(Icons.check_rounded,
-                  size: 13, color: AppColors.primaryDeep),
+              const Icon(Icons.check_rounded, size: 13, color: Colors.white),
               const SizedBox(width: 4),
             ],
             Text(
               label,
               style: AppTypography.helperText.copyWith(
-                color: selected ? AppColors.primaryDeep : AppColors.textBody,
+                color: selected ? Colors.white : AppColors.textBody,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -322,8 +377,10 @@ class _SaveButton extends StatelessWidget {
         label: label,
         onTap: saving ? null : onTap,
         icon: Icons.check_rounded,
-        color: AppColors.successDeep,
-        height: 52,
+        color: AppColors.primary,
+        borderColor: null,
+        radius: 0,
+        height: 48,
       );
 }
 
@@ -368,7 +425,7 @@ class _CustomerField extends StatelessWidget {
                 AppTypography.bodyMain.copyWith(color: AppColors.textLight),
             prefixIcon: Icon(icon, color: AppColors.textLight, size: 20),
             filled: true,
-            fillColor: AppColors.surface,
+            fillColor: AppColors.pageBackground,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 14,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../../../l10n/app_strings.dart';
 import '../../widgets/app_design.dart';
@@ -39,8 +39,8 @@ class StaffProfileHero extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Column(
         children: [
           Row(
@@ -191,8 +191,8 @@ class StaffInfoSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -262,8 +262,8 @@ class StaffAccessSection extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(18),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

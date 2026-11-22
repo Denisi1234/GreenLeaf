@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../app_design.dart';
 
@@ -66,23 +66,28 @@ Future<bool> showMarketConfirmDialog(
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.textMuted,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            backgroundColor: AppColors.surfaceSecondary,
+            foregroundColor: AppColors.textBody,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.standard),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
           ),
-          child: Text(cancelLabel ?? dialogContext.tr('Cancel')),
+          child: Text(
+            cancelLabel ?? dialogContext.tr('Cancel'),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ),
         FilledButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
           style: FilledButton.styleFrom(
             backgroundColor:
-                isDestructive ? AppColors.danger : AppColors.ink,
+                isDestructive ? AppColors.danger : AppColors.primary,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            side: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.standard),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
           ),
           child: Text(
@@ -90,6 +95,7 @@ Future<bool> showMarketConfirmDialog(
                 (isDestructive
                     ? dialogContext.tr('Delete')
                     : dialogContext.tr('Confirm')),
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
       ],

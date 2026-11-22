@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../../models/product_item.dart';
 import '../../widgets/app_design.dart';
 import 'order_lines_list.dart';
@@ -14,6 +14,7 @@ class PaymentCartPanel extends StatelessWidget {
     required this.savingSale,
     required this.onIncrease,
     required this.onDecrease,
+    this.onEditQuantity,
     this.onEditDiscount,
     required this.onAddItem,
   });
@@ -25,14 +26,26 @@ class PaymentCartPanel extends StatelessWidget {
   final bool savingSale;
   final void Function(OrderLineItem line) onIncrease;
   final void Function(OrderLineItem line) onDecrease;
+  final void Function(OrderLineItem line)? onEditQuantity;
   final void Function(OrderLineItem line)? onEditDiscount;
   final VoidCallback onAddItem;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.zero,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           Padding(
@@ -46,18 +59,20 @@ class PaymentCartPanel extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  context.tr('{p0} items • {p1} units', args: {'p0': itemTypes, 'p1': unitCount}),
+                  context.tr('{p0} items • {p1} units',
+                      args: {'p0': itemTypes, 'p1': unitCount}),
                   style: AppTypography.label,
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          const Divider(height: 1, color: AppColors.border),
           OrderLinesList(
             orderLines: orderLines,
             hasItems: hasItems,
             onIncrease: onIncrease,
             onDecrease: onDecrease,
+            onEditQuantity: onEditQuantity,
             onEditDiscount: onEditDiscount,
           ),
           Padding(
@@ -85,8 +100,20 @@ class CounterActionRow extends StatelessWidget {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: onAddItem,
+            style: OutlinedButton.styleFrom(
+              backgroundColor: AppColors.kpiSkyBg,
+              foregroundColor: AppColors.kpiSky,
+              side: BorderSide.none,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
             icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-            label: Text(context.tr('Add more items')),
+            label: Text(
+              context.tr('Add more items'),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ),
       ],

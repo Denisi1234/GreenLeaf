@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -30,7 +30,7 @@ class MarketButton extends StatefulWidget {
     this.foregroundColor,
     this.borderColor,
     this.height = 48,
-    this.radius = 0, // Sharp modern theme
+    this.radius = AppRadius.pill,
     this.paddingHorizontal = AppSpacing.xl,
     this.boxShadow,
     this.fontSize,
@@ -176,7 +176,7 @@ class _MarketButtonState extends State<MarketButton> {
 
     // If explicit legacy isPrimary was passed as false and variant is default
     if (!widget.isPrimary && widget.variant == MarketButtonVariant.primary) {
-      return (AppColors.surface, AppColors.textBody, AppColors.border);
+      return (AppColors.surfaceSecondary, AppColors.textBody, null);
     }
 
     switch (widget.variant) {
@@ -187,7 +187,7 @@ class _MarketButtonState extends State<MarketButton> {
       case MarketButtonVariant.danger:
         return (AppColors.dangerDeep, Colors.white, null);
       case MarketButtonVariant.secondary:
-        return (AppColors.surface, AppColors.textBody, AppColors.border);
+        return (AppColors.surfaceSecondary, AppColors.textBody, null);
       case MarketButtonVariant.ghost:
         return (Colors.transparent, AppColors.textBody, null);
     }

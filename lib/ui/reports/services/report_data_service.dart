@@ -7,6 +7,7 @@ import '../../business_category_config.dart';
 import '../../../service/expense_model.dart';
 import '../../../service/pos_local_store.dart';
 import '../../../service/pos_order_models.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../models/customer_data.dart';
 import '../../models/product_item.dart';
 import '../models/report_models.dart';
@@ -51,7 +52,7 @@ class ReportDataService {
             colors: _colorsForLine(line),
           ),
         );
-        current.quantity += line.quantity;
+        current.quantity = roundQuantity(current.quantity + line.quantity);
         current.revenue += line.lineTotal;
       }
     }
@@ -132,7 +133,7 @@ class ReportDataService {
         .map(
           (product) => ProductData(
             title: product.title,
-            orders: '${product.quantity} sold',
+            orders: '${formatQuantity(product.quantity)} sold',
             amount: _moneyLabel(product.revenue),
             icon: product.icon,
             colors: product.colors,
@@ -238,7 +239,7 @@ class ReportDataService {
           .map(
             (product) => ProductData(
               title: product.title,
-              orders: '${product.quantity} sold',
+              orders: '${formatQuantity(product.quantity)} sold',
               amount: _moneyLabel(product.revenue),
               icon: product.icon,
               colors: product.colors,
@@ -260,7 +261,7 @@ class ReportDataService {
             stockCount: item.stockCount,
             statusLabel: item.stockCount <= 0
                 ? 'Out of stock'
-                : '${item.stockCount} left',
+                : '${formatStockWithUnit(item.stockCount, item.unit)} left',
             severity: item.stockCount <= 5
                 ? StockAlertSeverity.high
                 : StockAlertSeverity.medium,
@@ -282,7 +283,7 @@ class ReportDataService {
             stockCount: item.stockCount,
             statusLabel: item.stockCount <= 0
                 ? 'Out of stock'
-                : '${item.stockCount} left',
+                : '${formatStockWithUnit(item.stockCount, item.unit)} left',
             severity: item.stockCount <= 5
                 ? StockAlertSeverity.high
                 : StockAlertSeverity.medium,

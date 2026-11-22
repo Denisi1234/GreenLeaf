@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../service/daily_sales_report_service.dart';
 import '../../../service/pos_local_store.dart';
 import '../../../utils/currency_formatter.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../widgets/app_design.dart';
 import '../settings_layout.dart';
 
@@ -76,13 +77,24 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri);
         } else {
-          await Share.share(result.smsText!, subject: 'Ripoti ya Mauzo ya Leo');
+          await SharePlus.instance.share(
+            ShareParams(
+              text: result.smsText!,
+              subject: 'Ripoti ya Mauzo ya Leo',
+            ),
+          );
         }
       } catch (_) {
-        await Share.share(result.smsText!, subject: 'Ripoti ya Mauzo ya Leo');
+        await SharePlus.instance.share(
+          ShareParams(
+            text: result.smsText!,
+            subject: 'Ripoti ya Mauzo ya Leo',
+          ),
+        );
       }
     }
 
+    if (!mounted) return;
     showSettingsResult(context, result.message, error: !result.success);
   }
 
@@ -108,7 +120,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
     setState(() => _busy = true);
     try {
       final payload = <String, dynamic>{
-        'app': 'TrackMauzo',
+        'app': 'Aza POS',
         'exported_at': DateTime.now().toIso8601String(),
         'profile': {
           'store_name': store.profile.storeName,
@@ -180,7 +192,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
       );
       final directory = await getApplicationDocumentsDirectory();
       final stamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
-      final file = File('${directory.path}/trackmauzo_backup_$stamp.json');
+      final file = File('${directory.path}/azapos_backup_$stamp.json');
       await file.writeAsBytes(bytes);
       await SharePlus.instance.share(
         ShareParams(files: [XFile(file.path, mimeType: 'application/json')]),
@@ -205,8 +217,8 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
     String t(String en, String sw) => settingsText(lang, en, sw);
     final connected = store.cloudApi != null;
     final error = store.lastPersistenceError;
-    final inventoryUnits =
-        store.inventory.fold<int>(0, (sum, item) => sum + item.stockCount);
+    final inventoryUnits = roundQuantity(
+        store.inventory.fold<double>(0, (sum, item) => sum + item.stockCount));
     final recordedRevenue =
         store.orders.fold<double>(0, (sum, order) => sum + order.total);
     final hasQueue = connected || _pending > 0 || _failed > 0;
@@ -218,8 +230,8 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
           icon: Icons.cloud_sync_outlined,
           title: t('Storage & sync', 'Hifadhi na usawazishaji'),
           description: connected
-              ? t('Your data is safely backed up online with TrackMauzo.',
-                  'Data yako inahifadhiwa mtandaoni kwa usalama na TrackMauzo.')
+              ? t('Your data is safely backed up online with Aza POS.',
+                  'Data yako inahifadhiwa mtandaoni kwa usalama na Aza POS.')
               : t('Your data is saved on this device only.',
                   'Data yako inahifadhiwa kwenye kifaa hiki pekee.'),
           trailing: SettingsStatusPill(
@@ -300,6 +312,11 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                               t('Data synced', 'Data imesawazishwa'),
                             ),
                     style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      side: BorderSide.none,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.zero,
                       ),
@@ -312,10 +329,13 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                                 strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.sync_rounded, size: 18),
-                    label: Text(t('Sync now', 'Sawazisha sasa')),
+                    label: Text(
+                      t('Sync now', 'Sawazisha sasa'),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                   if (_failed > 0)
-                    OutlinedButton.icon(
+                    FilledButton.icon(
                       onPressed: _busy
                           ? null
                           : () => _run(
@@ -323,13 +343,21 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                                 t('Failed changes retried',
                                     'Mabadiliko yameshawazishwa tena'),
                               ),
-                      style: OutlinedButton.styleFrom(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.kpiAmberBg,
+                        foregroundColor: AppColors.kpiAmber,
+                        side: BorderSide.none,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.zero,
                         ),
                       ),
                       icon: const Icon(Icons.replay_rounded, size: 18),
-                      label: Text(t('Retry failed', 'Jaribu tena')),
+                      label: Text(
+                        t('Retry failed', 'Jaribu tena'),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
                 ],
               ),
@@ -436,7 +464,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
             const Divider(height: 1),
             SettingsInfoRow(
               label: t('Stock units', 'Vipimo vya bidhaa'),
-              value: '$inventoryUnits',
+              value: formatQuantity(inventoryUnits),
             ),
             const Divider(height: 1),
             SettingsInfoRow(
@@ -496,15 +524,23 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
             const SizedBox(height: 14),
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
+              child: FilledButton.icon(
                 onPressed: _busy ? null : () => _exportBackup(store),
-                style: OutlinedButton.styleFrom(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.kpiSkyBg,
+                  foregroundColor: AppColors.kpiSky,
+                  side: BorderSide.none,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,
                   ),
                 ),
                 icon: const Icon(Icons.ios_share_rounded, size: 18),
-                label: Text(t('Export backup', 'Hamisha nakala')),
+                label: Text(
+                  t('Export backup', 'Hamisha nakala'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ],
@@ -519,7 +555,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
           children: [
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: OutlinedButton.icon(
+              child: FilledButton.icon(
                 onPressed: _busy
                     ? null
                     : () => _run(
@@ -527,13 +563,21 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                           t('Local data refreshed',
                               'Data ya ndani imesasishwa'),
                         ),
-                style: OutlinedButton.styleFrom(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.kpiVioletBg,
+                  foregroundColor: AppColors.kpiViolet,
+                  side: BorderSide.none,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero,
                   ),
                 ),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(t('Reload local data', 'Pakia data upya')),
+                label: Text(
+                  t('Reload local data', 'Pakia data upya'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ],

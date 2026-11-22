@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../../../service/pos_local_store.dart';
 import '../../../service/pos_order_models.dart';
 import '../../receipt/receipt_preview_page.dart';
@@ -222,8 +222,8 @@ class OrderCardState extends State<OrderCard> {
                                   style: AppTypography.bodySmall),
                             ),
                             Expanded(
-                              flex: 1,
-                              child: Text('x${line.qty}',
+                              flex: 2,
+                              child: Text(line.qty,
                                   textAlign: TextAlign.center,
                                   style: AppTypography.bodySmall),
                             ),
@@ -249,7 +249,7 @@ class OrderCardState extends State<OrderCard> {
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceSecondary,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(AppRadius.sharp),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
@@ -277,13 +277,14 @@ class OrderCardState extends State<OrderCard> {
                     children: [
                       if (order.completedOrder != null) ...[
                         Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primaryDeep,
-                              side: const BorderSide(color: AppColors.primary),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.standard),
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.kpiSkyBg,
+                              foregroundColor: AppColors.kpiSky,
+                              side: BorderSide.none,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(
+                                    Radius.circular(AppRadius.pill)),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
@@ -319,13 +320,14 @@ class OrderCardState extends State<OrderCard> {
                               .watch<PosLocalStore>()
                               .hasPermission('Process Returns'))
                         Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.danger,
-                              side: const BorderSide(color: AppColors.danger),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.standard),
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.kpiDangerBg,
+                              foregroundColor: AppColors.kpiDanger,
+                              side: BorderSide.none,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(
+                                    Radius.circular(AppRadius.pill)),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
@@ -369,7 +371,10 @@ class OrderCardState extends State<OrderCard> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              backgroundColor: AppColors.surface,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(AppRadius.modal)),
+              ),
               title: Text(context.tr('Process Return {p0}', args: {'p0': order.id})),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -391,13 +396,33 @@ class OrderCardState extends State<OrderCard> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogCtx),
-                  child:  Text(context.tr('Cancel')),
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.surfaceSecondary,
+                    foregroundColor: AppColors.textBody,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.all(Radius.circular(AppRadius.pill)),
+                    ),
+                  ),
+                  child: Text(
+                    context.tr('Cancel'),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.danger,
                     foregroundColor: Colors.white,
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    elevation: 0,
+                    side: BorderSide.none,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 10),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.all(Radius.circular(AppRadius.pill)),
+                    ),
                   ),
                   onPressed: () async {
                     Navigator.pop(dialogCtx);
@@ -408,7 +433,9 @@ class OrderCardState extends State<OrderCard> {
                       showMarketNotice(
                         context,
                         title: context.tr('Order Returned'),
-                        message: context.tr('Sale {p0} was processed as return.', args: {'p0': order.id}),
+                        message: context.tr(
+                            'Sale {p0} was processed as return.',
+                            args: {'p0': order.id}),
                       );
                     } catch (e) {
                       if (!context.mounted) return;
@@ -420,7 +447,10 @@ class OrderCardState extends State<OrderCard> {
                       );
                     }
                   },
-                  child:  Text(context.tr('Confirm Return')),
+                  child: Text(
+                    context.tr('Confirm Return'),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             );
@@ -521,7 +551,7 @@ class OrderHistoryLine {
   const OrderHistoryLine(this.item, this.qty, this.unitPrice, this.total);
 
   final String item;
-  final int qty;
+  final String qty;
   final String unitPrice;
   final String total;
 }

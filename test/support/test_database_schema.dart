@@ -11,7 +11,7 @@ const List<String> testDatabaseSchema = <String>[
     category TEXT NOT NULL,
     purchase_price REAL NOT NULL,
     selling_price REAL NOT NULL,
-    stock_count INTEGER NOT NULL,
+    stock_count REAL NOT NULL,
     stock_state TEXT NOT NULL,
     art_type TEXT NOT NULL,
     image_path TEXT,
@@ -29,7 +29,11 @@ const List<String> testDatabaseSchema = <String>[
     size TEXT NOT NULL,
     price TEXT NOT NULL,
     art_type TEXT NOT NULL,
-    image_path TEXT
+    image_path TEXT,
+    quantity REAL NOT NULL DEFAULT 1,
+    unit TEXT NOT NULL DEFAULT 'Pcs',
+    allow_fractional INTEGER NOT NULL DEFAULT 0,
+    custom_price REAL
   )
   ''',
   '''
@@ -59,12 +63,13 @@ const List<String> testDatabaseSchema = <String>[
     item_category TEXT,
     item_name TEXT NOT NULL,
     item_size TEXT NOT NULL,
-    quantity INTEGER NOT NULL,
+    quantity REAL NOT NULL,
     unit_price TEXT NOT NULL,
     unit_price_value REAL NOT NULL,
     unit_cost REAL,
     art_type TEXT NOT NULL,
-    image_path TEXT
+    image_path TEXT,
+    item_unit TEXT NOT NULL DEFAULT 'Pcs'
   )
   ''',
   '''
@@ -169,7 +174,7 @@ const List<String> testDatabaseSchema = <String>[
     store_id TEXT NOT NULL,
     receiving_id INTEGER NOT NULL,
     product_name TEXT NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 0,
+    quantity REAL NOT NULL DEFAULT 0,
     unit_cost REAL NOT NULL DEFAULT 0,
     selling_price REAL NOT NULL DEFAULT 0
   )

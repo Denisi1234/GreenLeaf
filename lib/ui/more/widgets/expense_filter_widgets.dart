@@ -71,19 +71,19 @@ class ExpenseRangeCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Row(
         children: [
           Container(
             width: 34,
             height: 34,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
+            decoration: BoxDecoration(
+              color: AppColors.kpiSkyBg,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(Icons.date_range_rounded,
-                color: AppColors.primary, size: 18),
+                color: AppColors.kpiSky, size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -148,11 +148,11 @@ class ExpensePaymentFilterRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = payments.contains(value) ? value : 'All';
     return Container(
-      height: 42,
+      height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -217,8 +217,8 @@ class ExpensePaymentSummaryCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

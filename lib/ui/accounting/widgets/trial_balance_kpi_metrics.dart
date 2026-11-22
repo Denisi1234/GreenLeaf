@@ -42,7 +42,7 @@ class TrialBalanceKpiMetrics extends StatelessWidget {
                 label: t('Total debit', 'Jumla ya deni'),
                 value: _money(totalDebit),
                 icon: Icons.account_balance_wallet_outlined,
-                sharp: true,
+                sharp: false,
                 borderless: true,
                 backgroundColor: AppColors.kpiSkyBg,
                 color: AppColors.kpiSky,
@@ -54,7 +54,7 @@ class TrialBalanceKpiMetrics extends StatelessWidget {
                 label: t('Total credit', 'Jumla ya mkopo'),
                 value: _money(totalCredit),
                 icon: Icons.credit_score_outlined,
-                sharp: true,
+                sharp: false,
                 borderless: true,
                 backgroundColor: AppColors.kpiAmberBg,
                 color: AppColors.kpiAmber,
@@ -70,7 +70,7 @@ class TrialBalanceKpiMetrics extends StatelessWidget {
                 icon: balanced
                     ? Icons.check_circle_outline_rounded
                     : Icons.warning_amber_rounded,
-                sharp: true,
+                sharp: false,
                 borderless: true,
                 backgroundColor: balanced
                     ? AppColors.kpiSuccessBg

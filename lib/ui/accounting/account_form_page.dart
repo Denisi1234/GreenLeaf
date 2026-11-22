@@ -136,39 +136,20 @@ class _AccountFormPageState extends State<AccountFormPage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      MarketButton(
-                        label: _t('Save account', 'Hifadhi akaunti'),
-                        icon: Icons.check_rounded,
-                        onTap: () {
-                          if (!_formKey.currentState!.validate()) return;
-                          Navigator.of(context).pop(
-                            Account(
-                              id: widget.account?.id,
-                              code: _code.text.trim(),
-                              name: _name.text.trim(),
-                              type: _type,
-                              openingBalance:
-                                  double.tryParse(_balance.text.trim()) ?? 0,
-                            ),
-                          );
-                        },
-                      ),
                       if (widget.account != null) ...[
                         const SizedBox(height: AppSpacing.md),
                         MarketButton(
                           label: _t('Delete account', 'Futa akaunti'),
                           icon: Icons.delete_outline_rounded,
-                          isPrimary: false,
-                          color: AppColors.dangerLight,
-                          foregroundColor: AppColors.danger,
-                          borderColor: AppColors.dangerLight,
+                          color: AppColors.kpiDangerBg,
+                          foregroundColor: AppColors.kpiDanger,
+                          borderColor: null,
                           onTap: () async {
                             final store = context.read<PosLocalStore>();
                             final navigator = Navigator.of(context);
                             final deletedName = widget.account!.name;
                             await store.deleteAccount(widget.account!.id!);
-                            if (!mounted) return;
+                            if (!context.mounted) return;
                             showMarketNotice(
                               context,
                               title: _t('Account Deleted', 'Akaunti Imefutwa'),
@@ -184,6 +165,56 @@ class _AccountFormPageState extends State<AccountFormPage> {
                       ],
                     ],
                   ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border(
+                      top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: MarketButton(
+                        label: _t('Cancel', 'Ghairi'),
+                        color: AppColors.kpiDangerBg,
+                        foregroundColor: AppColors.kpiDanger,
+                        borderColor: null,
+                        radius: 0,
+                        onTap: () => Navigator.of(context).maybePop(),
+                        height: 48,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 3,
+                      child: MarketButton(
+                        label: _t('Save account', 'Hifadhi akaunti'),
+                        icon: Icons.check_rounded,
+                        variant: MarketButtonVariant.primary,
+                        borderColor: null,
+                        radius: 0,
+                        height: 48,
+                        onTap: () {
+                          if (!_formKey.currentState!.validate()) return;
+                          Navigator.of(context).pop(
+                            Account(
+                              id: widget.account?.id,
+                              code: _code.text.trim(),
+                              name: _name.text.trim(),
+                              type: _type,
+                              openingBalance:
+                                  double.tryParse(_balance.text.trim()) ?? 0,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

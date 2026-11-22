@@ -1,4 +1,4 @@
-import 'package:track_mauzo/ui/suppliers/new_receiving_page.dart';
+import 'package:aza_pos/ui/suppliers/new_receiving_page.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -8,20 +8,20 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/ui_test_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
-import 'package:track_mauzo/service/pos_order_models.dart';
-import 'package:track_mauzo/service/store_preferences.dart';
-import 'package:track_mauzo/ui/models/product_item.dart';
-import 'package:track_mauzo/ui/home/sales_page.dart';
-import 'package:track_mauzo/ui/home/widgets/product_card.dart';
-import 'package:track_mauzo/ui/more/advanced_features_page.dart';
-import 'package:track_mauzo/ui/more/settings_page.dart';
-import 'package:track_mauzo/ui/more/more_page.dart';
-import 'package:track_mauzo/ui/reports/reports_catalog_page.dart';
-import 'package:track_mauzo/ui/payment/payment_page.dart';
-import 'package:track_mauzo/ui/products/inventory_product_item.dart';
-import 'package:track_mauzo/ui/products/product_management_page.dart';
-import 'package:track_mauzo/ui/widgets/app_theme.dart';
+import 'package:aza_pos/service/pos_local_store.dart';
+import 'package:aza_pos/service/pos_order_models.dart';
+import 'package:aza_pos/service/store_preferences.dart';
+import 'package:aza_pos/ui/models/product_item.dart';
+import 'package:aza_pos/ui/home/sales_page.dart';
+import 'package:aza_pos/ui/home/widgets/product_card.dart';
+import 'package:aza_pos/ui/more/advanced_features_page.dart';
+import 'package:aza_pos/ui/more/settings_page.dart';
+import 'package:aza_pos/ui/more/more_page.dart';
+import 'package:aza_pos/ui/reports/reports_catalog_page.dart';
+import 'package:aza_pos/ui/payment/payment_page.dart';
+import 'package:aza_pos/ui/products/inventory_product_item.dart';
+import 'package:aza_pos/ui/products/product_management_page.dart';
+import 'package:aza_pos/ui/widgets/app_theme.dart';
 
 class _ReviewStore extends PosLocalStore {
   int logoutCalls = 0;
@@ -36,8 +36,17 @@ class _ReviewStore extends PosLocalStore {
   @override
   List<ProductItem> get products => inventory
       .map((item) => ProductItem(
-          item.name, '500 ml', item.sellingPrice.toString(), item.artType,
-          code: item.code, category: item.category))
+            item.name,
+            '500 ml',
+            item.sellingPrice.toString(),
+            item.artType,
+            code: item.code,
+            category: item.category,
+            unit: item.unit,
+            allowFractional: item.allowFractional,
+            packName: item.packName,
+            packSize: item.packSize,
+          ))
       .toList();
   @override
   List<ProductItem> get cartItems => List.unmodifiable(_cart);
@@ -45,7 +54,7 @@ class _ReviewStore extends PosLocalStore {
   int get cartCount => _cart.length;
   @override
   double get cartTotal =>
-      _cart.fold(0, (total, item) => total + item.priceValue);
+      _cart.fold(0, (total, item) => total + item.lineTotal);
   String? savedMethod;
   double? savedDiscount;
   final pendingSale = Completer<CompletedOrder>();
@@ -57,17 +66,40 @@ class _ReviewStore extends PosLocalStore {
   StorePreferences get storePreferences =>
       const StorePreferences(enableAdvancedAccounting: true);
   @override
-  int availableStockForProduct(ProductItem product) =>
+  double availableStockForProduct(ProductItem product) =>
       inventory.firstWhere((item) => item.code == product.code).stockCount;
   @override
-  bool addToCart(ProductItem product) {
-    _cart.add(product);
+  bool addToCart(ProductItem product) => addToCartQuantity(
+        product,
+        product.quantity,
+        customPrice: product.customPrice,
+      );
+
+  @override
+  bool addToCartQuantity(
+    ProductItem product,
+    double quantity, {
+    double? customPrice,
+  }) {
+    if (quantity <= 0) return false;
+    _cart.add(product.copyWith(
+      quantity: quantity,
+      customPrice: customPrice ?? product.customPrice,
+    ));
     notifyListeners();
     return true;
   }
 
   @override
-  bool removeSingleFromCart(ProductItem product) {
+  bool removeSingleFromCart(ProductItem product) =>
+      removeQuantityFromCart(product, 1);
+
+  @override
+  bool removeQuantityFromCart(
+    ProductItem product,
+    double quantity, {
+    double? customPrice,
+  }) {
     if (_cart.isNotEmpty) _cart.removeLast();
     notifyListeners();
     return true;
@@ -271,7 +303,8 @@ void main() {
     expect(find.text('Enter cash received'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('complete-sale')));
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('complete-sale')));
+    await tester.tap(find.byKey(const ValueKey('complete-sale')),
+        warnIfMissed: false);
     await tester.pump();
     expect(store.saves, 1);
     expect(store.savedMethod, 'Card');
@@ -296,9 +329,13 @@ void main() {
   testWidgets('cash amount validates and remains usable above keyboard',
       (tester) async {
     await _mount(tester, checkout, const Size(390, 900));
-    await tester.ensureVisible(find.byKey(const ValueKey('complete-sale')));
+    await tester.scrollUntilVisible(
+      find.text('Enter cash received'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.byKey(const ValueKey('complete-sale')));
+    await tester.tap(find.text('Enter cash received'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 350));
     expect(find.byKey(const ValueKey('cash-amount')), findsOneWidget);

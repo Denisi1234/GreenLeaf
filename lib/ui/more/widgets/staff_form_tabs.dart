@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../../../service/models/staff_models.dart';
 
 import '../../widgets/app_design.dart';

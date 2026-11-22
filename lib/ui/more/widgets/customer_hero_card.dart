@@ -26,8 +26,8 @@ class CustomerHeroCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -37,14 +37,14 @@ class CustomerHeroCard extends StatelessWidget {
                 width: 54,
                 height: 54,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.zero,
+                decoration: BoxDecoration(
+                  color: AppColors.kpiSkyBg,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   customer.initials,
                   style: AppTypography.cardHeader.copyWith(
-                    color: AppColors.textMuted,
+                    color: AppColors.kpiSky,
                     fontSize: 17,
                   ),
                 ),

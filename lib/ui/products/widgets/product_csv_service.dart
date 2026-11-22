@@ -1,10 +1,11 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../service/pos_local_store.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../widgets/app_design.dart';
 import '../inventory_product_item.dart';
 import '../../models/product_item.dart';
@@ -14,10 +15,11 @@ class ProductCsvService {
 
   static Future<void> exportInventoryCsv(List<InventoryProductItem> items) async {
     final buffer = StringBuffer();
-    buffer.writeln('Code,Name,Category,CostPrice,SalePrice,Quantity,Unit');
+    buffer.writeln(
+        'Code,Name,Category,CostPrice,SalePrice,Quantity,Unit,AllowFractional,PackName,PackSize');
     for (final item in items) {
       buffer.writeln(
-        '"${item.code}","${item.name.replaceAll('"', '""')}","${item.category}",${item.purchasePrice},${item.sellingPrice},${item.stockCount},"${item.unit}"',
+        '"${item.code}","${item.name.replaceAll('"', '""')}","${item.category}",${item.purchasePrice},${item.sellingPrice},${formatQuantity(item.stockCount)},"${item.unit}",${item.allowFractional},"${item.packName ?? ''}",${item.packSize != null ? formatQuantity(item.packSize!) : ''}',
       );
     }
     final fileName =
@@ -40,7 +42,10 @@ class ProductCsvService {
     final imported = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
         title:  Text(context.tr('Import CSV Items')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -57,7 +62,9 @@ class ProductCsvService {
               decoration:  InputDecoration(
                 hintText:
                     context.tr('Milk 1L, Dairy, 2000, 2500, 30\nBread, Bakery, 1500, 1800, 20'),
-                border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                ),
               ),
             ),
           ],
@@ -70,10 +77,12 @@ class ProductCsvService {
           FilledButton(
             onPressed: () => Navigator.pop(ctx, textController.text.trim()),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.successDeep,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
             ),
-            child:  Text(context.tr('Import')),
+            child: Text(context.tr('Import')),
           ),
         ],
       ),
@@ -93,7 +102,17 @@ class ProductCsvService {
         final category = parts[1];
         final cost = double.tryParse(parts[2]) ?? 0.0;
         final price = double.tryParse(parts[3]) ?? (cost * 1.25);
-        final stock = parts.length >= 5 ? (int.tryParse(parts[4]) ?? 0) : 0;
+        final stock = roundQuantity(
+            parts.length >= 5 ? (double.tryParse(parts[4]) ?? 0.0) : 0.0);
+        final unit =
+            parts.length >= 6 && parts[5].isNotEmpty ? parts[5] : 'Pcs';
+        final allowFractional = parts.length >= 7
+            ? parts[6].toLowerCase() == 'true' || parts[6] == '1'
+            : isMeasuredUnit(unit);
+        final packName =
+            parts.length >= 8 && parts[7].isNotEmpty ? parts[7] : null;
+        final packSize =
+            parts.length >= 9 ? double.tryParse(parts[8]) : null;
         final nextCode =
             'P${(store.inventory.length + addedCount + 1).toString().padLeft(3, '0')}';
 
@@ -112,7 +131,10 @@ class ProductCsvService {
                       ? InventoryStockState.lowStock
                       : InventoryStockState.inStock,
               artType: ProductArtType.aquafina,
-              unit: 'Pcs',
+              unit: unit,
+              allowFractional: allowFractional,
+              packName: packName,
+              packSize: packSize != null && packSize > 0 ? packSize : null,
             ),
           );
           addedCount++;

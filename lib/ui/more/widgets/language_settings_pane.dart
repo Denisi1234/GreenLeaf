@@ -205,7 +205,7 @@ class ChoiceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.successLight : AppColors.surfaceSecondary,
+      color: selected ? AppColors.kpiSkyBg : AppColors.pageBackground,
       borderRadius: BorderRadius.zero,
       child: InkWell(
         borderRadius: BorderRadius.zero,
@@ -214,12 +214,8 @@ class ChoiceTile extends StatelessWidget {
           duration: AppDurations.fast,
           constraints: const BoxConstraints(minHeight: 56),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             borderRadius: BorderRadius.zero,
-            border: Border.all(
-              color: selected ? AppColors.successBright : AppColors.border,
-              width: selected ? 1.5 : 1,
-            ),
           ),
           child: Row(
             children: [
@@ -232,7 +228,7 @@ class ChoiceTile extends StatelessWidget {
                       style: AppTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.w700,
                         color: selected
-                            ? AppColors.successDeep
+                            ? AppColors.kpiSky
                             : AppColors.textMain,
                       ),
                     ),
@@ -252,7 +248,7 @@ class ChoiceTile extends StatelessWidget {
                       ? Icons.check_circle_rounded
                       : Icons.radio_button_unchecked_rounded,
                   color:
-                      selected ? AppColors.successBright : AppColors.textLight,
+                      selected ? AppColors.primary : AppColors.textLight,
                 ),
             ],
           ),

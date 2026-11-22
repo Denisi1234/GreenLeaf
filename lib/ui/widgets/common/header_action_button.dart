@@ -47,7 +47,7 @@ class HeaderActionButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
+                    border: Border.all(color: background, width: 1.5),
                   ),
                 ),
               ),

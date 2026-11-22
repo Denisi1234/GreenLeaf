@@ -9,14 +9,14 @@ class AppColors {
   static const primary = Color(0xFF22B8C4);
   static const primaryDeep = Color(0xFF1396A1);
   static const primaryBright = Color(0xFF68CADD);
-  static const primaryLight = Color(0xFFE0F4F8);
-  static const primarySoft = Color(0xFFF0F9FB);
+  static const primaryLight = Color(0xFFCBE6F0);
+  static const primarySoft = Color(0xFFE0EEF5);
 
   // Brand identity
   static const brand = Color(0xFF22B8C4);
   static const drawerHeader = Color(0xFF182735);
 
-  // Neutral text scale (Crisp dark text on light gray surfaces)
+  // Neutral text scale (Crisp dark text on low-glare cyan-slate surfaces)
   static const ink = Color(0xFF111827);
   static const textMain = Color(0xFF1F2937);
   static const textStrong = Color(0xFF000000);
@@ -26,22 +26,22 @@ class AppColors {
   static const textLight = Color(0xFF9CA3AF);
   static const textPlaceholder = Color(0xFF9CA3AF);
 
-  // Background & surface (Soft cyan-tinted light palette — no stark pure white)
-  static const pageBackground = Color(0xFFEAF2F9); // Soft light-blue grey (#EAF2F9)
-  static const surface = primarySoft;              // Soft low-glare cyan off-white (#F0F9FB)
-  static const surfaceSecondary = Color(0xFFF1F5F9); // Elevated subtle slate
-  static const surfaceHover = Color(0xFFE2E8F0);     // Hover state
+  // Background & surface (Low-glare cool cyan-slate palette — zero stark white)
+  static const pageBackground = Color(0xFFD6E6F0); // Soft cool blue-slate canvas (#D6E6F0)
+  static const surface = primarySoft;              // Low-glare cyan-tinted card surface (#E0EEF5)
+  static const surfaceSecondary = Color(0xFFD3E4EE); // Subtle nested slate surface
+  static const surfaceHover = Color(0xFFC4DAE8);     // Hover / pressed tint
   static const cardWhite = surface;
   static const surfaceSubtle = surfaceSecondary;
   static const kpiSurface = primarySoft;
-  static const headerSurface = primaryLight; // Soft cyan-tinted top app header (#E0F4F8)
-  static const sectionSurface = primarySoft; // Soft low-glare grouped section surface (#F0F9FB)
+  static const headerSurface = primaryLight; // Soft cyan top header, bottom nav & rail (#CBE6F0)
+  static const sectionSurface = primarySoft; // Soft low-glare grouped section surface (#E0EEF5)
 
-  // Borders & dividers (Clean light-blue borders matching dashboard)
-  static const border = Color(0xFFD6E4F0);
-  static const borderLight = Color(0xFFE2E8F0);
-  static const borderInput = Color(0xFFCBD5E1);
-  static const divider = Color(0xFFE2E8F0);
+  // Borders & dividers (Clean cool-blue hairlines matching low-glare surfaces)
+  static const border = Color(0xFFB0CBDB);
+  static const borderLight = Color(0xFFBFD5E3);
+  static const borderInput = Color(0xFFA6C3D5);
+  static const divider = Color(0xFFBBD1E0);
 
   // Feedback colors (Clear and high contrast)
   static const success = Color(0xFF10B981);
@@ -72,7 +72,7 @@ class AppColors {
   static const kpiViolet = Color(0xFF6D28D9);
   static const kpiSuccessBg = Color(0xFFD1FAE5);
   static const kpiSuccess = Color(0xFF047857);
-  static const kpiNeutralBg = Color(0xFFF1F5F9);
+  static const kpiNeutralBg = Color(0xFFD3E4EE);
   static const kpiNeutral = textMuted;
 
   // KPI tones (aligned with the KPI accent palette)
@@ -280,11 +280,11 @@ class AppShadows {
     ),
   ];
 
-  // .modern-hamburger-btn: 0 2px 6px rgba(200,30,30,.28)
+  // Primary brand glow shadow (Cyan #22B8C4)
   static List<BoxShadow> primary = [
     const BoxShadow(
-      color: Color(0x4715803D),
-      blurRadius: 6,
+      color: Color(0x4022B8C4),
+      blurRadius: 8,
       offset: Offset(0, 2),
     ),
   ];
@@ -332,11 +332,11 @@ class AppDecorations {
         borderRadius: BorderRadius.circular(AppRadius.iconBox),
       );
 
-  /// `.nav-tabs > li.active > a` – teal active pill.
+  /// `.nav-tabs > li.active > a` – cyan active pill.
   static BoxDecoration activeTab() => BoxDecoration(
-        color: AppColors.successLight,
+        color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(AppRadius.standard),
-        border: Border.all(color: AppColors.successBright, width: 2),
+        border: Border.all(color: AppColors.primary, width: 1.5),
       );
 
   /// `.nav-tabs > li > a` – idle tab pill.

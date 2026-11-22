@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
@@ -453,19 +453,49 @@ class StaffSaveBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         top: false,
-        child: MarketButton(
-          label: isSaving
-              ? context.tr('Saving...')
-              : (isEditing ? context.tr('Save Changes') : context.tr('Create Staff')),
-          icon: isSaving ? Icons.hourglass_top_rounded : Icons.save_outlined,
-          onTap: onSave ?? () {},
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: MarketButton(
+                label: context.tr('Cancel'),
+                color: AppColors.kpiDangerBg,
+                foregroundColor: AppColors.kpiDanger,
+                borderColor: null,
+                radius: 0,
+                height: 48,
+                onTap: isSaving
+                    ? null
+                    : () => Navigator.of(context).maybePop(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 3,
+              child: MarketButton(
+                label: isSaving
+                    ? context.tr('Saving...')
+                    : (isEditing
+                        ? context.tr('Save Changes')
+                        : context.tr('Create Staff')),
+                icon: isSaving
+                    ? Icons.hourglass_top_rounded
+                    : Icons.save_outlined,
+                variant: MarketButtonVariant.primary,
+                borderColor: null,
+                radius: 0,
+                height: 48,
+                onTap: onSave ?? () {},
+              ),
+            ),
+          ],
         ),
       ),
     );

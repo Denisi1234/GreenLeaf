@@ -13,6 +13,15 @@ String formatCurrency(double value) {
   return buffer.toString();
 }
 
+/// Formats a numeric value using the store's configured currency prefix
+/// (defaults to `TSh` when omitted or blank).
+String formatMoney(double value, [String? currency]) {
+  final code = (currency == null || currency.trim().isEmpty)
+      ? 'TSh'
+      : currency.trim();
+  return '$code ${formatCurrency(value)}';
+}
+
 /// Formats a numeric value as full Tanzanian Shilling currency string with prefix.
 String formatCurrencyWithPrefix(double value) {
   return 'TSH ${formatCurrency(value)}';

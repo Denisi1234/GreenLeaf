@@ -52,7 +52,7 @@ class DebitStatementService {
   }) {
     final storeName = store.activeStoreName.isNotEmpty
         ? store.activeStoreName
-        : 'TrackMauzo Store';
+        : 'Aza POS Store';
     final amount = _formatMoney(customer.debitBalance);
 
     if (isSwahili) {

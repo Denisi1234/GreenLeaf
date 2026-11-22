@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../service/supplier_model.dart';
 import '../../../utils/currency_formatter.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
 
@@ -37,9 +38,9 @@ class ReceivingRow extends StatelessWidget {
         ? 'Inv #${receiving.invoiceNo.trim()}'
         : null;
     final totalUnits =
-        receiving.lines.fold<double>(0, (sum, line) => sum + line.quantity);
+        roundQuantity(receiving.lines.fold<double>(0, (sum, line) => sum + line.quantity));
     final countLabel =
-        '${receiving.lines.length} ${isSwahili ? 'vitu' : 'items'} • ${totalUnits.toStringAsFixed(totalUnits.truncateToDouble() == totalUnits ? 0 : 1)} ${isSwahili ? 'vipande' : 'units'}';
+        '${receiving.lines.length} ${isSwahili ? 'vitu' : 'items'} • ${formatQuantity(totalUnits)} ${isSwahili ? 'vipimo' : 'units'}';
     final dateLabel = formatReceivingDate(receiving.date);
 
     return Padding(
@@ -150,76 +151,31 @@ class ReceivingEmptyState extends StatelessWidget {
     String t(String en, String sw) => isSwahili ? sw : en;
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 76,
-                height: 76,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.zero,
-                ),
-                child: Icon(
-                  isFiltered
-                      ? Icons.search_off_rounded
-                      : Icons.move_to_inbox_rounded,
-                  color: AppColors.primary,
-                  size: 38,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                isFiltered
-                    ? t('No deliveries match your search', 'Hakuna rekodi inayolingana')
-                    : t('No goods received yet', 'Hakuna bidhaa zilizopokelewa bado'),
-                textAlign: TextAlign.center,
-                style: AppTypography.cardHeader.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isFiltered
-                    ? t(
-                        'Check the invoice number, supplier name, or product name searched.',
-                        'Kagua namba ya ankara, jina la msambazaji, au jina la bidhaa.',
-                      )
-                    : t(
-                        'Record supplier deliveries to automatically update warehouse inventory levels and track cost prices.',
-                        'Rekodi usambazaji ili kuongeza idadi ya bidhaa ghalani kiotomatiki na kusasisha bei za ununuzi.',
-                      ),
-                textAlign: TextAlign.center,
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textMuted,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (isFiltered)
-                MarketButton(
-                  label: t('Clear search', 'Ondoa utafutaji'),
-                  icon: Icons.filter_alt_off_rounded,
-                  isFullWidth: false,
-                  isPrimary: false,
-                  onTap: onClearFilter,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
+        child: MarketEmptyState(
+          icon: isFiltered
+              ? Icons.search_off_rounded
+              : Icons.move_to_inbox_rounded,
+          title: isFiltered
+              ? t('No deliveries match your search',
+                  'Hakuna rekodi inayolingana')
+              : t('No goods received yet',
+                  'Hakuna bidhaa zilizopokelewa bado'),
+          message: isFiltered
+              ? t(
+                  'Check the invoice number, supplier name, or product name searched.',
+                  'Kagua namba ya ankara, jina la msambazaji, au jina la bidhaa.',
                 )
-              else
-                MarketButton(
-                  label: t('Record new delivery', 'Pokea bidhaa mpya'),
-                  icon: Icons.add_rounded,
-                  isFullWidth: false,
-                  onTap: onNew,
+              : t(
+                  'Record supplier deliveries to automatically update warehouse inventory levels and track cost prices.',
+                  'Rekodi usambazaji ili kuongeza idadi ya bidhaa ghalani kiotomatiki na kusasisha bei za ununuzi.',
                 ),
-            ],
-          ),
+          actionLabel: isFiltered
+              ? t('Clear search', 'Ondoa utafutaji')
+              : t('Record new delivery', 'Pokea bidhaa mpya'),
+          actionIcon:
+              isFiltered ? Icons.filter_alt_off_rounded : Icons.add_rounded,
+          onAction: isFiltered ? onClearFilter : onNew,
         ),
       ),
     );

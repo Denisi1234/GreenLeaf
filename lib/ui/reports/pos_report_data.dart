@@ -9,6 +9,7 @@ import '../../service/supplier_model.dart';
 import '../../service/accounting_engine.dart';
 import '../../service/accounting_model.dart';
 import '../../service/tax_settings.dart';
+import '../../utils/quantity_formatter.dart';
 import '../models/customer_data.dart';
 import '../products/inventory_product_item.dart';
 import 'pos_report_catalog.dart';

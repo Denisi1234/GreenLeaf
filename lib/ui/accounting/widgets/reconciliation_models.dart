@@ -26,9 +26,9 @@ class ReconciliationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
       padding: padding,
-      showShadow: false,
+      showShadow: true,
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       child: child,
     );
   }

@@ -7,7 +7,7 @@ extension PosReportMultiStoreTables on PosReportData {
       final sales = _snapshotSales(snap, start, end);
       final total = _sum(sales, (s) => s.order.total);
       final cost = _cost(sales.expand((s) => s.order.lines));
-      rows.add([snap.label, sales.length, sales.fold<int>(0, (sum, s) => sum + s.quantity), total, cost, cost == null ? null : total - cost]);
+      rows.add([snap.label, sales.length, roundQuantity(sales.fold<double>(0, (sum, s) => sum + s.quantity)), total, cost, cost == null ? null : total - cost]);
     }
     rows.sort((a, b) => (b[3] as num).compareTo(a[3] as num));
     return ReportTable(const [ReportColumn('Store'), ReportColumn('Sales'), ReportColumn('Units'), ReportColumn('Net sales', money: true), ReportColumn('Cost', money: true), ReportColumn('Gross profit', money: true)], rows, chartColumn: 3, note: '$_multiStoreNote $_historicCostNote');
@@ -43,7 +43,8 @@ extension PosReportMultiStoreTables on PosReportData {
     final rows = <List<Object?>>[];
     for (final snap in snaps) {
       final items = snap.inventory.cast<InventoryProductItem>();
-      final units = items.fold<int>(0, (sum, i) => sum + i.stockCount);
+      final units = roundQuantity(
+          items.fold<double>(0, (sum, i) => sum + i.stockCount));
       final costValue = _sum(items, (i) => i.purchasePrice * i.stockCount);
       final retailValue = _sum(items, (i) => i.sellingPrice * i.stockCount);
       rows.add([snap.label, items.length, units, costValue, retailValue]);
@@ -124,7 +125,8 @@ extension PosReportMultiStoreTables on PosReportData {
     final rows = <List<Object?>>[];
     for (final snap in snaps) {
       final recs = _snapshotReceivings(snap, start, end);
-      final units = recs.fold<int>(0, (sum, r) => sum + r.itemCount);
+      final units =
+          roundQuantity(recs.fold<double>(0, (sum, r) => sum + r.itemCount));
       rows.add([snap.label, recs.length, units, _sum(recs, (r) => r.total)]);
     }
     rows.sort((a, b) => (b[3] as num).compareTo(a[3] as num));

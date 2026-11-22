@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../utils/currency_formatter.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../widgets/app_design.dart';
 import '../add_receiving_line_page.dart';
 
@@ -49,14 +50,19 @@ class DraftLineRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final quantity = TextFormField(
-      initialValue: line.quantity == 0 ? '' : line.quantity.toString(),
+      initialValue:
+          line.quantity <= 0 ? '' : formatQuantity(line.quantity),
       textAlign: TextAlign.right,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: _cellDecoration('')
-          .copyWith(labelText: isSwahili ? 'Idadi' : 'Quantity'),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,3}')),
+      ],
+      decoration: _cellDecoration(
+        line.unit.toLowerCase() == 'pcs' ? '' : line.unit,
+      ).copyWith(labelText: isSwahili ? 'Idadi' : 'Quantity'),
       onChanged: (value) {
-        line.quantity = int.tryParse(value.trim()) ?? 0;
+        line.quantity =
+            roundQuantity(double.tryParse(value.trim().replaceAll(',', '')) ?? 0);
         onChanged();
       },
     );

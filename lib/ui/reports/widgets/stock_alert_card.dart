@@ -1,5 +1,6 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/common/market_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -77,54 +78,12 @@ class StockAlertCard extends StatelessWidget {
   }
 
   Widget _emptyState(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceSecondary),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.ink,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('All Stocked Up'),
-                  style: GoogleFonts.manrope(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.tr('No items are in the low-stock watchlist right now.'),
-                  style: GoogleFonts.manrope(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return MarketEmptyState(
+      icon: Icons.check_circle_outline_rounded,
+      iconColor: AppColors.success,
+      iconBackgroundColor: AppColors.kpiSuccessBg,
+      title: context.tr('All Stocked Up'),
+      message: context.tr('No items are in the low-stock watchlist right now.'),
     );
   }
 }

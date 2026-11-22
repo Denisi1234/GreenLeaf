@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../../widgets/app_design.dart';
 import '../../widgets/workspace_widgets.dart';
 import 'product_cards.dart';
@@ -34,7 +34,7 @@ class InventoryKpiMetrics extends StatelessWidget {
                 label: context.tr('Total items'),
                 value: '$totalItems',
                 icon: Icons.inventory_2_outlined,
-                sharp: true,
+                sharp: false,
                 borderless: true,
                 backgroundColor: AppColors.kpiRoseBg,
                 color: AppColors.kpiRose,
@@ -46,7 +46,7 @@ class InventoryKpiMetrics extends StatelessWidget {
                 label: context.tr('Stock value'),
                 value: formatProductPrice(stockValue),
                 icon: Icons.account_balance_wallet_outlined,
-                sharp: true,
+                sharp: false,
                 borderless: true,
                 backgroundColor: AppColors.kpiSkyBg,
                 color: AppColors.kpiSky,
@@ -58,7 +58,7 @@ class InventoryKpiMetrics extends StatelessWidget {
                 label: context.tr('Low stock'),
                 value: '$lowCount',
                 icon: Icons.trending_down_rounded,
-                sharp: true,
+                sharp: false,
                 borderless: true,
                 backgroundColor: AppColors.kpiAmberBg,
                 color: AppColors.kpiAmber,
@@ -70,7 +70,7 @@ class InventoryKpiMetrics extends StatelessWidget {
                 label: context.tr('Out of stock'),
                 value: '$outCount',
                 icon: Icons.inventory_outlined,
-                sharp: true,
+                sharp: false,
                 borderless: true,
                 backgroundColor: AppColors.kpiDangerBg,
                 color: AppColors.kpiDanger,

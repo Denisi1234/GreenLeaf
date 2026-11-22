@@ -55,20 +55,22 @@ class OrderLine {
     required this.artType,
     required this.imagePath,
     this.unitCost,
+    this.unit = 'Pcs',
   });
 
   final String? itemCode;
   final String? itemCategory;
   final String itemName;
   final String itemSize;
-  final int quantity;
+  final double quantity;
   final String unitPrice;
   final double unitPriceValue;
   final ProductArtType artType;
   final String? imagePath;
   final double? unitCost;
+  final String unit;
 
-  double get lineTotal => unitPriceValue * quantity;
+  double get lineTotal => ((unitPriceValue * quantity) * 100).round() / 100;
 
   ProductItem get product => ProductItem(
         itemName,
@@ -78,5 +80,7 @@ class OrderLine {
         code: itemCode,
         category: itemCategory,
         imagePath: imagePath,
+        unit: unit,
+        quantity: quantity,
       );
 }

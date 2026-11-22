@@ -7,9 +7,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../../../service/pos_local_store.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../business_category_config.dart';
 import '../../models/product_item.dart';
 import '../../widgets/market_shared_widgets.dart';
@@ -35,8 +36,11 @@ class AddProductController {
   late final TextEditingController stockController;
   final imagePicker = ImagePicker();
 
+  bool _initialized = false;
   String? selectedCategory;
   String? selectedImagePath;
+  String selectedUnit = 'Pcs';
+  bool allowFractional = false;
   bool trackExpiry = false;
   DateTime? expiryDate;
   late List<String> categoryOptions;
@@ -44,6 +48,8 @@ class AddProductController {
   bool get isEdit => existingProduct != null;
 
   void init() {
+    if (_initialized) return;
+    _initialized = true;
     final savedBarcode =
         existingProduct?.categoryData['barcode']?.toString().trim() ?? '';
     codeController = TextEditingController(
@@ -53,14 +59,25 @@ class AddProductController {
     );
     nameController = TextEditingController(text: existingProduct?.name ?? '');
     purchasePriceController = TextEditingController(
-      text: existingProduct != null ? existingProduct!.purchasePrice.toStringAsFixed(0) : '',
+      text: existingProduct != null
+          ? existingProduct!.purchasePrice.toStringAsFixed(0)
+          : '',
     );
     sellingPriceController = TextEditingController(
-      text: existingProduct != null ? existingProduct!.sellingPrice.toStringAsFixed(0) : '',
+      text: existingProduct != null
+          ? existingProduct!.sellingPrice.toStringAsFixed(0)
+          : '',
     );
     stockController = TextEditingController(
-      text: existingProduct != null ? existingProduct!.stockCount.toString() : '1',
+      text: existingProduct != null
+          ? formatQuantity(existingProduct!.stockCount)
+          : '1',
     );
+    selectedUnit = (existingProduct?.unit.trim().isNotEmpty ?? false)
+        ? existingProduct!.unit.trim()
+        : 'Pcs';
+    allowFractional = existingProduct?.allowFractional ?? false;
+
     selectedCategory = existingProduct?.category;
     selectedImagePath = existingProduct?.imagePath;
     expiryDate = _parseExpiryDate(existingProduct?.categoryData['expiry_date']);
@@ -115,7 +132,9 @@ class AddProductController {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
         title: Text(
           context.tr('Create New Category'),
           style: GoogleFonts.manrope(
@@ -136,7 +155,7 @@ class AddProductController {
             Container(
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(AppRadius.standard),
                 border: Border.all(color: AppColors.border, width: 1),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -164,7 +183,9 @@ class AddProductController {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.textMuted,
               side: const BorderSide(color: AppColors.borderInput),
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
             ),
             child: Text(
               context.tr('Cancel'),
@@ -179,8 +200,10 @@ class AddProductController {
               }
             },
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.kpiSky,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
             ),
             child: Text(
               context.tr('Add Category'),
@@ -212,9 +235,15 @@ class AddProductController {
       return null;
     }
 
-    final purchasePrice = double.tryParse(purchasePriceController.text.trim()) ?? 0.0;
-    final sellingPrice = double.tryParse(sellingPriceController.text.trim()) ?? 0.0;
-    final stock = int.tryParse(stockController.text.trim()) ?? 0;
+    final purchasePrice =
+        double.tryParse(purchasePriceController.text.trim().replaceAll(',', '')) ??
+            0.0;
+    final sellingPrice =
+        double.tryParse(sellingPriceController.text.trim().replaceAll(',', '')) ??
+            0.0;
+    final stock = roundQuantity(
+      double.tryParse(stockController.text.trim().replaceAll(',', '')) ?? 0.0,
+    );
 
     final metadata = <String, Object?>{
       ...?existingProduct?.categoryData,
@@ -233,6 +262,9 @@ class AddProductController {
       metadata.remove('expiry_date');
     }
 
+    metadata['unit'] = selectedUnit;
+    metadata['allow_fractional'] = allowFractional;
+
     return InventoryProductItem(
       code: existingProduct?.code ??
           (enteredCode.isNotEmpty ? enteredCode : nextCode),
@@ -245,6 +277,10 @@ class AddProductController {
       artType: existingProduct?.artType ??
           _deriveArtType(nameController.text.trim(), selectedCategory ?? 'General'),
       imagePath: selectedImagePath,
+      unit: selectedUnit,
+      allowFractional: allowFractional,
+      packName: existingProduct?.packName,
+      packSize: existingProduct?.packSize,
       categoryData: metadata,
     );
   }
@@ -297,7 +333,7 @@ class AddProductController {
     return storedFile.path;
   }
 
-  InventoryStockState _deriveStockState(int stock) {
+  InventoryStockState _deriveStockState(double stock) {
     if (stock <= 0) return InventoryStockState.outOfStock;
     final threshold = context.read<PosLocalStore>().storePreferences.lowStockThreshold;
     if (stock <= threshold) return InventoryStockState.lowStock;

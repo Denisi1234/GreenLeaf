@@ -271,16 +271,16 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           MarketSurfaceCard(
-                            radius: 0,
+                            radius: AppRadius.standard,
                             borderColor: AppColors.border,
-                            showShadow: false,
+                            showShadow: true,
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,9 +479,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
                           ),
                           const SizedBox(height: 12),
                           MarketSurfaceCard(
-                            radius: 0,
+                            radius: AppRadius.standard,
                             borderColor: AppColors.border,
-                            showShadow: false,
+                            showShadow: true,
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,21 +504,55 @@ class _AddExpensePageState extends State<AddExpensePage> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          MarketButton(
-                            label: _isSaving
-                                ? _dual(strings, 'Saving...', 'Inahifadhi...')
-                                : widget.isEditing
-                                    ? _dual(strings, 'Save Changes',
-                                        'Hifadhi Mabadiliko')
-                                    : _dual(strings, 'Save Expense',
-                                        'Hifadhi Matumizi'),
-                            icon: _isSaving ? null : Icons.check_rounded,
-                            onTap: _isSaving ? null : _saveExpense,
-                          ),
                         ],
                       ),
                     ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                        top: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: MarketButton(
+                          label: _dual(strings, 'Cancel', 'Ghairi'),
+                          color: AppColors.kpiDangerBg,
+                          foregroundColor: AppColors.kpiDanger,
+                          borderColor: null,
+                          radius: 0,
+                          onTap: _isSaving
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          height: 48,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: MarketButton(
+                          label: _isSaving
+                              ? _dual(strings, 'Saving...', 'Inahifadhi...')
+                              : widget.isEditing
+                                  ? _dual(strings, 'Save Changes',
+                                      'Hifadhi Mabadiliko')
+                                  : _dual(strings, 'Save Expense',
+                                      'Hifadhi Matumizi'),
+                          icon: _isSaving ? null : Icons.check_rounded,
+                          variant: MarketButtonVariant.primary,
+                          borderColor: null,
+                          radius: 0,
+                          height: 48,
+                          onTap: _isSaving ? null : _saveExpense,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

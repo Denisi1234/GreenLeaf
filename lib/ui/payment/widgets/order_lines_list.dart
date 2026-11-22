@@ -1,6 +1,7 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/currency_formatter.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../../models/product_item.dart';
 import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
@@ -12,6 +13,7 @@ class OrderLinesList extends StatelessWidget {
     required this.hasItems,
     required this.onIncrease,
     required this.onDecrease,
+    this.onEditQuantity,
     this.onEditDiscount,
   });
 
@@ -19,6 +21,7 @@ class OrderLinesList extends StatelessWidget {
   final bool hasItems;
   final void Function(OrderLineItem line) onIncrease;
   final void Function(OrderLineItem line) onDecrease;
+  final void Function(OrderLineItem line)? onEditQuantity;
   final void Function(OrderLineItem line)? onEditDiscount;
 
   @override
@@ -56,6 +59,8 @@ class OrderLinesList extends StatelessWidget {
             amountText: formatCurrency(line.totalPrice),
             onIncrease: () => onIncrease(line),
             onDecrease: () => onDecrease(line),
+            onEditQuantity:
+                onEditQuantity == null ? null : () => onEditQuantity!(line),
             onEditDiscount:
                 onEditDiscount == null ? null : () => onEditDiscount!(line),
           ),
@@ -70,6 +75,7 @@ class _CounterLineTile extends StatelessWidget {
     required this.amountText,
     required this.onIncrease,
     required this.onDecrease,
+    this.onEditQuantity,
     this.onEditDiscount,
   });
 
@@ -77,6 +83,7 @@ class _CounterLineTile extends StatelessWidget {
   final String amountText;
   final VoidCallback onIncrease;
   final VoidCallback onDecrease;
+  final VoidCallback? onEditQuantity;
   final VoidCallback? onEditDiscount;
 
   @override
@@ -104,7 +111,10 @@ class _CounterLineTile extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
-              context.tr('TSh {p0} each', args: {'p0': formatCurrency(line.unitPrice)}),
+              line.product.allowFractional || isMeasuredUnit(line.product.unit)
+                  ? 'TSh ${formatCurrency(line.unitPrice)} / ${line.product.unit}'
+                  : context.tr('TSh {p0} each',
+                      args: {'p0': formatCurrency(line.unitPrice)}),
               style: AppTypography.bodySmall.copyWith(
                 color: hasOverride ? AppColors.primaryDeep : AppColors.textMuted,
                 fontWeight: hasOverride ? FontWeight.w700 : FontWeight.w500,
@@ -158,8 +168,11 @@ class _CounterLineTile extends StatelessWidget {
 
     final stepper = _QuantityStepper(
       quantity: line.quantity,
+      unit: line.product.unit,
       onDecrease: onDecrease,
       onIncrease: onIncrease,
+      onTapQuantity:
+          line.product.allowFractional ? onEditQuantity : null,
     );
 
     final total = Text(
@@ -204,16 +217,28 @@ class _CounterLineTile extends StatelessWidget {
 class _QuantityStepper extends StatelessWidget {
   const _QuantityStepper({
     required this.quantity,
+    required this.unit,
     required this.onDecrease,
     required this.onIncrease,
+    this.onTapQuantity,
   });
 
-  final int quantity;
+  final double quantity;
+  final String unit;
   final VoidCallback onDecrease;
   final VoidCallback onIncrease;
+  final VoidCallback? onTapQuantity;
 
   @override
   Widget build(BuildContext context) {
+    final qtyDisplay = Text(
+      formatQtyForReceipt(quantity, unit),
+      style: TextStyle(
+        color: onTapQuantity != null ? AppColors.primaryDeep : AppColors.ink,
+        fontSize: 14,
+        fontWeight: FontWeight.w800,
+      ),
+    );
     return Container(
       height: 44,
       decoration: BoxDecoration(
@@ -231,20 +256,20 @@ class _QuantityStepper extends StatelessWidget {
             tooltip: context.tr('Remove one'),
             onTap: onDecrease,
           ),
-          Container(
-            width: 36,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              border: Border.symmetric(
-                vertical: BorderSide(color: AppColors.borderLight),
-              ),
-            ),
-            child: Text(
-              '$quantity',
-              style: const TextStyle(
-                color: AppColors.ink,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
+          InkWell(
+            onTap: onTapQuantity,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 44),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  border: Border.symmetric(
+                    vertical: BorderSide(color: AppColors.borderLight),
+                  ),
+                ),
+                child: qtyDisplay,
               ),
             ),
           ),

@@ -2,7 +2,7 @@ import 'package:provider/provider.dart';
 import '../../../service/pos_local_store.dart';
 import '../../../service/report_pdf/report_pdf_layout.dart';
 import '../../../l10n/app_strings.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'dart:convert';
 import 'dart:io';
 

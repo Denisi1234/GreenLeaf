@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import '../../l10n/app_strings.dart';
 import '../../service/pos_order_models.dart';
 import '../../service/receipt_settings.dart';
+import '../../utils/quantity_formatter.dart';
 
 /// The saved sale is the source of truth for screen, PDF and shared receipt text.
 class ReceiptDocument {
@@ -34,7 +35,8 @@ class ReceiptDocument {
       '${currency.trim().isEmpty ? 'TSh' : currency.trim()} ${NumberFormat('#,##0.00').format(value)}';
   double get subtotal =>
       order.lines.fold(0, (total, line) => total + line.lineTotal);
-  int get units => order.lines.fold(0, (total, line) => total + line.quantity);
+  double get units =>
+      roundQuantity(order.lines.fold<double>(0, (total, line) => total + line.quantity));
   bool get isCash => order.paymentMethod.trim().toLowerCase() == 'cash';
   bool get isCredit => order.paymentMethod.toLowerCase().contains('credit');
   bool get isVoided =>
@@ -58,7 +60,11 @@ class ReceiptDocument {
           MapEntry(label('Customer'), order.customerName!.trim()),
         if (settings.showPaymentMethod)
           MapEntry(label('Payment'), paymentLabel),
-        if (settings.showItemCount) MapEntry(label('Items'), strings.text('{p0} units', args: {'p0': units})),
+        if (settings.showItemCount)
+          MapEntry(
+              label('Items'),
+              strings.text('{p0} units',
+                  args: {'p0': formatQuantity(units)})),
       ];
 
   List<MapEntry<String, String>> get totals => [
@@ -96,7 +102,7 @@ class ReceiptDocument {
     text.writeln('');
     for (final line in order.lines) {
       text.writeln(
-          '${line.itemName} | ${line.quantity} x ${money(line.unitPriceValue)} | ${money(line.lineTotal)}');
+          '${line.itemName} | ${formatQtyForReceipt(line.quantity, line.unit)} x ${money(line.unitPriceValue)} | ${money(line.lineTotal)}');
     }
     text.writeln('');
     for (final total in totals) {

@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../utils/quantity_formatter.dart';
+
 /// Professional Real Mobile Push & Local Notification Service
 class AppNotificationService {
   AppNotificationService._();
@@ -159,12 +161,16 @@ class AppNotificationService {
   /// Show a real system notification for low inventory
   Future<void> showLowStockNotification({
     required String productName,
-    required int remainingQuantity,
+    required num remainingQuantity,
+    String unit = '',
   }) async {
+    final qtyText = unit.trim().isNotEmpty
+        ? formatStockWithUnit(remainingQuantity.toDouble(), unit)
+        : formatQuantity(remainingQuantity.toDouble());
     await showNotification(
       id: productName.hashCode.abs() % 100000,
       title: 'Tahadhari ya Bidhaa Kuisha ⚠️',
-      body: 'Bidhaa "$productName" imebaki vipande $remainingQuantity tu stoo!',
+      body: 'Bidhaa "$productName" imebaki $qtyText tu stoo!',
       channelId: alertsChannelId,
       channelName: alertsChannelName,
       channelDescription: alertsChannelDesc,
@@ -184,6 +190,7 @@ class AppNotificationService {
     Importance importance = Importance.max,
     Priority priority = Priority.high,
   }) async {
+    if (!_initialized) return;
     final androidDetails = AndroidNotificationDetails(
       channelId,
       channelName,

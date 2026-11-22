@@ -42,11 +42,11 @@ class CustomerCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
           child: Row(
@@ -57,7 +57,8 @@ class CustomerCard extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: const BoxDecoration(
                   color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius:
+                      BorderRadius.all(Radius.circular(AppRadius.sharp)),
                 ),
                 child: Text(
                   customer.initials,
@@ -90,7 +91,7 @@ class CustomerCard extends StatelessWidget {
                               horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
                             color: tier.background,
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
                             tier.label(strings),
@@ -200,7 +201,7 @@ class _MetricChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: const BoxDecoration(
           color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(6)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -242,69 +243,27 @@ class CustomerEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.all(28),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
-      child: Column(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
-            ),
-            child: Icon(
-              filtered
-                  ? Icons.search_off_rounded
-                  : Icons.people_outline_rounded,
-              color: AppColors.primary,
-              size: 34,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            filtered
-                ? _dual(strings, 'No matching customers', 'Hakuna wateja')
-                : _dual(strings, 'No customers yet', 'Hakuna wateja bado'),
-            style: AppTypography.cardHeader,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            filtered
-                ? _dual(
-                    strings,
-                    'Try a different name, phone or filter to see customers.',
-                    'Jaribu jina, simu au kichujio kingine kuona wateja.')
-                : _dual(
-                    strings,
-                    'Add your first customer to start tracking sales and credit.',
-                    'Ongeza mteja wako wa kwanza kufuatilia mauzo na mkopo.'),
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textMuted,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (filtered)
-            MarketButton(
-              label: _dual(strings, 'Clear filters', 'Ondoa vichujio'),
-              icon: Icons.filter_alt_off_rounded,
-              isFullWidth: false,
-              onTap: onReset,
+    return MarketEmptyState(
+      icon: filtered ? Icons.search_off_rounded : Icons.people_outline_rounded,
+      title: filtered
+          ? _dual(strings, 'No matching customers', 'Hakuna wateja')
+          : _dual(strings, 'No customers yet', 'Hakuna wateja bado'),
+      message: filtered
+          ? _dual(
+              strings,
+              'Try a different name, phone or filter to see customers.',
+              'Jaribu jina, simu au kichujio kingine kuona wateja.',
             )
-          else
-            MarketButton(
-              label: _dual(strings, 'Add customer', 'Ongeza mteja'),
-              icon: Icons.add_rounded,
-              isFullWidth: false,
-              onTap: onAdd,
+          : _dual(
+              strings,
+              'Add your first customer to start tracking sales and credit.',
+              'Ongeza mteja wako wa kwanza kufuatilia mauzo na mkopo.',
             ),
-        ],
-      ),
+      actionLabel: filtered
+          ? _dual(strings, 'Clear filters', 'Ondoa vichujio')
+          : _dual(strings, 'Add customer', 'Ongeza mteja'),
+      actionIcon: filtered ? Icons.filter_alt_off_rounded : Icons.add_rounded,
+      onAction: filtered ? onReset : onAdd,
     );
   }
 }
@@ -319,9 +278,9 @@ class AddCustomerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.primary,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
         highlightColor: Colors.transparent,
         onTap: onTap,

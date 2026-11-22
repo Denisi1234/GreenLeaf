@@ -99,7 +99,7 @@ class AppStrings {
     return isSwahili ? swahili : english;
   }
 
-  String get appName => 'TrackMauzo';
+  String get appName => 'Aza POS';
   String get dashboard => _pick('Dashboard', 'Dashibodi');
   String get products => _pick('Products', 'Bidhaa');
   String get sales => _pick('Sales', 'Mauzo');
@@ -304,7 +304,7 @@ class AppStrings {
 
   // Auth
   String get welcome =>
-      _pick('Welcome to TrackMauzo', 'Karibu kwenye TrackMauzo');
+      _pick('Welcome to Aza POS', 'Karibu kwenye Aza POS');
   String get welcomeSubtitle => _pick(
       'Track sales, stock, and customers for your shop',
       'Fuatilia mauzo, bidhaa, na wateja kwa duka lako');

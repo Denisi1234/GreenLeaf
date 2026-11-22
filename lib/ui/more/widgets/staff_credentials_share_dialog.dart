@@ -68,16 +68,31 @@ Please keep your login credentials secure.''';
         await launchUrl(uri);
       } else {
         // Fallback to share
-        await Share.share(message, subject: isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials');
+        await SharePlus.instance.share(
+          ShareParams(
+            text: message,
+            subject: isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials',
+          ),
+        );
       }
     } catch (_) {
-      await Share.share(message, subject: isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials');
+      await SharePlus.instance.share(
+        ShareParams(
+          text: message,
+          subject: isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials',
+        ),
+      );
     }
   }
 
   Future<void> _share(BuildContext context) async {
     final message = _formatMessage();
-    await Share.share(message, subject: isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials');
+    await SharePlus.instance.share(
+      ShareParams(
+        text: message,
+        subject: isSwahili ? 'Taarifa za Kuingia POS' : 'POS Login Credentials',
+      ),
+    );
   }
 
   void _copy(BuildContext context) {
@@ -214,7 +229,9 @@ Please keep your login credentials secure.''';
                         child: MarketButton(
                           label: _t('Share details', 'Sambaza'),
                           icon: Icons.share_rounded,
-                          isPrimary: false,
+                          color: AppColors.kpiSkyBg,
+                          foregroundColor: AppColors.kpiSky,
+                          borderColor: null,
                           radius: 0,
                           onTap: () => _share(context),
                         ),
@@ -224,19 +241,23 @@ Please keep your login credentials secure.''';
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                        side: const BorderSide(color: AppColors.border),
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.kpiVioletBg,
+                        foregroundColor: AppColors.kpiViolet,
+                        side: BorderSide.none,
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => _copy(context),
-                      icon: const Icon(Icons.copy_rounded, size: 16, color: AppColors.ink),
+                      icon: const Icon(Icons.copy_rounded,
+                          size: 16, color: AppColors.kpiViolet),
                       label: Text(
                         _t('Copy message to clipboard', 'Nakili ujumbe'),
                         style: AppTypography.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+                          color: AppColors.kpiViolet,
                         ),
                       ),
                     ),

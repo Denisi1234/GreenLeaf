@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -368,9 +368,9 @@ class _CerealBoxArt extends StatelessWidget {
       width: 72,
       height: 102,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.sharp),
-        border: Border.all(color: const Color(0xFFE4E6EA)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Stack(
         children: [

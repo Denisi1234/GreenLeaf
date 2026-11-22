@@ -88,8 +88,8 @@ class StoresPage extends StatelessWidget {
                     // Stores list container
                     MarketSurfaceCard(
                       padding: EdgeInsets.zero,
-                      radius: 0,
-                      showShadow: false,
+                      radius: AppRadius.standard,
+                      showShadow: true,
                       borderColor: AppColors.border,
                       child: Column(
                         children: [

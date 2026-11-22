@@ -10,6 +10,7 @@ import 'secure_token_storage.dart';
 import 'tax_settings.dart';
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
+import '../utils/quantity_formatter.dart';
 
 part '../database/pos_accounting_database.dart';
 part '../database/pos_supplier_database.dart';
@@ -22,7 +23,8 @@ class PosLocalDatabase
     with
         PosSalesDatabaseMixin,
         PosOperationsDatabaseMixin,
-        PosSupplierDatabaseMixin {
+        PosSupplierDatabaseMixin,
+        PosAccountingDatabaseMixin {
   PosLocalDatabase();
 
   static final PosLocalDatabase instance = PosLocalDatabase();
@@ -36,7 +38,7 @@ class PosLocalDatabase
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 30,
+      version: 32,
       onCreate: _createPosDatabaseTables,
       onUpgrade: _upgradePosDatabase,
       onOpen: _onOpenPosDatabase,

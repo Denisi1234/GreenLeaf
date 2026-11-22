@@ -106,59 +106,26 @@ class EmptyDebtors extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.all(28),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
-      child: Column(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.successLight,
-              borderRadius: BorderRadius.zero,
+    return MarketEmptyState(
+      icon: filtered ? Icons.search_off_rounded : Icons.verified_rounded,
+      iconColor: filtered ? AppColors.primary : AppColors.success,
+      iconBackgroundColor:
+          filtered ? AppColors.surfaceSecondary : AppColors.successLight,
+      title: filtered
+          ? _dual(strings, 'No matching debtors', 'Hakuna wadaiwa')
+          : _dual(strings, 'No debts recorded', 'Hakuna madeni'),
+      message: filtered
+          ? _dual(strings, 'Try another name or phone number.',
+              'Jaribu jina au namba nyingine.')
+          : _dual(
+              strings,
+              'Credit sales from the counter appear here with full statements.',
+              'Mauzo ya mkopo kutoka kaunta yanaonekana hapa na taarifa kamili.',
             ),
-            child: Icon(
-              filtered ? Icons.search_off_rounded : Icons.verified_rounded,
-              color: AppColors.success,
-              size: 34,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            filtered
-                ? _dual(strings, 'No matching debtors', 'Hakuna wadaiwa')
-                : _dual(strings, 'No debts recorded', 'Hakuna madeni'),
-            style: AppTypography.cardHeader,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            filtered
-                ? _dual(strings, 'Try another name or phone number.',
-                    'Jaribu jina au namba nyingine.')
-                : _dual(
-                    strings,
-                    'Credit sales from the counter appear here with full statements.',
-                    'Mauzo ya mkopo kutoka kaunta yanaonekana hapa na taarifa kamili.'),
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textMuted,
-              height: 1.45,
-            ),
-          ),
-          if (filtered) ...[
-            const SizedBox(height: 16),
-            MarketButton(
-              label: _dual(strings, 'Clear search', 'Ondoa utafutaji'),
-              icon: Icons.filter_alt_off_rounded,
-              isFullWidth: false,
-              onTap: onReset,
-            ),
-          ],
-        ],
-      ),
+      actionLabel:
+          filtered ? _dual(strings, 'Clear search', 'Ondoa utafutaji') : null,
+      actionIcon: filtered ? Icons.filter_alt_off_rounded : null,
+      onAction: filtered ? onReset : null,
     );
   }
 }

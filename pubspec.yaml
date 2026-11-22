@@ -1,7 +1,7 @@
-name: track_mauzo
-description: TrackMauzo - Your Ultimate Business Tracking Solution
+name: aza_pos
+description: Aza POS - Point of Sale & Business Management Solution
 publish_to: "none"
-version: 1.0.1+2
+version: 1.0.0+1
 
 environment:
   flutter: ">=3.35.0 <3.36.0"
@@ -36,6 +36,9 @@ dev_dependencies:
 
   # code style
   flutter_lints: ^5.0.0
+
+dependency_overrides:
+  image: 4.5.4
 
 flutter:
   uses-material-design: true

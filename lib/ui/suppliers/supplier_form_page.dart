@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -141,28 +141,59 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        MarketButton(
-                          label: _isEdit
-                              ? _t('Save changes', 'Hifadhi mabadiliko')
-                              : _t('Save supplier', 'Hifadhi msambazaji'),
-                          icon: Icons.check_rounded,
-                          onTap: _save,
-                        ),
                         if (_isEdit) ...[
                           const SizedBox(height: 12),
                           MarketButton(
                             label: _t('Delete supplier', 'Futa msambazaji'),
                             icon: Icons.delete_outline_rounded,
-                            isPrimary: false,
-                            foregroundColor: AppColors.danger,
-                            borderColor: AppColors.border,
-                            color: AppColors.surface,
+                            color: AppColors.kpiDangerBg,
+                            foregroundColor: AppColors.kpiDanger,
+                            borderColor: null,
                             onTap: _confirmDelete,
                           ),
                         ],
                       ],
                     ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                        top: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: MarketButton(
+                          label: _t('Cancel', 'Ghairi'),
+                          color: AppColors.kpiDangerBg,
+                          foregroundColor: AppColors.kpiDanger,
+                          borderColor: null,
+                          radius: 0,
+                          onTap: () => Navigator.of(context).maybePop(),
+                          height: 48,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: MarketButton(
+                          label: _isEdit
+                              ? _t('Save changes', 'Hifadhi mabadiliko')
+                              : _t('Save supplier', 'Hifadhi msambazaji'),
+                          icon: Icons.check_rounded,
+                          variant: MarketButtonVariant.primary,
+                          borderColor: null,
+                          radius: 0,
+                          height: 48,
+                          onTap: _save,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

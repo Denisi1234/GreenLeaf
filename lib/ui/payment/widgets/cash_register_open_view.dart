@@ -62,8 +62,8 @@ class CashRegisterOpenView extends StatelessWidget {
       padding: padding,
       backgroundColor: AppColors.surface,
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: child,
     );
   }
@@ -265,7 +265,8 @@ class CashRegisterOpenView extends StatelessWidget {
         MarketButton(
           label: _t('Close register & cash up', 'Funga kasha na hesabu'),
           icon: Icons.lock_outline_rounded,
-          color: AppColors.ink,
+          color: AppColors.primary,
+          radius: 0,
           onTap: () => onOpenClosePage(store, shift),
         ),
         const SizedBox(height: 20),

@@ -80,11 +80,11 @@ class DebtorCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
           child: Column(
@@ -98,7 +98,8 @@ class DebtorCard extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: const BoxDecoration(
                       color: AppColors.surfaceSecondary,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius:
+                          BorderRadius.all(Radius.circular(AppRadius.sharp)),
                     ),
                     child: Text(
                       customer.initials,
@@ -166,7 +167,7 @@ class DebtorCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: agingBadgeBg,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -242,11 +243,14 @@ class DebtorCard extends StatelessWidget {
                 children: [
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryDeep,
-                      side: const BorderSide(color: AppColors.border),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      backgroundColor: AppColors.kpiSkyBg,
+                      foregroundColor: AppColors.kpiSky,
+                      side: BorderSide.none,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 10),
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius:
+                            BorderRadius.all(Radius.circular(AppRadius.pill)),
                       ),
                     ),
                     onPressed: onReminder,
@@ -256,25 +260,30 @@ class DebtorCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.ink,
-                        side: const BorderSide(color: AppColors.border),
+                        backgroundColor: AppColors.kpiVioletBg,
+                        foregroundColor: AppColors.kpiViolet,
+                        side: BorderSide.none,
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(AppRadius.pill)),
                         ),
                       ),
                       onPressed: onTap,
                       icon: const Icon(Icons.receipt_long_rounded, size: 16),
-                      label: Text(_dual(strings, 'Statement', 'Taarifa')),
+                      label: Text(
+                        _dual(strings, 'Statement', 'Taarifa'),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Material(
-                      color: AppColors.ink,
-                      borderRadius: BorderRadius.zero,
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                       child: InkWell(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                         highlightColor: Colors.transparent,
                         onTap: onSettle,
                         child: SizedBox(
@@ -327,7 +336,7 @@ class LedgerMetric extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: const BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

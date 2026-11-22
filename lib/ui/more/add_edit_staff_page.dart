@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -139,11 +139,6 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     } else {
       _errors[key] = message;
     }
-  }
-
-  void _clearError(String key) {
-    if (!_errors.containsKey(key)) return;
-    setState(() => _errors.remove(key));
   }
 
   Future<void> _pickAvatar() async {

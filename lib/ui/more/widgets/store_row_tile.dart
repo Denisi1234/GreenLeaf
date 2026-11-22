@@ -64,7 +64,8 @@ class StoreRowTile extends StatelessWidget {
                                 horizontal: 8, vertical: 3),
                             decoration: const BoxDecoration(
                               color: AppColors.kpiSuccessBg,
-                              borderRadius: BorderRadius.zero,
+                              borderRadius: BorderRadius.all(
+                                  Radius.circular(AppRadius.pill)),
                             ),
                             child: Text(
                               _t('ACTIVE', 'INATUMIKA'),
@@ -136,7 +137,7 @@ class StoreRowTile extends StatelessWidget {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(AppRadius.sharp),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -175,7 +176,9 @@ class StoreRowTile extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AppRadius.modal)),
+        ),
         title: Text(_t('Delete store?', 'Futa duka?')),
         content: Text(
           _t(
@@ -191,7 +194,9 @@ class StoreRowTile extends StatelessWidget {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.danger,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)),
+              ),
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(_t('Delete', 'Futa')),

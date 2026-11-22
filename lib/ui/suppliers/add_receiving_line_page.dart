@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/quantity_formatter.dart';
+import '../products/inventory_product_item.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
@@ -19,12 +21,14 @@ class DraftReceivingLine {
     required this.quantity,
     required this.unitCost,
     this.sellingPrice = 0,
+    this.unit = 'Pcs',
   });
 
   String productName;
-  int quantity;
+  double quantity;
   double unitCost;
   double sellingPrice;
+  String unit;
 
   double get total => quantity * unitCost;
 }
@@ -43,12 +47,35 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
   final _qtyController = TextEditingController(text: '1');
   final _costController = TextEditingController();
   final _priceController = TextEditingController();
+  final _packSizeController = TextEditingController(text: '100');
+  final _packQtyController = TextEditingController(text: '1');
+  final _packCostController = TextEditingController();
+
+  InventoryProductItem? _pickedItem;
+  String _unit = 'Pcs';
+  bool _receiveByPack = false;
+  String _packName = 'Mfuko';
 
   String _t(String en, String swahili) => widget.isSwahili ? swahili : en;
 
-  double get _lineTotal =>
-      (int.tryParse(_qtyController.text.trim()) ?? 0) *
-      (double.tryParse(_costController.text.trim().replaceAll(',', '')) ?? 0);
+  double _parseNum(TextEditingController controller) =>
+      double.tryParse(controller.text.trim().replaceAll(',', '')) ?? 0;
+
+  double get _packSize => _parseNum(_packSizeController);
+  double get _packQty => _parseNum(_packQtyController);
+  double get _packCost => _parseNum(_packCostController);
+
+  double get _effectiveQty => _receiveByPack
+      ? roundQuantity(_packQty * _packSize)
+      : roundQuantity(_parseNum(_qtyController));
+
+  double get _effectiveUnitCost => _receiveByPack
+      ? (_packSize > 0 ? _packCost / _packSize : 0)
+      : _parseNum(_costController);
+
+  double get _lineTotal => _receiveByPack
+      ? (_packQty * _packCost)
+      : (_effectiveQty * _effectiveUnitCost);
 
   @override
   void dispose() {
@@ -56,6 +83,9 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
     _qtyController.dispose();
     _costController.dispose();
     _priceController.dispose();
+    _packSizeController.dispose();
+    _packQtyController.dispose();
+    _packCostController.dispose();
     super.dispose();
   }
 
@@ -72,11 +102,25 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
       final match = store.inventory.where((item) => item.name == name).toList();
       if (match.isNotEmpty) {
         final item = match.first;
-        if (_costController.text.trim().isEmpty) {
+        _pickedItem = item;
+        _unit = item.unit;
+        if (_costController.text.trim().isEmpty && item.purchasePrice > 0) {
           _costController.text = item.purchasePrice.toStringAsFixed(0);
         }
-        if (_priceController.text.trim().isEmpty) {
+        if (_priceController.text.trim().isEmpty && item.sellingPrice > 0) {
           _priceController.text = item.sellingPrice.toStringAsFixed(0);
+        }
+        if (item.hasBulkPack) {
+          _packName = item.packName!;
+          _packSizeController.text = formatQuantity(item.packSize!);
+          _receiveByPack = true;
+          if (_packCostController.text.trim().isEmpty &&
+              item.purchasePrice > 0) {
+            _packCostController.text =
+                (item.purchasePrice * item.packSize!).toStringAsFixed(0);
+          }
+        } else {
+          _packName = defaultPackNameForUnit(item.unit);
         }
       }
     });
@@ -84,13 +128,18 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
 
   void _save() {
     final name = _nameController.text.trim();
-    final qty = int.tryParse(_qtyController.text.trim()) ?? 0;
+    final qty = _effectiveQty;
     if (name.isEmpty || qty <= 0) {
       showMarketNotice(
         context,
         title: _t('Item required', 'Bidhaa inahitajika'),
-        message: _t('Enter product name and a valid quantity.',
-            'Weka jina la bidhaa na idadi sahihi.'),
+        message: _t(
+            _receiveByPack
+                ? 'Enter product name, pack count, and pack size.'
+                : 'Enter product name and a valid quantity.',
+            _receiveByPack
+                ? 'Weka jina la bidhaa, idadi ya mafungu, na ukubwa wa fungu.'
+                : 'Weka jina la bidhaa na idadi sahihi.'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -99,12 +148,9 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
       DraftReceivingLine(
         productName: name,
         quantity: qty,
-        unitCost:
-            double.tryParse(_costController.text.trim().replaceAll(',', '')) ??
-                0,
-        sellingPrice:
-            double.tryParse(_priceController.text.trim().replaceAll(',', '')) ??
-                0,
+        unitCost: _effectiveUnitCost,
+        sellingPrice: _parseNum(_priceController),
+        unit: _unit,
       ),
     );
   }
@@ -148,20 +194,20 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 10),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: AppColors.border),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.kpiSkyBg,
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.inventory_2_outlined,
-                                        size: 16, color: AppColors.primaryDeep),
+                                        size: 16, color: AppColors.kpiSky),
                                     const SizedBox(width: 6),
                                     Text(
                                       _t('Pick from existing stock',
                                           'Chagua kutoka hifadhi iliyopo'),
                                       style: AppTypography.helperText.copyWith(
-                                        color: AppColors.primaryDeep,
+                                        color: AppColors.kpiSky,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -178,43 +224,193 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _t('Quantity and cost', 'Idadi na gharama'),
-                              style: AppTypography.sectionHeader
-                                  .copyWith(color: AppColors.ink),
-                            ),
-                            const SizedBox(height: 12),
                             Row(
                               children: [
                                 Expanded(
-                                  child: MarketFormField(
-                                    label: _t('Quantity received',
-                                        'Idadi iliyopokelewa'),
-                                    hintText: '1',
-                                    controller: _qtyController,
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (_) => setState(() {}),
+                                  child: Text(
+                                    _t('Quantity and cost', 'Idadi na gharama'),
+                                    style: AppTypography.sectionHeader
+                                        .copyWith(color: AppColors.ink),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: MarketFormField(
-                                    label: _t('Unit cost (TSh)',
-                                        'Gharama ya kipande (TSh)'),
-                                    hintText: '0',
-                                    controller: _costController,
-                                    keyboardType:
-                                        const TextInputType.numberWithOptions(
-                                            decimal: true),
-                                    onChanged: (_) => setState(() {}),
+                                if (_pickedItem != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryLight,
+                                      border: Border.all(
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.4)),
+                                    ),
+                                    child: Text(
+                                      _unit,
+                                      style: AppTypography.helperText.copyWith(
+                                        color: AppColors.primaryDeep,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              activeThumbColor: AppColors.primaryDeep,
+                              title: Text(
+                                _t('Receive by bulk pack',
+                                    'Pokea kwa fungu / mfuko'),
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                              subtitle: Text(
+                                _t('E.g., 1 $_packName = 100 $_unit',
+                                    'Mfano: 1 $_packName = 100 $_unit'),
+                                style: AppTypography.helperText
+                                    .copyWith(color: AppColors.textMuted),
+                              ),
+                              value: _receiveByPack,
+                              onChanged: (value) {
+                                setState(() {
+                                  _receiveByPack = value;
+                                  if (value &&
+                                      _packCostController.text.trim().isEmpty &&
+                                      _packSize > 0 &&
+                                      _parseNum(_costController) > 0) {
+                                    _packCostController.text =
+                                        (_parseNum(_costController) * _packSize)
+                                            .toStringAsFixed(0);
+                                  }
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            if (!_receiveByPack)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: MarketFormField(
+                                      label: _t(
+                                          'Quantity received ($_unit)',
+                                          'Idadi iliyopokelewa ($_unit)'),
+                                      hintText: '1',
+                                      controller: _qtyController,
+                                      keyboardType: const TextInputType
+                                          .numberWithOptions(decimal: true),
+                                      onChanged: (_) => setState(() {}),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: MarketFormField(
+                                      label: _t('Cost per $_unit (TSh)',
+                                          'Gharama kwa $_unit (TSh)'),
+                                      hintText: '0',
+                                      controller: _costController,
+                                      keyboardType: const TextInputType
+                                          .numberWithOptions(decimal: true),
+                                      onChanged: (_) => setState(() {}),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else ...[
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: const [
+                                  'Mfuko',
+                                  'Gunia',
+                                  'Debe',
+                                  'Katoni',
+                                  'Bokisi',
+                                ]
+                                    .map((name) => ChoiceChip(
+                                          label: Text(name),
+                                          selected: _packName == name,
+                                          selectedColor: AppColors.primaryLight,
+                                          labelStyle:
+                                              AppTypography.helperText.copyWith(
+                                            color: _packName == name
+                                                ? AppColors.primaryDeep
+                                                : AppColors.ink,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          onSelected: (_) => setState(
+                                              () => _packName = name),
+                                        ))
+                                    .toList(),
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: MarketFormField(
+                                      label: _t('${_packName}s received',
+                                          'Idadi ya $_packName'),
+                                      hintText: '1',
+                                      controller: _packQtyController,
+                                      keyboardType: const TextInputType
+                                          .numberWithOptions(decimal: true),
+                                      onChanged: (_) => setState(() {}),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: MarketFormField(
+                                      label: _t('$_unit per $_packName',
+                                          '$_unit kwa 1 $_packName'),
+                                      hintText: '100',
+                                      controller: _packSizeController,
+                                      keyboardType: const TextInputType
+                                          .numberWithOptions(decimal: true),
+                                      onChanged: (_) => setState(() {}),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              MarketFormField(
+                                label: _t('Cost per $_packName (TSh)',
+                                    'Gharama ya 1 $_packName (TSh)'),
+                                hintText: '0',
+                                controller: _packCostController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                        decimal: true),
+                                onChanged: (_) => setState(() {}),
+                              ),
+                              if (_effectiveQty > 0) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryLight,
+                                    border: Border.all(
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.4)),
+                                  ),
+                                  child: Text(
+                                    _t(
+                                      'Adds ${formatStockWithUnit(_effectiveQty, _unit)} (${_money(_effectiveUnitCost)} / $_unit)',
+                                      'Inaongeza ${formatStockWithUnit(_effectiveQty, _unit)} (${_money(_effectiveUnitCost)} / $_unit)',
+                                    ),
+                                    style: AppTypography.helperText.copyWith(
+                                      color: AppColors.primaryDeep,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ],
-                            ),
+                            ],
                             const SizedBox(height: 14),
                             MarketFormField(
-                              label: _t('Selling price (optional)',
-                                  'Bei ya kuuza (hiari)'),
+                              label: _t('Selling price per $_unit (optional)',
+                                  'Bei ya kuuza kwa $_unit (hiari)'),
                               hintText: '0',
                               controller: _priceController,
                               keyboardType:
@@ -250,11 +446,44 @@ class _AddReceivingLinePageState extends State<AddReceivingLinePage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      MarketButton(
-                        label: _t('Add to receiving', 'Ongeza kwenye upokeaji'),
-                        icon: Icons.check_rounded,
-                        onTap: _save,
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                        top: BorderSide(color: AppColors.border, width: 1)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: MarketButton(
+                          label: _t('Cancel', 'Ghairi'),
+                          color: AppColors.kpiDangerBg,
+                          foregroundColor: AppColors.kpiDanger,
+                          borderColor: null,
+                          radius: 0,
+                          onTap: () => Navigator.of(context).maybePop(),
+                          height: 48,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: MarketButton(
+                          label:
+                              _t('Add to receiving', 'Ongeza kwenye upokeaji'),
+                          icon: Icons.check_rounded,
+                          variant: MarketButtonVariant.primary,
+                          borderColor: null,
+                          radius: 0,
+                          height: 48,
+                          onTap: _save,
+                        ),
                       ),
                     ],
                   ),
@@ -349,7 +578,7 @@ class StockPickerPage extends StatelessWidget {
                                                   ),
                                                   const SizedBox(height: 2),
                                                   Text(
-                                                    '${items[i].category} • ${t('In stock', 'Iliyopo')}: ${items[i].stockCount} • ${t('Cost', 'Gharama')} ${_money(items[i].purchasePrice)}',
+                                                    '${items[i].category} • ${t('In stock', 'Iliyopo')}: ${formatStockWithUnit(items[i].stockCount, items[i].unit)} • ${t('Cost', 'Gharama')} ${_money(items[i].purchasePrice)}',
                                                     style: AppTypography
                                                         .helperText
                                                         .copyWith(
@@ -364,7 +593,9 @@ class StockPickerPage extends StatelessWidget {
                                                   CrossAxisAlignment.end,
                                               children: [
                                                 Text(
-                                                  '${items[i].stockCount}',
+                                                  formatStockWithUnit(
+                                                      items[i].stockCount,
+                                                      items[i].unit),
                                                   style: AppTypography.bodySmall
                                                       .copyWith(
                                                     color:

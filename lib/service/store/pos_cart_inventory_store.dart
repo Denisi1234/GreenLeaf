@@ -10,11 +10,13 @@ mixin PosCartInventoryStore on ChangeNotifier {
   bool hasPermission(String permission);
   List<ProductItem> get _products;
   List<ProductItem> get _cartItems;
+  List<ProductItem> get cartItems;
   List<InventoryProductItem> get _allInventory;
   List<SuspendedSale> get _suspendedSales;
   set _cartCount(int value);
   set _cartTotal(double value);
   StorePreferences get _storePreferences;
+  Future<void> writeAutoBackupSnapshot();
 
   /// Looks up a sellable product matching a scanned or typed barcode/SKU.
   ProductItem? findProductByBarcode(String rawCode) {
@@ -38,39 +40,212 @@ mixin PosCartInventoryStore on ChangeNotifier {
     return null;
   }
 
+  double cartQuantityForProduct(ProductItem product) {
+    return roundQuantity(
+      cartItems
+          .where(_sameProduct(product))
+          .fold<double>(0.0, (sum, item) => sum + item.quantity),
+    );
+  }
+
+  bool _samePrice(double? a, double? b) {
+    if (a == null && b == null) return true;
+    if (a != null && b != null) return (a - b).abs() < 0.001;
+    return false;
+  }
+
   bool addToCart(ProductItem product) {
+    return addToCartQuantity(
+      product,
+      product.quantity,
+      customPrice: product.customPrice,
+    );
+  }
+
+  bool addToCartQuantity(
+    ProductItem product,
+    double quantity, {
+    double? customPrice,
+  }) {
+    if (quantity <= 0 || !quantity.isFinite) return false;
+    final normalizedQty = roundQuantity(quantity);
+    if (normalizedQty <= 0) return false;
+    final effectiveCustomPrice = customPrice ?? product.customPrice;
+
     final inventoryIndex = _findInventoryIndex(product);
     if (inventoryIndex != -1) {
       final availableStock = _allInventory[inventoryIndex].stockCount;
-      final currentCartQuantity = _cartItems.where(_sameProduct(product)).length;
-      if (availableStock <= 0 || currentCartQuantity >= availableStock) {
+      final currentCartQuantity = cartQuantityForProduct(product);
+      if (availableStock <= 0 ||
+          roundQuantity(currentCartQuantity + normalizedQty) >
+              availableStock + 0.0001) {
         return false;
       }
     }
 
-    _cartItems.add(product);
+    final useMeasuredLine = product.allowFractional ||
+        effectiveCustomPrice != null ||
+        normalizedQty != normalizedQty.truncateToDouble();
+
+    if (useMeasuredLine) {
+      final existingIndex = _cartItems.indexWhere(
+        (item) =>
+            _sameProduct(product)(item) &&
+            _samePrice(item.customPrice, effectiveCustomPrice),
+      );
+      if (existingIndex != -1) {
+        final existing = _cartItems[existingIndex];
+        _cartItems[existingIndex] = existing.copyWith(
+          quantity: roundQuantity(existing.quantity + normalizedQty),
+        );
+      } else {
+        _cartItems.add(
+          product.copyWith(
+            quantity: normalizedQty,
+            customPrice: effectiveCustomPrice,
+            clearCustomPrice: effectiveCustomPrice == null,
+          ),
+        );
+      }
+    } else {
+      final wholeUnits = normalizedQty.toInt();
+      for (var i = 0; i < wholeUnits; i++) {
+        _cartItems.add(
+          product.copyWith(quantity: 1.0, clearCustomPrice: true),
+        );
+      }
+    }
     _updateCartTotals();
     notifyListeners();
     unawaited(_persistCart());
     return true;
   }
 
-  bool addToCartQuantity(ProductItem product, int quantity) {
-    if (quantity <= 0) return false;
+  bool removeQuantityFromCart(
+    ProductItem product,
+    double quantity, {
+    double? customPrice,
+  }) {
+    if (quantity <= 0 || !quantity.isFinite) return false;
+    final normalizedQty = roundQuantity(quantity);
+    if (normalizedQty <= 0) return false;
+
+    final index = _cartItems.lastIndexWhere(
+      (item) =>
+          _sameProduct(product)(item) &&
+          _samePrice(item.customPrice, customPrice),
+    );
+    if (index == -1) return false;
+
+    final target = _cartItems[index];
+    if (product.allowFractional ||
+        customPrice != null ||
+        target.quantity > 1.0001 ||
+        normalizedQty != normalizedQty.truncateToDouble()) {
+      final next = roundQuantity(target.quantity - normalizedQty);
+      if (next > 0) {
+        _cartItems[index] = target.copyWith(quantity: next);
+      } else {
+        _cartItems.removeAt(index);
+      }
+    } else {
+      var remainingToRemove = normalizedQty.round();
+      while (remainingToRemove > 0) {
+        final idx = _cartItems.lastIndexWhere(
+          (item) =>
+              _sameProduct(product)(item) &&
+              _samePrice(item.customPrice, customPrice),
+        );
+        if (idx == -1) break;
+        _cartItems.removeAt(idx);
+        remainingToRemove--;
+      }
+    }
+
+    _updateCartTotals();
+    notifyListeners();
+    unawaited(_persistCart());
+    return true;
+  }
+
+  bool setCartItemQuantity(
+    ProductItem product,
+    double quantity, {
+    double? customPrice,
+    double? matchCustomPrice,
+  }) {
+    if (!quantity.isFinite) return false;
+    final normalizedQty = roundQuantity(quantity);
+    final matchPrice = matchCustomPrice ?? product.customPrice;
+
+    if (normalizedQty <= 0) {
+      final before = _cartItems.length;
+      _cartItems.removeWhere(
+        (item) =>
+            _sameProduct(product)(item) &&
+            _samePrice(item.customPrice, matchPrice),
+      );
+      if (_cartItems.length == before) return false;
+      _updateCartTotals();
+      notifyListeners();
+      unawaited(_persistCart());
+      return true;
+    }
 
     final inventoryIndex = _findInventoryIndex(product);
     if (inventoryIndex != -1) {
       final availableStock = _allInventory[inventoryIndex].stockCount;
-      final currentCartQuantity = _cartItems.where(_sameProduct(product)).length;
+      final otherCartQty = _cartItems
+          .where(
+            (item) =>
+                _sameProduct(product)(item) &&
+                !_samePrice(item.customPrice, matchPrice),
+          )
+          .fold<double>(0.0, (sum, item) => sum + item.quantity);
       if (availableStock <= 0 ||
-          currentCartQuantity + quantity > availableStock) {
+          roundQuantity(otherCartQty + normalizedQty) >
+              availableStock + 0.0001) {
         return false;
       }
     }
 
-    for (var i = 0; i < quantity; i++) {
-      _cartItems.add(product);
+    final firstIndex = _cartItems.indexWhere(
+      (item) =>
+          _sameProduct(product)(item) &&
+          _samePrice(item.customPrice, matchPrice),
+    );
+    _cartItems.removeWhere(
+      (item) =>
+          _sameProduct(product)(item) &&
+          _samePrice(item.customPrice, matchPrice),
+    );
+
+    final useMeasuredLine = product.allowFractional ||
+        customPrice != null ||
+        normalizedQty != normalizedQty.truncateToDouble();
+
+    final insertAt = firstIndex == -1
+        ? _cartItems.length
+        : firstIndex.clamp(0, _cartItems.length);
+    if (useMeasuredLine) {
+      _cartItems.insert(
+        insertAt,
+        product.copyWith(
+          quantity: normalizedQty,
+          customPrice: customPrice,
+          clearCustomPrice: customPrice == null,
+        ),
+      );
+    } else {
+      final wholeUnits = normalizedQty.toInt();
+      for (var i = 0; i < wholeUnits; i++) {
+        _cartItems.insert(
+          insertAt + i,
+          product.copyWith(quantity: 1.0, clearCustomPrice: true),
+        );
+      }
     }
+
     _updateCartTotals();
     notifyListeners();
     unawaited(_persistCart());
@@ -78,9 +253,22 @@ mixin PosCartInventoryStore on ChangeNotifier {
   }
 
   bool removeSingleFromCart(ProductItem product) {
+    if (product.allowFractional || product.customPrice != null) {
+      return removeQuantityFromCart(
+        product,
+        stepForUnit(product.unit, product.allowFractional),
+        customPrice: product.customPrice,
+      );
+    }
     final index = _cartItems.indexWhere(_sameProduct(product));
     if (index == -1) return false;
-    _cartItems.removeAt(index);
+    final item = _cartItems[index];
+    if (item.quantity > 1.0001) {
+      _cartItems[index] =
+          item.copyWith(quantity: roundQuantity(item.quantity - 1.0));
+    } else {
+      _cartItems.removeAt(index);
+    }
     _updateCartTotals();
     notifyListeners();
     unawaited(_persistCart());
@@ -120,13 +308,6 @@ mixin PosCartInventoryStore on ChangeNotifier {
   }
 
   List<SuspendedSale> get suspendedSales => List.unmodifiable(_suspendedSales);
-
-  Future<void> _persistSuspendedSales() async {
-    await _database.replaceSuspendedSales(
-      _suspendedSales.map((s) => s.toJson()).toList(),
-      _activeStoreId,
-    );
-  }
 
   /// Holds / parks current cart (OSPOS Suspended Sale pattern)
   Future<SuspendedSale?> suspendCurrentSale(
@@ -186,6 +367,7 @@ mixin PosCartInventoryStore on ChangeNotifier {
     _allInventory.insert(0, product);
     _syncProductsFromInventory();
     notifyListeners();
+    unawaited(writeAutoBackupSnapshot());
     return product;
   }
 
@@ -199,6 +381,7 @@ mixin PosCartInventoryStore on ChangeNotifier {
       _allInventory[index] = product;
       _syncProductsFromInventory();
       notifyListeners();
+      unawaited(writeAutoBackupSnapshot());
     }
   }
 
@@ -231,25 +414,27 @@ mixin PosCartInventoryStore on ChangeNotifier {
   }
 
   Future<void> applyInventoryAdjustments(
-    Map<String, int> adjustments,
+    Map<String, num> adjustments,
   ) async {
     if (!hasPermission('Manage Inventory')) {
       throw StateError('You do not have permission to manage inventory.');
     }
     if (adjustments.isEmpty) return;
 
-    final applied = <String, int>{};
+    final applied = <String, double>{};
     for (var index = 0; index < _allInventory.length; index++) {
       final item = _allInventory[index];
       final delta = adjustments[item.code];
       if (delta == null || delta == 0) continue;
 
-      final nextStock = (item.stockCount + delta).clamp(0, 1 << 31).toInt();
+      final nextStock = roundQuantity(
+        (item.stockCount + delta.toDouble()).clamp(0.0, 1e12).toDouble(),
+      );
       _allInventory[index] = item.copyWith(
         stockCount: nextStock,
         stockState: _deriveStockState(nextStock),
       );
-      applied[item.code] = delta;
+      applied[item.code] = delta.toDouble();
     }
 
     if (applied.isEmpty) return;
@@ -294,16 +479,20 @@ mixin PosCartInventoryStore on ChangeNotifier {
       code: product.code,
       category: product.category,
       imagePath: product.imagePath,
+      unit: product.unit,
+      allowFractional: product.allowFractional,
+      packName: product.packName,
+      packSize: product.packSize,
     );
   }
 
-  int availableStockForProduct(ProductItem product) {
+  double availableStockForProduct(ProductItem product) {
     return _availableStockForProduct(product);
   }
 
-  int _availableStockForProduct(ProductItem product) {
+  double _availableStockForProduct(ProductItem product) {
     final index = _findInventoryIndex(product);
-    if (index == -1) return 0;
+    if (index == -1) return 0.0;
     return _allInventory[index].stockCount;
   }
 
@@ -326,14 +515,17 @@ mixin PosCartInventoryStore on ChangeNotifier {
   }
 
   void _updateCartTotals() {
-    _cartCount = _cartItems.length;
+    _cartCount = _cartItems.fold<int>(
+      0,
+      (sum, item) => sum + (item.allowFractional ? 1 : item.quantity.round()),
+    );
     _cartTotal = _cartItems.fold<double>(
       0,
-      (sum, item) => sum + item.priceValue,
+      (sum, item) => sum + item.lineTotal,
     );
   }
 
-  InventoryStockState _deriveStockState(int stockCount) {
+  InventoryStockState _deriveStockState(double stockCount) {
     if (stockCount <= 0) return InventoryStockState.outOfStock;
     if (stockCount <= _storePreferences.lowStockThreshold) {
       return InventoryStockState.lowStock;
@@ -362,6 +554,13 @@ mixin PosCartInventoryStore on ChangeNotifier {
   }
 
   String _deriveProductSize(InventoryProductItem product) {
+    final unit = product.unit.trim();
+    if (product.allowFractional && unit.isNotEmpty) {
+      return 'per $unit';
+    }
+    if (unit.isNotEmpty && unit.toLowerCase() != 'pcs') {
+      return '1 $unit';
+    }
     final lowerCategory = product.category.toLowerCase();
     final lowerName = product.name.toLowerCase();
     if (lowerName.contains('500ml')) return '500 ml';

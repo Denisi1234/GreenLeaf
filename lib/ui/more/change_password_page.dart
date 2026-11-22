@@ -578,7 +578,7 @@ class _PasswordField extends StatelessWidget {
               ),
             ),
             filled: true,
-            fillColor: AppColors.surfaceSecondary,
+            fillColor: AppColors.pageBackground,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             border: const OutlineInputBorder(

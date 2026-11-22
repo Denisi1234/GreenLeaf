@@ -1,5 +1,5 @@
 import 'package:intl/intl.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -29,8 +29,8 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  String _formatPrice(double value) {
-    return 'Sh ${formatCurrency(value)}';
+  String _formatPrice(double value, String? currency) {
+    return formatMoney(value, currency);
   }
 
   void _openReport(BuildContext context, ReportData data) {
@@ -157,7 +157,7 @@ class _DashboardPageState extends State<DashboardPage> {
             else ...[
               // Card 1: Today's Sale Overview
               TodaySaleOverviewCard(
-                formattedSale: _formatPrice(todaySales),
+                formattedSale: _formatPrice(todaySales, store.profile.currency),
                 growthText: growthText,
                 hasGrowth: hasGrowth,
                 s1: s1,
@@ -171,7 +171,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
               // Card 2: Expenses (Today)
               ExpensesSummaryCard(
-                formattedAmount: _formatPrice(todayExpenses),
+                formattedAmount:
+                    _formatPrice(todayExpenses, store.profile.currency),
                 onAddExpense: canManagePayments
                     ? () {
                         Navigator.of(context).push(

@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:track_mauzo/service/php_api_client.dart';
-import 'package:track_mauzo/service/pos_cloud_database.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
-import 'package:track_mauzo/ui/models/customer_data.dart';
-import 'package:track_mauzo/ui/models/product_item.dart';
-import 'package:track_mauzo/ui/products/inventory_product_item.dart';
+import 'package:aza_pos/service/php_api_client.dart';
+import 'package:aza_pos/service/pos_cloud_database.dart';
+import 'package:aza_pos/service/pos_local_store.dart';
+import 'package:aza_pos/ui/models/customer_data.dart';
+import 'package:aza_pos/ui/models/product_item.dart';
+import 'package:aza_pos/ui/products/inventory_product_item.dart';
 
 void main() {
   const endpoint = String.fromEnvironment('API_TEST_URL');

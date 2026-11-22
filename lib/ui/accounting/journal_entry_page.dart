@@ -90,7 +90,9 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
                     MarketButton(
                       label: _t('Add line', 'Ongeza mstari'),
                       icon: Icons.add_rounded,
-                      isPrimary: false,
+                      color: AppColors.kpiSkyBg,
+                      foregroundColor: AppColors.kpiSky,
+                      borderColor: null,
                       onTap: () =>
                           setState(() => _lines.add(JournalDraftLine())),
                     ),
@@ -129,11 +131,43 @@ class _JournalEntryPageState extends State<JournalEntryPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    MarketButton(
-                      label: _t('Save entry', 'Hifadhi kumbukumbu'),
-                      icon: Icons.check_rounded,
-                      onTap: () => _save(store),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border(
+                      top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: MarketButton(
+                        label: _t('Cancel', 'Ghairi'),
+                        color: AppColors.kpiDangerBg,
+                        foregroundColor: AppColors.kpiDanger,
+                        borderColor: null,
+                        radius: 0,
+                        onTap: () => Navigator.of(context).maybePop(),
+                        height: 48,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 3,
+                      child: MarketButton(
+                        label: _t('Save entry', 'Hifadhi kumbukumbu'),
+                        icon: Icons.check_rounded,
+                        variant: MarketButtonVariant.primary,
+                        borderColor: null,
+                        radius: 0,
+                        height: 48,
+                        onTap: () => _save(store),
+                      ),
                     ),
                   ],
                 ),

@@ -20,7 +20,7 @@ class ExpenseCategoryIcon extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: style.color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.sharp),
       ),
       child: Icon(style.icon, color: style.color, size: size * 0.5),
     );
@@ -51,7 +51,7 @@ class ExpenseStatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(
@@ -91,11 +91,11 @@ class ExpenseCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: EdgeInsets.zero,
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
           child: Row(
@@ -131,7 +131,7 @@ class ExpenseCard extends StatelessWidget {
                                 horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
                               color: cat.color.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.zero,
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               expense.category,
@@ -286,78 +286,34 @@ class ExpenseEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 76,
-                height: 76,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.zero,
-                ),
-                child: Icon(
-                  isFiltered
-                      ? Icons.search_off_rounded
-                      : Icons.receipt_long_outlined,
-                  color: AppColors.primary,
-                  size: 38,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                isFiltered
-                    ? expenseDual(strings, 'No matching expenses', 'Hakuna matumizi yanayolingana')
-                    : expenseDual(strings, 'No expenses recorded yet', 'Hakuna matumizi yaliyorekodiwa bado'),
-                textAlign: TextAlign.center,
-                style: AppTypography.cardHeader.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isFiltered
-                    ? expenseDual(
-                        strings,
-                        'Try searching by different title, vendor, category or clearing payment filters.',
-                        'Jaribu kutafuta kwa jina lingine, muuzaji, kundi au kuondoa vichujio vya malipo.',
-                      )
-                    : expenseDual(
-                        strings,
-                        'Track operational costs, rent, utilities, staff wages, inventory purchases, and tax deductions in one place.',
-                        'Fuatilia gharama za uendeshaji, kodi ya pango, bili, mishahara, na ununuzi wa hifadhi sehemu moja.',
-                      ),
-                textAlign: TextAlign.center,
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textMuted,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (isFiltered)
-                MarketButton(
-                  label: expenseDual(strings, 'Clear search filter', 'Ondoa kichujio'),
-                  icon: Icons.filter_alt_off_rounded,
-                  isFullWidth: false,
-                  isPrimary: false,
-                  onTap: onClearFilter,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
+        child: MarketEmptyState(
+          icon: isFiltered
+              ? Icons.search_off_rounded
+              : Icons.receipt_long_outlined,
+          title: isFiltered
+              ? expenseDual(
+                  strings, 'No matching expenses', 'Hakuna matumizi yanayolingana')
+              : expenseDual(strings, 'No expenses recorded yet',
+                  'Hakuna matumizi yaliyorekodiwa bado'),
+          message: isFiltered
+              ? expenseDual(
+                  strings,
+                  'Try searching by different title, vendor, category or clearing payment filters.',
+                  'Jaribu kutafuta kwa jina lingine, muuzaji, kundi au kuondoa vichujio vya malipo.',
                 )
-              else
-                MarketButton(
-                  label: expenseDual(strings, 'Record first expense', 'Rekodi matumizi ya kwanza'),
-                  icon: Icons.add_rounded,
-                  isFullWidth: false,
-                  onTap: onAdd,
+              : expenseDual(
+                  strings,
+                  'Track operational costs, rent, utilities, staff wages, inventory purchases, and tax deductions in one place.',
+                  'Fuatilia gharama za uendeshaji, kodi ya pango, bili, mishahara, na ununuzi wa hifadhi sehemu moja.',
                 ),
-            ],
-          ),
+          actionLabel: isFiltered
+              ? expenseDual(strings, 'Clear search filter', 'Ondoa kichujio')
+              : expenseDual(
+                  strings, 'Record first expense', 'Rekodi matumizi ya kwanza'),
+          actionIcon:
+              isFiltered ? Icons.filter_alt_off_rounded : Icons.add_rounded,
+          onAction: isFiltered ? onClearFilter : onAdd,
         ),
       ),
     );
@@ -374,9 +330,9 @@ class AddExpenseFloatingButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.primary,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
         highlightColor: Colors.transparent,
         onTap: onTap,

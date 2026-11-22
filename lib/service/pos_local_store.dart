@@ -11,6 +11,7 @@ import '../ui/business_category_config.dart';
 import '../ui/models/product_item.dart';
 import '../ui/models/customer_data.dart';
 import '../ui/products/inventory_product_item.dart';
+import '../utils/quantity_formatter.dart';
 import 'debit_entry_model.dart';
 import 'pos_hybrid_database.dart';
 import 'pos_local_database.dart';
@@ -29,7 +30,7 @@ import 'app_notification_service.dart';
 import 'tax_settings.dart';
 import 'daily_sales_report_service.dart';
 import 'pos_suspended_sale_model.dart';
-import 'package:track_mauzo/ui/models/capability.dart';
+import 'package:aza_pos/ui/models/capability.dart';
 import 'staff_credentials.dart';
 import 'models/staff_models.dart';
 import 'services/accounting_service.dart';
@@ -87,6 +88,7 @@ const _demoProducts = <String, String>{
 
 class PosLocalStore extends ChangeNotifier
     with
+        WidgetsBindingObserver,
         PosAccountingStore,
         PosAuthStore,
         PosSupplierStore,
@@ -104,6 +106,9 @@ class PosLocalStore extends ChangeNotifier
     _salesService = SalesService(this);
     _inventoryService = InventoryService(this);
     _accountingService = AccountingService(this);
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (_) {}
   }
 
   late final AuthService _authService;
@@ -271,8 +276,103 @@ class PosLocalStore extends ChangeNotifier
   bool get isInitialized => _isInitialized;
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_disposed || !_isInitialized) return;
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      // Flush pending outbox events and save a local recovery snapshot
+      // whenever the user backgrounds or closes the app.
+      final db = _cloudApi ?? _database;
+      if (db is PosHybridDatabase) {
+        unawaited(db.syncNow(pull: false));
+      }
+      unawaited(writeAutoBackupSnapshot());
+    } else if (state == AppLifecycleState.resumed) {
+      final db = _cloudApi ?? _database;
+      if (db is PosHybridDatabase &&
+          db.api.token != null &&
+          db.api.token!.isNotEmpty) {
+        unawaited(db.syncNow(pull: true));
+      }
+    }
+  }
+
+  /// Writes an automatic JSON snapshot of all shop records to the device's
+  /// application documents folder so nothing is ever lost even on unexpected crash.
+  @override
+  Future<void> writeAutoBackupSnapshot() async {
+    if (_disposed || !_isInitialized) return;
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final payload = <String, dynamic>{
+        'app': 'Aza POS',
+        'saved_at': DateTime.now().toIso8601String(),
+        'store_id': _activeStoreId,
+        'profile': {
+          'store_name': _profile.storeName,
+          'owner_name': _profile.ownerName,
+          'role_title': _profile.roleTitle,
+          'phone': _profile.contactNumber,
+          'email': _profile.emailAddress,
+          'address': _profile.physicalAddress,
+          'tax_id': _profile.taxId,
+        },
+        'inventory_count': _allInventory.length,
+        'orders_count': _orders.length,
+        'customers_count': _customers.length,
+        'inventory': _allInventory
+            .map((i) => _database.inventoryToMap(i, _activeStoreId))
+            .toList(),
+        'orders': _orders
+            .map((o) => {
+                  'id': o.id,
+                  'date_time': o.dateTime,
+                  'date_label': o.date,
+                  'time_label': o.time,
+                  'total': o.total,
+                  'status': o.status,
+                  'cashier_name': o.cashierName,
+                  'register_name': o.register,
+                  'payment_method': o.paymentMethod,
+                  'cash_tendered': o.cashTendered,
+                  'change_due': o.changeDue,
+                  'customer_name': o.customerName,
+                  'discount_amount': o.discountAmount,
+                  'discount_label': o.discountLabel,
+                })
+            .toList(),
+        'customers': _customers
+            .map((c) => {
+                  'id': c.id,
+                  'name': c.name,
+                  'phone': c.phone,
+                  'email': c.email,
+                  'address': c.address,
+                  'debit_balance': c.debitBalance,
+                  'created_at': c.createdAt.toIso8601String(),
+                })
+            .toList(),
+        'expenses': _expenses.map((e) => e.toMap()).toList(),
+        'suppliers': _suppliers.map((s) => s.toMap()).toList(),
+        'receivings': _receivings.map((r) => r.toMap()).toList(),
+        'suspended_sales': _suspendedSales.map((s) => s.toJson()).toList(),
+      };
+      final file = File('${directory.path}/azapos_autobackup_latest.json');
+      final tmpFile = File('${directory.path}/azapos_autobackup_latest.json.tmp');
+      await tmpFile.writeAsString(jsonEncode(payload), flush: true);
+      await tmpFile.rename(file.path);
+    } catch (_) {
+      // In unit tests or restricted sandboxes where documents dir is unavailable.
+    }
+  }
+
+  @override
   void dispose() {
     _disposed = true;
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
     _midnightRefreshTimer?.cancel();
     _dailySmsTimer?.cancel();
     super.dispose();
@@ -507,6 +607,7 @@ class PosLocalStore extends ChangeNotifier
   bool get hasCompletedOnboarding => _hasCompletedOnboarding;
 
   List<ProductItem> get products => List.unmodifiable(_products);
+  @override
   List<ProductItem> get cartItems => List.unmodifiable(_cartItems);
   List<CompletedOrder> get orders => List.unmodifiable(_orders);
   List<Store> get stores => List.unmodifiable(_stores);

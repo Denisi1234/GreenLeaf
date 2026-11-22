@@ -41,14 +41,10 @@ class StaffRoleFilterChip extends StatelessWidget {
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color:
-              selectedRole == null ? AppColors.surface : AppColors.primaryLight,
+          color: selectedRole == null
+              ? AppColors.surface
+              : AppColors.primary,
           borderRadius: BorderRadius.zero,
-          border: Border.all(
-            color: selectedRole == null
-                ? AppColors.border
-                : AppColors.primary.withValues(alpha: 0.28),
-          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -58,7 +54,7 @@ class StaffRoleFilterChip extends StatelessWidget {
               size: 16,
               color: selectedRole == null
                   ? AppColors.textMuted
-                  : AppColors.primary,
+                  : Colors.white,
             ),
             const SizedBox(width: 6),
             Text(
@@ -66,16 +62,18 @@ class StaffRoleFilterChip extends StatelessWidget {
               style: TextStyle(
                 color: selectedRole == null
                     ? AppColors.textMuted
-                    : AppColors.primaryDeep,
+                    : Colors.white,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(width: 2),
-            const Icon(
+            Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 18,
-              color: AppColors.textMuted,
+              color: selectedRole == null
+                  ? AppColors.textMuted
+                  : Colors.white,
             ),
           ],
         ),
@@ -105,19 +103,14 @@ class StaffChoicePill extends StatelessWidget {
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : Colors.white,
+          color: selected ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.zero,
-          border: Border.all(
-            color: selected
-                ? AppColors.primary.withValues(alpha: 0.28)
-                : AppColors.border,
-          ),
         ),
         child: Center(
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? AppColors.primaryDeep : AppColors.textMuted,
+              color: selected ? Colors.white : AppColors.textMuted,
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
             ),

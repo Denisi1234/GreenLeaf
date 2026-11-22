@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/supplier_model.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/quantity_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
@@ -50,7 +51,8 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
   }
 
   double get _total => _lines.fold<double>(0, (sum, line) => sum + line.total);
-  int get _units => _lines.fold<int>(0, (sum, line) => sum + line.quantity);
+  double get _units =>
+      roundQuantity(_lines.fold<double>(0, (sum, line) => sum + line.quantity));
 
   @override
   Widget build(BuildContext context) {
@@ -59,29 +61,48 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _sectionHeader(_t('Items received', 'Bidhaa zilizopokelewa'),
           trailing:
-              '${_lines.length} ${_t('items', 'bidhaa')} • $_units ${_t('units', 'vipande')}'),
+              '${_lines.length} ${_t('items', 'bidhaa')} • ${formatQuantity(_units)} ${_t('units', 'vipimo')}'),
       const SizedBox(height: 12),
       _linesCard(),
       const SizedBox(height: 12),
       OutlinedButton.icon(
           onPressed: _saving ? null : _addLine,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: AppColors.kpiSkyBg,
+            foregroundColor: AppColors.kpiSky,
+            side: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+            ),
+          ),
           icon: const Icon(Icons.add_rounded),
-          label: Text(_t('Add item', 'Ongeza bidhaa'))),
+          label: Text(
+            _t('Add item', 'Ongeza bidhaa'),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          )),
     ]);
     final save = FilledButton.icon(
       onPressed: _saving ? null : _save,
       style: FilledButton.styleFrom(
-          backgroundColor: AppColors.successDeep,
-          minimumSize: const Size(double.infinity, 48)),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        minimumSize: const Size(double.infinity, 48),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      ),
       icon: _saving
           ? const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2))
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white))
           : const Icon(Icons.check_rounded),
-      label: Text(_saving
-          ? _t('Saving...', 'Inahifadhi...')
-          : _t('Save and add to stock', 'Hifadhi na ongeza hifadhini')),
+      label: Text(
+        _saving
+            ? _t('Saving...', 'Inahifadhi...')
+            : _t('Save and add to stock', 'Hifadhi na ongeza hifadhini'),
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
     );
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
@@ -301,7 +322,7 @@ class _NewReceivingPageState extends State<NewReceivingPage> {
                   ),
                 ),
                 Text(
-                  '${_lines.length} / $_units',
+                  '${_lines.length} / ${formatQuantity(_units)}',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.ink,
                     fontWeight: FontWeight.w700,

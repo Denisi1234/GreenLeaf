@@ -276,7 +276,7 @@ class _RegisterPageState extends State<RegisterPage> {
       children: [
         Text(
           strings.createAccount,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 28,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.6,
@@ -288,7 +288,7 @@ class _RegisterPageState extends State<RegisterPage> {
           strings.isSwahili
               ? 'Fungua akaunti ya duka lako. Tutakutumia namba ya uthibitisho yenye tarakimu 6 kwa SMS.'
               : 'Create your shop account. We will send a 6-digit verification code by SMS.',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 14.5,
             height: 1.5,
             color: AppColors.textMuted,
@@ -465,7 +465,7 @@ class _RegisterPageState extends State<RegisterPage> {
       children: [
         Text(
           strings.isSwahili ? 'Thibitisha Namba ya Simu' : 'Verify Phone Number',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 26,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
@@ -477,7 +477,7 @@ class _RegisterPageState extends State<RegisterPage> {
           strings.isSwahili
               ? 'Ingiza namba ya uthibitisho yenye tarakimu 6 iliyotumwa kwa SMS kwenda $phoneDisplay.'
               : 'Enter the 6-digit verification code sent via SMS to $phoneDisplay.',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 14.5,
             height: 1.5,
             color: AppColors.textMuted,
@@ -504,7 +504,7 @@ class _RegisterPageState extends State<RegisterPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (_) => _clearError(),
           onFieldSubmitted: (_) => _verifyAndRegister(),
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 22,
             fontWeight: FontWeight.w800,
             letterSpacing: 10,
@@ -537,7 +537,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       }),
               child: Text(
                 strings.isSwahili ? 'Badili namba' : 'Change number',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.manrope(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textMuted,
                 ),
@@ -553,7 +553,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ? 'Tuma tena (${_resendCountdown}s)'
                         : 'Resend (${_resendCountdown}s)')
                     : (strings.isSwahili ? 'Tuma OTP tena' : 'Resend OTP'),
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.manrope(
                   fontWeight: FontWeight.w700,
                 ),
               ),

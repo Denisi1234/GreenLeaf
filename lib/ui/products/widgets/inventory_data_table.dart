@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
+import '../../../utils/quantity_formatter.dart';
 import '../inventory_product_item.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/app_image.dart';
+import '../../widgets/product_art/product_art.dart';
 import '../../widgets/workspace_widgets.dart';
 import 'product_cards.dart';
 
@@ -13,6 +16,7 @@ class InventoryDataTable extends StatelessWidget {
     required this.sortAscending,
     required this.onSort,
     this.onEdit,
+    this.onAdjustStock,
     this.onDelete,
   });
 
@@ -21,11 +25,13 @@ class InventoryDataTable extends StatelessWidget {
   final bool sortAscending;
   final void Function(int columnIndex, bool ascending) onSort;
   final void Function(InventoryProductItem item)? onEdit;
+  final void Function(InventoryProductItem item)? onAdjustStock;
   final void Function(InventoryProductItem item)? onDelete;
 
   @override
   Widget build(BuildContext context) {
-    final hasActions = onEdit != null || onDelete != null;
+    final hasActions =
+        onEdit != null || onAdjustStock != null || onDelete != null;
     return WorkspacePanel(
       padding: EdgeInsets.zero,
       child: LayoutBuilder(
@@ -67,36 +73,110 @@ class InventoryDataTable extends StatelessWidget {
                       cells: [
                         DataCell(
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 240),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            constraints: const BoxConstraints(maxWidth: 260),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  item.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    fontWeight: FontWeight.w700,
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.pageBackground,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.sharp),
+                                    border: Border.all(
+                                        color: AppColors.border, width: 1),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: (item.imagePath != null &&
+                                          item.imagePath!.trim().isNotEmpty)
+                                      ? Image(
+                                          image: appImageProvider(
+                                              context, item.imagePath!),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Padding(
+                                            padding: const EdgeInsets.all(4),
+                                            child: FittedBox(
+                                              fit: BoxFit.contain,
+                                              child: ProductArt(
+                                                  type: item.artType),
+                                            ),
+                                          ),
+                                        )
+                                      : Padding(
+                                          padding: const EdgeInsets.all(4),
+                                          child: FittedBox(
+                                            fit: BoxFit.contain,
+                                            child:
+                                                ProductArt(type: item.artType),
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(width: 12),
+                                Flexible(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style:
+                                            AppTypography.bodySmall.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      if (item.code.isNotEmpty)
+                                        Text(
+                                          item.code,
+                                          style: AppTypography.caption,
+                                        ),
+                                    ],
                                   ),
                                 ),
-                                if (item.code.isNotEmpty)
-                                  Text(
-                                    item.code,
-                                    style: AppTypography.caption,
-                                  ),
                               ],
                             ),
                           ),
                         ),
                         DataCell(Text(item.category)),
                         DataCell(Text(formatProductPrice(item.purchasePrice))),
-                        DataCell(Text(formatProductPrice(item.sellingPrice))),
+                        DataCell(Text(
+                          (item.allowFractional ||
+                                  item.unit.toLowerCase() != 'pcs')
+                              ? '${formatProductPrice(item.sellingPrice)} / ${item.unit}'
+                              : formatProductPrice(item.sellingPrice),
+                          style: AppTypography.bodySmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.successDeep,
+                          ),
+                        )),
                         DataCell(
-                          Text(
-                            item.unit.isEmpty
-                                ? '${item.stockCount}'
-                                : '${item.stockCount} ${item.unit}',
+                          Builder(
+                            builder: (_) {
+                              final packEquiv = formatPackEquivalent(
+                                item.stockCount,
+                                item.unit,
+                                packName: item.packName,
+                                packSize: item.packSize,
+                              );
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    formatStockWithUnit(
+                                        item.stockCount, item.unit),
+                                  ),
+                                  if (packEquiv != null)
+                                    Text(
+                                      '≈ $packEquiv',
+                                      style: AppTypography.caption,
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                         DataCell(
@@ -105,7 +185,7 @@ class InventoryDataTable extends StatelessWidget {
                                 ? context.tr('Out of stock')
                                 : item.stockCount <= 5
                                     ? context.tr('Low stock')
-                                    : '${item.stockCount}',
+                                    : formatQuantity(item.stockCount),
                             color: item.stockCount <= 0
                                 ? AppColors.dangerDeep
                                 : item.stockCount <= 5
@@ -123,6 +203,15 @@ class InventoryDataTable extends StatelessWidget {
                                     tooltip: context.tr('Edit item'),
                                     onPressed: () => onEdit!(item),
                                     icon: const Icon(Icons.edit_outlined,
+                                        size: 19),
+                                  ),
+                                if (onAdjustStock != null)
+                                  IconButton(
+                                    tooltip: context.strings.isSwahili
+                                        ? 'Rekebisha stoo'
+                                        : 'Adjust stock',
+                                    onPressed: () => onAdjustStock!(item),
+                                    icon: const Icon(Icons.tune_rounded,
                                         size: 19),
                                   ),
                                 if (onDelete != null)

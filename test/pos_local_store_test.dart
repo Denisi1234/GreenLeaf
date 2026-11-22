@@ -3,16 +3,16 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:track_mauzo/service/accounting_model.dart';
-import 'package:track_mauzo/service/expense_model.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
-import 'package:track_mauzo/service/register_shift_model.dart';
-import 'package:track_mauzo/service/staff_credentials.dart';
-import 'package:track_mauzo/service/supplier_model.dart';
-import 'package:track_mauzo/service/tax_settings.dart';
-import 'package:track_mauzo/ui/models/customer_data.dart';
-import 'package:track_mauzo/ui/models/product_item.dart';
-import 'package:track_mauzo/ui/products/inventory_product_item.dart';
+import 'package:aza_pos/service/accounting_model.dart';
+import 'package:aza_pos/service/expense_model.dart';
+import 'package:aza_pos/service/pos_local_store.dart';
+import 'package:aza_pos/service/register_shift_model.dart';
+import 'package:aza_pos/service/staff_credentials.dart';
+import 'package:aza_pos/service/supplier_model.dart';
+import 'package:aza_pos/service/tax_settings.dart';
+import 'package:aza_pos/ui/models/customer_data.dart';
+import 'package:aza_pos/ui/models/product_item.dart';
+import 'package:aza_pos/ui/products/inventory_product_item.dart';
 
 import 'support/memory_pos_database.dart';
 
@@ -37,7 +37,7 @@ void main() {
     String name = 'Mineral Water',
     double purchasePrice = 10,
     double sellingPrice = 20,
-    int stockCount = 10,
+    double stockCount = 10,
   }) async {
     final product = InventoryProductItem(
       code: code,

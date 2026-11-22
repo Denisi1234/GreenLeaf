@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_suspended_sale_model.dart';
 import '../../service/tax_settings.dart';
+import '../../utils/quantity_formatter.dart';
 import '../models/product_item.dart';
 
 /// Decoupled state & business-logic controller for [PaymentPage].
@@ -16,12 +17,17 @@ class PaymentViewModel extends ChangeNotifier {
   }) {
     final byKey = <String, OrderLineItem>{};
     for (final item in initialItems) {
-      final key = '${item.name}|${item.size}|${item.price}|${item.type.name}';
+      final key =
+          '${item.code ?? ''}|${item.name}|${item.size}|${item.price}|${item.type.name}|${item.customPrice?.toStringAsFixed(4) ?? ''}';
       final existing = byKey[key];
       if (existing == null) {
-        byKey[key] = OrderLineItem(product: item, quantity: 1);
+        byKey[key] = OrderLineItem(
+          product: item,
+          quantity: roundQuantity(item.quantity),
+          customPrice: item.customPrice,
+        );
       } else {
-        existing.quantity += 1;
+        existing.quantity = roundQuantity(existing.quantity + item.quantity);
       }
     }
     _orderLines = byKey.values.toList();
@@ -69,7 +75,11 @@ class PaymentViewModel extends ChangeNotifier {
           ? _cashReceived! - grandTotal
           : 0;
   int get itemTypes => _orderLines.length;
-  int get unitCount => _orderLines.fold(0, (sum, line) => sum + line.quantity);
+  int get unitCount => _orderLines.fold<int>(
+        0,
+        (sum, line) =>
+            sum + (line.product.allowFractional ? 1 : line.quantity.round()),
+      );
   bool get hasItems => _orderLines.isNotEmpty;
 
   void setCustomer(String? customer) {

@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -20,9 +20,7 @@ class AuthShell extends StatelessWidget {
   final bool showMobileBrand;
 
   static const double wideBreakpoint = 900;
-  static const String logoAsset = 'assets/images/ospos_logo.png';
-  static const String markAsset = 'assets/images/ospos_mark.svg';
-  static const String markWhiteAsset = 'assets/images/ospos_mark_white.svg';
+  static const String logoAsset = 'assets/images/app_logo.png';
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +131,7 @@ class _BrandPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.ink, AppColors.ink],
+          colors: [AppColors.drawerHeader, AppColors.ink],
         ),
       ),
       child: Stack(
@@ -142,12 +140,12 @@ class _BrandPanel extends StatelessWidget {
           const Positioned(
             top: -150,
             right: -130,
-            child: _Glow(color: Color(0x3DD32222), size: 440),
+            child: _Glow(color: Color(0x3822B8C4), size: 440),
           ),
           const Positioned(
             bottom: -170,
             left: -120,
-            child: _Glow(color: Color(0x2E111111), size: 400),
+            child: _Glow(color: Color(0x261B9BA6), size: 400),
           ),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -280,7 +278,7 @@ class _BrandLockup extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              context.tr('TrackMauzo'),
+              'Aza POS',
               style: TextStyle(
                 color: light ? Colors.white : AppColors.ink,
                 fontSize: 21,
@@ -530,10 +528,10 @@ class AuthSubmitButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: busy ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.ink,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           disabledBackgroundColor:
-              AppColors.ink.withValues(alpha: 0.6),
+              AppColors.primary.withValues(alpha: 0.6),
           disabledForegroundColor: Colors.white70,
           elevation: 0,
           shadowColor: Colors.transparent,

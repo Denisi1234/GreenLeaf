@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -121,7 +121,7 @@ class _ImportStatementPageState extends State<ImportStatementPage> {
                                     color: AppColors.primary, width: 1.4),
                               ),
                               filled: true,
-                              fillColor: AppColors.surface,
+                              fillColor: AppColors.pageBackground,
                               isDense: true,
                               contentPadding: const EdgeInsets.all(12),
                             ),

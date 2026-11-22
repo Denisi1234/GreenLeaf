@@ -289,9 +289,60 @@ Future<void> _upgradePosDatabase(
   if (oldVersion < 30) {
     await db.execute(_suspendedSalesSchema);
   }
+  if (oldVersion < 32) {
+    await _ensureMeasurementColumns(db);
+  }
+}
+
+Future<void> _ensureMeasurementColumns(Database db) async {
+  Future<void> addColumnIfMissing(
+    String table,
+    String columnName,
+    String definition,
+  ) async {
+    final info = await db.rawQuery('PRAGMA table_info($table)');
+    if (info.isEmpty) return;
+    final exists = info.any((column) => column['name'] == columnName);
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $definition');
+    }
+  }
+
+  await addColumnIfMissing(
+    'cart_items',
+    'quantity',
+    'quantity REAL NOT NULL DEFAULT 1',
+  );
+  await addColumnIfMissing(
+    'cart_items',
+    'unit',
+    "unit TEXT NOT NULL DEFAULT 'Pcs'",
+  );
+  await addColumnIfMissing(
+    'cart_items',
+    'allow_fractional',
+    'allow_fractional INTEGER NOT NULL DEFAULT 0',
+  );
+  await addColumnIfMissing(
+    'cart_items',
+    'custom_price',
+    'custom_price REAL',
+  );
+  await addColumnIfMissing(
+    'order_lines',
+    'item_unit',
+    "item_unit TEXT NOT NULL DEFAULT 'Pcs'",
+  );
 }
 
 Future<void> _onOpenPosDatabase(Database db) async {
+  try {
+    await db.rawQuery('PRAGMA journal_mode = WAL');
+    await db.rawQuery('PRAGMA synchronous = FULL');
+    await db.rawQuery('PRAGMA foreign_keys = ON');
+  } catch (_) {
+    // In-memory or test FFI databases that don't support WAL continue safely.
+  }
   await db.execute('''
     CREATE TABLE IF NOT EXISTS stores (
       id TEXT PRIMARY KEY,
@@ -316,6 +367,7 @@ Future<void> _onOpenPosDatabase(Database db) async {
   await db.execute(_fixedAssetsSchema);
   await db.execute(_bankTransactionsSchema);
   await db.execute(_suspendedSalesSchema);
+  await _ensureMeasurementColumns(db);
 }
 
 Future<void> _restoreDefaultStoreProfile(Database db) async {

@@ -40,15 +40,18 @@ class CustomerDebitSection extends StatelessWidget {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color:
-                hasDebt ? AppColors.surfaceSecondary : AppColors.successLight,
-            borderRadius: BorderRadius.zero,
-            border: Border.all(
-              color: (hasDebt ? AppColors.ink : AppColors.success)
-                  .withValues(alpha: 0.16),
-            ),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.standard),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,7 +62,7 @@ class CustomerDebitSection extends StatelessWidget {
                     hasDebt
                         ? Icons.account_balance_wallet_outlined
                         : Icons.verified_rounded,
-                    color: hasDebt ? AppColors.ink : AppColors.success,
+                    color: hasDebt ? AppColors.kpiDanger : AppColors.success,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -80,7 +83,8 @@ class CustomerDebitSection extends StatelessWidget {
                     CustomerDebitAction(
                       label: customerDual(strings, 'Statement (PDF)', 'Taarifa (PDF)'),
                       icon: Icons.picture_as_pdf_rounded,
-                      color: AppColors.ink,
+                      color: AppColors.kpiVioletBg,
+                      foregroundColor: AppColors.kpiViolet,
                       onTap: () => _shareStatement(context),
                     ),
                     const SizedBox(width: 6),
@@ -203,12 +207,14 @@ class CustomerDebitAction extends StatelessWidget {
     required this.onTap,
     this.icon = Icons.payments_rounded,
     this.color = AppColors.primary,
+    this.foregroundColor = Colors.white,
   });
 
   final String label;
   final VoidCallback onTap;
   final IconData icon;
   final Color color;
+  final Color foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -224,12 +230,12 @@ class CustomerDebitAction extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.white, size: 14),
+              Icon(icon, color: foregroundColor, size: 14),
               const SizedBox(width: 4),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: foregroundColor,
                   fontSize: 11.5,
                   fontWeight: FontWeight.w800,
                 ),
@@ -255,10 +261,10 @@ class CustomerLedgerRow extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
-        border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: const Border.fromBorderSide(BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [

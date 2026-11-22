@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +10,7 @@ import '../../service/esc_pos_receipt_builder.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../../service/thermal_printer_service.dart';
+import '../../utils/quantity_formatter.dart';
 import '../shell/app_shell.dart';
 import '../widgets/app_design.dart';
 import '../widgets/app_image.dart';
@@ -378,7 +379,7 @@ class ReceiptPaper extends StatelessWidget {
                         children: [
                           Expanded(
                               child: Text(
-                                  '${line.quantity} × ${receipt.money(line.unitPriceValue)}',
+                                  '${formatQtyForReceipt(line.quantity, line.unit)} × ${receipt.money(line.unitPriceValue)}',
                                   style: AppTypography.bodySmall
                                       .copyWith(color: AppColors.textMuted))),
                           const SizedBox(width: 12),

@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,7 +16,7 @@ class AboutAppPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-             MarketPageHeader(title: context.tr('About TrackMauzo')),
+             MarketPageHeader(title: context.tr('About Aza POS')),
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
@@ -27,8 +27,15 @@ class AboutAppPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(AppRadius.standard),
                         border: Border.all(color: AppColors.border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -55,7 +62,7 @@ class AboutAppPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            context.tr('TrackMauzo'),
+                            'Aza POS',
                             style: GoogleFonts.manrope(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
@@ -64,7 +71,7 @@ class AboutAppPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            context.tr('Version 2.4.1'),
+                            context.tr('Version 1.0.0'),
                             style: GoogleFonts.manrope(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -87,9 +94,9 @@ class AboutAppPage extends StatelessWidget {
                           InkWell(
                             onTap: () => showLicensePage(
                               context: context,
-                              applicationName: 'TrackMauzo',
-                              applicationVersion: '2.4.1',
-                              applicationLegalese: '© 2026 TrackMauzo. All rights reserved.',
+                              applicationName: 'Aza POS',
+                              applicationVersion: '1.0.0',
+                              applicationLegalese: '© 2026 Aza POS. All rights reserved.',
                             ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -105,7 +112,7 @@ class AboutAppPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            context.tr('© 2026 TrackMauzo. All rights reserved.'),
+                            context.tr('© 2026 Aza POS. All rights reserved.'),
                             style: GoogleFonts.manrope(
                               fontSize: 11,
                               color: AppColors.textLight,

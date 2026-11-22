@@ -4,17 +4,20 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../models/product_item.dart';
 import '../payment/payment_page.dart';
+import '../products/product_management_page.dart';
 import '../../service/barcode_scan_service.dart';
 import '../../service/pos_local_store.dart';
+import '../../utils/quantity_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/market_skeleton.dart';
 import '../widgets/workspace_widgets.dart';
 import 'suspended_sales_sheet.dart';
+import 'widgets/measurement_sale_sheet.dart';
 import 'widgets/product_card.dart';
 import 'widgets/sales_cart_panel.dart';
 import 'widgets/sales_controls_bar.dart';
@@ -24,9 +27,11 @@ class SalesPage extends StatelessWidget {
   const SalesPage({
     super.key,
     this.useSharedShell = false,
+    this.onOpenInventory,
   });
 
   final bool useSharedShell;
+  final VoidCallback? onOpenInventory;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +39,7 @@ class SalesPage extends StatelessWidget {
       drawer: useSharedShell ? null : const MarketAppDrawer(),
       body: SalesDashboardView(
         useSharedShell: useSharedShell,
+        onOpenInventory: onOpenInventory,
       ),
     );
   }
@@ -43,9 +49,11 @@ class SalesDashboardView extends StatefulWidget {
   const SalesDashboardView({
     super.key,
     this.useSharedShell = false,
+    this.onOpenInventory,
   });
 
   final bool useSharedShell;
+  final VoidCallback? onOpenInventory;
 
   @override
   State<SalesDashboardView> createState() => _SalesDashboardViewState();
@@ -121,7 +129,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                       width: 40,
                       height: 40,
                       decoration: const BoxDecoration(
-                        color: AppColors.ink,
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -148,13 +156,40 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
     });
   }
 
-  void _handleProductTap(ProductItem product, TapDownDetails details) {
+  Future<void> _handleProductTap(
+    ProductItem product,
+    TapDownDetails details,
+  ) async {
     final store = context.read<PosLocalStore>();
-    final inCart = store.cartItems
-        .where((item) => productKey(item) == productKey(product))
-        .length;
-    final remaining = store.availableStockForProduct(product) - inCart;
+    final inCart = store.cartQuantityForProduct(product);
+    final remaining =
+        roundQuantity(store.availableStockForProduct(product) - inCart);
     if (remaining <= 0) return;
+
+    if (product.allowFractional) {
+      final result = await MeasurementSaleSheet.show(
+        context,
+        product: product,
+        availableStock: remaining,
+      );
+      if (result == null || !mounted) return;
+      final added = store.addToCartQuantity(
+        product,
+        result.quantity,
+        customPrice: result.customPrice,
+      );
+      if (!added) return;
+      HapticFeedback.lightImpact();
+      _triggerFlyToCartAnimation(product, details.globalPosition);
+      _viewModel.setSuccessMessage(
+        context.tr('Added {p0} to cart', args: {'p0': product.name}),
+      );
+      _successTimer?.cancel();
+      _successTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted) _viewModel.setSuccessMessage(null);
+      });
+      return;
+    }
 
     HapticFeedback.lightImpact();
     store.addToCart(product);
@@ -216,6 +251,41 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
     await _handleBarcodeValue(scanned);
   }
 
+  void _openQuickCartSheet() {
+    final store = context.read<PosLocalStore>();
+    if (store.cartItems.isEmpty) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.extraRounded),
+        ),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        top: false,
+        child: SizedBox(
+          height: MediaQuery.of(sheetCtx).size.height * 0.72,
+          child: SalesCartPanel(
+            checkout: CheckoutBar(
+              cartKey: GlobalKey(),
+              itemCount: sheetCtx.watch<PosLocalStore>().cartCount,
+              total: sheetCtx.watch<PosLocalStore>().cartTotal,
+              currency: sheetCtx.watch<PosLocalStore>().profile.currency,
+              onCheckout: () {
+                Navigator.of(sheetCtx).pop();
+                _openPaymentScreen();
+              },
+              label: context.tr('Review & checkout'),
+              accentColor: AppColors.primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openPaymentScreen() {
     final store = context.read<PosLocalStore>();
     if (store.cartItems.isEmpty) return;
@@ -268,20 +338,23 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                         style: OutlinedButton.styleFrom(
                           backgroundColor: AppColors.kpiAmberBg,
                           foregroundColor: AppColors.kpiAmber,
-                          side: const BorderSide(color: AppColors.kpiAmber),
+                          side: BorderSide.none,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 10,
                           ),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
                         ),
                         icon: const Icon(
                           Icons.pause_circle_outline_rounded,
                           size: 18,
                         ),
-                        label: Text(context.tr('Hold Sale')),
+                        label: Text(
+                          context.tr('Hold Sale'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                       const SizedBox(width: 8),
                     ],
@@ -293,20 +366,23 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                           style: OutlinedButton.styleFrom(
                             backgroundColor: AppColors.kpiSkyBg,
                             foregroundColor: AppColors.kpiSky,
-                            side: const BorderSide(color: AppColors.kpiSky),
+                            side: BorderSide.none,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
+                              horizontal: 14,
                               vertical: 10,
                             ),
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
                             ),
                           ),
                           icon: const Icon(
                             Icons.history_toggle_off_rounded,
                             size: 18,
                           ),
-                          label: Text(context.tr('Held Sales')),
+                          label: Text(
+                            context.tr('Held Sales'),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
                         ),
                         if (store.suspendedSales.isNotEmpty)
                           Positioned(
@@ -356,7 +432,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                         ),
                         action: holdActions,
                       ),
-                    SizedBox(height: widget.useSharedShell ? 12 : 16),
+                    const SizedBox(height: 12),
                     SearchBox(
                       controller: _searchController,
                       hintText: context.tr('Search products or barcode'),
@@ -368,26 +444,53 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                       },
                       onScanTap: _scanBarcode,
                     ),
-                    const SizedBox(height: 12),
-                    SalesCategoryStrip(
-                      categories: categories,
-                      selectedCategory: _viewModel.selectedCategory,
-                      onSelected: (cat) => _viewModel.setSelectedCategory(cat),
-                    ),
+                    if (categories.length > 1) ...[
+                      const SizedBox(height: 10),
+                      SalesCategoryStrip(
+                        categories: categories,
+                        selectedCategory: _viewModel.selectedCategory,
+                        onSelected: (cat) =>
+                            _viewModel.setSelectedCategory(cat),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        FilterChip(
-                          label: Text(context.tr('In stock')),
-                          selected: _viewModel.inStockOnly,
-                          side: BorderSide.none,
-                          backgroundColor: AppColors.surface,
-                          selectedColor: AppColors.kpiSkyBg,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                        Expanded(
+                          child: Text(
+                            context.tr(
+                              '{p0} products',
+                              args: {'p0': products.length},
+                            ),
+                            style: AppTypography.sectionHeader,
                           ),
-                          onSelected: (val) => _viewModel.setInStockOnly(val),
                         ),
+                        if (_viewModel.searchQuery.isNotEmpty ||
+                            _viewModel.selectedCategory != 'All' ||
+                            _viewModel.inStockOnly)
+                          TextButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              _viewModel.resetFilters();
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primaryDeep,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              context.tr('Clear filters'),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         PopupMenuButton<String>(
                           tooltip: context.tr('Sort products'),
                           initialValue: _viewModel.sortBy,
@@ -399,54 +502,20 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                             ),
                             PopupMenuItem(
                               value: 'price-low',
-                              child: Text(context.tr('Price: low to high')),
+                              child:
+                                  Text(context.tr('Price: low to high')),
                             ),
                             PopupMenuItem(
                               value: 'price-high',
-                              child: Text(context.tr('Price: high to low')),
+                              child:
+                                  Text(context.tr('Price: high to low')),
                             ),
                           ],
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 10,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.sort_rounded, size: 18),
-                                const SizedBox(width: 6),
-                                Text(
-                                  context.tr('Sort'),
-                                  style: AppTypography.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
+                          icon: const Icon(Icons.sort_rounded),
                         ),
-                        Text(
-                          context.tr(
-                            '{p0} products',
-                            args: {'p0': products.length},
-                          ),
-                          style: AppTypography.label,
-                        ),
-                        if (_viewModel.searchQuery.isNotEmpty ||
-                            _viewModel.selectedCategory != 'All' ||
-                            _viewModel.inStockOnly)
-                          TextButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              _viewModel.resetFilters();
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.dangerDeep,
-                            ),
-                            child: Text(context.tr('Clear filters')),
-                          ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Expanded(
                       child: !store.isInitialized
                           ? GridView.builder(
@@ -454,54 +523,63 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                               gridDelegate:
                                   const SliverGridDelegateWithMaxCrossAxisExtent(
                                 maxCrossAxisExtent: 240,
-                                mainAxisExtent: 250,
+                                mainAxisExtent: 224,
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
                               ),
                               itemBuilder: (_, __) => const MarketSkeleton(
                                 width: double.infinity,
-                                height: 250,
-                                radius: 0,
+                                height: 224,
+                                radius: 10,
                               ),
                             )
                           : products.isEmpty
                               ? Center(
                                   child: SingleChildScrollView(
-                                    child: WorkspacePanel(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.search_off_rounded,
-                                            size: 40,
-                                            color: AppColors.textMuted,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            context.tr('No matching products'),
-                                            style: AppTypography.h3,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            context.tr(
+                                    child: store.inventory.isEmpty
+                                        ? MarketEmptyState(
+                                            icon: Icons.inventory_2_outlined,
+                                            title: context.strings.isSwahili
+                                                ? 'Hakuna bidhaa bado'
+                                                : 'No products yet',
+                                            message: context.strings.isSwahili
+                                                ? 'Ongeza bidhaa yako ya kwanza ili uanze kufanya mauzo.'
+                                                : 'Add your first product to start making sales.',
+                                            actionLabel:
+                                                context.strings.isSwahili
+                                                    ? 'Ongeza bidhaa'
+                                                    : 'Add product',
+                                            actionIcon: Icons.add_rounded,
+                                            onAction: () {
+                                              if (widget.onOpenInventory !=
+                                                  null) {
+                                                widget.onOpenInventory!();
+                                              } else {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute<void>(
+                                                    builder: (_) =>
+                                                        const ProductManagementPage(),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                          )
+                                        : MarketEmptyState(
+                                            icon: Icons.search_off_rounded,
+                                            title: context
+                                                .tr('No matching products'),
+                                            message: context.tr(
                                               'Try a different search or clear your filters.',
                                             ),
-                                            style: AppTypography.bodySmall,
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 12),
-                                          TextButton(
-                                            onPressed: () {
+                                            actionLabel:
+                                                context.tr('Show all products'),
+                                            actionIcon:
+                                                Icons.filter_alt_off_rounded,
+                                            onAction: () {
                                               _searchController.clear();
                                               _viewModel.resetFilters();
                                             },
-                                            child: Text(
-                                              context.tr('Show all products'),
-                                            ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
                                   ),
                                 )
                               : LayoutBuilder(
@@ -520,8 +598,8 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                                                       context,
                                                     ).scale(1) >
                                                 1.2
-                                            ? 290
-                                            : 260,
+                                            ? 256
+                                            : 224,
                                         mainAxisSpacing: 12,
                                         crossAxisSpacing: 12,
                                       ),
@@ -544,13 +622,20 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                   cartKey: _cartKey,
                   itemCount: store.cartCount,
                   total: store.cartTotal,
+                  currency: store.profile.currency,
+                  onViewCart: wide ? null : _openQuickCartSheet,
                   onCheckout: _openPaymentScreen,
                   label: context.tr('Review & checkout'),
-                  accentColor: AppColors.successDeep,
+                  accentColor: AppColors.primary,
                 );
 
                 return Padding(
-                  padding: EdgeInsets.all(wide ? 24 : 16),
+                  padding: EdgeInsets.fromLTRB(
+                    wide ? 24 : 14,
+                    wide ? 20 : 14,
+                    wide ? 24 : 14,
+                    wide ? 24 : 14,
+                  ),
                   child: Column(
                     children: [
                       Expanded(
@@ -576,7 +661,7 @@ class _SalesDashboardViewState extends State<SalesDashboardView>
                               const Icon(
                                 Icons.check_circle_outline_rounded,
                                 size: 18,
-                                color: AppColors.successDeep,
+                                color: AppColors.primaryDeep,
                               ),
                               const SizedBox(width: 8),
                               Expanded(

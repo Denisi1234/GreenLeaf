@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../../../service/pos_local_store.dart';
 import '../../widgets/app_design.dart';
@@ -155,8 +155,8 @@ class _StaffTile extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(10),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Row(
         children: [
           CircleAvatar(

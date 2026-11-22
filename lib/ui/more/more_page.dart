@@ -23,14 +23,12 @@ class MorePage extends StatefulWidget {
 
 class _MorePageState extends State<MorePage> {
   final _searchController = TextEditingController();
-  final _searchFocusNode = FocusNode();
   final _queryNotifier = ValueNotifier<String>('');
   bool _signingOut = false;
 
   @override
   void dispose() {
     _searchController.dispose();
-    _searchFocusNode.dispose();
     _queryNotifier.dispose();
     super.dispose();
   }
@@ -63,8 +61,8 @@ class _MorePageState extends State<MorePage> {
         _Tool(
           'orders',
           Icons.receipt_outlined,
-          AppColors.kpiSky, // Sky
-          AppColors.kpiSkyBg,
+          AppColors.primaryDeep, // Cyan
+          AppColors.primaryLight,
           t('Orders & receipts', 'Oda na risiti'),
           t('Sales history, receipts and returns',
               'Historia ya mauzo, risiti na marejesho'),
@@ -119,8 +117,8 @@ class _MorePageState extends State<MorePage> {
           _Tool(
             'advanced',
             Icons.tune_rounded,
-            AppColors.kpiSky, // Indigo
-            AppColors.kpiSkyBg,
+            AppColors.kpiViolet, // Violet
+            AppColors.kpiVioletBg,
             t('Advanced features', 'Vipengele vya juu'),
             t('Suppliers, register, accounting, stores & staff',
                 'Wasambazaji, kasha, uhasibu, maduka na wafanyakazi'),
@@ -147,61 +145,24 @@ class _MorePageState extends State<MorePage> {
         top: !widget.useSharedShell,
         child: Column(
           children: [
-            // Full-width sharp borderless ERP filter bar
-            Container(
-              color: AppColors.surface,
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-              child: TextField(
+            // Consistent sharp search bar matching Items & Sales pages
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+              child: MarketSearchField(
                 controller: _searchController,
-                focusNode: _searchFocusNode,
+                hintText: t('Filter modules...', 'Tafuta moduli...'),
                 onChanged: (v) => _queryNotifier.value = v,
-                textInputAction: TextInputAction.search,
-                style: AppTypography.bodyMain,
-                decoration: InputDecoration(
-                  hintText: t('Filter modules...', 'Tafuta moduli...'),
-                  hintStyle: AppTypography.label,
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    size: 18,
-                    color: AppColors.textMuted,
-                  ),
-                  suffixIcon: ValueListenableBuilder<String>(
-                    valueListenable: _queryNotifier,
-                    builder: (_, q, __) => q.isNotEmpty
-                        ? IconButton(
-                            tooltip: t('Clear search', 'Futa utafutaji'),
-                            icon: const Icon(Icons.close_rounded, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              _queryNotifier.value = '';
-                            },
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                  filled: true,
-                  fillColor: AppColors.pageBackground,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 11,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide:
-                        const BorderSide(color: AppColors.ink, width: 1),
-                  ),
-                ),
+                onClear: () {
+                  _searchController.clear();
+                  _queryNotifier.value = '';
+                },
+                height: 48,
+                radius: 0,
+                backgroundColor: AppColors.surface,
+                borderColor: AppColors.border,
+                paddingHorizontal: 14,
               ),
             ),
-            const Divider(height: 1, color: AppColors.divider),
             Expanded(
               child: ValueListenableBuilder<String>(
                 valueListenable: _queryNotifier,
@@ -229,46 +190,56 @@ class _MorePageState extends State<MorePage> {
                   return ListView(
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
                     children: [
                       if (visibleSections.isEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 48),
-                          child: Center(
-                            child: Text(
-                              t('No matching tools',
-                                  'Hakuna zana zinazolingana'),
-                              style: AppTypography.label,
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: MarketEmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: t('No matching tools',
+                                'Hakuna zana zinazolingana'),
+                            message: t(
+                              'Try a different keyword or clear your search.',
+                              'Jaribu neno lingine au ondoa utafutaji.',
                             ),
+                            actionLabel: t('Clear search', 'Ondoa utafutaji'),
+                            actionIcon: Icons.filter_alt_off_rounded,
+                            onAction: () {
+                              _searchController.clear();
+                              _queryNotifier.value = '';
+                            },
                           ),
                         )
                       else
                         for (var sIdx = 0;
                             sIdx < visibleSections.length;
                             sIdx++) ...[
-                          if (sIdx > 0) const SizedBox(height: 20),
+                          if (sIdx > 0) const SizedBox(height: 18),
                           _FullWidthToolSection(
                             section: visibleSections[sIdx],
-                            onBeforeNavigate: () => _searchFocusNode.unfocus(),
+                            onBeforeNavigate: () =>
+                                FocusScope.of(context).unfocus(),
                           ),
                         ],
-                      const SizedBox(height: 24),
-                      // Full-width Sign Out row
+                      const SizedBox(height: 20),
+                      // Rounded Sign Out card matching section cards
                       Container(
-                        decoration: const BoxDecoration(
-                          border: Border.symmetric(
-                            horizontal: BorderSide(color: AppColors.border),
-                          ),
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.standard),
+                          border: Border.all(color: AppColors.border),
                         ),
                         child: Material(
-                          color: AppColors.sectionSurface,
-                          borderRadius: BorderRadius.zero,
+                          color: Colors.transparent,
                           child: InkWell(
                             key: const ValueKey('more-sign-out'),
                             onTap: _signingOut ? null : _signOut,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                                horizontal: 14,
                                 vertical: 14,
                               ),
                               child: Row(
@@ -278,7 +249,8 @@ class _MorePageState extends State<MorePage> {
                                     height: 38,
                                     decoration: BoxDecoration(
                                       color: AppColors.kpiDangerBg,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                          AppRadius.sharp),
                                     ),
                                     alignment: Alignment.center,
                                     child: const Icon(
@@ -332,7 +304,7 @@ class _FullWidthToolSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
           child: Row(
             children: [
               Text(
@@ -355,21 +327,21 @@ class _FullWidthToolSection extends StatelessWidget {
           ),
         ),
         Container(
-          decoration: const BoxDecoration(
-            border: Border.symmetric(
-              horizontal: BorderSide(color: AppColors.border),
-            ),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.standard),
+            border: Border.all(color: AppColors.border),
           ),
           child: Material(
-            color: AppColors.sectionSurface,
-            borderRadius: BorderRadius.zero,
+            color: Colors.transparent,
             child: Column(
               children: [
                 for (var i = 0; i < section.tools.length; i++) ...[
                   if (i > 0)
                     const Divider(
                       height: 1,
-                      indent: 68,
+                      indent: 66,
                       color: AppColors.border,
                     ),
                 InkWell(
@@ -384,7 +356,7 @@ class _FullWidthToolSection extends StatelessWidget {
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
+                      horizontal: 14,
                       vertical: 14,
                     ),
                     child: Row(

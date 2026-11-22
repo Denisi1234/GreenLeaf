@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../../service/pos_order_models.dart';
 import '../../service/receipt_settings.dart';
+import '../../utils/quantity_formatter.dart';
 import '../models/product_item.dart';
 import 'receipt_document.dart';
 
@@ -33,7 +34,7 @@ class ReceiptPdfService {
     final pdf = pw.Document(
         title: '${receipt.label('Receipt')} ${receipt.order.receiptNo}',
         author: receipt.businessName,
-        creator: 'TrackMauzo');
+        creator: 'Aza POS');
     pdf.addPage(pw.MultiPage(
       pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
@@ -117,7 +118,7 @@ class ReceiptPdfService {
             for (final line in receipt.order.lines)
               [
                 line.itemName,
-                '${line.quantity}',
+                formatQtyForReceipt(line.quantity, line.unit),
                 receipt.money(line.unitPriceValue),
                 receipt.money(line.lineTotal)
               ]
@@ -238,6 +239,7 @@ class ReceiptPdfService {
                   itemName: line.product.name,
                   itemSize: line.product.size,
                   quantity: line.quantity,
+                  unit: line.product.unit,
                   unitPrice: line.product.price,
                   unitPriceValue: line.product.priceValue,
                   artType: line.product.type,

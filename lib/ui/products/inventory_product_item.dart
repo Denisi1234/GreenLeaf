@@ -12,6 +12,9 @@ class InventoryProductItem {
     required this.artType,
     this.imagePath,
     this.unit = 'Pcs',
+    this.allowFractional = false,
+    this.packName,
+    this.packSize,
     this.categoryData = const <String, Object?>{},
   });
 
@@ -20,12 +23,18 @@ class InventoryProductItem {
   final String category;
   final double purchasePrice;
   final double sellingPrice;
-  final int stockCount;
+  final double stockCount;
   final InventoryStockState stockState;
   final ProductArtType artType;
   final String? imagePath;
   final String unit;
+  final bool allowFractional;
+  final String? packName;
+  final double? packSize;
   final Map<String, Object?> categoryData;
+
+  bool get hasBulkPack =>
+      (packName?.trim().isNotEmpty ?? false) && (packSize ?? 0) > 0;
 
   String get sellingPriceLabel => 'TSH ${sellingPrice.toStringAsFixed(0)}';
 
@@ -35,11 +44,15 @@ class InventoryProductItem {
     String? category,
     double? purchasePrice,
     double? sellingPrice,
-    int? stockCount,
+    double? stockCount,
     InventoryStockState? stockState,
     ProductArtType? artType,
     String? imagePath,
     String? unit,
+    bool? allowFractional,
+    String? packName,
+    double? packSize,
+    bool clearBulkPack = false,
     Map<String, Object?>? categoryData,
   }) {
     return InventoryProductItem(
@@ -53,6 +66,9 @@ class InventoryProductItem {
       artType: artType ?? this.artType,
       imagePath: imagePath ?? this.imagePath,
       unit: unit ?? this.unit,
+      allowFractional: allowFractional ?? this.allowFractional,
+      packName: clearBulkPack ? null : (packName ?? this.packName),
+      packSize: clearBulkPack ? null : (packSize ?? this.packSize),
       categoryData: categoryData ?? this.categoryData,
     );
   }

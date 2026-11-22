@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +6,7 @@ import '../../service/barcode_scan_service.dart';
 import '../../service/pos_local_store.dart';
 import '../../service/pos_order_models.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/quantity_formatter.dart';
 import '../widgets/app_design.dart';
 import 'widgets/order_history_card.dart';
 
@@ -213,7 +214,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           .map(
             (l) => OrderHistoryLine(
               l.itemName,
-              l.quantity,
+              l.unit.toLowerCase() == 'pcs'
+                  ? 'x${formatQuantity(l.quantity)}'
+                  : formatQtyForReceipt(l.quantity, l.unit),
               'TSH ${l.unitPriceValue.toStringAsFixed(0)}',
               'TSH ${l.lineTotal.toStringAsFixed(0)}',
             ),

@@ -1,7 +1,8 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/app_design.dart';
+import '../../widgets/common/market_empty_state.dart';
 import '../models/report_models.dart';
 
 class TrendChart extends StatelessWidget {
@@ -54,12 +55,12 @@ class TrendChart extends StatelessWidget {
   }
 
   Widget _emptyState(BuildContext context) {
-    return Container(
-      height: 180,
-      alignment: Alignment.center,
-      child: Text(
-        context.tr('No data for this period'),
-        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+    return MarketEmptyState(
+      showCard: false,
+      icon: Icons.show_chart_rounded,
+      title: context.tr('No data for this period'),
+      message: context.tr(
+        'Record sales or transactions in this period to see trend charts.',
       ),
     );
   }
@@ -127,7 +128,7 @@ class _TrendPainter extends CustomPainter {
     for (var index = 0; index < points.length; index++) {
       final point = Offset(xFor(index), yFor(points[index].value));
       canvas.drawCircle(point, 4, Paint()..color = color);
-      canvas.drawCircle(point, 2, Paint()..color = Colors.white);
+      canvas.drawCircle(point, 2, Paint()..color = AppColors.surface);
     }
   }
 

@@ -33,11 +33,14 @@ class _AppShellState extends State<AppShell>
   bool _moveForward = true;
   late final AnimationController _transitionController;
 
-  static const _pages = [
-    DashboardPage(useSharedShell: true),
-    ProductManagementPage(useSharedShell: true),
-    SalesPage(useSharedShell: true),
-    MorePage(useSharedShell: true),
+  late final List<Widget> _pages = [
+    const DashboardPage(useSharedShell: true),
+    const ProductManagementPage(useSharedShell: true),
+    SalesPage(
+      useSharedShell: true,
+      onOpenInventory: () => _handleTabChange(MarketTab.products),
+    ),
+    const MorePage(useSharedShell: true),
   ];
 
   @override
@@ -99,18 +102,12 @@ class _AppShellState extends State<AppShell>
     }
   }
 
-  String _drawerSelectedItemForTab(MarketTab tab, AppStrings strings) {
-    return _headerTitleForTab(tab, strings);
-  }
-
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final config = store.businessCategoryConfig;
     final strings = AppStrings.of(store.languageCode);
     final canOpenSettings = store.hasPermission('System Settings');
-    final hasActiveAlerts = store.inventory.any((p) => p.stockCount <= 5) ||
-        store.customers.any((c) => c.debitBalance > 0);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final useRail = screenWidth >= 900;
     final extendedRail = screenWidth >= 1200;
@@ -205,11 +202,11 @@ class _AppShellState extends State<AppShell>
                   onDestinationSelected: (idx) =>
                       _handleTabChange(MarketTab.values[idx]),
                   indicatorColor:
-                      AppColors.kpiSuccess.withValues(alpha: 0.12),
+                      AppColors.primary.withValues(alpha: 0.14),
                   selectedIconTheme:
-                      const IconThemeData(color: AppColors.kpiSuccess),
+                      const IconThemeData(color: AppColors.primaryDeep),
                   selectedLabelTextStyle: AppTypography.bodySmall.copyWith(
-                    color: AppColors.kpiSuccess,
+                    color: AppColors.primaryDeep,
                     fontWeight: FontWeight.w800,
                   ),
                   unselectedIconTheme:
@@ -249,14 +246,9 @@ class _AppShellState extends State<AppShell>
                       : null,
                   destinations: [
                     NavigationRailDestination(
-                      icon: const Icon(Icons.point_of_sale_outlined),
-                      selectedIcon: const Icon(Icons.point_of_sale_rounded),
-                      label: Text(strings.sales),
-                    ),
-                    NavigationRailDestination(
-                      icon: const Icon(Icons.receipt_long_outlined),
-                      selectedIcon: const Icon(Icons.receipt_long_rounded),
-                      label: Text(strings.orders),
+                      icon: const Icon(Icons.bar_chart_outlined),
+                      selectedIcon: const Icon(Icons.bar_chart_rounded),
+                      label: Text(strings.dashboard),
                     ),
                     NavigationRailDestination(
                       icon: const Icon(Icons.inventory_2_outlined),
@@ -264,9 +256,9 @@ class _AppShellState extends State<AppShell>
                       label: Text(strings.inventory),
                     ),
                     NavigationRailDestination(
-                      icon: const Icon(Icons.bar_chart_outlined),
-                      selectedIcon: const Icon(Icons.bar_chart_rounded),
-                      label: Text(strings.dashboard),
+                      icon: const Icon(Icons.point_of_sale_outlined),
+                      selectedIcon: const Icon(Icons.point_of_sale_rounded),
+                      label: Text(strings.sales),
                     ),
                     NavigationRailDestination(
                       icon: const Icon(Icons.grid_view_outlined),

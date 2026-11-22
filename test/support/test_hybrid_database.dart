@@ -1,6 +1,6 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:track_mauzo/service/php_api_client.dart';
-import 'package:track_mauzo/service/pos_hybrid_database.dart';
+import 'package:aza_pos/service/php_api_client.dart';
+import 'package:aza_pos/service/pos_hybrid_database.dart';
 
 import 'test_database_schema.dart';
 

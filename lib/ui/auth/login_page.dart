@@ -78,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         Text(
           strings.welcomeBack,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 28,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.6,
@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
           strings.isSwahili
               ? 'Ingiza namba yako ya simu na nenosiri ili uendelee.'
               : 'Enter your phone number and password to access your shop.',
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 14.5,
             height: 1.5,
             color: AppColors.textMuted,
@@ -138,18 +138,18 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     AuthFieldLabel(text: strings.password),
                     if (widget.onForgotPasswordTap != null)
-                      GestureDetector(
-                        onTap: widget.onForgotPasswordTap,
-                        behavior: HitTestBehavior.opaque,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Text(
-                            strings.forgotPassword,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.ink,
-                            ),
+                      TextButton(
+                        onPressed: widget.onForgotPasswordTap,
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(44, 44),
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                        ),
+                        child: Text(
+                          strings.forgotPassword,
+                          style: GoogleFonts.manrope(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDeep,
                           ),
                         ),
                       ),

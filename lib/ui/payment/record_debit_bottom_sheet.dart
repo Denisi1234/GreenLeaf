@@ -32,7 +32,9 @@ class RecordDebitBottomSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.extraRounded),
+        ),
       ),
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
       child: Column(
@@ -43,9 +45,9 @@ class RecordDebitBottomSheet extends StatelessWidget {
             child: Container(
               width: 40,
               height: 4,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
             ),
           ),
@@ -56,9 +58,9 @@ class RecordDebitBottomSheet extends StatelessWidget {
                 width: 40,
                 height: 40,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surfaceSecondary,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
                 ),
                 child: const Icon(Icons.account_balance_wallet_outlined,
                     color: AppColors.ink, size: 20),
@@ -92,7 +94,7 @@ class RecordDebitBottomSheet extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(AppRadius.standard),
               border: Border.all(color: AppColors.border),
             ),
             child: Column(
@@ -134,9 +136,9 @@ class RecordDebitBottomSheet extends StatelessWidget {
           const SizedBox(height: 18),
           Material(
             color: AppColors.primary,
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             child: InkWell(
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               highlightColor: Colors.transparent,
               splashColor: AppColors.primaryDeep.withValues(alpha: 0.4),
               onTap: () => Navigator.of(context).pop(true),

@@ -78,8 +78,8 @@ class FixedAssetsPage extends StatelessWidget {
                       const SizedBox(height: 8),
                       if (assets.isEmpty)
                         MarketSurfaceCard(
-                          radius: 0,
-                          showShadow: false,
+                          radius: AppRadius.standard,
+                          showShadow: true,
                           borderColor: AppColors.border,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 24, vertical: 36),
@@ -94,13 +94,14 @@ class FixedAssetsPage extends StatelessWidget {
                                     width: 72,
                                     height: 72,
                                     alignment: Alignment.center,
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.surfaceSecondary,
-                                      borderRadius: BorderRadius.zero,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.kpiSkyBg,
+                                      borderRadius: BorderRadius.circular(
+                                          AppRadius.standard),
                                     ),
                                     child: const Icon(
                                       Icons.domain_rounded,
-                                      color: AppColors.primary,
+                                      color: AppColors.kpiSky,
                                       size: 36,
                                     ),
                                   ),
@@ -147,8 +148,8 @@ class FixedAssetsPage extends StatelessWidget {
                         )
                       else
                         MarketSurfaceCard(
-                          radius: 0,
-                          showShadow: false,
+                          radius: AppRadius.standard,
+                          showShadow: true,
                           borderColor: AppColors.border,
                           padding: EdgeInsets.zero,
                           child: Column(

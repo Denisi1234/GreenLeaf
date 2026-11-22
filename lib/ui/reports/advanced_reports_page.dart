@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../widgets/app_design.dart';
+import '../widgets/common/market_empty_state.dart';
+import '../widgets/common/market_page_header.dart';
+import '../widgets/common/market_search_field.dart';
 import 'enhanced_report_page.dart';
 import 'pos_report_catalog.dart';
 
@@ -16,13 +19,11 @@ class AdvancedReportsPage extends StatefulWidget {
 
 class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
   final _searchController = TextEditingController();
-  final _searchFocusNode = FocusNode();
   final _queryNotifier = ValueNotifier<String>('');
 
   @override
   void dispose() {
     _searchController.dispose();
-    _searchFocusNode.dispose();
     _queryNotifier.dispose();
     super.dispose();
   }
@@ -153,8 +154,8 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
       case ReportGroup.graphical:
         return (
           Icons.bar_chart_rounded,
-          AppColors.kpiSky,
-          AppColors.kpiSkyBg,
+          AppColors.primaryDeep,
+          AppColors.primaryLight,
         );
       case ReportGroup.summary:
         return (
@@ -177,8 +178,8 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
       case ReportGroup.accounting:
         return (
           Icons.account_balance_outlined,
-          AppColors.kpiSky,
-          AppColors.kpiSkyBg,
+          AppColors.kpiRose,
+          AppColors.kpiRoseBg,
         );
       case ReportGroup.operations:
         return (
@@ -199,78 +200,41 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(
-        title: Text(
-          context.tr('Advanced reports'),
-          style: AppTypography.cardHeader.copyWith(
-            fontWeight: FontWeight.w800,
-            color: AppColors.ink,
+      body: Column(
+        children: [
+          MarketPageHeader(
+            title: context.tr('Advanced reports'),
+            subtitle: context.tr(
+              'Graphical, detailed, accounting, tax & multi-store reports',
+            ),
+            showBackButton: true,
+            centerTitle: false,
+            titleSize: 22,
+            titleWeight: FontWeight.w800,
+            showBorder: true,
           ),
-        ),
-        backgroundColor: AppColors.headerSurface,
-        foregroundColor: AppColors.ink,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: AppColors.divider),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Column(
           children: [
-            Container(
-              color: AppColors.surface,
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-              child: TextField(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+              child: MarketSearchField(
                 controller: _searchController,
-                focusNode: _searchFocusNode,
+                hintText: context.tr('Filter all reports...'),
                 onChanged: (v) => _queryNotifier.value = v,
-                textInputAction: TextInputAction.search,
-                style: AppTypography.bodyMain,
-                decoration: InputDecoration(
-                  hintText: context.tr('Filter all reports...'),
-                  hintStyle: AppTypography.label,
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    size: 18,
-                    color: AppColors.textMuted,
-                  ),
-                  suffixIcon: ValueListenableBuilder<String>(
-                    valueListenable: _queryNotifier,
-                    builder: (_, q, __) => q.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              _queryNotifier.value = '';
-                            },
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                  filled: true,
-                  fillColor: AppColors.pageBackground,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 11,
-                  ),
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: AppColors.ink, width: 1),
-                  ),
-                ),
+                onClear: () {
+                  _searchController.clear();
+                  _queryNotifier.value = '';
+                },
+                height: 48,
+                radius: 0,
+                backgroundColor: AppColors.surface,
+                borderColor: AppColors.border,
+                paddingHorizontal: 14,
               ),
             ),
-            const Divider(height: 1, color: AppColors.divider),
             Expanded(
               child: ValueListenableBuilder<String>(
                 valueListenable: _queryNotifier,
@@ -288,10 +252,23 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
                       .toList();
 
                   if (groups.isEmpty) {
-                    return Center(
-                      child: Text(
-                        context.tr('No matching reports'),
-                        style: AppTypography.label,
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 24,
+                      ),
+                      child: MarketEmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: context.tr('No matching reports'),
+                        message: context.tr(
+                          'Try a different keyword or clear your search to browse all reports.',
+                        ),
+                        actionLabel: context.tr('Clear search'),
+                        actionIcon: Icons.filter_alt_off_rounded,
+                        onAction: () {
+                          _searchController.clear();
+                          _queryNotifier.value = '';
+                        },
                       ),
                     );
                   }
@@ -299,9 +276,9 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
                   return ListView.separated(
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
                     itemCount: groups.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 20),
+                    separatorBuilder: (_, __) => const SizedBox(height: 18),
                     itemBuilder: (context, gIdx) {
                       final group = groups[gIdx];
                       final items =
@@ -312,7 +289,7 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
                             child: Row(
                               children: [
                                 Text(
@@ -334,74 +311,84 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
                               ],
                             ),
                           ),
-                          Material(
-                            color: AppColors.sectionSurface,
-                            borderRadius: BorderRadius.zero,
-                            child: Column(
-                              children: [
-                                for (var i = 0; i < items.length; i++) ...[
-                                  if (i > 0)
-                                    const Divider(
-                                      height: 1,
-                                      indent: 68,
-                                      color: AppColors.divider,
-                                    ),
-                                  InkWell(
-                                    onTap: () {
-                                      _searchFocusNode.unfocus();
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute<void>(
-                                          builder: (_) => EnhancedReportPage(
-                                            report: items[i],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 13,
+                          Container(
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.standard),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: Column(
+                                children: [
+                                  for (var i = 0; i < items.length; i++) ...[
+                                    if (i > 0)
+                                      const Divider(
+                                        height: 1,
+                                        indent: 66,
+                                        color: AppColors.border,
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 38,
-                                            height: 38,
-                                            decoration: BoxDecoration(
-                                              color: style.$3,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Icon(
-                                              _iconForReport(items[i]),
-                                              color: style.$2,
-                                              size: 19,
+                                    InkWell(
+                                      key: ValueKey('report-${items[i].title}'),
+                                      onTap: () {
+                                        FocusScope.of(context).unfocus();
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) => EnhancedReportPage(
+                                              report: items[i],
                                             ),
                                           ),
-                                          const SizedBox(width: 14),
-                                          Expanded(
-                                            child: Text(
-                                              context.tr(items[i].title),
-                                              style: AppTypography.bodyMain
-                                                  .copyWith(
-                                                fontWeight: FontWeight.w700,
-                                                color: AppColors.ink,
+                                        );
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 13,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 38,
+                                              height: 38,
+                                              decoration: BoxDecoration(
+                                                color: style.$3,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        AppRadius.sharp),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Icon(
+                                                _iconForReport(items[i]),
+                                                color: style.$2,
+                                                size: 19,
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          const Icon(
-                                            Icons.chevron_right_rounded,
-                                            size: 20,
-                                            color: AppColors.textMuted,
-                                          ),
-                                        ],
+                                            const SizedBox(width: 14),
+                                            Expanded(
+                                              child: Text(
+                                                context.tr(items[i].title),
+                                                style: AppTypography.bodyMain
+                                                    .copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.ink,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Icon(
+                                              Icons.chevron_right_rounded,
+                                              size: 20,
+                                              color: AppColors.textMuted,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
                         ],
@@ -413,6 +400,9 @@ class _AdvancedReportsPageState extends State<AdvancedReportsPage> {
             ),
           ],
         ),
+      ),
+          ),
+        ],
       ),
     );
   }

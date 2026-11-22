@@ -163,7 +163,6 @@ class _AccountsPageState extends State<AccountsPage>
         MarketButton(
           label: _t('Add account', 'Ongeza akaunti'),
           icon: Icons.add_rounded,
-          isPrimary: false,
           onTap: () => _openAccountForm(context),
         ),
       ],
@@ -215,7 +214,6 @@ class _AccountsPageState extends State<AccountsPage>
             MarketButton(
               label: _t('New entry', 'Mpya'),
               icon: Icons.add_rounded,
-              isPrimary: false,
               isFullWidth: false,
               height: 38,
               onTap: () => _openJournalForm(context),

@@ -16,9 +16,12 @@ class SuspendedSale {
   final String? customerName;
   final String? comment;
 
-  int get itemCount => items.length;
+  int get itemCount => items.fold<int>(
+        0,
+        (sum, item) => sum + (item.allowFractional ? 1 : item.quantity.round()),
+      );
   double get total =>
-      items.fold<double>(0.0, (sum, item) => sum + item.priceValue);
+      items.fold<double>(0.0, (sum, item) => sum + item.lineTotal);
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -34,6 +37,12 @@ class SuspendedSale {
                   'code': item.code,
                   'category': item.category,
                   'imagePath': item.imagePath,
+                  'unit': item.unit,
+                  'allowFractional': item.allowFractional,
+                  'quantity': item.quantity,
+                  if (item.customPrice != null) 'customPrice': item.customPrice,
+                  if (item.packName != null) 'packName': item.packName,
+                  if (item.packSize != null) 'packSize': item.packSize,
                 })
             .toList(),
       };
@@ -59,6 +68,12 @@ class SuspendedSale {
             code: m['code'] as String?,
             category: m['category'] as String?,
             imagePath: m['imagePath'] as String?,
+            unit: (m['unit'] as String?) ?? 'Pcs',
+            allowFractional: m['allowFractional'] == true,
+            quantity: (m['quantity'] as num?)?.toDouble() ?? 1.0,
+            customPrice: (m['customPrice'] as num?)?.toDouble(),
+            packName: m['packName'] as String?,
+            packSize: (m['packSize'] as num?)?.toDouble(),
           );
         }).toList(),
       );

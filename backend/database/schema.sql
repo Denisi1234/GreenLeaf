@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS records (
 CREATE TABLE IF NOT EXISTS products (
     store_id VARCHAR(64) NOT NULL,
     code VARCHAR(200) NOT NULL,
-    stock_count INTEGER NOT NULL,
+    stock_count REAL NOT NULL,
     price_cents BIGINT NOT NULL,
     cost_cents BIGINT NOT NULL,
     payload MEDIUMTEXT NOT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS order_lines (
     order_id VARCHAR(200) NOT NULL,
     line_number INTEGER NOT NULL,
     product_code VARCHAR(200) NOT NULL,
-    quantity INTEGER NOT NULL,
+    quantity REAL NOT NULL,
     unit_price_cents BIGINT NOT NULL,
     unit_cost_cents BIGINT NOT NULL,
     payload MEDIUMTEXT NOT NULL,

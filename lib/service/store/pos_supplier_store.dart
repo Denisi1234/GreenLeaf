@@ -7,10 +7,9 @@ mixin PosSupplierStore on ChangeNotifier {
   List<Supplier> get _suppliers;
   List<Receiving> get _receivings;
   List<InventoryProductItem> get _allInventory;
-  void _syncProductsFromInventory();
+  InventoryStockState _deriveStockState(double stockCount);
   Future<InventoryProductItem> addProduct(InventoryProductItem product);
   Future<void> updateProduct(InventoryProductItem product);
-  Future<void> _recalculateStockStates();
   PhpApiClient? get cloudApi;
 
   List<Supplier> get suppliers => List.unmodifiable(_suppliers);
@@ -127,11 +126,13 @@ mixin PosSupplierStore on ChangeNotifier {
           ? ((existingCount * existingCost) + (newQty * newUnitCost)) /
               totalUnits
           : newUnitCost;
+      final nextStock = roundQuantity(item.stockCount + line.quantity);
 
       final updated = item.copyWith(
         purchasePrice:
             weightedAvgCost > 0 ? weightedAvgCost : item.purchasePrice,
-        stockCount: item.stockCount + line.quantity,
+        stockCount: nextStock,
+        stockState: _deriveStockState(nextStock),
         sellingPrice:
             line.sellingPrice > 0 ? line.sellingPrice : item.sellingPrice,
       );

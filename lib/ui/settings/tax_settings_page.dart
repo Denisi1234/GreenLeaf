@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../../service/pos_local_store.dart';
 import '../../service/tax_settings.dart';
@@ -79,8 +79,8 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                     // Primary Tax Toggle Card
                     MarketSurfaceCard(
                       padding: const EdgeInsets.all(16),
-                      radius: 0,
-                      showShadow: false,
+                      radius: AppRadius.standard,
+                      showShadow: true,
                       borderColor: AppColors.border,
                       child: Row(
                         children: [
@@ -92,7 +92,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                               color: _draft.enabled
                                   ? AppColors.kpiSuccessBg
                                   : AppColors.surfaceSecondary,
-                              borderRadius: BorderRadius.zero,
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.receipt_long_rounded,
@@ -139,8 +139,8 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                       // Form fields card
                       MarketSurfaceCard(
                         padding: const EdgeInsets.all(18),
-                        radius: 0,
-                        showShadow: false,
+                        radius: AppRadius.standard,
+                        showShadow: true,
                         borderColor: AppColors.border,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,6 +158,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                               label: _t('Tax name', 'Jina la kodi'),
                               hintText: context.tr('VAT'),
                               initialValue: _draft.taxLabel,
+                              fillColor: AppColors.pageBackground,
                               radius: 0,
                               onChanged: (value) => _draft =
                                   _draft.copyWith(taxLabel: value.trim()),
@@ -167,6 +168,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                               label:
                                   _t('Tax rate (%)', 'Kiwango cha kodi (%)'),
                               hintText: '18',
+                              fillColor: AppColors.pageBackground,
                               radius: 0,
                               initialValue: _draft.ratePercent == 0
                                   ? ''
@@ -184,6 +186,7 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                                   'Namba ya mlipa kodi (TIN)'),
                               hintText:
                                   _t('e.g. 123-456-789', 'mf. 123-456-789'),
+                              fillColor: AppColors.pageBackground,
                               radius: 0,
                               initialValue: _draft.taxId,
                               onChanged: (value) => _draft =
@@ -197,8 +200,8 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
                       // Rules & calculation modes
                       MarketSurfaceCard(
                         padding: const EdgeInsets.all(16),
-                        radius: 0,
-                        showShadow: false,
+                        radius: AppRadius.standard,
+                        showShadow: true,
                         borderColor: AppColors.border,
                         child: Column(
                           children: [

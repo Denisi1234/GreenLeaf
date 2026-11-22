@@ -1,9 +1,9 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../../utils/quantity_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
@@ -205,10 +205,150 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     }
   }
 
+  Future<void> _adjustStock(InventoryProductItem product) async {
+    final store = context.read<PosLocalStore>();
+    if (!store.hasPermission('Manage Inventory')) {
+      showMarketNotice(
+        context,
+        title: context.tr('Permission Required'),
+        message: context.tr('You do not have permission to manage inventory.'),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+    final sw = context.strings.isSwahili;
+    String t(String en, String swText) => sw ? swText : en;
+    final ctrl = TextEditingController(text: formatQuantity(product.stockCount));
+    final result = await showDialog<double>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+        ),
+        title: Text(
+          '${t('Adjust stock', 'Rekebisha stoo')}: ${product.name}',
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '${t('Current stock', 'Stoo ya sasa')}: ${formatStockWithUnit(product.stockCount, product.unit)}',
+              style: AppTypography.label,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: const ValueKey('adjust-stock-input'),
+              controller: ctrl,
+              keyboardType: product.allowFractional
+                  ? const TextInputType.numberWithOptions(decimal: true)
+                  : TextInputType.number,
+              decoration: InputDecoration(
+                labelText: t('New stock quantity', 'Idadi mpya stoo'),
+                suffixText: product.unit,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (product.hasBulkPack)
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      final current = double.tryParse(
+                            ctrl.text.trim().replaceAll(',', ''),
+                          ) ??
+                          product.stockCount;
+                      ctrl.text = formatQuantity(
+                        roundQuantity(current + product.packSize!),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryDeep,
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.standard),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_rounded, size: 17),
+                    label: Text(
+                      '+1 ${product.packName} (+${formatQuantity(product.packSize!)} ${product.unit})',
+                    ),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => ctrl.text = '0',
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.dangerDeep,
+                    side: const BorderSide(color: AppColors.dangerBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.standard),
+                    ),
+                  ),
+                  icon: const Icon(Icons.delete_sweep_outlined, size: 17),
+                  label: Text(
+                    t(
+                      'Mark empty (0 ${product.unit})',
+                      'Fanya 0 ${product.unit} (imeisha)',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: Text(context.tr('Cancel')),
+          ),
+          FilledButton(
+            onPressed: () {
+              final parsed =
+                  double.tryParse(ctrl.text.trim().replaceAll(',', ''));
+              if (parsed == null || parsed < 0) return;
+              Navigator.of(dialogCtx).pop(roundQuantity(parsed));
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            child: Text(t('Save', 'Hifadhi')),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (result == null || !mounted) return;
+    final threshold = store.storePreferences.lowStockThreshold;
+    final nextState = result <= 0
+        ? InventoryStockState.outOfStock
+        : result <= threshold
+            ? InventoryStockState.lowStock
+            : InventoryStockState.inStock;
+    await store.updateProduct(
+      product.copyWith(stockCount: result, stockState: nextState),
+    );
+    if (!mounted) return;
+    showMarketNotice(
+      context,
+      title: t('Stock updated', 'Stoo imesasishwa'),
+      message: '${product.name}: ${formatStockWithUnit(result, product.unit)}',
+      type: MarketNoticeType.success,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
     final inventory = store.inventory;
+    final lowThreshold = store.storePreferences.lowStockThreshold;
     final canManageInventory = store.hasPermission('Manage Inventory');
     final categories = inventory.map((item) => item.category).toSet().toList()
       ..sort();
@@ -222,7 +362,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
             ...item.categoryData.values.map((value) => value.toString())
           ].any((value) => value.toLowerCase().contains(query));
       final matchesStock = switch (_stockFilter) {
-        'low' => item.stockCount > 0 && item.stockCount <= 5,
+        'low' => item.stockCount > 0 && item.stockCount <= lowThreshold,
         'out' => item.stockCount <= 0,
         _ => true,
       };
@@ -243,13 +383,13 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
     });
 
     final lowCount = inventory
-        .where((item) => item.stockCount > 0 && item.stockCount <= 5)
+        .where((item) => item.stockCount > 0 && item.stockCount <= lowThreshold)
         .length;
     final outCount = inventory.where((item) => item.stockCount <= 0).length;
     final stockValue = inventory.fold<double>(
         0,
         (sum, item) =>
-            sum + item.purchasePrice * item.stockCount.clamp(0, 1 << 31));
+            sum + item.purchasePrice * item.stockCount.clamp(0.0, 1e12));
     final hasFilters =
         query.isNotEmpty || _category != null || _stockFilter != 'all';
 
@@ -275,9 +415,15 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                   final rows =
                       filtered.skip(page * _pageSize).take(_pageSize).toList();
                   return CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
                     slivers: [
                       SliverPadding(
-                        padding: EdgeInsets.all(wide ? 24 : 16),
+                        padding: EdgeInsets.fromLTRB(
+                          wide ? 24 : 14,
+                          wide ? 20 : 14,
+                          wide ? 24 : 14,
+                          30,
+                        ),
                         sliver: SliverList.list(
                           children: [
                             if (!widget.useSharedShell) ...[
@@ -295,70 +441,76 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                 if (canManageInventory) ...[
                                   Expanded(
                                     child: SizedBox(
-                                      height: 46,
+                                      height: 48,
                                       child: FilledButton.icon(
                                         onPressed: _openAddProductPage,
                                         style: FilledButton.styleFrom(
-                                          backgroundColor:
-                                              AppColors.successDeep,
-                                          shape: const RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.zero,
+                                          backgroundColor: AppColors.primary,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(28),
                                           ),
                                         ),
                                         icon: const Icon(Icons.add_rounded),
                                         label: Text(
                                           context.tr('Add item'),
                                           style: const TextStyle(
-                                              fontWeight: FontWeight.w700),
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
                                 ],
-                                IconButton.outlined(
-                                  tooltip: context.tr('Export CSV'),
-                                  style: OutlinedButton.styleFrom(
-                                    backgroundColor: AppColors.kpiSkyBg,
-                                    shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.zero,
-                                    ),
-                                    side: const BorderSide(
-                                        color: AppColors.kpiSky),
-                                  ),
-                                  onPressed: () =>
-                                      ProductCsvService.exportInventoryCsv(
-                                          filtered),
-                                  icon: const Icon(Icons.download_rounded,
-                                      color: AppColors.kpiSky),
-                                ),
-                                if (canManageInventory) ...[
-                                  const SizedBox(width: 6),
-                                  IconButton.outlined(
-                                    tooltip: context.tr('Import CSV'),
-                                    style: OutlinedButton.styleFrom(
-                                      backgroundColor: AppColors.kpiVioletBg,
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.zero,
+                                  SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: IconButton.outlined(
+                                      tooltip: context.tr('Export CSV'),
+                                      style: OutlinedButton.styleFrom(
+                                        backgroundColor: AppColors.kpiSkyBg,
+                                        padding: EdgeInsets.zero,
+                                        shape: const CircleBorder(),
+                                        side: BorderSide.none,
                                       ),
-                                      side: const BorderSide(
-                                          color: AppColors.kpiViolet),
+                                      onPressed: () =>
+                                          ProductCsvService.exportInventoryCsv(
+                                              filtered),
+                                      icon: const Icon(Icons.download_rounded,
+                                          color: AppColors.kpiSky),
                                     ),
-                                    onPressed: _handleImportCsv,
-                                    icon: const Icon(Icons.upload_file_rounded,
-                                        color: AppColors.kpiViolet),
                                   ),
-                                ],
+                                  if (canManageInventory) ...[
+                                    const SizedBox(width: 8),
+                                    SizedBox(
+                                      width: 48,
+                                      height: 48,
+                                      child: IconButton.outlined(
+                                        tooltip: context.tr('Import CSV'),
+                                        style: OutlinedButton.styleFrom(
+                                          backgroundColor: AppColors.kpiVioletBg,
+                                          padding: EdgeInsets.zero,
+                                          shape: const CircleBorder(),
+                                          side: BorderSide.none,
+                                        ),
+                                        onPressed: _handleImportCsv,
+                                        icon: const Icon(Icons.upload_file_rounded,
+                                            color: AppColors.kpiViolet),
+                                      ),
+                                    ),
+                                  ],
                               ],
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 12),
                             InventoryKpiMetrics(
                               totalItems: inventory.length,
                               stockValue: stockValue,
                               lowCount: lowCount,
                               outCount: outCount,
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 12),
                             ProductFilterBar(
                               searchController: _searchController,
                               categories: categories,
@@ -384,7 +536,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                               }),
                               onResetFilters: _resetFilters,
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 14),
                             Row(
                               children: [
                                 Expanded(
@@ -436,6 +588,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                 }),
                                 onEdit:
                                     canManageInventory ? _editProduct : null,
+                                onAdjustStock:
+                                    canManageInventory ? _adjustStock : null,
                                 onDelete:
                                     canManageInventory ? _deleteProduct : null,
                               )
@@ -445,8 +599,12 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                   padding: const EdgeInsets.only(bottom: 10),
                                   child: ProductItemRowCard(
                                     product: item,
+                                    lowStockThreshold: lowThreshold,
                                     onTap: canManageInventory
                                         ? () => _editProduct(item)
+                                        : null,
+                                    onAdjustStock: canManageInventory
+                                        ? () => _adjustStock(item)
                                         : null,
                                     onDelete: canManageInventory
                                         ? () => _deleteProduct(item)

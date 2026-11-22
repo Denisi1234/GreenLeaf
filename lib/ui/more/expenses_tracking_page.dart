@@ -255,7 +255,11 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
     final picked = await showModalBottomSheet<ExpenseSortMode>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.extraRounded),
+        ),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -265,7 +269,8 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                 width: 40,
                 height: 4,
                 decoration: const BoxDecoration(
-                    color: AppColors.border, borderRadius: BorderRadius.zero)),
+                    color: AppColors.border,
+                  borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Sort by', 'Panga kwa'),
                 style: AppTypography.cardHeader),
@@ -294,7 +299,11 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
     final choice = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.extraRounded),
+        ),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -304,7 +313,8 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                 width: 40,
                 height: 4,
                 decoration: const BoxDecoration(
-                    color: AppColors.border, borderRadius: BorderRadius.zero)),
+                    color: AppColors.border,
+                  borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Export expenses', 'Hamisha matumizi'),
                 style: AppTypography.cardHeader),
@@ -412,7 +422,11 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
     final selected = await showModalBottomSheet<ExpenseRange>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.extraRounded),
+        ),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -422,7 +436,8 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                 width: 40,
                 height: 4,
                 decoration: const BoxDecoration(
-                    color: AppColors.border, borderRadius: BorderRadius.zero)),
+                    color: AppColors.border,
+                  borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Select period', 'Chagua kipindi'),
                 style: AppTypography.cardHeader),

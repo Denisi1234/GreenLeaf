@@ -31,7 +31,11 @@ Future<DebtPaymentResult?> showRecordPaymentSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(AppRadius.extraRounded),
+      ),
+    ),
     builder: (_) => RecordPaymentSheet(customer: customer),
   );
 }
@@ -117,9 +121,9 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
               ),
             ),
@@ -140,7 +144,7 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.dangerLight,
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(AppRadius.standard),
                 border:
                     Border.all(color: AppColors.danger.withValues(alpha: 0.16)),
               ),
@@ -183,7 +187,7 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
                 prefixStyle:
                     AppTypography.bodyMain.copyWith(color: AppColors.textMuted),
                 filled: true,
-                fillColor: AppColors.surfaceSecondary,
+                fillColor: AppColors.pageBackground,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 border: const OutlineInputBorder(
@@ -254,7 +258,7 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
                 hintStyle:
                     AppTypography.bodyMain.copyWith(color: AppColors.textLight),
                 filled: true,
-                fillColor: AppColors.surfaceSecondary,
+                fillColor: AppColors.pageBackground,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: const OutlineInputBorder(
@@ -302,24 +306,20 @@ class _QuickAmount extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: onTap == null ? AppColors.surfaceSecondary : AppColors.surface,
-      borderRadius: BorderRadius.zero,
+      color: onTap == null ? AppColors.pageBackground : AppColors.kpiSkyBg,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         highlightColor: Colors.transparent,
         onTap: onTap,
         child: Container(
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.zero,
-            border: Border.all(color: AppColors.border),
-          ),
           child: Text(
             label,
             style: AppTypography.helperText.copyWith(
-              color: onTap == null ? AppColors.textLight : AppColors.textBody,
+              color: onTap == null ? AppColors.textLight : AppColors.kpiSky,
               fontWeight: FontWeight.w800,
             ),
           ),

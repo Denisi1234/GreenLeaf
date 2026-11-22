@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
 import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
@@ -78,8 +78,8 @@ class AssignedStaffTile extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Row(
         children: [
           CircleAvatar(
@@ -143,23 +143,23 @@ class RolePermissionNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
-      backgroundColor: AppColors.pageBackground,
+      backgroundColor: AppColors.surface,
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 32,
             height: 32,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.kpiSkyBg,
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.shield_outlined,
-              color: AppColors.primary,
+              color: AppColors.kpiSky,
               size: 18,
             ),
           ),

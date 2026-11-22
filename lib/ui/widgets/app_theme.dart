@@ -8,6 +8,7 @@ import 'app_design.dart';
 /// 12px dialogs, 14–18px cards and 42–44px touch targets.
 ThemeData buildOsposTheme(TextTheme textTheme) {
   const controlRadius = BorderRadius.all(Radius.circular(AppRadius.standard));
+  const pillRadius = BorderRadius.all(Radius.circular(AppRadius.pill));
   const minControl = Size(64, AppSpacing.controlHeight);
   final fontFamily = GoogleFonts.manrope().fontFamily;
 
@@ -196,7 +197,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       focusedErrorBorder: inputBorder(AppColors.danger, 1.4),
     ),
 
-    // Buttons – 42px min height, 10px radius
+    // Buttons – 42px min height, pill radius (matching Item/Auth/Sales CTAs)
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
@@ -205,7 +206,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         disabledForegroundColor: AppColors.textLight,
         minimumSize: minControl,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        shape: const RoundedRectangleBorder(borderRadius: controlRadius),
+        shape: const RoundedRectangleBorder(borderRadius: pillRadius),
         textStyle: labelStyle,
         elevation: 0,
       ),
@@ -218,7 +219,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         disabledForegroundColor: AppColors.textLight,
         minimumSize: minControl,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        shape: const RoundedRectangleBorder(borderRadius: controlRadius),
+        shape: const RoundedRectangleBorder(borderRadius: pillRadius),
         textStyle: labelStyle,
         elevation: 0,
         shadowColor: Colors.transparent,
@@ -231,7 +232,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         minimumSize: minControl,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         side: const BorderSide(color: AppColors.border),
-        shape: const RoundedRectangleBorder(borderRadius: controlRadius),
+        shape: const RoundedRectangleBorder(borderRadius: pillRadius),
         textStyle: labelStyle,
       ),
     ),
@@ -239,7 +240,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
       style: TextButton.styleFrom(
         foregroundColor: AppColors.textBody,
         minimumSize: const Size(48, AppSpacing.controlHeight),
-        shape: const RoundedRectangleBorder(borderRadius: controlRadius),
+        shape: const RoundedRectangleBorder(borderRadius: pillRadius),
         textStyle: labelStyle,
       ),
     ),
@@ -272,24 +273,24 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         ),
         backgroundColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
-              ? AppColors.successLight
+              ? AppColors.primaryLight
               : AppColors.surfaceSecondary,
         ),
         foregroundColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
-              ? AppColors.successDeep
+              ? AppColors.primaryDeep
               : AppColors.textSecondary,
         ),
         textStyle: WidgetStatePropertyAll(labelStyle),
       ),
     ),
 
-    // Chips – .nav-tabs pill look (teal when selected)
+    // Chips – .nav-tabs pill look (cyan when selected)
     chipTheme: ChipThemeData(
       backgroundColor: AppColors.surfaceSecondary,
-      selectedColor: AppColors.successLight,
+      selectedColor: AppColors.primaryLight,
       disabledColor: AppColors.surfaceHover,
-      checkmarkColor: AppColors.successDeep,
+      checkmarkColor: AppColors.primaryDeep,
       side: const BorderSide(color: AppColors.border),
       shape: const RoundedRectangleBorder(borderRadius: controlRadius),
       labelStyle: style(
@@ -298,43 +299,43 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
         fontSize: 13,
       ),
       secondaryLabelStyle: style(
-        color: AppColors.successDeep,
+        color: AppColors.primaryDeep,
         fontWeight: FontWeight.w700,
         fontSize: 13,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
     ),
 
-    // Tabs – teal active indicator (.nav-tabs > li.active)
+    // Tabs – cyan active indicator (.nav-tabs > li.active)
     tabBarTheme: TabBarThemeData(
-      labelColor: AppColors.successDeep,
+      labelColor: AppColors.primaryDeep,
       unselectedLabelColor: AppColors.textMuted,
-      indicatorColor: AppColors.successBright,
+      indicatorColor: AppColors.primary,
       indicatorSize: TabBarIndicatorSize.tab,
       dividerColor: AppColors.border,
       labelStyle: labelStyle,
       unselectedLabelStyle: labelStyle.copyWith(fontWeight: FontWeight.w600),
       indicator: BoxDecoration(
-        color: AppColors.successLight,
+        color: AppColors.primaryLight,
         borderRadius: controlRadius,
-        border: Border.all(color: AppColors.successBright, width: 1.5),
+        border: Border.all(color: AppColors.primary, width: 1.5),
       ),
       overlayColor: const WidgetStatePropertyAll(AppColors.surfaceHover),
     ),
 
-    // Bottom navigation – active nav = blue on #EFF6FF
+    // Bottom navigation – soft cyan header surface matching top bar (no white)
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.headerSurface,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: AppColors.primaryLight,
+      indicatorColor: AppColors.primary.withValues(alpha: 0.16),
       elevation: 0,
       height: 68,
       shadowColor: AppColors.border,
-      indicatorShape: const RoundedRectangleBorder(borderRadius: controlRadius),
+      indicatorShape: const RoundedRectangleBorder(borderRadius: pillRadius),
       iconTheme: WidgetStateProperty.resolveWith(
         (s) => IconThemeData(
           color: s.contains(WidgetState.selected)
-              ? AppColors.primary
+              ? AppColors.primaryDeep
               : AppColors.textMuted,
           size: 24,
         ),
@@ -346,14 +347,14 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
               ? FontWeight.w700
               : FontWeight.w500,
           color: s.contains(WidgetState.selected)
-              ? AppColors.primary
+              ? AppColors.primaryDeep
               : AppColors.textMuted,
         ),
       ),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: AppColors.surface,
-      selectedItemColor: AppColors.primary,
+      backgroundColor: AppColors.headerSurface,
+      selectedItemColor: AppColors.primaryDeep,
       unselectedItemColor: AppColors.textMuted,
       type: BottomNavigationBarType.fixed,
       elevation: 0,
@@ -459,17 +460,17 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected)
-            ? Colors.white
+            ? AppColors.surface
             : AppColors.textLight,
       ),
       trackColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected)
-            ? AppColors.successBright
+            ? AppColors.primary
             : AppColors.surfaceHover,
       ),
       trackOutlineColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected)
-            ? AppColors.successBright
+            ? AppColors.primary
             : AppColors.border,
       ),
     ),
@@ -519,14 +520,14 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: AppColors.ink,
+      backgroundColor: AppColors.successBright,
       contentTextStyle: style(
         fontSize: 14,
         color: Colors.white,
         fontWeight: FontWeight.w600,
       ),
-      actionTextColor: AppColors.primarySoft,
-      shape: const RoundedRectangleBorder(borderRadius: controlRadius),
+      actionTextColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: pillRadius),
     ),
     datePickerTheme: const DatePickerThemeData(
       backgroundColor: AppColors.surface,
@@ -537,7 +538,7 @@ ThemeData buildOsposTheme(TextTheme textTheme) {
     ),
     textSelectionTheme: const TextSelectionThemeData(
       cursorColor: AppColors.primary,
-      selectionColor: Color(0x33D32222),
+      selectionColor: Color(0x3822B8C4),
       selectionHandleColor: AppColors.primary,
     ),
   );

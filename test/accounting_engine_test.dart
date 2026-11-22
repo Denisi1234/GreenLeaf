@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:track_mauzo/service/accounting_engine.dart';
-import 'package:track_mauzo/service/accounting_model.dart';
-import 'package:track_mauzo/service/expense_model.dart';
-import 'package:track_mauzo/service/pos_order_models.dart';
-import 'package:track_mauzo/service/register_shift_model.dart';
-import 'package:track_mauzo/service/supplier_model.dart';
-import 'package:track_mauzo/service/tax_settings.dart';
-import 'package:track_mauzo/ui/models/product_item.dart';
+import 'package:aza_pos/service/accounting_engine.dart';
+import 'package:aza_pos/service/accounting_model.dart';
+import 'package:aza_pos/service/expense_model.dart';
+import 'package:aza_pos/service/pos_order_models.dart';
+import 'package:aza_pos/service/register_shift_model.dart';
+import 'package:aza_pos/service/supplier_model.dart';
+import 'package:aza_pos/service/tax_settings.dart';
+import 'package:aza_pos/ui/models/product_item.dart';
 
 const _accounts = <Account>[
   Account(id: 1, code: '1000', name: 'Cash', type: AccountType.asset),

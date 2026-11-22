@@ -19,16 +19,19 @@ mixin PosCheckoutStore on ChangeNotifier {
   bool hasPermission(String permission);
 
   int _findInventoryIndex(ProductItem product);
-  InventoryStockState _deriveStockState(int stockCount);
+  InventoryStockState _deriveStockState(double stockCount);
+  ProductItem _toProductItem(InventoryProductItem product);
   void _syncProductsFromInventory();
   void _updateCartTotals();
   bool addToCart(ProductItem product);
+  bool addToCartQuantity(ProductItem product, double quantity, {double? customPrice});
   Future<void> clearCart();
   Future<void> refreshFromServer();
   CustomerData _customerFromMap(Map<String, Object?> map);
   Map<String, Object?> _customerToMap(CustomerData customer);
   Future<void> _appendDebitEntry(DebitEntry entry);
   Future<void> _persistDebitEntries();
+  Future<void> writeAutoBackupSnapshot();
 
   Future<CompletedOrder> completeCashSale({
     required List<OrderLineItem> items,
@@ -52,7 +55,9 @@ mixin PosCheckoutStore on ChangeNotifier {
         .map(
           (line) => OrderLineItem(
             product: line.product,
-            quantity: line.quantity,
+            quantity: roundQuantity(line.quantity),
+            discountPercent: line.discountPercent,
+            customPrice: line.customPrice,
           ),
         )
         .toList();
@@ -91,27 +96,35 @@ mixin PosCheckoutStore on ChangeNotifier {
       }
       final inventoryItem =
           stockUpdates[inventoryIndex] ?? _allInventory[inventoryIndex];
-      if (inventoryItem.stockCount < line.quantity) {
+      if (inventoryItem.stockCount + 0.0001 < line.quantity) {
         throw StateError(
-          'Only ${inventoryItem.stockCount} unit(s) of ${inventoryItem.name} left in stock.',
+          'Only ${formatStockWithUnit(inventoryItem.stockCount, inventoryItem.unit)} of ${inventoryItem.name} left in stock.',
         );
       }
-      final nextStock = inventoryItem.stockCount - line.quantity;
+      final nextStock = roundQuantity(
+        (inventoryItem.stockCount - line.quantity)
+            .clamp(0.0, double.infinity)
+            .toDouble(),
+      );
       stockUpdates[inventoryIndex] = inventoryItem.copyWith(
         stockCount: nextStock,
         stockState: _deriveStockState(nextStock),
       );
+      final effectiveUnitPrice = line.discountPercent > 0 && line.quantity > 0
+          ? line.totalPrice / line.quantity
+          : line.unitPrice;
       saleLines.add(OrderLine(
         itemCode: inventoryItem.code,
         itemCategory: inventoryItem.category,
         itemName: line.product.name,
         itemSize: line.product.size,
         quantity: line.quantity,
-        unitPrice: line.product.price,
-        unitPriceValue: line.product.priceValue,
+        unitPrice: effectiveUnitPrice.toStringAsFixed(2),
+        unitPriceValue: effectiveUnitPrice,
         unitCost: inventoryItem.purchasePrice,
         artType: line.product.type,
         imagePath: line.product.imagePath,
+        unit: inventoryItem.unit,
       ));
     }
 
@@ -182,6 +195,7 @@ mixin PosCheckoutStore on ChangeNotifier {
                 .showLowStockNotification(
                   productName: item.name,
                   remainingQuantity: item.stockCount,
+                  unit: item.unit,
                 )
                 .catchError((Object _) {}),
           );
@@ -222,6 +236,7 @@ mixin PosCheckoutStore on ChangeNotifier {
       _cartItems.clear();
       _updateCartTotals();
       notifyListeners();
+      unawaited(writeAutoBackupSnapshot());
     } finally {
       _savingCheckout = false;
     }
@@ -243,7 +258,7 @@ mixin PosCheckoutStore on ChangeNotifier {
     }
 
     final order = _orders[index];
-    final restoredDeltas = <String, int>{};
+    final restoredDeltas = <String, double>{};
 
     // Restore stock
     for (final line in order.lines) {
@@ -251,21 +266,13 @@ mixin PosCheckoutStore on ChangeNotifier {
           _allInventory.indexWhere((item) => item.code == line.itemCode);
       if (invIndex != -1) {
         final item = _allInventory[invIndex];
-        final nextStock = item.stockCount + line.quantity;
-        _allInventory[invIndex] = InventoryProductItem(
-          code: item.code,
-          name: item.name,
-          category: item.category,
-          purchasePrice: item.purchasePrice,
-          sellingPrice: item.sellingPrice,
+        final nextStock = roundQuantity(item.stockCount + line.quantity);
+        _allInventory[invIndex] = item.copyWith(
           stockCount: nextStock,
           stockState: _deriveStockState(nextStock),
-          artType: item.artType,
-          imagePath: item.imagePath,
-          categoryData: item.categoryData,
         );
         restoredDeltas[item.code] =
-            (restoredDeltas[item.code] ?? 0) + line.quantity;
+            roundQuantity((restoredDeltas[item.code] ?? 0) + line.quantity);
       }
     }
 
@@ -321,9 +328,15 @@ mixin PosCheckoutStore on ChangeNotifier {
 
     // 2. Add order items back to cart
     for (final line in order.lines) {
-      for (var i = 0; i < line.quantity; i++) {
-        addToCart(line.product);
-      }
+      final invIndex = _findInventoryIndex(line.product);
+      final product = invIndex != -1
+          ? _toProductItem(_allInventory[invIndex])
+          : line.product;
+      final customPrice =
+          (product.priceValue - line.unitPriceValue).abs() > 0.001
+              ? line.unitPriceValue
+              : null;
+      addToCartQuantity(product, line.quantity, customPrice: customPrice);
     }
 
     // 3. Void the original order

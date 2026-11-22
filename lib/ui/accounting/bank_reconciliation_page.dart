@@ -186,7 +186,9 @@ class BankReconciliationPage extends StatelessWidget {
                           child: MarketButton(
                             label: t('Import statement', 'Ingiza taarifa'),
                             icon: Icons.upload_file_outlined,
-                            isPrimary: false,
+                            color: AppColors.kpiVioletBg,
+                            foregroundColor: AppColors.kpiViolet,
+                            borderColor: null,
                             radius: 0,
                             onTap: () => _openImport(context),
                           ),

@@ -1,5 +1,5 @@
 import '../../service/report_pdf/report_pdf_layout.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
@@ -301,8 +301,9 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
                   : _buildContent(table, pageRows, additionalMetrics, data,
                       processedRows, visible),
             ),
-            _buildPagination(
-                page, lastPage, processedRows.length, pageRows.length),
+            if (pageRows.isNotEmpty)
+              _buildPagination(
+                  page, lastPage, processedRows.length, pageRows.length),
           ],
         ),
       ),

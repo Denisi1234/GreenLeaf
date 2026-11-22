@@ -120,20 +120,17 @@ class CustomerActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = enabled ? AppColors.ink : AppColors.textLight;
+    final color = enabled ? AppColors.kpiSky : AppColors.textLight;
+    final bg = enabled ? AppColors.kpiSkyBg : AppColors.surface;
     return Material(
-      color: AppColors.surface,
+      color: bg,
       borderRadius: BorderRadius.zero,
       child: InkWell(
         borderRadius: BorderRadius.zero,
         highlightColor: Colors.transparent,
         onTap: onTap,
-        child: Container(
-          height: 62,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.zero,
-            border: Border.all(color: AppColors.border),
-          ),
+        child: SizedBox(
+          height: 60,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -145,7 +142,7 @@ class CustomerActionTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.helperText.copyWith(
                   color: color,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -237,8 +234,8 @@ class CustomerStatCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -287,8 +284,8 @@ class CustomerInfoBlock extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(14),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -356,8 +353,8 @@ class CustomerOrdersSection extends StatelessWidget {
           MarketSurfaceCard(
             padding: const EdgeInsets.all(24),
             borderColor: AppColors.border,
-            radius: 0,
-            showShadow: false,
+            radius: AppRadius.standard,
+            showShadow: true,
             child: Column(
               children: [
                 const Icon(Icons.receipt_long_outlined,
@@ -415,20 +412,20 @@ class CustomerOrderTile extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Row(
         children: [
           Container(
             width: 32,
             height: 32,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
+            decoration: BoxDecoration(
+              color: AppColors.kpiSkyBg,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(Icons.receipt_rounded,
-                color: AppColors.textMuted, size: 16),
+                color: AppColors.kpiSky, size: 16),
           ),
           const SizedBox(width: 10),
           Expanded(

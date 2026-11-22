@@ -1,7 +1,6 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
 
 class ReportEmptyState extends StatelessWidget {
@@ -22,81 +21,37 @@ class ReportEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.zero,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceSecondary,
-                    borderRadius: BorderRadius.zero,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      hasFilters
-                          ? Icons.filter_alt_off_outlined
-                          : Icons.insights_rounded,
-                      size: 28,
-                      color: AppColors.primary,
-                    ),
-                  ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
+        child: MarketEmptyState(
+          icon: hasFilters
+              ? Icons.filter_alt_off_outlined
+              : Icons.insights_rounded,
+          title: hasFilters
+              ? context.tr('No matches found')
+              : context.tr('No activity recorded yet'),
+          message: hasFilters
+              ? context.tr(
+                  'We couldn\'t find any records matching your search or date criteria. Try adjusting or clearing your filters.',
+                )
+              : context.strings.paragraph(
+                  note ??
+                      'Transactions, entries, or activity for this period will appear here once recorded.',
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  hasFilters
-                      ? context.tr('No matches found')
-                      : context.tr('No activity recorded yet'),
-                  style: AppTypography.h3.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  hasFilters
-                      ? context.tr('We couldn\'t find any records matching your search or date criteria. Try adjusting or clearing your filters.')
-                      : context.strings.paragraph(note ?? 'Transactions, entries, or activity for this period will appear here once recorded.'),
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textMuted,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                if (hasFilters) ...[
-                  MarketButton.secondary(
-                    label: context.tr('Reset all filters'),
-                    icon: Icons.refresh_rounded,
-                    isFullWidth: false,
-                    onTap: onClearFilters,
-                    height: 42,
-                  ),
-                ] else if (setupAction != null) ...[
-                  MarketButton.primary(
-                    label: context.tr(setupAction!.$2),
-                    icon: setupAction!.$3,
-                    isFullWidth: false,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => setupAction!.$1(),
-                      ),
-                    ),
-                    height: 44,
-                  ),
-                ],
-              ],
-            ),
-          ),
+          actionLabel: hasFilters
+              ? context.tr('Reset all filters')
+              : (setupAction != null ? context.tr(setupAction!.$2) : null),
+          actionIcon: hasFilters
+              ? Icons.refresh_rounded
+              : setupAction?.$3,
+          onAction: hasFilters
+              ? onClearFilters
+              : (setupAction != null
+                  ? () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => setupAction!.$1(),
+                        ),
+                      )
+                  : null),
         ),
       ),
     );

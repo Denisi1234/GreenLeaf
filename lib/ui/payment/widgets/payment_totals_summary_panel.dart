@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../service/pos_suspended_sale_model.dart';
 import '../../business_category_config.dart';
@@ -108,10 +108,25 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
                 if (onAddDiscount != null)
                   OutlinedButton.icon(
                     onPressed: onAddDiscount,
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: AppColors.kpiAmberBg,
+                      foregroundColor: AppColors.kpiAmber,
+                      side: BorderSide.none,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                    ),
                     icon: const Icon(Icons.discount_outlined, size: 18),
-                    label: Text(discount == null
-                        ? context.tr('Add discount')
-                        : context.tr('Edit discount')),
+                    label: Text(
+                      discount == null
+                          ? context.tr('Add discount')
+                          : context.tr('Edit discount'),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                 if (discount != null)
                   IconButton(
@@ -139,19 +154,26 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
                       _ => Icons.phone_android_rounded
                     },
                     size: 17,
+                    color: paymentMethod == method
+                        ? Colors.white
+                        : AppColors.textMuted,
                   ),
                   selected: paymentMethod == method,
                   onSelected: (_) => onMethodChanged(method),
-                  selectedColor: AppColors.successLight,
-                  side: BorderSide(
-                    color: paymentMethod == method
-                        ? AppColors.successDeep
-                        : AppColors.border,
+                  showCheckmark: false,
+                  selectedColor: AppColors.primary,
+                  backgroundColor: AppColors.pageBackground,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
+                  side: BorderSide.none,
                   labelStyle: AppTypography.bodySmall.copyWith(
                     color: paymentMethod == method
-                        ? AppColors.successDeep
+                        ? Colors.white
                         : AppColors.textBody,
+                    fontWeight: paymentMethod == method
+                        ? FontWeight.w700
+                        : FontWeight.w600,
                   ),
                 ),
             ],
@@ -160,32 +182,54 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
           if (paymentMethod == 'Cash') ...[
             OutlinedButton.icon(
               onPressed: onEnterCash,
+              style: OutlinedButton.styleFrom(
+                backgroundColor: AppColors.kpiSkyBg,
+                foregroundColor: AppColors.kpiSky,
+                side: BorderSide.none,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
               icon: const Icon(Icons.payments_outlined, size: 19),
-              label: Text(cashReceived == null
-                  ? context.tr('Enter cash received')
-                  : context.tr('Cash received: TSh {p0}', args: {'p0': cashReceived})),
+              label: Text(
+                cashReceived == null
+                    ? context.tr('Enter cash received')
+                    : context.tr('Cash received: TSh {p0}',
+                        args: {'p0': cashReceived}),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
             TextButton(
               onPressed: onExactCash,
-              child:  Text(context.tr('Use exact amount')),
+              child: Text(
+                context.tr('Use exact amount'),
+                style: const TextStyle(
+                  color: AppColors.kpiSky,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             if (cashReceived != null)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.successLight.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.kpiSuccessBg,
+                  borderRadius: BorderRadius.circular(AppRadius.standard),
                 ),
                 child: _PaymentSummaryRow(
                   label: context.tr('Change due'),
                   value: 'TSh ${changeDue ?? '0'}',
-                  valueColor: AppColors.successDeep,
+                  valueColor: AppColors.kpiSuccess,
                   isBold: true,
                 ),
               ),
           ] else
             Text(
-              context.tr('Confirm the {p0} payment on your terminal or phone before completing this sale.', args: {'p0': paymentMethod}),
+              context.tr(
+                  'Confirm the {p0} payment on your terminal or phone before completing this sale.',
+                  args: {'p0': paymentMethod}),
               style: AppTypography.bodySmall
                   .copyWith(color: AppColors.textMuted, height: 1.5),
             ),
@@ -201,8 +245,19 @@ class PaymentTotalsSummaryPanel extends StatelessWidget {
           const SizedBox(height: 16),
           TextButton.icon(
             onPressed: onRecordDebit,
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.kpiVioletBg,
+              foregroundColor: AppColors.kpiViolet,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+            ),
             icon: const Icon(Icons.person_outline_rounded, size: 19),
-            label:  Text(context.tr('Record as customer credit')),
+            label: Text(
+              context.tr('Record as customer credit'),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),

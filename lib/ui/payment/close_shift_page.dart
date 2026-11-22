@@ -150,9 +150,20 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
                         onPressed: _applyDenoms,
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppColors.kpiSkyBg,
+                          foregroundColor: AppColors.kpiSky,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
+                        ),
                         icon: const Icon(Icons.calculate_outlined, size: 16),
-                        label: Text(_t('Use denomination total',
-                            'Tumia jumla ya hesabu')),
+                        label: Text(
+                          _t('Use denomination total', 'Tumia jumla ya hesabu'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -165,6 +176,7 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                                 'Pesa iliyohesabiwa (TSh)'),
                             hintText: s.expected.toStringAsFixed(0),
                             controller: _countedController,
+                            fillColor: AppColors.pageBackground,
                             keyboardType:
                                 const TextInputType.numberWithOptions(
                                     decimal: true),
@@ -177,6 +189,7 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                                 'Variance reason, handover notes (optional)',
                                 'Sababu ya tofauti, maelezo ya kukabidhi (hiari)'),
                             controller: _notesController,
+                            fillColor: AppColors.pageBackground,
                           ),
                         ],
                       ),
@@ -188,7 +201,8 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                           : _t('Confirm close shift',
                               'Thibitisha kufunga zamu'),
                       icon: Icons.lock_outline_rounded,
-                      color: AppColors.ink,
+                      color: AppColors.primary,
+                      radius: 0,
                       onTap: _saving ? null : _close,
                     ),
                   ],
@@ -204,9 +218,9 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
   Widget _card({required Widget child}) {
     return MarketSurfaceCard(
       padding: const EdgeInsets.all(16),
-      showShadow: false,
+      showShadow: true,
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       child: child,
     );
   }

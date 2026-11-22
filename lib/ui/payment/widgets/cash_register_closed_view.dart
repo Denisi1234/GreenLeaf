@@ -34,8 +34,8 @@ class CashRegisterClosedView extends StatelessWidget {
       padding: padding,
       backgroundColor: AppColors.surface,
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: child,
     );
   }
@@ -94,12 +94,14 @@ class CashRegisterClosedView extends StatelessWidget {
                 label: _t('Register name', 'Jina la kasha'),
                 hintText: _t('e.g. Front Counter, Register 1', 'mf. Kaunta, Kasha 1'),
                 controller: registerController,
+                fillColor: AppColors.pageBackground,
               ),
               const SizedBox(height: 14),
               MarketFormField(
                 label: _t('Opening float (TSh)', 'Pesa ya kuanzia (TSh)'),
                 hintText: '0',
                 controller: floatController,
+                fillColor: AppColors.pageBackground,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 prefixIcon: const Icon(Icons.payments_outlined, size: 18),
               ),

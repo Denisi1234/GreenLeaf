@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_strings.dart';
@@ -27,8 +27,8 @@ class StaffStatCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
+      radius: AppRadius.standard,
+      showShadow: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -37,7 +37,7 @@ class StaffStatCard extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -87,12 +87,12 @@ class StaffTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(AppRadius.standard),
       child: MarketSurfaceCard(
         padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
         borderColor: AppColors.border,
-        radius: 0,
-        showShadow: false,
+        radius: AppRadius.standard,
+        showShadow: true,
         child: Row(
           children: [
             StaffAvatar(member: member, radius: 24),
@@ -210,7 +210,7 @@ class StaffStatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
         status.localized(strings.isSwahili),
@@ -236,7 +236,7 @@ class StaffMiniTag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: const BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(6)),
       ),
       child: Text(
         label,
@@ -268,24 +268,24 @@ class StaffRoleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(AppRadius.standard),
       child: MarketSurfaceCard(
         padding: const EdgeInsets.all(14),
         borderColor: AppColors.border,
-        radius: 0,
-        showShadow: false,
+        radius: AppRadius.standard,
+        showShadow: true,
         child: Row(
           children: [
             Container(
               width: 42,
               height: 42,
-              decoration: const BoxDecoration(
-                color: AppColors.surfaceSecondary,
-                borderRadius: BorderRadius.zero,
+              decoration: BoxDecoration(
+                color: AppColors.kpiSkyBg,
+                borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
                 Icons.shield_outlined,
-                color: AppColors.primary,
+                color: AppColors.kpiSky,
                 size: 22,
               ),
             ),
@@ -340,63 +340,28 @@ class StaffEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarketSurfaceCard(
-      padding: const EdgeInsets.all(24),
-      borderColor: AppColors.border,
-      radius: 0,
-      showShadow: false,
-      child: Column(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceSecondary,
-              borderRadius: BorderRadius.zero,
+    return MarketEmptyState(
+      icon: hasFilters ? Icons.search_off_rounded : Icons.groups_2_outlined,
+      title: hasFilters
+          ? staffDual(
+              strings, 'No staff found', 'Hakuna mfanyakazi aliyepatikana')
+          : staffDual(strings, 'No staff yet', 'Hakuna mfanyakazi bado'),
+      message: hasFilters
+          ? staffDual(
+              strings,
+              'Try a different search or clear the filters to see more staff.',
+              'Jaribu utafutaji mwingine au futa vichujio kuona wafanyakazi zaidi.',
+            )
+          : staffDual(
+              strings,
+              'Add your first team member to start assigning roles and access.',
+              'Ongeza mfanyakazi wako wa kwanza kuanza kupanga nafasi na ruhusa.',
             ),
-            child: Icon(
-              hasFilters ? Icons.search_off_rounded : Icons.groups_2_outlined,
-              color: AppColors.primary,
-              size: 36,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            hasFilters
-                ? staffDual(strings, 'No staff found',
-                    'Hakuna mfanyakazi aliyepatikana')
-                : staffDual(strings, 'No staff yet', 'Hakuna mfanyakazi bado'),
-            style: AppTypography.cardHeader,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            hasFilters
-                ? staffDual(
-                    strings,
-                    'Try a different search or clear the filters to see more staff.',
-                    'Jaribu utafutaji mwingine au futa vichujio kuona wafanyakazi zaidi.')
-                : staffDual(
-                    strings,
-                    'Add your first team member to start assigning roles and access.',
-                    'Ongeza mfanyakazi wako wa kwanza kuanza kupanga nafasi na ruhusa.'),
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textMuted,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 16),
-          MarketButton(
-            label: hasFilters
-                ? staffDual(strings, 'Clear filters', 'Futa vichujio')
-                : staffDual(strings, 'Add new staff', 'Ongeza mfanyakazi'),
-            isFullWidth: false,
-            icon:
-                hasFilters ? Icons.filter_list_off_rounded : Icons.add_rounded,
-            onTap: hasFilters ? onReset : onAdd,
-          ),
-        ],
-      ),
+      actionLabel: hasFilters
+          ? staffDual(strings, 'Clear filters', 'Futa vichujio')
+          : staffDual(strings, 'Add new staff', 'Ongeza mfanyakazi'),
+      actionIcon: hasFilters ? Icons.filter_list_off_rounded : Icons.add_rounded,
+      onAction: hasFilters ? onReset : onAdd,
     );
   }
 }

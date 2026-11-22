@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -31,7 +31,10 @@ class SuspendedSalesSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.extraRounded),
+        ),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       padding: EdgeInsets.only(
         top: 12,
@@ -56,16 +59,8 @@ class SuspendedSalesSheet extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.pause_circle_outline_rounded,
-                    color: AppColors.primary, size: 22),
-              ),
+              const Icon(Icons.pause_circle_outline_rounded,
+                  color: AppColors.textMuted, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -98,31 +93,13 @@ class SuspendedSalesSheet extends StatelessWidget {
           const Divider(height: 24),
           if (suspended.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 36),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.shopping_bag_outlined,
-                        size: 40, color: AppColors.textLight),
-                    const SizedBox(height: 12),
-                    Text(
-                      context.tr('No held sales at the moment'),
-                      style: GoogleFonts.manrope(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textMain,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      context.tr('You can park active orders from the sales screen.'),
-                      style: GoogleFonts.manrope(
-                        fontSize: 12.5,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: MarketEmptyState(
+                showCard: false,
+                icon: Icons.shopping_bag_outlined,
+                title: context.tr('No held sales at the moment'),
+                message: context.tr(
+                  'You can park active orders from the sales screen.',
                 ),
               ),
             )
@@ -231,11 +208,11 @@ class SuspendedSalesSheet extends StatelessWidget {
                             }
                           },
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.successDeep,
+                            backgroundColor: AppColors.primary,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
+                                horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(24),
                             ),
                           ),
                           child: Text(

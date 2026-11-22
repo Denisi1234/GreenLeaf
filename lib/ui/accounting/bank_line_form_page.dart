@@ -205,17 +205,51 @@ class _BankLineFormPageState extends State<BankLineFormPage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      MarketButton(
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border(
+                      top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: MarketButton(
+                        label: _t('Cancel', 'Ghairi'),
+                        color: AppColors.kpiDangerBg,
+                        foregroundColor: AppColors.kpiDanger,
+                        borderColor: null,
+                        radius: 0,
+                        onTap: _saving
+                            ? null
+                            : () => Navigator.of(context).maybePop(),
+                        height: 48,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 3,
+                      child: MarketButton(
                         label: _saving
                             ? _t('Saving...', 'Inahifadhi...')
                             : _t('Save statement line',
                                 'Hifadhi mstari wa taarifa'),
                         icon: Icons.check_rounded,
+                        variant: MarketButtonVariant.primary,
+                        borderColor: null,
+                        radius: 0,
+                        height: 48,
                         onTap: _saving ? null : _save,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],

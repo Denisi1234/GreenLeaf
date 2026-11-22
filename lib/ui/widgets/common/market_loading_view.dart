@@ -78,7 +78,7 @@ class _MarketLoadingViewState extends State<MarketLoadingView>
                       height: widget.size + 24,
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(AppRadius.tile),
                         border: Border.all(color: AppColors.border, width: 1.2),
                         boxShadow: AppShadows.soft,
                       ),
@@ -156,8 +156,10 @@ class MarketTableSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -173,9 +175,9 @@ class MarketTableSkeleton extends StatelessWidget {
                   child: Container(
                     height: 12,
                     margin: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.border,
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),
@@ -202,7 +204,7 @@ class MarketTableSkeleton extends StatelessWidget {
                           margin: const EdgeInsets.symmetric(horizontal: 6),
                           decoration: BoxDecoration(
                             color: AppColors.border.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ),

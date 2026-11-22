@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 
@@ -28,7 +28,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                         children:  [
                           SettingsCard(
                             icon: Icons.privacy_tip_outlined,
-                            title: context.tr('TrackMauzo Privacy Policy'),
+                            title: context.tr('Aza POS Privacy Policy'),
                             description: context.tr('Last updated: May 2026'),
                             children: [
                               _Section(

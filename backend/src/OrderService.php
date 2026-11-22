@@ -23,14 +23,14 @@ final class OrderService
     {
         $deltas = $body['deltas'] ?? null;
         if (!is_array($deltas)) {
-            throw new ApiError(422, 'Provide a deltas map of product codes to integer adjustments.');
+            throw new ApiError(422, 'Provide a deltas map of product codes to numeric adjustments.');
         }
         foreach ($deltas as $code => $rawDelta) {
             if (!is_string($code) || trim($code) === '' || !is_numeric($rawDelta)) {
                 continue;
             }
-            $delta = (int) $rawDelta;
-            if ($delta === 0) {
+            $delta = round((float) $rawDelta, 3);
+            if ($delta == 0.0) {
                 continue;
             }
             $rows = $this->db->rows(
@@ -40,8 +40,8 @@ final class OrderService
             if ($rows === []) {
                 continue;
             }
-            $current = (int) $rows[0]['stock_count'];
-            $next = max(0, min(2147483647, $current + $delta));
+            $current = (float) $rows[0]['stock_count'];
+            $next = ApiValidator::normalizeQuantity(max(0.0, min(2147483647.0, $current + $delta)));
             $payload = json_decode($rows[0]['payload'], true, 512, JSON_THROW_ON_ERROR);
             $payload['stock_count'] = $next;
             $payload['stock_state'] = ApiValidator::stockState($next);
@@ -82,34 +82,60 @@ final class OrderService
                 throw new ApiError(422, 'Invalid sale line.');
             }
             $code = ApiValidator::text($line, 'item_code');
-            $quantity = $line['quantity'] ?? null;
-            if (!is_int($quantity) || $quantity < 1 || $quantity > 1000000) {
-                throw new ApiError(422, 'Quantity must be a positive integer.');
+            $rawQuantity = $line['quantity'] ?? null;
+            if ((!is_int($rawQuantity) && !is_float($rawQuantity)) || !is_finite((float) $rawQuantity)) {
+                throw new ApiError(422, 'Quantity must be a positive number.');
+            }
+            $quantity = ApiValidator::normalizeQuantity((float) $rawQuantity);
+            if ($quantity <= 0 || $quantity > 1000000) {
+                throw new ApiError(422, 'Quantity must be a positive number.');
             }
             $products = $this->db->rows('SELECT * FROM products WHERE store_id = ? AND code = ?', [$storeId, $code]);
-            if ($products === [] || (int) $products[0]['stock_count'] < $quantity) {
+            if ($products === [] || (float) $products[0]['stock_count'] + 0.0001 < $quantity) {
                 throw new ApiError(409, 'Insufficient stock for ' . $code . '. Refresh the inventory.');
             }
             $product = $products[0];
             $details = json_decode($product['payload'], true, 512, JSON_THROW_ON_ERROR);
+            $meta = [];
+            if (is_string($details['category_data_json'] ?? null)) {
+                $decodedMeta = json_decode($details['category_data_json'], true);
+                if (is_array($decodedMeta)) {
+                    $meta = $decodedMeta;
+                }
+            }
+            $allowFractional = !empty($meta['allow_fractional']) || !empty($details['allow_fractional']);
+            if (!$allowFractional && abs($quantity - (int) round((float) $quantity)) > 0.0005) {
+                throw new ApiError(422, 'Quantity must be a whole number for ' . $code . '.');
+            }
+            $line['quantity'] = $quantity;
             $line['item_name'] = $details['name'];
             $line['item_category'] = $details['category'] ?? '';
             $line['image_path'] = $details['image_path'] ?? null;
             $line['art_type'] = $details['art_type'];
             $line['item_size'] = (string) ($line['item_size'] ?? '');
-            $line['unit_price'] = number_format((int) $product['price_cents'] / 100, 2, '.', '');
-            $line['unit_price_value'] = (int) $product['price_cents'] / 100;
-            if (ApiValidator::cents($line['unit_price_value'] ?? null) !== (int) $product['price_cents']) {
-                throw new ApiError(409, 'The price changed for ' . $code . '. Refresh the inventory.');
+            $line['item_unit'] = (string) ($line['item_unit'] ?? ($meta['unit'] ?? 'Pcs'));
+            if ($allowFractional) {
+                $rawPrice = $line['unit_price_value'] ?? ((int) $product['price_cents'] / 100);
+                $lineUnitCents = ApiValidator::cents($rawPrice);
+                $line['unit_price'] = number_format((float) $rawPrice, 2, '.', '');
+                $line['unit_price_value'] = (float) $rawPrice;
+                $subtotal += (int) round(((float) $rawPrice) * 100 * $quantity);
+            } else {
+                if (ApiValidator::cents($line['unit_price_value'] ?? null) !== (int) $product['price_cents']) {
+                    throw new ApiError(409, 'The price changed for ' . $code . '. Refresh the inventory.');
+                }
+                $line['unit_price'] = number_format((int) $product['price_cents'] / 100, 2, '.', '');
+                $line['unit_price_value'] = (int) $product['price_cents'] / 100;
+                $subtotal += (int) round(((int) $product['price_cents']) * $quantity);
             }
             $line['unit_cost'] = (int) $product['cost_cents'] / 100;
-            $subtotal += (int) $product['price_cents'] * $quantity;
             if ($subtotal > 10000000000000) {
                 throw new ApiError(422, 'The sale exceeds the supported total.');
             }
+            $nextStock = ApiValidator::normalizeQuantity(max(0.0, (float) $product['stock_count'] - $quantity));
             $this->db->execute(
-                'UPDATE products SET stock_count = stock_count - ? WHERE store_id = ? AND code = ?',
-                [$quantity, $storeId, $code]
+                'UPDATE products SET stock_count = ? WHERE store_id = ? AND code = ?',
+                [$nextStock, $storeId, $code]
             );
         }
         unset($line);
@@ -118,11 +144,13 @@ final class OrderService
         if ($discount > 0) {
             $this->auth->requirePermission($user, 'Discounts');
         }
-        if ($discount > $subtotal || ApiValidator::cents($order['total'] ?? null) !== $subtotal - $discount) {
+        $submittedTotal = ApiValidator::cents($order['total'] ?? null);
+        $expectedTotal = $subtotal - $discount;
+        if ($discount > $subtotal || abs($submittedTotal - $expectedTotal) > count($lines)) {
             throw new ApiError(422, 'The sale total does not match its items and discount.');
         }
 
-        $total = $subtotal - $discount;
+        $total = $submittedTotal;
         $method = $order['payment_method'] ?? 'Cash';
         if (!in_array($method, ['Cash', 'Credit', 'Card', 'Mobile Money', 'M-Pesa', 'Bank Transfer'], true)) {
             throw new ApiError(422, 'Unsupported payment method.');
@@ -187,9 +215,17 @@ final class OrderService
         }
         $lines = $this->db->rows('SELECT * FROM order_lines WHERE store_id = ? AND order_id = ?', [$storeId, $id]);
         foreach ($lines as $line) {
+            $rows = $this->db->rows(
+                'SELECT stock_count FROM products WHERE store_id = ? AND code = ?',
+                [$storeId, $line['product_code']]
+            );
+            if ($rows === []) {
+                throw new ApiError(409, 'Restore product ' . $line['product_code'] . ' before voiding this sale.');
+            }
+            $nextStock = ApiValidator::normalizeQuantity((float) $rows[0]['stock_count'] + (float) $line['quantity']);
             $updated = $this->db->execute(
-                'UPDATE products SET stock_count = stock_count + ? WHERE store_id = ? AND code = ?',
-                [$line['quantity'], $storeId, $line['product_code']]
+                'UPDATE products SET stock_count = ? WHERE store_id = ? AND code = ?',
+                [$nextStock, $storeId, $line['product_code']]
             );
             if ($updated !== 1) {
                 throw new ApiError(409, 'Restore product ' . $line['product_code'] . ' before voiding this sale.');

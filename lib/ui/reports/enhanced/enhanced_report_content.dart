@@ -99,7 +99,7 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: MarketSurfaceCard(
               padding: const EdgeInsets.all(AppSpacing.lg),
-              radius: 0,
+              radius: AppRadius.standard,
               showShadow: false,
               child: _buildTrendChart(table, matchingRows),
             ),

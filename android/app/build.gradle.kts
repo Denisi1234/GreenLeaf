@@ -28,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.trackmauzo.app"
+        applicationId = "com.azapos.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

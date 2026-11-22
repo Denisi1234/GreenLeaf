@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 
 import 'package:flutter/material.dart';
@@ -213,6 +213,10 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
     final created = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.standard),
+        ),
         title: Text(staffDual(strings, 'New role', 'Nafasi mpya')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -221,12 +225,16 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
               controller: titleController,
               autofocus: true,
               decoration: InputDecoration(
+                  filled: true,
+                  fillColor: AppColors.pageBackground,
                   labelText: staffDual(strings, 'Role name', 'Jina la nafasi')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: subtitleController,
               decoration: InputDecoration(
+                  filled: true,
+                  fillColor: AppColors.pageBackground,
                   labelText:
                       staffDual(strings, 'Short description', 'Maelezo mafupi')),
             ),
@@ -235,14 +243,38 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(strings.cancel),
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.surfaceSecondary,
+              foregroundColor: AppColors.textBody,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: Text(
+              strings.cancel,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               if (titleController.text.trim().isEmpty) return;
               Navigator.of(dialogContext).pop(true);
             },
-            child: Text(strings.create),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              side: BorderSide.none,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            ),
+            child: Text(
+              strings.create,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -306,9 +338,9 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
         backgroundColor: AppColors.pageBackground,
         floatingActionButton: Material(
           color: AppColors.primary,
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
           child: InkWell(
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             splashColor: AppColors.primaryDeep.withValues(alpha: 0.3),
             highlightColor: Colors.transparent,
             onTap: () => _openAddStaff(store),

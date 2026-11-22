@@ -1,3 +1,5 @@
+import '../utils/quantity_formatter.dart';
+
 class Supplier {
   final int? id;
   final String name;
@@ -40,7 +42,7 @@ class Supplier {
 
 class ReceivingLine {
   final String productName;
-  final int quantity;
+  final double quantity;
   final double unitCost;
   final double sellingPrice;
 
@@ -62,7 +64,7 @@ class ReceivingLine {
 
   factory ReceivingLine.fromMap(Map<String, Object?> map) => ReceivingLine(
         productName: (map['product_name'] ?? '').toString(),
-        quantity: (map['quantity'] as num?)?.toInt() ?? 0,
+        quantity: (map['quantity'] as num?)?.toDouble() ?? 0,
         unitCost: (map['unit_cost'] as num?)?.toDouble() ?? 0,
         sellingPrice: (map['selling_price'] as num?)?.toDouble() ?? 0,
       );
@@ -92,7 +94,8 @@ class Receiving {
     this.lines = const [],
   });
 
-  int get itemCount => lines.fold<int>(0, (sum, line) => sum + line.quantity);
+  double get itemCount =>
+      roundQuantity(lines.fold<double>(0, (sum, line) => sum + line.quantity));
 
   bool get stockUpdated => lines.isEmpty;
 

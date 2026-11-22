@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
+import 'package:aza_pos/service/pos_local_store.dart';
 
 import 'ui/auth/auth_wrapper.dart';
 import 'ui/widgets/app_design.dart';
@@ -95,7 +95,7 @@ class App extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'TrackMauzo POS',
+      title: 'Aza POS',
       locale: Locale(languageCode),
       supportedLocales: const [
         Locale('sw'),

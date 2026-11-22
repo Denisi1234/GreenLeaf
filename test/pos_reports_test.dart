@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
-import 'package:track_mauzo/service/pos_order_models.dart';
-import 'package:track_mauzo/ui/models/product_item.dart';
-import 'package:track_mauzo/ui/reports/pos_report_catalog.dart';
-import 'package:track_mauzo/ui/reports/pos_report_data.dart';
-import 'package:track_mauzo/ui/reports/advanced_reports_page.dart';
-import 'package:track_mauzo/ui/reports/reports_catalog_page.dart';
+import 'package:aza_pos/service/pos_local_store.dart';
+import 'package:aza_pos/service/pos_order_models.dart';
+import 'package:aza_pos/ui/models/product_item.dart';
+import 'package:aza_pos/ui/reports/pos_report_catalog.dart';
+import 'package:aza_pos/ui/reports/pos_report_data.dart';
+import 'package:aza_pos/ui/reports/advanced_reports_page.dart';
 
 void main() {
   final data = PosReportData(

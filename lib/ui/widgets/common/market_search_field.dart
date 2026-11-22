@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../app_design.dart';
@@ -12,10 +12,11 @@ class MarketSearchField extends StatelessWidget {
     required this.controller,
     required this.hintText,
     required this.onChanged,
+    this.onSubmitted,
     this.onClear,
     this.onScanTap,
     this.height = 46,
-    this.radius = 0, // Crisp modern flat design
+    this.radius = 0,
     this.backgroundColor = AppColors.surface,
     this.borderColor = AppColors.border,
     this.iconColor = AppColors.textMuted,
@@ -30,6 +31,7 @@ class MarketSearchField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onSubmitted;
   final VoidCallback? onClear;
   final VoidCallback? onScanTap;
   final double height;
@@ -72,6 +74,7 @@ class MarketSearchField extends StatelessWidget {
                 child: TextField(
                   controller: controller,
                   onChanged: onChanged,
+                  onSubmitted: onSubmitted,
                   textInputAction: TextInputAction.search,
                   textAlignVertical: TextAlignVertical.center,
                   style: AppTypography.bodyMain.copyWith(

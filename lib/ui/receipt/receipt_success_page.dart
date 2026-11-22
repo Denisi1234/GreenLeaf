@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../service/esc_pos_receipt_builder.dart';
@@ -141,35 +141,74 @@ class ReceiptSuccessPage extends StatelessWidget {
                                   const SizedBox(height: 24),
                                   SizedBox(
                                       width: double.infinity,
+                                      height: 48,
                                       child: FilledButton.icon(
                                         onPressed: () => _newSale(context),
                                         style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                AppColors.successDeep),
+                                          backgroundColor: AppColors.primary,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                                AppRadius.pill),
+                                          ),
+                                        ),
                                         icon: const Icon(Icons.add_rounded),
-                                        label:  Text(context.tr('New sale')),
+                                        label: Text(
+                                          context.tr('New sale'),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w700),
+                                        ),
                                       )),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
                                   SizedBox(
                                       width: double.infinity,
+                                      height: 46,
                                       child: OutlinedButton.icon(
                                         onPressed: () =>
                                             _thermalPrint(context, receipt),
+                                        style: OutlinedButton.styleFrom(
+                                          backgroundColor: AppColors.kpiSkyBg,
+                                          foregroundColor: AppColors.kpiSky,
+                                          side: BorderSide.none,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                                AppRadius.pill),
+                                          ),
+                                        ),
                                         icon: const Icon(Icons.print_rounded),
-                                        label: Text(context.tr('Thermal print')),
+                                        label: Text(
+                                          context.tr('Thermal print'),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w700),
+                                        ),
                                       )),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
                                   SizedBox(
                                       width: double.infinity,
+                                      height: 46,
                                       child: OutlinedButton.icon(
                                         onPressed: () => Navigator.of(context)
                                             .push(MaterialPageRoute<void>(
                                                 builder: (_) =>
                                                     ReceiptPreviewPage(
                                                         order: order))),
+                                        style: OutlinedButton.styleFrom(
+                                          backgroundColor:
+                                              AppColors.kpiVioletBg,
+                                          foregroundColor: AppColors.kpiViolet,
+                                          side: BorderSide.none,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                                AppRadius.pill),
+                                          ),
+                                        ),
                                         icon: const Icon(
                                             Icons.receipt_long_outlined),
-                                        label:  Text(context.tr('View receipt')),
+                                        label: Text(
+                                          context.tr('View receipt'),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w700),
+                                        ),
                                       )),
                                 ])),
                       )))),

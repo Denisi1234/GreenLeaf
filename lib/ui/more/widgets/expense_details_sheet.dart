@@ -176,10 +176,11 @@ class ExpenseDetailSheet extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.border),
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        side: BorderSide.none,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.zero,
@@ -190,16 +191,20 @@ class ExpenseDetailSheet extends StatelessWidget {
                         onEdit();
                       },
                       icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: Text(expenseDual(strings, 'Edit', 'Hariri')),
+                      label: Text(
+                        expenseDual(strings, 'Edit', 'Hariri'),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   if (expense.id != null)
                     Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.danger,
-                          side: const BorderSide(color: AppColors.dangerBorder),
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.kpiDangerBg,
+                          foregroundColor: AppColors.kpiDanger,
+                          side: BorderSide.none,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
@@ -210,7 +215,10 @@ class ExpenseDetailSheet extends StatelessWidget {
                           onDelete();
                         },
                         icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                        label: Text(expenseDual(strings, 'Delete', 'Futa')),
+                        label: Text(
+                          expenseDual(strings, 'Delete', 'Futa'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
                 ],

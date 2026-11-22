@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -188,15 +188,23 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
                     children: [
                       if (logoPath != null && logoPath.isNotEmpty)
                         _LogoPreview(path: logoPath),
-                      OutlinedButton.icon(
+                      FilledButton.icon(
                         onPressed: _saving ? null : () => _pickLogo(strings),
-                        style: OutlinedButton.styleFrom(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.kpiSkyBg,
+                          foregroundColor: AppColors.kpiSky,
+                          side: BorderSide.none,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
                           ),
                         ),
                         icon: const Icon(Icons.upload_outlined, size: 18),
-                        label: Text(strings.chooseLogo),
+                        label: Text(
+                          strings.chooseLogo,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ],
                   ),

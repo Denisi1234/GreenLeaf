@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/currency_formatter.dart';
 import '../../business_category_config.dart';
@@ -155,8 +155,17 @@ class _PaymentCashReceivedSheetState extends State<PaymentCashReceivedSheet> {
                       ? () => Navigator.pop(context, _currentInput)
                       : null,
                   style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.successDeep),
-                  child:  Text(context.tr('Confirm cash amount')),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                  child: Text(
+                    context.tr('Confirm cash amount'),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),

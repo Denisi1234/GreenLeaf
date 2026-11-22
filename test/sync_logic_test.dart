@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:track_mauzo/service/pos_order_models.dart';
-import 'package:track_mauzo/ui/models/product_item.dart';
-import 'package:track_mauzo/ui/products/inventory_product_item.dart';
+import 'package:aza_pos/service/pos_order_models.dart';
+import 'package:aza_pos/ui/models/product_item.dart';
+import 'package:aza_pos/ui/products/inventory_product_item.dart';
 
 import 'support/test_hybrid_database.dart';
 
@@ -31,7 +31,7 @@ void main() {
 
   InventoryProductItem product({
     String code = 'P001',
-    int stockCount = 10,
+    double stockCount = 10,
     String? imagePath,
   }) {
     return InventoryProductItem(
@@ -47,7 +47,7 @@ void main() {
     );
   }
 
-  CompletedOrder order({String id = 'ORD-1', int quantity = 1}) {
+  CompletedOrder order({String id = 'ORD-1', double quantity = 1}) {
     return CompletedOrder(
       id: id,
       dateTime: '2026-01-01T10:00:00',

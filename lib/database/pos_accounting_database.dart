@@ -1,6 +1,8 @@
 part of '../service/pos_local_database.dart';
 
-extension PosAccountingDatabase on PosLocalDatabase {
+mixin PosAccountingDatabaseMixin {
+  Future<Database> get database;
+
   Future<List<Map<String, Object?>>> loadAccounts(String storeId) async {
     final db = await database;
     return db.query('accounts',

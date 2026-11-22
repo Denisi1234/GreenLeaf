@@ -143,7 +143,7 @@ mixin PosSalesDatabaseMixin {
   }
 
   Future<void> adjustInventoryStock(
-    Map<String, int> deltas,
+    Map<String, num> deltas,
     String storeId, {
     int lowStockThreshold = 20,
   }) async {
@@ -160,8 +160,9 @@ mixin PosSalesDatabaseMixin {
           limit: 1,
         );
         if (rows.isEmpty) continue;
-        final current = (rows.first['stock_count'] as num).toInt();
-        final next = (current + entry.value).clamp(0, 1 << 31).toInt();
+        final current = (rows.first['stock_count'] as num).toDouble();
+        final next =
+            roundQuantity((current + entry.value.toDouble()).clamp(0.0, 1e12).toDouble());
         final state = next <= 0
             ? InventoryStockState.outOfStock
             : next <= lowStockThreshold
@@ -182,6 +183,7 @@ mixin PosSalesDatabaseMixin {
 
   Future<List<ProductItem>> loadCart(String storeId) async {
     final db = await database;
+    await _ensureMeasurementColumns(db);
     final rows = await db.query(
       'cart_items',
       where: 'store_id = ?',
@@ -193,6 +195,7 @@ mixin PosSalesDatabaseMixin {
 
   Future<void> replaceCart(List<ProductItem> items, String storeId) async {
     final db = await database;
+    await _ensureMeasurementColumns(db);
     final batch = db.batch();
     batch.delete(
       'cart_items',
@@ -258,6 +261,7 @@ mixin PosSalesDatabaseMixin {
     Map<String, Object?>? creditCustomer,
   }) async {
     final db = await database;
+    await _ensureMeasurementColumns(db);
     await db.transaction((txn) async {
       await txn.insert(
         'orders',
@@ -288,12 +292,13 @@ mixin PosSalesDatabaseMixin {
             'item_category': line.itemCategory,
             'item_name': line.itemName,
             'item_size': line.itemSize,
-            'quantity': line.quantity,
+            'quantity': roundQuantity(line.quantity),
             'unit_price': line.unitPrice,
             'unit_price_value': line.unitPriceValue,
             'unit_cost': line.unitCost,
             'art_type': line.artType.name,
             'image_path': line.imagePath,
+            'item_unit': line.unit,
           },
         );
       }
@@ -439,6 +444,16 @@ mixin PosSalesDatabaseMixin {
 
   Map<String, Object?> inventoryToMap(
       InventoryProductItem item, String storeId) {
+    final metadata = Map<String, Object?>.from(item.categoryData)
+      ..['unit'] = item.unit
+      ..['allow_fractional'] = item.allowFractional;
+    if (item.hasBulkPack) {
+      metadata['pack_name'] = item.packName!.trim();
+      metadata['pack_size'] = item.packSize!;
+    } else {
+      metadata.remove('pack_name');
+      metadata.remove('pack_size');
+    }
     return <String, Object?>{
       'code': item.code,
       'store_id': storeId,
@@ -446,11 +461,11 @@ mixin PosSalesDatabaseMixin {
       'category': item.category,
       'purchase_price': item.purchasePrice,
       'selling_price': item.sellingPrice,
-      'stock_count': item.stockCount,
+      'stock_count': roundQuantity(item.stockCount),
       'stock_state': item.stockState.name,
       'art_type': item.artType.name,
       'image_path': item.imagePath,
-      'category_data_json': jsonEncode(item.categoryData),
+      'category_data_json': jsonEncode(metadata),
     };
   }
 
@@ -458,17 +473,30 @@ mixin PosSalesDatabaseMixin {
     final rawMetadata = map['category_data_json'] as String? ?? '{}';
     final metadata = Map<String, Object?>.from(
         jsonDecode(rawMetadata) as Map<dynamic, dynamic>);
+    final unit = (metadata['unit'] ?? map['unit'])?.toString().trim();
+    final allowFractionalRaw =
+        metadata['allow_fractional'] ?? map['allow_fractional'];
+    final allowFractional =
+        allowFractionalRaw == true || allowFractionalRaw == 1;
+    final packName =
+        (metadata['pack_name'] ?? map['pack_name'])?.toString().trim();
+    final packSize =
+        ((metadata['pack_size'] ?? map['pack_size']) as num?)?.toDouble();
     return InventoryProductItem(
       code: map['code'] as String,
       name: map['name'] as String,
       category: map['category'] as String,
       purchasePrice: (map['purchase_price'] as num).toDouble(),
       sellingPrice: (map['selling_price'] as num).toDouble(),
-      stockCount: (map['stock_count'] as num).toInt(),
+      stockCount: roundQuantity((map['stock_count'] as num).toDouble()),
       stockState:
           InventoryStockState.values.byName(map['stock_state'] as String),
       artType: ProductArtType.values.byName(map['art_type'] as String),
       imagePath: map['image_path'] as String?,
+      unit: (unit == null || unit.isEmpty) ? 'Pcs' : unit,
+      allowFractional: allowFractional,
+      packName: (packName == null || packName.isEmpty) ? null : packName,
+      packSize: (packSize != null && packSize > 0) ? packSize : null,
       categoryData: metadata,
     );
   }
@@ -483,10 +511,15 @@ mixin PosSalesDatabaseMixin {
       'price': item.price,
       'art_type': item.type.name,
       'image_path': item.imagePath,
+      'quantity': roundQuantity(item.quantity),
+      'unit': item.unit,
+      'allow_fractional': item.allowFractional ? 1 : 0,
+      'custom_price': item.customPrice,
     };
   }
 
   ProductItem productFromMap(Map<String, Object?> map) {
+    final allowRaw = map['allow_fractional'];
     return ProductItem(
       map['name'] as String,
       map['size'] as String,
@@ -495,21 +528,27 @@ mixin PosSalesDatabaseMixin {
       code: map['code'] as String?,
       category: map['category'] as String?,
       imagePath: map['image_path'] as String?,
+      unit: (map['unit'] as String?) ?? 'Pcs',
+      allowFractional: allowRaw == true || allowRaw == 1,
+      quantity: roundQuantity((map['quantity'] as num?)?.toDouble() ?? 1.0),
+      customPrice: (map['custom_price'] as num?)?.toDouble(),
     );
   }
 
   OrderLine orderLineFromMap(Map<String, Object?> map) {
+    final unit = (map['item_unit'] ?? map['unit'])?.toString().trim();
     return OrderLine(
       itemCode: map['item_code'] as String?,
       itemCategory: map['item_category'] as String?,
       itemName: map['item_name'] as String,
       itemSize: map['item_size'] as String,
-      quantity: (map['quantity'] as num).toInt(),
+      quantity: roundQuantity((map['quantity'] as num).toDouble()),
       unitPrice: map['unit_price'] as String,
       unitPriceValue: (map['unit_price_value'] as num).toDouble(),
       unitCost: (map['unit_cost'] as num?)?.toDouble(),
       artType: ProductArtType.values.byName(map['art_type'] as String),
       imagePath: map['image_path'] as String?,
+      unit: (unit == null || unit.isEmpty) ? 'Pcs' : unit,
     );
   }
 }

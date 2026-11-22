@@ -1,4 +1,3 @@
-import '../../service/report_pdf/report_pdf_context.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +12,6 @@ import 'create_customer_page.dart';
 import 'debtors_page.dart';
 import 'customer_details_page.dart';
 import 'widgets/customer_cards.dart';
-import 'widgets/customer_export_service.dart';
 import 'widgets/customer_filter_widgets.dart';
 import 'widgets/customer_models.dart';
 
@@ -44,7 +42,6 @@ class _CustomersPageState extends State<CustomersPage> {
   String _searchQuery = '';
   String _filter = CustomerFilterOption.all.name;
   CustomerSortMode _sort = CustomerSortMode.newest;
-  final bool _exporting = false;
 
   @override
   void dispose() {
@@ -126,7 +123,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                           'Wateja wote'),
                                       value: '${all.length}',
                                       icon: Icons.people_alt_outlined,
-                                      sharp: true,
+                                      sharp: false,
                                       borderless: true,
                                       backgroundColor: AppColors.kpiSkyBg,
                                       color: AppColors.kpiSky,
@@ -139,7 +136,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                           'Wanunuzi hai'),
                                       value: '${all.isEmpty ? 0 : withOrders}',
                                       icon: Icons.shopping_bag_outlined,
-                                      sharp: true,
+                                      sharp: false,
                                       borderless: true,
                                       backgroundColor: AppColors.kpiRoseBg,
                                       color: AppColors.kpiRose,
@@ -153,7 +150,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                       value:
                                           _formatMoney(lifetime, compact: true),
                                       icon: Icons.trending_up_rounded,
-                                      sharp: true,
+                                      sharp: false,
                                       borderless: true,
                                       backgroundColor: AppColors.kpiSuccessBg,
                                       color: AppColors.kpiSuccess,
@@ -168,7 +165,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                           compact: true),
                                       icon:
                                           Icons.account_balance_wallet_outlined,
-                                      sharp: true,
+                                      sharp: false,
                                       borderless: true,
                                       backgroundColor: AppColors.kpiDangerBg,
                                       color: AppColors.kpiDanger,
@@ -450,7 +447,11 @@ class _CustomersPageState extends State<CustomersPage> {
     final picked = await showModalBottomSheet<CustomerSortMode>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.extraRounded),
+        ),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -460,7 +461,8 @@ class _CustomersPageState extends State<CustomersPage> {
                 width: 40,
                 height: 4,
                 decoration: const BoxDecoration(
-                    color: AppColors.border, borderRadius: BorderRadius.zero)),
+                    color: AppColors.border,
+                  borderRadius: BorderRadius.all(Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(_dual(strings, 'Sort customers by', 'Panga wateja kwa'),
                 style: AppTypography.cardHeader),
@@ -482,79 +484,6 @@ class _CustomersPageState extends State<CustomersPage> {
     );
     if (picked == null || !mounted) return;
     setState(() => _sort = picked);
-  }
-
-  Future<void> _showExportMenu() async {
-    final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-                width: 40,
-                height: 4,
-                decoration: const BoxDecoration(
-                    color: AppColors.border, borderRadius: BorderRadius.zero)),
-            const SizedBox(height: 12),
-            Text(_dual(strings, 'Export customers', 'Hamisha wateja'),
-                style: AppTypography.cardHeader),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.table_view_rounded,
-                  color: AppColors.primary, size: 20),
-              title: Text(_dual(strings, 'Export as CSV', 'Hamisha kama CSV'),
-                  style: AppTypography.bodyMedium),
-              onTap: () => Navigator.of(ctx).pop('csv'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf_rounded,
-                  color: AppColors.ink, size: 20),
-              title: Text(_dual(strings, 'Export as PDF', 'Hamisha kama PDF'),
-                  style: AppTypography.bodyMedium),
-              onTap: () => Navigator.of(ctx).pop('pdf'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (choice == null || !mounted) return;
-    final store = context.read<PosLocalStore>();
-    final stats = _buildStats(store);
-    final rows = _visibleCustomers();
-    if (choice == 'csv') {
-      await CustomerExportService.exportCsv(context, rows: rows, stats: stats, strings: strings);
-    } else if (choice == 'pdf') {
-      await CustomerExportService.exportPdf(context, rows: rows, stats: stats, strings: strings,
-        pdfContext: ReportPdfContext.fromStore(store, languageCode: strings.languageCode,
-          filterSummary: [
-            if (_searchQuery.trim().isNotEmpty) '${strings.text('Search')}: ${_searchQuery.trim()}',
-            if (_filter != CustomerFilterOption.all.name) filterFromName(_filter).label(strings),
-            '${strings.text('Sort')}: ${_sort.label(strings)}',
-          ].join(' | ')));
-    }
-  }
-
-  List<CustomerData> _visibleCustomers() {
-    final store = context.read<PosLocalStore>();
-    final stats = _buildStats(store);
-    final filtered = store.customers.where((customer) {
-      final info = stats[customer.name] ?? CustomerStats.empty;
-      final q = _searchQuery.trim().toLowerCase();
-      final matchesSearch = q.isEmpty ||
-          customer.name.toLowerCase().contains(q) ||
-          customer.phone.toLowerCase().contains(q) ||
-          customer.email.toLowerCase().contains(q) ||
-          customer.address.toLowerCase().contains(q);
-      return matchesSearch && _matchesFilter(customer, info);
-    }).toList();
-    _sortList(filtered, stats);
-    return filtered;
   }
 }
 

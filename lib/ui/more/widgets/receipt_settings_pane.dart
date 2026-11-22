@@ -6,6 +6,7 @@ import '../../../service/pos_local_store.dart';
 import '../../../service/receipt_settings.dart';
 import '../../../service/thermal_printer_service.dart';
 import '../../receipt/thermal_printer_picker_sheet.dart';
+import '../../widgets/app_design.dart';
 import '../settings_layout.dart';
 
 /// Receipt configuration pane.
@@ -336,16 +337,42 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
           spacing: 10,
           runSpacing: 10,
           children: [
-            OutlinedButton.icon(
+            FilledButton.icon(
               onPressed: _saving ? null : () => _selectThermalPrinter(store),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.kpiSkyBg,
+                foregroundColor: AppColors.kpiSky,
+                side: BorderSide.none,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
               icon: const Icon(Icons.bluetooth_searching_rounded, size: 18),
-              label: Text(t('Select printer', 'Chagua printa')),
+              label: Text(
+                t('Select printer', 'Chagua printa'),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
             FilledButton.icon(
               onPressed:
                   _saving || !hasPrinter ? null : () => _testThermalPrinter(store),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                side: BorderSide.none,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              ),
               icon: const Icon(Icons.print_rounded, size: 18),
-              label: Text(t('Test print', 'Jaribu kuchapisha')),
+              label: Text(
+                t('Test print', 'Jaribu kuchapisha'),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),

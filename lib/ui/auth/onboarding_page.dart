@@ -27,8 +27,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   static const List<_OnboardingItem> _slides = [
     _OnboardingItem(
-      titleEn: 'Welcome to TrackMauzo!',
-      titleSw: 'Karibu TrackMauzo!',
+      titleEn: 'Welcome to Aza POS!',
+      titleSw: 'Karibu Aza POS!',
       subtitleEn:
           'The ultimate app for making your shop sales and daily stock management as convenient and smooth as possible.',
       subtitleSw:
@@ -84,7 +84,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.white, AppColors.pageBackground],
+            colors: [AppColors.surface, AppColors.pageBackground],
           ),
         ),
         child: SafeArea(
@@ -274,9 +274,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          GestureDetector(
-                            onTap: widget.onSignIn,
-                            behavior: HitTestBehavior.opaque,
+                          TextButton(
+                            onPressed: widget.onSignIn,
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(44, 44),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                            ),
                             child: Text(
                               context.tr('Sign in'),
                               style: GoogleFonts.manrope(
@@ -325,7 +329,7 @@ class _TopBar extends StatelessWidget {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    context.tr('TrackMauzo'),
+                    'Aza POS',
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.manrope(
                       fontSize: 20,

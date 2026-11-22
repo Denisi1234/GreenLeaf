@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../ui/models/product_item.dart';
 import '../ui/products/inventory_product_item.dart';
+import '../utils/quantity_formatter.dart';
 import 'php_api_client.dart';
 import 'pos_local_database.dart';
 import 'pos_order_models.dart';
@@ -353,12 +354,12 @@ class PosHybridDatabase extends PosLocalDatabase {
             if (row['code'] != null) '${row['code']}': row,
         };
         for (final entry in rawDeltas.entries) {
-          final delta = (entry.value as num).toInt();
+          final delta = (entry.value as num).toDouble();
           if (delta == 0) continue;
           final remote = byCode[entry.key];
           if (remote == null) continue;
-          final current = (remote['stock_count'] as num?)?.toInt() ?? 0;
-          final next = (current + delta).clamp(0, 1 << 31).toInt();
+          final current = (remote['stock_count'] as num?)?.toDouble() ?? 0.0;
+          final next = roundQuantity((current + delta).clamp(0.0, 1e12).toDouble());
           final state = next <= 0
               ? InventoryStockState.outOfStock
               : next <= threshold
@@ -391,56 +392,53 @@ class PosHybridDatabase extends PosLocalDatabase {
   Future<void> pullAll() async {
     await prepare();
 
+    if (await _unresolvedCount() > 0) return;
+
     final products = await api.rows('products');
-    await super.replaceInventory(
-      products.map(inventoryFromMap).toList(),
-      storeId,
-    );
+    if (products.isNotEmpty) {
+      await super.replaceInventory(
+        products.map(inventoryFromMap).toList(),
+        storeId,
+      );
+    }
 
     final customers = await api.rows('customers');
-    await super.replaceCustomers(customers, storeId);
+    if (customers.isNotEmpty) {
+      await super.replaceCustomers(customers, storeId);
+    }
 
     if (api.can('View Sales') || api.can('View Reports')) {
-      await _replaceOrdersLocal(await api.rows('orders'));
+      final remoteOrders = await api.rows('orders');
+      if (remoteOrders.isNotEmpty) {
+        await _replaceOrdersLocal(remoteOrders);
+      }
     }
 
     if (api.can('Manage Staff')) {
-      await super.replaceStaffRoles(await api.rows('roles'), storeId);
-      await super.replaceStaffMembers(await api.rows('staff'), storeId);
+      final remoteRoles = await api.rows('roles');
+      if (remoteRoles.isNotEmpty) {
+        await super.replaceStaffRoles(remoteRoles, storeId);
+      }
+      final remoteStaff = await api.rows('staff');
+      if (remoteStaff.isNotEmpty) {
+        await super.replaceStaffMembers(remoteStaff, storeId);
+      }
     }
 
     if (api.can('View Reports') || api.can('Manage Payments')) {
       try {
-        await _replaceExpensesLocal(await api.rows('expenses'));
+        final remoteExpenses = await api.rows('expenses');
+        if (remoteExpenses.isNotEmpty) {
+          await _replaceExpensesLocal(remoteExpenses);
+        }
       } on ApiException catch (error) {
         if (error.status != 403) rethrow;
       }
-    } else {
-      await _clearExpensesLocal();
     }
 
     final profile = await api.rows('profile');
     if (profile.isNotEmpty) {
       await super.saveAppProfile(profile.first);
-    } else {
-      await super.saveAppProfile(const {
-        'store_name': '',
-        'owner_name': '',
-        'role_title': '',
-        'business_category': '',
-        'contact_number': '',
-        'email_address': '',
-        'physical_address': '',
-        'tax_id': '',
-        'weekday_open': '',
-        'weekday_close': '',
-        'saturday_open': '',
-        'saturday_close': '',
-        'sunday_schedule': '',
-        'open_24_hours': 0,
-        'logo_path': null,
-        'member_since': '',
-      });
     }
 
     final receipt = await api.rows('receipt-settings');
@@ -460,8 +458,6 @@ class PosHybridDatabase extends PosLocalDatabase {
         header: row['header'] as String? ?? '',
         footer: row['footer'] as String? ?? '',
       ));
-    } else {
-      await super.saveReceiptSettings(const ReceiptSettings());
     }
 
     try {
@@ -481,6 +477,179 @@ class PosHybridDatabase extends PosLocalDatabase {
     } on ApiException catch (error) {
       if (error.status != 404 && error.status != 403) rethrow;
     }
+
+    Future<void> pullOptional(
+      String resource,
+      Future<void> Function(List<Map<String, Object?>> rows) applyLocal,
+    ) async {
+      try {
+        final rows = await api.rows(resource);
+        if (rows.isNotEmpty) {
+          await applyLocal(rows);
+        }
+      } on ApiException catch (error) {
+        if (error.status != 404 && error.status != 403) rethrow;
+      }
+    }
+
+    await pullOptional('suppliers', _replaceSuppliersLocal);
+    await pullOptional('receivings', _replaceReceivingsLocal);
+    await pullOptional('register-shifts', _replaceRegisterShiftsLocal);
+    await pullOptional('cash-movements', _replaceCashMovementsLocal);
+    await pullOptional('accounts', _replaceAccountsLocal);
+    await pullOptional('journal-entries', _replaceJournalEntriesLocal);
+    await pullOptional('fixed-assets', _replaceFixedAssetsLocal);
+    await pullOptional('bank-transactions', _replaceBankTransactionsLocal);
+    await pullOptional('suspended-sales', (rows) async {
+      await super.replaceSuspendedSales(
+        rows.map((r) => Map<String, dynamic>.from(r)).toList(),
+        storeId,
+      );
+    });
+  }
+
+  Future<void> _replaceSuppliersLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('suppliers', where: 'store_id = ?', whereArgs: [storeId]);
+      for (final r in rows) {
+        await txn.insert(
+          'suppliers',
+          {...r, 'store_id': storeId, 'id': (r['id'] as num?)?.toInt()},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  Future<void> _replaceReceivingsLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('receiving_lines', where: 'store_id = ?', whereArgs: [storeId]);
+      await txn.delete('receivings', where: 'store_id = ?', whereArgs: [storeId]);
+      for (final r in rows) {
+        final recId = (r['id'] as num?)?.toInt();
+        final data = Map<String, Object?>.from(r)..remove('lines');
+        await txn.insert(
+          'receivings',
+          {...data, 'store_id': storeId, 'id': recId},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        final lines = (r['lines'] as List?) ?? const [];
+        for (final line in lines) {
+          final l = Map<String, Object?>.from(line as Map);
+          await txn.insert(
+            'receiving_lines',
+            {
+              ...l,
+              'store_id': storeId,
+              'receiving_id': recId ?? l['receiving_id'],
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+    });
+  }
+
+  Future<void> _replaceRegisterShiftsLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('register_shifts', where: 'store_id = ?', whereArgs: [storeId]);
+      for (final r in rows) {
+        await txn.insert(
+          'register_shifts',
+          {...r, 'store_id': storeId, 'id': (r['id'] as num?)?.toInt()},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  Future<void> _replaceCashMovementsLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('cash_movements', where: 'store_id = ?', whereArgs: [storeId]);
+      for (final r in rows) {
+        await txn.insert(
+          'cash_movements',
+          {...r, 'store_id': storeId, 'id': (r['id'] as num?)?.toInt()},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  Future<void> _replaceAccountsLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('accounts', where: 'store_id = ?', whereArgs: [storeId]);
+      for (final r in rows) {
+        await txn.insert(
+          'accounts',
+          {...r, 'store_id': storeId, 'id': (r['id'] as num?)?.toInt()},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  Future<void> _replaceJournalEntriesLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('journal_lines', where: 'store_id = ?', whereArgs: [storeId]);
+      await txn.delete('journal_entries', where: 'store_id = ?', whereArgs: [storeId]);
+      for (final r in rows) {
+        final entryId = (r['id'] as num?)?.toInt();
+        final data = Map<String, Object?>.from(r)..remove('lines');
+        await txn.insert(
+          'journal_entries',
+          {...data, 'store_id': storeId, 'id': entryId},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        final lines = (r['lines'] as List?) ?? const [];
+        for (final line in lines) {
+          final l = Map<String, Object?>.from(line as Map);
+          await txn.insert(
+            'journal_lines',
+            {
+              ...l,
+              'store_id': storeId,
+              'entry_id': entryId ?? l['entry_id'],
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+    });
+  }
+
+  Future<void> _replaceFixedAssetsLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('fixed_assets', where: 'store_id = ?', whereArgs: [storeId]);
+      for (final r in rows) {
+        await txn.insert(
+          'fixed_assets',
+          {...r, 'store_id': storeId, 'id': (r['id'] as num?)?.toInt()},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  Future<void> _replaceBankTransactionsLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('bank_transactions', where: 'store_id = ?', whereArgs: [storeId]);
+      for (final r in rows) {
+        await txn.insert(
+          'bank_transactions',
+          {...r, 'store_id': storeId, 'id': (r['id'] as num?)?.toInt()},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
   }
 
   Future<void> _replaceOrdersLocal(List<Map<String, Object?>> orders) async {
@@ -533,19 +702,11 @@ class PosHybridDatabase extends PosLocalDatabase {
             'unit_cost': row['unit_cost'],
             'art_type': row['art_type'],
             'image_path': row['image_path'],
+            'item_unit': row['item_unit'] ?? 'Pcs',
           });
         }
       }
     });
-  }
-
-  Future<void> _clearExpensesLocal() async {
-    final db = await database;
-    await db.delete(
-      'expenses',
-      where: 'store_id = ?',
-      whereArgs: [storeId],
-    );
   }
 
   Future<void> _replaceExpensesLocal(
@@ -615,7 +776,7 @@ class PosHybridDatabase extends PosLocalDatabase {
 
   @override
   Future<void> adjustInventoryStock(
-    Map<String, int> deltas,
+    Map<String, num> deltas,
     String storeId, {
     int lowStockThreshold = 20,
   }) async {
@@ -951,11 +1112,233 @@ class PosHybridDatabase extends PosLocalDatabase {
   }
 
   @override
+  Future<void> insertReceivingLines(
+    List<Map<String, Object?>> lines,
+    String storeId,
+  ) async {
+    await super.insertReceivingLines(lines, storeId);
+    if (lines.isEmpty) return;
+    final recId = lines.first['receiving_id'];
+    if (recId == null) return;
+    final recRows = await super.loadReceivings(storeId);
+    final parent = recRows.firstWhere(
+      (r) => r['id'] == recId,
+      orElse: () => <String, Object?>{'id': recId, 'store_id': storeId},
+    );
+    await _enqueue(
+      kind: 'put',
+      resource: 'receivings',
+      recordId: '$recId',
+      payload: {...parent, 'id': recId, 'store_id': storeId, 'lines': lines},
+    );
+  }
+
+  @override
   Future<void> deleteReceiving(int id) async {
     await super.deleteReceiving(id);
     await _enqueue(
       kind: 'delete',
       resource: 'receivings',
+      recordId: '$id',
+    );
+  }
+
+  @override
+  Future<void> replaceSuspendedSales(
+    List<Map<String, dynamic>> sales,
+    String storeId,
+  ) async {
+    await super.replaceSuspendedSales(sales, storeId);
+    await _enqueue(
+      kind: 'replace',
+      resource: 'suspended-sales',
+      payload: sales,
+    );
+  }
+
+  @override
+  Future<void> upsertSuspendedSale(
+    Map<String, dynamic> sale,
+    String storeId,
+  ) async {
+    await super.upsertSuspendedSale(sale, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'suspended-sales',
+      recordId: '${sale['id']}',
+      payload: {...sale, 'store_id': storeId},
+    );
+  }
+
+  @override
+  Future<void> deleteSuspendedSaleRecord(String id, String storeId) async {
+    await super.deleteSuspendedSaleRecord(id, storeId);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'suspended-sales',
+      recordId: id,
+    );
+  }
+
+  @override
+  Future<int> insertAccount(
+    Map<String, Object?> account,
+    String storeId,
+  ) async {
+    final id = await super.insertAccount(account, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'accounts',
+      recordId: '$id',
+      payload: {...account, 'id': id, 'store_id': storeId},
+    );
+    return id;
+  }
+
+  @override
+  Future<void> updateAccount(int id, Map<String, Object?> account) async {
+    await super.updateAccount(id, account);
+    await _enqueue(
+      kind: 'put',
+      resource: 'accounts',
+      recordId: '$id',
+      payload: {...account, 'id': id, 'store_id': storeId},
+    );
+  }
+
+  @override
+  Future<void> deleteAccount(int id) async {
+    await super.deleteAccount(id);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'accounts',
+      recordId: '$id',
+    );
+  }
+
+  @override
+  Future<int> insertJournalEntry(
+    Map<String, Object?> entry,
+    String storeId,
+  ) async {
+    final id = await super.insertJournalEntry(entry, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'journal-entries',
+      recordId: '$id',
+      payload: {...entry, 'id': id, 'store_id': storeId},
+    );
+    return id;
+  }
+
+  @override
+  Future<void> insertJournalLines(
+    List<Map<String, Object?>> lines,
+    String storeId,
+  ) async {
+    await super.insertJournalLines(lines, storeId);
+    if (lines.isEmpty) return;
+    final entryId = lines.first['entry_id'];
+    if (entryId == null) return;
+    final entries = await super.loadJournalEntries(storeId);
+    final parent = entries.firstWhere(
+      (r) => r['id'] == entryId,
+      orElse: () => <String, Object?>{'id': entryId, 'store_id': storeId},
+    );
+    await _enqueue(
+      kind: 'put',
+      resource: 'journal-entries',
+      recordId: '$entryId',
+      payload: {...parent, 'id': entryId, 'store_id': storeId, 'lines': lines},
+    );
+  }
+
+  @override
+  Future<void> deleteJournalEntry(int id) async {
+    await super.deleteJournalEntry(id);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'journal-entries',
+      recordId: '$id',
+    );
+  }
+
+  @override
+  Future<int> insertFixedAsset(
+    Map<String, Object?> asset,
+    String storeId,
+  ) async {
+    final id = await super.insertFixedAsset(asset, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'fixed-assets',
+      recordId: '$id',
+      payload: {...asset, 'id': id, 'store_id': storeId},
+    );
+    return id;
+  }
+
+  @override
+  Future<void> updateFixedAsset(int id, Map<String, Object?> asset) async {
+    await super.updateFixedAsset(id, asset);
+    await _enqueue(
+      kind: 'put',
+      resource: 'fixed-assets',
+      recordId: '$id',
+      payload: {...asset, 'id': id, 'store_id': storeId},
+    );
+  }
+
+  @override
+  Future<void> deleteFixedAsset(int id) async {
+    await super.deleteFixedAsset(id);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'fixed-assets',
+      recordId: '$id',
+    );
+  }
+
+  @override
+  Future<int> insertBankTransaction(
+    Map<String, Object?> entry,
+    String storeId,
+  ) async {
+    final id = await super.insertBankTransaction(entry, storeId);
+    await _enqueue(
+      kind: 'put',
+      resource: 'bank-transactions',
+      recordId: '$id',
+      payload: {...entry, 'id': id, 'store_id': storeId},
+    );
+    return id;
+  }
+
+  @override
+  Future<void> updateBankTransaction(
+    int id,
+    Map<String, Object?> entry,
+  ) async {
+    await super.updateBankTransaction(id, entry);
+    final rows = await super.loadBankTransactions(storeId);
+    final full = rows.firstWhere(
+      (r) => r['id'] == id,
+      orElse: () => <String, Object?>{...entry, 'id': id, 'store_id': storeId},
+    );
+    await _enqueue(
+      kind: 'put',
+      resource: 'bank-transactions',
+      recordId: '$id',
+      payload: full,
+    );
+  }
+
+  @override
+  Future<void> deleteBankTransaction(int id) async {
+    await super.deleteBankTransaction(id);
+    await _enqueue(
+      kind: 'delete',
+      resource: 'bank-transactions',
       recordId: '$id',
     );
   }
@@ -1099,6 +1482,7 @@ class PosHybridDatabase extends PosLocalDatabase {
               'unit_cost': line.unitCost,
               'art_type': line.artType.name,
               'image_path': line.imagePath,
+              'item_unit': line.unit,
             },
         ],
       };

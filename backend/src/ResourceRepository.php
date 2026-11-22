@@ -58,7 +58,7 @@ final class ResourceRepository
             );
             return array_map(function ($row) {
                 $item = json_decode($row['payload'], true, 512, JSON_THROW_ON_ERROR);
-                $item['stock_count'] = (int) $row['stock_count'];
+                $item['stock_count'] = ApiValidator::normalizeQuantity((float) $row['stock_count']);
                 $item['stock_state'] = ApiValidator::stockState($item['stock_count']);
                 return $item;
             }, $rows);
@@ -120,15 +120,17 @@ final class ResourceRepository
                 throw new ApiError(422, 'Invalid product metadata.');
             }
             $stock = $item['stock_count'] ?? null;
-            if (!is_int($stock) || $stock < 0 || $stock > 2147483647) {
-                throw new ApiError(422, 'Stock must be a non-negative integer.');
+            if ((!is_int($stock) && !is_float($stock)) || !is_finite((float) $stock) || $stock < 0 || $stock > 2147483647) {
+                throw new ApiError(422, 'Stock must be a non-negative number.');
             }
+            $normalizedStock = ApiValidator::normalizeQuantity((float) $stock);
+            $item['stock_count'] = $normalizedStock;
             $price = ApiValidator::cents($item['selling_price'] ?? null);
             $cost = ApiValidator::cents($item['purchase_price'] ?? null);
             $this->db->execute('DELETE FROM products WHERE store_id = ? AND code = ?', [$storeId, $id]);
             $this->db->execute(
                 'INSERT INTO products VALUES (?, ?, ?, ?, ?, ?)',
-                [$storeId, $id, $stock, $price, $cost, json_encode($item, JSON_THROW_ON_ERROR)]
+                [$storeId, $id, $normalizedStock, $price, $cost, json_encode($item, JSON_THROW_ON_ERROR)]
             );
             return;
         }

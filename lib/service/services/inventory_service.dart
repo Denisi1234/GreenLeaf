@@ -39,7 +39,7 @@ class InventoryService extends ChangeNotifier {
   List<ProductItem> get products => _store.products;
   List<InventoryProductItem> get inventory => _store.inventory;
 
-  int availableStockForProduct(ProductItem product) =>
+  double availableStockForProduct(ProductItem product) =>
       _store.availableStockForProduct(product);
 
   Future<InventoryProductItem> addProduct(InventoryProductItem product) =>
@@ -51,7 +51,7 @@ class InventoryService extends ChangeNotifier {
   Future<void> removeProduct(String code) => _store.removeProduct(code);
 
   Future<void> applyInventoryAdjustments(
-    Map<String, int> adjustments,
+    Map<String, num> adjustments,
   ) =>
       _store.applyInventoryAdjustments(adjustments);
 }

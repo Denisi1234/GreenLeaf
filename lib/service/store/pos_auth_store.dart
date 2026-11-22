@@ -14,7 +14,6 @@ mixin PosAuthStore on ChangeNotifier {
   set _currentUserId(String? value);
   String? get _lastAuthError;
   set _lastAuthError(String? value);
-  bool get _isLoggedIn;
   set _isLoggedIn(bool value);
   PhpApiClient? get cloudApi;
   Map<String, Object?> _staffMemberToMap(StaffMemberData staff);
@@ -478,6 +477,15 @@ mixin PosAuthStore on ChangeNotifier {
     }
 
     Future<void> logout() async {
+      // Flush any pending outbox writes to the server BEFORE clearing session
+      // so logging out never loses unsynced sales or inventory updates.
+      final hybrid = _cloudApi;
+      if (hybrid != null) {
+        try {
+          await hybrid.retryFailed();
+          await hybrid.syncNow(pull: false);
+        } catch (_) {}
+      }
       final api = cloudApi;
       if (api != null) {
         try {

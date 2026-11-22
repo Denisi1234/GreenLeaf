@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
 import '../../service/register_shift_model.dart';
-import '../../utils/currency_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
@@ -228,16 +227,6 @@ class _CashRegisterPageState extends State<CashRegisterPage> {
       message: message,
       type: error ? MarketNoticeType.warning : MarketNoticeType.success,
     );
-  }
-
-  static String _fmtDateTime(DateTime dt) {
-    final d = dt.toLocal();
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-  }
-
-  static String _money(double value) {
-    final negative = value < 0;
-    return '${negative ? '-' : ''}TSh ${formatCurrency(value.abs())}';
   }
 }
 

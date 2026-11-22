@@ -125,11 +125,8 @@ class CustomerFilterRow extends StatelessWidget {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: selected ? AppColors.ink : AppColors.surface,
+                color: selected ? AppColors.primary : AppColors.surface,
                 borderRadius: BorderRadius.zero,
-                border: Border.all(
-                  color: selected ? AppColors.ink : AppColors.border,
-                ),
               ),
               child: Text(
                 filter.label(strings),
@@ -167,7 +164,7 @@ class CustomerSortCard extends StatelessWidget {
     return MarketSurfaceCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       borderColor: AppColors.border,
-      radius: 0,
+      radius: AppRadius.standard,
       showShadow: false,
       child: Row(
         children: [

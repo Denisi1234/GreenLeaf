@@ -25,7 +25,18 @@ class WorkspacePanel extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor ?? AppColors.surface,
           border: borderless ? null : Border.all(color: AppColors.border),
-          borderRadius: sharp ? BorderRadius.zero : BorderRadius.circular(12),
+          borderRadius: sharp
+              ? BorderRadius.zero
+              : BorderRadius.circular(AppRadius.standard),
+          boxShadow: borderless
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
         ),
         child: Padding(padding: padding, child: child),
       );

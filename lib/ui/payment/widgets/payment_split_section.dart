@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import '../../../service/pos_suspended_sale_model.dart';
 import '../../../utils/currency_formatter.dart';
@@ -60,13 +60,31 @@ class PaymentSplitSection extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child:  Text(context.tr('Cancel')),
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.kpiDangerBg,
+                foregroundColor: AppColors.kpiDanger,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
+              child: Text(
+                context.tr('Cancel'),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.successDeep),
-              child:  Text(context.tr('Add Tender')),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
+              child: Text(
+                context.tr('Add Tender'),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),

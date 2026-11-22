@@ -27,6 +27,18 @@ final class Database
                 $this->pdo->exec($statement . ($mysql ? ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin' : ''));
             }
         }
+        if ($mysql) {
+            foreach ([
+                'ALTER TABLE products MODIFY COLUMN stock_count DOUBLE NOT NULL',
+                'ALTER TABLE order_lines MODIFY COLUMN quantity DOUBLE NOT NULL',
+            ] as $alter) {
+                try {
+                    $this->pdo->exec($alter);
+                } catch (Throwable) {
+                    // Column may already be DOUBLE.
+                }
+            }
+        }
     }
 
     public function rows(string $sql, array $values = []): array

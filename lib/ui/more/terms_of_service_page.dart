@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import '../widgets/workspace_widgets.dart';
 import 'package:flutter/material.dart';
 
@@ -28,18 +28,18 @@ class TermsOfServicePage extends StatelessWidget {
                         children:  [
                           SettingsCard(
                             icon: Icons.description_outlined,
-                            title: context.tr('TrackMauzo Terms of Service'),
+                            title: context.tr('Aza POS Terms of Service'),
                             description: context.tr('Last updated: May 2026'),
                             children: [
                               _Section(
                                 title: context.tr('1. Acceptance of Terms'),
                                 content:
-                                    'By accessing and using TrackMauzo, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.',
+                                    'By accessing and using Aza POS, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.',
                               ),
                               _Section(
                                 title: context.tr('2. Description of Service'),
                                 content:
-                                    'TrackMauzo provides a point-of-sale (POS) software solution designed to help small businesses manage sales, inventory, customers, and reports.',
+                                    'Aza POS provides a point-of-sale (POS) software solution designed to help small businesses manage sales, inventory, customers, and reports.',
                               ),
                               _Section(
                                 title: context.tr('3. User Responsibilities'),
@@ -54,7 +54,7 @@ class TermsOfServicePage extends StatelessWidget {
                               _Section(
                                 title: context.tr('5. Limitation of Liability'),
                                 content:
-                                    'TrackMauzo is provided "as is" and shall not be liable for any indirect, incidental, or consequential damages resulting from the use of our service.',
+                                    'Aza POS is provided "as is" and shall not be liable for any indirect, incidental, or consequential damages resulting from the use of our service.',
                               ),
                             ],
                           ),

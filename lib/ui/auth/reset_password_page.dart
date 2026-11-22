@@ -246,7 +246,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           Text(
             isSwahili ? 'Imekamilika!' : 'Password Updated!',
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.manrope(
               fontSize: 24,
               fontWeight: FontWeight.w800,
               color: AppColors.ink,
@@ -256,7 +256,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           Text(
             strings.passwordResetSuccess,
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.manrope(
               fontSize: 14.5,
               height: 1.5,
               color: AppColors.textMuted,
@@ -279,7 +279,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           _step == _ResetStep.enterOtp
               ? (isSwahili ? 'Thibitisha Namba' : 'Verify Code')
               : strings.resetPassword,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 28,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.6,
@@ -297,7 +297,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       ? 'Weka nenosiri lako jipya na uthibitishe.'
                       : 'Set your new password to access your account.')
                   : strings.resetPasswordSubtitle,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.manrope(
             fontSize: 14.5,
             height: 1.5,
             color: AppColors.textMuted,
@@ -347,7 +347,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             enabled: !_busy,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.manrope(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               letterSpacing: 8,
@@ -377,7 +377,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 },
                 child: Text(
                   isSwahili ? 'Badili Namba' : 'Change Phone',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textMuted,
@@ -393,7 +393,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           ? 'Tuma tena ($_resendCountdown s)'
                           : 'Resend in $_resendCountdown s')
                       : (isSwahili ? 'Tuma Tena SMS' : 'Resend OTP'),
-                  style: GoogleFonts.plusJakartaSans(
+                  style: GoogleFonts.manrope(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: _resendCountdown > 0

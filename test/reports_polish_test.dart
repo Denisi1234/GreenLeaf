@@ -7,18 +7,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
-import 'package:track_mauzo/service/pos_order_models.dart';
-import 'package:track_mauzo/service/store_models.dart';
-import 'package:track_mauzo/ui/models/product_item.dart';
-import 'package:track_mauzo/ui/products/inventory_product_item.dart';
-import 'package:track_mauzo/ui/reports/enhanced_report_page.dart';
-import 'package:track_mauzo/ui/reports/models/report_models.dart';
-import 'package:track_mauzo/ui/reports/pos_report_catalog.dart';
-import 'package:track_mauzo/ui/reports/advanced_reports_page.dart';
-import 'package:track_mauzo/ui/reports/reports_catalog_page.dart';
-import 'package:track_mauzo/ui/reports/widgets/trend_chart.dart';
-import 'package:track_mauzo/ui/widgets/app_theme.dart';
+import 'package:aza_pos/service/pos_local_store.dart';
+import 'package:aza_pos/service/pos_order_models.dart';
+import 'package:aza_pos/service/store_models.dart';
+import 'package:aza_pos/ui/models/product_item.dart';
+import 'package:aza_pos/ui/products/inventory_product_item.dart';
+import 'package:aza_pos/ui/reports/enhanced_report_page.dart';
+import 'package:aza_pos/ui/reports/models/report_models.dart';
+import 'package:aza_pos/ui/reports/pos_report_catalog.dart';
+import 'package:aza_pos/ui/reports/advanced_reports_page.dart';
+import 'package:aza_pos/ui/reports/reports_catalog_page.dart';
+import 'package:aza_pos/ui/reports/widgets/trend_chart.dart';
+import 'package:aza_pos/ui/widgets/app_theme.dart';
 import 'support/ui_test_fonts.dart';
 
 class _ReportStore extends PosLocalStore {
@@ -35,7 +35,7 @@ class _ReportStore extends PosLocalStore {
             category: 'General',
             purchasePrice: 1200,
             sellingPrice: 2000,
-            stockCount: index,
+            stockCount: index.toDouble(),
             stockState: InventoryStockState.inStock,
             artType: ProductArtType.aquafina,
           ));
@@ -131,7 +131,8 @@ void main() {
     for (final report in posReports) {
       await tester.enterText(find.byType(TextField), report.title);
       await tester.pumpAndSettle();
-      expect(find.text(report.title), findsOneWidget, reason: report.title);
+      expect(find.byKey(ValueKey('report-${report.title}')), findsOneWidget,
+          reason: report.title);
     }
     await tester.enterText(find.byType(TextField), '');
     await tester.pumpAndSettle();
@@ -139,8 +140,8 @@ void main() {
     await _capture(tester, 'reports-directory-desktop');
     await tester.enterText(find.byType(TextField), 'Detailed Sales');
     await tester.pumpAndSettle();
-    expect(find.text('Detailed Sales'), findsOneWidget);
-    await tester.tap(find.text('Detailed Sales'));
+    expect(find.byKey(const ValueKey('report-Detailed Sales')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('report-Detailed Sales')));
     await tester.pumpAndSettle();
     expect(find.byType(EnhancedReportPage), findsOneWidget);
     expect(tester.takeException(), isNull);

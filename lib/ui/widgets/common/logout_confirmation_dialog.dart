@@ -26,7 +26,7 @@ Future<bool> showLogoutConfirmationDialog(
           constraints: const BoxConstraints(maxWidth: 420),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.zero, // Sharp crisp theme
+            borderRadius: BorderRadius.circular(AppRadius.standard),
             border: Border.all(color: AppColors.border, width: 1),
             boxShadow: AppShadows.soft,
           ),
@@ -45,9 +45,9 @@ Future<bool> showLogoutConfirmationDialog(
                     Container(
                       width: 44,
                       height: 44,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.kpiDangerBg, // Soft red badge
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.circular(AppRadius.standard),
                       ),
                       child: const Icon(
                         Icons.logout_rounded,
@@ -107,17 +107,20 @@ Future<bool> showLogoutConfirmationDialog(
                 child: Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
+                      child: TextButton(
                         onPressed: () => Navigator.of(ctx).pop(false),
-                        style: OutlinedButton.styleFrom(
+                        style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(color: AppColors.border),
-                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                          backgroundColor: AppColors.surfaceSecondary,
                           foregroundColor: AppColors.textBody,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
                         ),
                         child: Text(
                           context.tr('Cancel'),
                           style: AppTypography.label.copyWith(
+                            color: AppColors.textBody,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -130,7 +133,10 @@ Future<bool> showLogoutConfirmationDialog(
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           backgroundColor: AppColors.dangerDeep,
-                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
                         ),
                         child: Text(
                           context.tr('Sign Out'),

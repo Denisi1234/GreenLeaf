@@ -72,7 +72,7 @@ class ReportPdfLayout {
     final document = pw.Document(
         title: title,
         author: context.businessName,
-        creator: 'TrackMauzo',
+        creator: 'Aza POS',
         compress: true);
     document.addPage(pw.MultiPage(
       maxPages: 10000,

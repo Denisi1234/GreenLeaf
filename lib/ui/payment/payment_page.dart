@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,7 +9,6 @@ import '../../service/pos_suspended_sale_model.dart';
 import '../business_category_config.dart';
 import '../models/product_item.dart';
 import '../widgets/app_design.dart';
-import '../widgets/workspace_widgets.dart';
 import '../more/create_customer_page.dart';
 import '../receipt/receipt_success_page.dart';
 import '../widgets/market_shared_widgets.dart';
@@ -17,7 +16,9 @@ import '../more/customers_page.dart';
 import 'payment_view_model.dart';
 import 'record_debit_bottom_sheet.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/quantity_formatter.dart';
 import '../../service/app_notification_service.dart';
+import '../home/widgets/measurement_sale_sheet.dart';
 import 'widgets/line_discount_dialog.dart';
 import 'widgets/payment_cart_panel.dart';
 import 'widgets/payment_customer_selector.dart';
@@ -91,30 +92,83 @@ class _PaymentPageState extends State<PaymentPage> {
 
   void _increaseQuantity(OrderLineItem line) {
     if (_savingSale) return;
-    final didAdd = context.read<PosLocalStore>().addToCart(line.product);
+    final step =
+        stepForUnit(line.product.unit, line.product.allowFractional);
+    final didAdd = context.read<PosLocalStore>().addToCartQuantity(
+          line.product,
+          step,
+          customPrice: line.customPrice,
+        );
     if (!didAdd) {
       showMarketNotice(
         context,
         title: context.tr('Out Of Stock'),
-        message: context.tr('{p0} has no more stock available', args: {'p0': line.product.name}),
+        message: context.tr('{p0} has no more stock available',
+            args: {'p0': line.product.name}),
         type: MarketNoticeType.warning,
       );
       return;
     }
     setState(() {
-      line.quantity += 1;
+      line.quantity = roundQuantity(line.quantity + step);
     });
   }
 
   void _decreaseQuantity(OrderLineItem line) {
     if (_savingSale) return;
-    final didRemove =
-        context.read<PosLocalStore>().removeSingleFromCart(line.product);
+    final step =
+        stepForUnit(line.product.unit, line.product.allowFractional);
+    final removeQty =
+        line.quantity <= step + 0.0001 ? line.quantity : step;
+    final didRemove = context.read<PosLocalStore>().removeQuantityFromCart(
+          line.product,
+          removeQty,
+          customPrice: line.customPrice,
+        );
     if (!didRemove) return;
     setState(() {
-      line.quantity -= 1;
-      if (line.quantity <= 0) {
+      line.quantity = roundQuantity(line.quantity - removeQty);
+      if (line.quantity <= 0.0001) {
         _orderLines.remove(line);
+      }
+    });
+  }
+
+  Future<void> _editLineQuantity(OrderLineItem line) async {
+    if (_savingSale) return;
+    final store = context.read<PosLocalStore>();
+    final availableForThisLine =
+        roundQuantity(store.availableStockForProduct(line.product) + line.quantity);
+    final selection = await MeasurementSaleSheet.show(
+      context,
+      product: line.product,
+      availableStock: availableForThisLine,
+      initialQuantity: line.quantity,
+      initialCustomPrice: line.customPrice,
+    );
+    if (selection == null || !mounted) return;
+    final updated = store.setCartItemQuantity(
+      line.product,
+      selection.quantity,
+      customPrice: selection.customPrice,
+      matchCustomPrice: line.customPrice,
+    );
+    if (!updated) {
+      showMarketNotice(
+        context,
+        title: context.tr('Out Of Stock'),
+        message: context.tr('{p0} has no more stock available',
+            args: {'p0': line.product.name}),
+        type: MarketNoticeType.warning,
+      );
+      return;
+    }
+    setState(() {
+      if (selection.quantity <= 0.0001) {
+        _orderLines.remove(line);
+      } else {
+        line.quantity = selection.quantity;
+        line.customPrice = selection.customPrice;
       }
     });
   }
@@ -161,6 +215,7 @@ class _PaymentPageState extends State<PaymentPage> {
   Future<void> _chooseCustomer() async {
     final create = await showModalBottomSheet<bool>(
       context: context,
+      backgroundColor: AppColors.surface,
       showDragHandle: true,
       builder: (context) => SafeArea(
           child: Padding(
@@ -317,8 +372,11 @@ class _PaymentPageState extends State<PaymentPage> {
 
   bool _validateStockBeforeCheckout() {
     final store = context.read<PosLocalStore>();
-    final inventoryByCode = <String, int>{};
-    final inventoryByIdentity = <String, int>{};
+    final inventoryByCode = <String, double>{};
+    final inventoryByIdentity = <String, double>{};
+    final requestedByKey = <String, double>{};
+    final nameByKey = <String, String>{};
+    final unitByKey = <String, String>{};
 
     for (final item in store.inventory) {
       final code = item.code.trim();
@@ -330,18 +388,30 @@ class _PaymentPageState extends State<PaymentPage> {
     }
 
     for (final line in _orderLines) {
-      final code = line.product.code?.trim();
-      final stock = code != null && code.isNotEmpty
-          ? inventoryByCode[code]
-          : inventoryByIdentity[line.product.name.trim()];
-      final availableStock = stock ?? 0;
-      if (availableStock >= line.quantity) continue;
+      final code = line.product.code?.trim() ?? '';
+      final key = code.isNotEmpty ? 'code:$code' : 'name:${line.product.name.trim()}';
+      requestedByKey[key] =
+          roundQuantity((requestedByKey[key] ?? 0) + line.quantity);
+      nameByKey[key] = line.product.name;
+      unitByKey[key] = line.product.unit;
+    }
+
+    for (final entry in requestedByKey.entries) {
+      final key = entry.key;
+      final availableStock = key.startsWith('code:')
+          ? (inventoryByCode[key.substring(5)] ?? 0.0)
+          : (inventoryByIdentity[key.substring(5)] ?? 0.0);
+      if (availableStock + 0.0001 >= entry.value) continue;
 
       showMarketNotice(
         context,
         title: context.tr('Stock Changed'),
-        message:
-            context.tr('Only {p0} unit(s) of {p1} are left. Reduce the quantity before charging.', args: {'p0': availableStock, 'p1': line.product.name}),
+        message: context.tr(
+            'Only {p0} unit(s) of {p1} are left. Reduce the quantity before charging.',
+            args: {
+              'p0': formatStockWithUnit(availableStock, unitByKey[key] ?? 'Pcs'),
+              'p1': nameByKey[key] ?? '',
+            }),
         type: MarketNoticeType.warning,
       );
       return false;
@@ -414,8 +484,7 @@ class _PaymentPageState extends State<PaymentPage> {
           builder: (context) => ReceiptSuccessPage(order: completedOrder),
         ),
       );
-    } catch (error, stackTrace) {
-      debugPrint('Sale save error: $error\n$stackTrace');
+    } catch (error) {
       if (!mounted) return;
       showMarketNotice(
         context,
@@ -469,9 +538,12 @@ class _PaymentPageState extends State<PaymentPage> {
       onPressed:
           !_hasItems || _savingSale || _saleCompleted ? null : _confirmPayment,
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.successDeep,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 54),
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
       ),
       icon: _savingSale
           ? const SizedBox(
@@ -480,9 +552,13 @@ class _PaymentPageState extends State<PaymentPage> {
               child: CircularProgressIndicator(
                   strokeWidth: 2, color: Colors.white))
           : const Icon(Icons.check_circle_outline_rounded, size: 21),
-      label: Text(_savingSale
-          ? context.tr('Saving sale…')
-          : context.tr('Complete sale • TSh {p0}', args: {'p0': _amount(_grandTotal)})),
+      label: Text(
+        _savingSale
+            ? context.tr('Saving sale…')
+            : context.tr('Complete sale • TSh {p0}',
+                args: {'p0': _amount(_grandTotal)}),
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
     );
     final customer = PaymentCustomerSelector(
       selectedCustomer: _selectedCustomer,
@@ -498,6 +574,7 @@ class _PaymentPageState extends State<PaymentPage> {
       savingSale: _savingSale,
       onIncrease: _increaseQuantity,
       onDecrease: _decreaseQuantity,
+      onEditQuantity: _editLineQuantity,
       onEditDiscount: canDiscount ? _editLineDiscount : null,
       onAddItem: () {
         if (!_savingSale) Navigator.of(context).pop();
@@ -507,9 +584,19 @@ class _PaymentPageState extends State<PaymentPage> {
         alignment: Alignment.centerRight,
         child: TextButton.icon(
           onPressed: _hasItems && !_savingSale ? _clearCart : null,
-          style: TextButton.styleFrom(foregroundColor: AppColors.dangerDeep),
+          style: TextButton.styleFrom(
+            backgroundColor: AppColors.kpiDangerBg,
+            foregroundColor: AppColors.kpiDanger,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+          ),
           icon: const Icon(Icons.delete_sweep_outlined, size: 19),
-          label: Text(_clearLabel(config.category)),
+          label: Text(
+            context.tr(_clearLabel(config.category)),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ));
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
@@ -520,8 +607,8 @@ class _PaymentPageState extends State<PaymentPage> {
               SafeArea(
                   child: Column(children: [
                 MarketPageHeader(
-                  title: _paymentTitle,
-                  subtitle: _paymentSubtitle,
+                  title: context.tr(_paymentTitle),
+                  subtitle: context.tr(_paymentSubtitle),
                   onBack: () {
                     if (!_savingSale) Navigator.of(context).pop();
                   },
@@ -549,10 +636,25 @@ class _PaymentPageState extends State<PaymentPage> {
                                       child: ListView(children: [
                                     customer,
                                     const SizedBox(height: 16),
-                                    WorkspacePanel(
-                                        padding: const EdgeInsets.all(8),
+                                    Container(
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surface,
+                                          borderRadius: BorderRadius.circular(
+                                              AppRadius.standard),
+                                          border: Border.all(
+                                              color: AppColors.border),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withValues(alpha: 0.02),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 1),
+                                            ),
+                                          ],
+                                        ),
                                         child: AbsorbPointer(
-                                            absorbing: _savingSale, child: totals)),
+                                            absorbing: _savingSale,
+                                            child: totals)),
                                   ])),
                                   const SizedBox(height: 16),
                                   charge,
@@ -563,32 +665,41 @@ class _PaymentPageState extends State<PaymentPage> {
                   return Column(children: [
                     Expanded(
                         child: ListView(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
                             children: [
                           customer,
                           const SizedBox(height: 12),
                           cart,
                           const SizedBox(height: 12),
-                          Material(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.zero,
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.standard),
+                              border: Border.all(color: AppColors.border),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
                             child: AbsorbPointer(
                               absorbing: _savingSale,
                               child: totals,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: clear,
-                          ),
+                          const SizedBox(height: 10),
+                          clear,
                         ])),
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       decoration: const BoxDecoration(
                           color: AppColors.surface,
                           border: Border(
-                              top: BorderSide(color: AppColors.divider))),
+                              top: BorderSide(color: AppColors.border))),
                       child: charge,
                     ),
                   ]);
@@ -597,10 +708,12 @@ class _PaymentPageState extends State<PaymentPage> {
               if (_savingSale)
                 Container(
                   color: Colors.black.withValues(alpha: 0.35),
-                  child:  MarketLoadingView(
+                  child: MarketLoadingView(
                     message: context.tr('Processing Transaction…'),
-                    subMessage: 'Finalizing invoice, adjusting stock, and logging payment',
-                    color: AppColors.successDeep,
+                    subMessage: context.tr(
+                      'Finalizing invoice, adjusting stock, and logging payment',
+                    ),
+                    color: AppColors.primary,
                   ),
                 ),
             ],

@@ -47,7 +47,8 @@ class _Sale {
       order.discountAmount ??
       (gross - order.total).clamp(0.0, double.infinity).toDouble();
   bool get isCredit => order.paymentMethod.trim().toLowerCase() == 'credit';
-  int get quantity => order.lines.fold(0, (sum, line) => sum + line.quantity);
+  double get quantity =>
+      roundQuantity(order.lines.fold<double>(0, (sum, line) => sum + line.quantity));
 }
 
 String _label(String? value, String fallback) {
@@ -91,7 +92,7 @@ List<Object?> _salesRow(String label, List<_Sale> sales) {
   return [
     label,
     sales.length,
-    sales.fold<int>(0, (sum, sale) => sum + sale.quantity),
+    roundQuantity(sales.fold<double>(0, (sum, sale) => sum + sale.quantity)),
     total,
     cost,
     cost == null ? null : total - cost,
@@ -153,7 +154,7 @@ ReportTable _itemSummary(List<_Sale> sales, {bool byCategory = false}) {
     rows.add([
       label,
       if (!byCategory) lines.first.line.itemCode,
-      lines.fold<int>(0, (sum, line) => sum + line.line.quantity),
+      roundQuantity(lines.fold<double>(0, (sum, line) => sum + line.line.quantity)),
       net,
       cost,
       cost == null ? null : net - cost,
@@ -373,7 +374,8 @@ ReportTable _stockSummary(
         [
           entry.key,
           entry.value.length,
-          entry.value.fold<int>(0, (sum, item) => sum + item.stockCount),
+          roundQuantity(
+              entry.value.fold<double>(0, (sum, item) => sum + item.stockCount)),
           _sum(entry.value, (item) => item.purchasePrice * item.stockCount),
           _sum(entry.value, (item) => item.sellingPrice * item.stockCount),
         ],
@@ -448,7 +450,7 @@ ReportTable _newCustomerReport(
 class _ItemAgg {
   _ItemAgg(this.name);
   final String name;
-  int units = 0;
+  double units = 0;
   double net = 0;
 }
 

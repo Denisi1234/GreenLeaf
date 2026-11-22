@@ -112,7 +112,7 @@ class DailySalesReportService {
           '\n📉 Mauzo ya wiki hii: TSh $thisWeekFormatted (yamepungua kwa -TSh $diff kutoka wiki iliyopita: TSh $lastWeekFormatted)';
     }
 
-    return 'Habari $ownerName, muhtasari wa mauzo ya leo$storeTitle ni TSh $todayFormatted.$comparisonText\nAsante kwa kutumia TrackMauzo.';
+    return 'Habari $ownerName, muhtasari wa mauzo ya leo$storeTitle ni TSh $todayFormatted.$comparisonText\nAsante kwa kutumia Aza POS.';
   }
 
   /// Sends the daily SMS report to the owner's phone.

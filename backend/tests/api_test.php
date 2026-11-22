@@ -167,4 +167,27 @@ $escalated = $managerRecord;
 $escalated['role_id'] = 'admin';
 rejected(403, fn () => callApi('PUT', 'staff/MANAGER-1', $escalated, $manager));
 rejected(403, fn () => callApi('PUT', 'receipt-settings/1', ['footer' => 'Unauthorized'], $manager));
+$sugar = [
+    'code' => 'P-SUGAR', 'name' => 'Sukari', 'category' => 'Groceries', 'selling_price' => 3200,
+    'purchase_price' => 2800, 'stock_count' => 100, 'stock_state' => 'inStock',
+    'art_type' => 'kelloggs',
+    'category_data_json' => json_encode(['unit' => 'kg', 'allow_fractional' => true, 'pack_name' => 'Mfuko', 'pack_size' => 100]),
+];
+callApi('POST', 'products', $sugar, $token);
+$fractionalSale = [
+    'id' => 'ORDER-FRAC-1', 'date_time' => gmdate('c'), 'date_label' => '2026-11-21',
+    'time_label' => '12:00', 'cashier_name' => 'Owner', 'register_name' => 'Till 1',
+    'total' => 800, 'cash_tendered' => 1000, 'change_due' => 200, 'payment_method' => 'Cash',
+    'lines' => [[
+        'item_code' => 'P-SUGAR', 'item_name' => 'Sukari', 'item_category' => 'Groceries',
+        'item_size' => 'per kg', 'item_unit' => 'kg', 'quantity' => 0.25, 'unit_price' => '3200.00',
+        'unit_price_value' => 3200, 'art_type' => 'kelloggs',
+    ]],
+];
+callApi('POST', 'checkout', $fractionalSale, $token);
+$sugarAfter = array_values(array_filter(callApi('GET', 'products', [], $token)['data'], fn ($p) => $p['code'] === 'P-SUGAR'))[0];
+check(abs((float) $sugarAfter['stock_count'] - 99.75) < 0.001, 'Fractional checkout must deduct 0.25 kg.');
+callApi('POST', 'orders/ORDER-FRAC-1/void', [], $token);
+$sugarRestored = array_values(array_filter(callApi('GET', 'products', [], $token)['data'], fn ($p) => $p['code'] === 'P-SUGAR'))[0];
+check($sugarRestored['stock_count'] === 100, 'Voiding fractional sale must restore 100 kg.');
 echo "$passed API checks passed.\n";

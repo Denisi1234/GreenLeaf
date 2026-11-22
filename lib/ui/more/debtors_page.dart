@@ -121,7 +121,7 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                       value: _money(outstanding, compact: true),
                                       icon:
                                           Icons.account_balance_wallet_outlined,
-                                      sharp: true,
+                                      sharp: false,
                                       borderless: true,
                                       backgroundColor: AppColors.kpiDangerBg,
                                       color: AppColors.kpiDanger,
@@ -134,7 +134,7 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                           'Idadi ya wadaiwa'),
                                       value: '${debtors.length}',
                                       icon: Icons.people_alt_outlined,
-                                      sharp: true,
+                                      sharp: false,
                                       borderless: true,
                                       backgroundColor: AppColors.kpiSkyBg,
                                       color: AppColors.kpiSky,
@@ -149,7 +149,7 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                           'Makusanyo mwezi huu'),
                                       value: _money(collected, compact: true),
                                       icon: Icons.savings_outlined,
-                                      sharp: true,
+                                      sharp: false,
                                       borderless: true,
                                       backgroundColor: AppColors.kpiSuccessBg,
                                       color: AppColors.kpiSuccess,
@@ -164,7 +164,7 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                           'Imechelewa (>30d)'),
                                       value: '$criticalDebtors',
                                       icon: Icons.warning_amber_rounded,
-                                      sharp: true,
+                                      sharp: false,
                                       borderless: true,
                                       backgroundColor: AppColors.kpiAmberBg,
                                       color: AppColors.kpiAmber,
@@ -292,6 +292,20 @@ class _DebtorsPageState extends State<DebtorsPage> {
                                               ),
                                               const SizedBox(width: 4),
                                               OutlinedButton.icon(
+                                                  style:
+                                                      OutlinedButton.styleFrom(
+                                                    backgroundColor:
+                                                        AppColors.primary,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    side: BorderSide.none,
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              AppRadius.pill),
+                                                    ),
+                                                  ),
                                                   onPressed: () =>
                                                       _settle(customer),
                                                   icon: const Icon(
@@ -427,7 +441,11 @@ class _DebtorsPageState extends State<DebtorsPage> {
     final picked = await showModalBottomSheet<LedgerSortMode>(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.extraRounded),
+        ),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -436,9 +454,9 @@ class _DebtorsPageState extends State<DebtorsPage> {
             Container(
               width: 40,
               height: 4,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
             ),
             const SizedBox(height: 12),

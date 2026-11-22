@@ -104,24 +104,58 @@ class _StoreFormPageState extends State<StoreFormPage> {
                             const SizedBox(height: 14),
                             MarketFormField(
                               label: _t('Contact details', 'Mawasiliano'),
-                              hintText: _t('Phone number or email', 'Namba ya simu au barua pepe'),
+                              hintText: _t('Phone number or email',
+                                  'Namba ya simu au barua pepe'),
                               controller: _contact,
                               radius: 0,
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      MarketButton(
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border(
+                      top: BorderSide(color: AppColors.border, width: 1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: MarketButton(
+                        label: _t('Cancel', 'Ghairi'),
+                        color: AppColors.kpiDangerBg,
+                        foregroundColor: AppColors.kpiDanger,
+                        borderColor: null,
+                        radius: 0,
+                        onTap: _saving
+                            ? null
+                            : () => Navigator.of(context).maybePop(),
+                        height: 48,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 3,
+                      child: MarketButton(
                         label: _saving
                             ? _t('Saving...', 'Inahifadhi...')
                             : _t('Save store', 'Hifadhi duka'),
                         icon: Icons.check_rounded,
+                        variant: MarketButtonVariant.primary,
+                        borderColor: null,
                         radius: 0,
+                        height: 48,
                         onTap: _saving ? null : _save,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],

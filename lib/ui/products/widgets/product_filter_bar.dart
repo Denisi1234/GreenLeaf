@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 
-import '../../widgets/common/market_filter_bar.dart';
+import '../../widgets/app_design.dart';
+import '../../widgets/common/market_search_field.dart';
 
 class ProductFilterBar extends StatelessWidget {
   const ProductFilterBar({
@@ -31,13 +32,16 @@ class ProductFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MarketFilterBar<String>(
-      searchController: searchController,
-      searchHint: context.tr('Search by name, code or barcode'),
-      onSearchChanged: onSearchChanged,
-      onSearchClear: onSearchClear,
-      hasActiveFilters: hasFilters,
-      onReset: onResetFilters,
+    return MarketSearchField(
+      controller: searchController,
+      hintText: context.tr('Search by name, code or barcode'),
+      onChanged: onSearchChanged,
+      onClear: onSearchClear,
+      height: 48,
+      radius: 0,
+      backgroundColor: AppColors.surface,
+      borderColor: AppColors.border,
+      paddingHorizontal: 14,
     );
   }
 }

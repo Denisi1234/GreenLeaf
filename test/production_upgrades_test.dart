@@ -7,27 +7,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:track_mauzo/service/barcode_scan_service.dart';
-import 'package:track_mauzo/service/esc_pos_receipt_builder.dart';
-import 'package:track_mauzo/service/pos_local_store.dart';
-import 'package:track_mauzo/service/pos_order_models.dart';
-import 'package:track_mauzo/service/receipt_settings.dart';
-import 'package:track_mauzo/service/secure_token_storage.dart';
-import 'package:track_mauzo/service/store_preferences.dart';
-import 'package:track_mauzo/service/tax_settings.dart';
-import 'package:track_mauzo/service/thermal_printer_service.dart';
-import 'package:track_mauzo/ui/models/customer_data.dart';
-import 'package:track_mauzo/ui/models/product_item.dart';
-import 'package:track_mauzo/ui/more/advanced_features_page.dart';
-import 'package:track_mauzo/ui/more/more_page.dart';
-import 'package:track_mauzo/ui/products/inventory_product_item.dart';
-import 'package:track_mauzo/ui/products/product_management_page.dart';
-import 'package:track_mauzo/ui/receipt/receipt_document.dart';
-import 'package:track_mauzo/ui/reports/dashboard_page.dart';
-import 'package:track_mauzo/ui/shell/app_shell.dart';
-import 'package:track_mauzo/ui/widgets/app_theme.dart';
-import 'package:track_mauzo/ui/widgets/common/market_notice.dart';
-import 'package:track_mauzo/ui/widgets/market_bottom_nav.dart';
+import 'package:aza_pos/service/barcode_scan_service.dart';
+import 'package:aza_pos/service/esc_pos_receipt_builder.dart';
+import 'package:aza_pos/service/pos_local_store.dart';
+import 'package:aza_pos/service/pos_order_models.dart';
+import 'package:aza_pos/service/receipt_settings.dart';
+import 'package:aza_pos/service/secure_token_storage.dart';
+import 'package:aza_pos/service/store_preferences.dart';
+import 'package:aza_pos/service/tax_settings.dart';
+import 'package:aza_pos/service/thermal_printer_service.dart';
+import 'package:aza_pos/ui/models/customer_data.dart';
+import 'package:aza_pos/ui/models/product_item.dart';
+import 'package:aza_pos/ui/more/advanced_features_page.dart';
+import 'package:aza_pos/ui/more/more_page.dart';
+import 'package:aza_pos/ui/products/inventory_product_item.dart';
+import 'package:aza_pos/ui/products/product_management_page.dart';
+import 'package:aza_pos/ui/receipt/receipt_document.dart';
+import 'package:aza_pos/ui/reports/dashboard_page.dart';
+import 'package:aza_pos/ui/shell/app_shell.dart';
+import 'package:aza_pos/ui/widgets/app_theme.dart';
+import 'package:aza_pos/ui/widgets/common/market_notice.dart';
+import 'package:aza_pos/ui/widgets/market_bottom_nav.dart';
 
 import 'support/memory_pos_database.dart';
 import 'support/test_hybrid_database.dart';
@@ -51,7 +51,7 @@ bool _containsBytes(List<int> haystack, List<int> needle) {
 InventoryProductItem _sampleInventory({
   String code = 'P001',
   String name = 'Mineral Water',
-  int stockCount = 10,
+  double stockCount = 10,
   Map<String, Object?> categoryData = const <String, Object?>{},
 }) {
   return InventoryProductItem(

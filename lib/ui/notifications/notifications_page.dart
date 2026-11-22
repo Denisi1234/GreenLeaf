@@ -1,4 +1,4 @@
-import 'package:track_mauzo/l10n/app_localization.dart';
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/quantity_formatter.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 
@@ -103,7 +104,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           iconColor: AppColors.warning,
           iconBackground: AppColors.kpiAmberBg,
           title: context.tr('Low Stock: {p0}', args: {'p0': item.name}),
-          message: context.tr('Only {p0} unit(s) remaining for {p1}.', args: {'p0': item.stockCount, 'p1': item.name}),
+          message: context.tr('Only {p0} unit(s) remaining for {p1}.', args: {
+            'p0': formatStockWithUnit(item.stockCount, item.unit),
+            'p1': item.name
+          }),
           timeLabel: context.tr('Warning'),
           dateTime: DateTime.now().subtract(const Duration(minutes: 15)),
           unread: isUnread,
@@ -312,44 +316,15 @@ class _EmptyNotificationsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: const BoxDecoration(
-                color: AppColors.kpiSuccessBg,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_outline_rounded,
-                color: AppColors.success,
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              context.tr('All Caught Up'),
-              style: GoogleFonts.manrope(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              context.tr('No new store alerts or transactions to review right now.'),
-              textAlign: TextAlign.center,
-              style: GoogleFonts.manrope(
-                color: AppColors.textMuted,
-                fontSize: 13,
-              ),
-            ),
-          ],
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: MarketEmptyState(
+        icon: Icons.check_circle_outline_rounded,
+        iconColor: AppColors.success,
+        iconBackgroundColor: AppColors.kpiSuccessBg,
+        title: context.tr('All Caught Up'),
+        message: context.tr(
+          'No new store alerts or transactions to review right now.',
         ),
       ),
     );
