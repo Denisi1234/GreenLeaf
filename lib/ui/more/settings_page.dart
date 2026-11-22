@@ -197,13 +197,6 @@ class _SettingsPageState extends State<SettingsPage> {
                         itemBuilder: (context, index) {
                           final tab = filtered[index];
                           final active = wide && tab.section == selected;
-                          final palettes = [
-                            (AppColors.kpiRoseBg, AppColors.kpiRose),
-                            (AppColors.kpiSkyBg, AppColors.kpiSky),
-                            (AppColors.kpiAmberBg, AppColors.kpiAmber),
-                            (AppColors.kpiDangerBg, AppColors.kpiDanger),
-                          ];
-                          final palette = palettes[index % palettes.length];
                           return Material(
                             color: active
                                 ? AppColors.surfaceSecondary
@@ -215,12 +208,19 @@ class _SettingsPageState extends State<SettingsPage> {
                                 width: 38,
                                 height: 38,
                                 decoration: BoxDecoration(
-                                  color: palette.$1,
+                                  color: active
+                                      ? AppColors.primaryLight
+                                      : AppColors.surfaceSecondary,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 alignment: Alignment.center,
-                                child: Icon(tab.icon,
-                                    size: 20, color: palette.$2),
+                                child: Icon(
+                                  tab.icon,
+                                  size: 20,
+                                  color: active
+                                      ? AppColors.primary
+                                      : AppColors.ink,
+                                ),
                               ),
                               title: Text(tab.label,
                                   style: AppTypography.bodyMedium

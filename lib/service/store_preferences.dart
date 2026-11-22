@@ -16,7 +16,15 @@ class StorePreferences {
     this.appTheme = 'light',
   });
 
-  static const themeOptions = <String>['light', 'slate', 'warm', 'dark'];
+  static const themeOptions = <String>[
+    'system',
+    'light',
+    'slate',
+    'warm',
+    'emerald',
+    'dark',
+    'oled',
+  ];
 
   static const dateFormatOptions = <String>[
     'MMM d, yyyy',

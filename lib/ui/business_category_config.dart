@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:aza_pos/ui/models/capability.dart';
+import 'widgets/app_design.dart';
 
 enum BusinessCategory {
   retail,
@@ -49,13 +50,13 @@ class BusinessCategoryConfig {
   String get label => category.displayName;
 
   static BusinessCategoryConfig forCategory(BusinessCategory category) {
-    return const BusinessCategoryConfig(
+    return BusinessCategoryConfig(
       category: BusinessCategory.retail,
-      primaryColor: Color(0xFF22B8C4),
-      primaryDeepColor: Color(0xFF1396A1),
-      primaryLightColor: Color(0xFFD4ECF3),
-      accentColor: Color(0xFF111827),
-      surfaceTintColor: Color(0xFFDCE9F2),
+      primaryColor: AppColors.primary,
+      primaryDeepColor: AppColors.primaryDeep,
+      primaryLightColor: AppColors.primaryLight,
+      accentColor: AppColors.ink,
+      surfaceTintColor: AppColors.surfaceSecondary,
       dashboardHeadline: 'Retail floor control',
       dashboardHighlights: [
         'Fast-moving items',

@@ -181,6 +181,9 @@ class MarketAppDrawer extends StatelessWidget {
                             ),
                             selected: active,
                             showCheckmark: false,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            labelPadding: const EdgeInsets.only(right: 4),
                             selectedColor: palette.primary,
                             backgroundColor: palette.surfaceSecondary,
                             side: BorderSide(

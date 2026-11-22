@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -101,8 +102,21 @@ class App extends StatelessWidget {
         context.select<PosLocalStore, String>((s) => s.languageCode);
     final appTheme = context
         .select<PosLocalStore, String>((s) => s.storePreferences.appTheme);
-    AppColors.applyPalette(AppThemePalette.forId(appTheme));
+    final platformBrightness = MediaQuery.platformBrightnessOf(context);
+    final palette = AppThemePalette.resolve(appTheme, platformBrightness);
+    AppColors.applyPalette(palette);
     Intl.defaultLocale = languageCode;
+
+    final overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness:
+          palette.isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: palette.isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: palette.headerSurface,
+      systemNavigationBarIconBrightness:
+          palette.isDark ? Brightness.light : Brightness.dark,
+      systemNavigationBarDividerColor: palette.border,
+    );
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -118,16 +132,19 @@ class App extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       themeAnimationDuration: const Duration(milliseconds: 180),
-      theme: _getTheme(appTheme),
+      theme: _getTheme(palette.id),
       builder: (context, child) {
         final media = MediaQuery.of(context);
         final clampedScaler = media.textScaler.clamp(
           minScaleFactor: 0.85,
           maxScaleFactor: 1.25,
         );
-        return MediaQuery(
-          data: media.copyWith(textScaler: clampedScaler),
-          child: child ?? const SizedBox.shrink(),
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: overlayStyle,
+          child: MediaQuery(
+            data: media.copyWith(textScaler: clampedScaler),
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
       home: const AuthWrapper(),

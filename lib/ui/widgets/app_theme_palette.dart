@@ -9,6 +9,7 @@ class AppThemePreset {
     required this.subtitleSw,
     required this.icon,
     required this.palette,
+    this.isSystem = false,
   });
 
   final String id;
@@ -18,8 +19,19 @@ class AppThemePreset {
   final String subtitleSw;
   final IconData icon;
   final AppThemePalette palette;
+  final bool isSystem;
 
   static const presets = <AppThemePreset>[
+    AppThemePreset(
+      id: 'system',
+      nameEn: 'Auto (System)',
+      nameSw: 'Otomatiki',
+      subtitleEn: 'Follows device day & night mode',
+      subtitleSw: 'Hufuata mwanga wa simu yako',
+      icon: Icons.brightness_auto_outlined,
+      palette: AppThemePalette.light,
+      isSystem: true,
+    ),
     AppThemePreset(
       id: 'light',
       nameEn: 'Crisp Light',
@@ -48,13 +60,31 @@ class AppThemePreset {
       palette: AppThemePalette.warm,
     ),
     AppThemePreset(
+      id: 'emerald',
+      nameEn: 'Forest Mint',
+      nameSw: 'Kijani Tulivu',
+      subtitleEn: 'Fresh sage & botanical clarity',
+      subtitleSw: 'Kijani safi na mwonekano tulivu',
+      icon: Icons.eco_outlined,
+      palette: AppThemePalette.emerald,
+    ),
+    AppThemePreset(
       id: 'dark',
       nameEn: 'Dark Shift',
       nameSw: 'Giza (Usiku)',
-      subtitleEn: 'Deep charcoal for night & OLED',
+      subtitleEn: 'Deep charcoal for evening shifts',
       subtitleSw: 'Giza tulivu kwa zamu za usiku',
       icon: Icons.dark_mode_outlined,
       palette: AppThemePalette.dark,
+    ),
+    AppThemePreset(
+      id: 'oled',
+      nameEn: 'True Black',
+      nameSw: 'Nyeusi Halisi',
+      subtitleEn: 'Pure AMOLED black & battery saver',
+      subtitleSw: 'Nyeusi halisi ya kuokoa chaji',
+      icon: Icons.nights_stay_outlined,
+      palette: AppThemePalette.oled,
     ),
   ];
 
@@ -63,7 +93,7 @@ class AppThemePreset {
     for (final preset in presets) {
       if (preset.id == normalized) return preset;
     }
-    return presets.first;
+    return presets[1]; // Default fallback to Crisp Light
   }
 }
 
@@ -153,6 +183,23 @@ class AppThemePalette extends ThemeExtension<AppThemePalette> {
     textMuted: Color(0xFF78716C),
   );
 
+  static const emerald = AppThemePalette(
+    id: 'emerald',
+    brightness: Brightness.light,
+    primary: Color(0xFF047857),
+    primaryDeep: Color(0xFF065F46),
+    primaryLight: Color(0xFFDCEEE6),
+    pageBackground: Color(0xFFEFF4F1),
+    surface: Color(0xFFF9FCFA),
+    surfaceSecondary: Color(0xFFE5EEE9),
+    headerSurface: Color(0xFFF4F8F6),
+    border: Color(0xFFCFE0D7),
+    divider: Color(0xFFDCE9E2),
+    ink: Color(0xFF0F1F18),
+    textBody: Color(0xFF2D473B),
+    textMuted: Color(0xFF5B7568),
+  );
+
   static const dark = AppThemePalette(
     id: 'dark',
     brightness: Brightness.dark,
@@ -170,7 +217,32 @@ class AppThemePalette extends ThemeExtension<AppThemePalette> {
     textMuted: Color(0xFF94A3B8),
   );
 
-  static AppThemePalette forId(String id) => AppThemePreset.byId(id).palette;
+  static const oled = AppThemePalette(
+    id: 'oled',
+    brightness: Brightness.dark,
+    primary: Color(0xFF22B8C4),
+    primaryDeep: Color(0xFF38D0DC),
+    primaryLight: Color(0xFF103038),
+    pageBackground: Color(0xFF000000),
+    surface: Color(0xFF12161E),
+    surfaceSecondary: Color(0xFF1B222E),
+    headerSurface: Color(0xFF0A0D12),
+    border: Color(0xFF263042),
+    divider: Color(0xFF1E2634),
+    ink: Color(0xFFF8FAFC),
+    textBody: Color(0xFFCBD5E1),
+    textMuted: Color(0xFF94A3B8),
+  );
+
+  static AppThemePalette resolve(String id, Brightness platformBrightness) {
+    final normalized = id.trim().toLowerCase();
+    if (normalized == 'system') {
+      return platformBrightness == Brightness.dark ? dark : light;
+    }
+    return AppThemePreset.byId(normalized).palette;
+  }
+
+  static AppThemePalette forId(String id) => resolve(id, Brightness.light);
 
   static AppThemePalette of(BuildContext context) {
     return Theme.of(context).extension<AppThemePalette>() ?? light;

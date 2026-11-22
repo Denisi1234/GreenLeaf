@@ -2,12 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../service/pos_local_store.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/market_shared_widgets.dart';
 import '../about_app_page.dart';
 import '../help_support_page.dart';
-import '../privacy_policy_page.dart';
 import '../settings_layout.dart';
 import '../terms_of_service_page.dart';
 import 'rate_app_dialog.dart';
@@ -15,6 +16,33 @@ import 'rate_app_dialog.dart';
 /// About app, legal, and license links pane.
 class AboutSettingsPane extends StatelessWidget {
   const AboutSettingsPane({super.key});
+
+  static const _privacyPolicyUrl = 'https://api.azagroup.co.tz/privacy.html';
+  static const _deleteAccountUrl =
+      'https://api.azagroup.co.tz/delete-account.html';
+
+  Future<void> _openExternalLink(
+    BuildContext context,
+    String url,
+    String lang,
+  ) async {
+    final launched = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && context.mounted) {
+      showMarketNotice(
+        context,
+        title: settingsText(lang, 'Error', 'Hitilafu'),
+        message: settingsText(
+          lang,
+          'Could not open browser.',
+          'Imeshindwa kufungua kivinjari.',
+        ),
+        type: MarketNoticeType.error,
+      );
+    }
+  }
 
   String get _platform {
     try {
@@ -89,10 +117,16 @@ class AboutSettingsPane extends StatelessWidget {
                 Icons.description_outlined,
                 t('Terms of service', 'Masharti ya huduma'),
                 const TermsOfServicePage()),
-            link(
-                Icons.privacy_tip_outlined,
-                t('Privacy policy', 'Sera ya faragha'),
-                const PrivacyPolicyPage()),
+            AboutLink(
+              icon: Icons.privacy_tip_outlined,
+              label: t('Privacy policy', 'Sera ya faragha'),
+              onTap: () => _openExternalLink(context, _privacyPolicyUrl, lang),
+            ),
+            AboutLink(
+              icon: Icons.delete_outline_rounded,
+              label: t('Delete account & data', 'Futa akaunti na data'),
+              onTap: () => _openExternalLink(context, _deleteAccountUrl, lang),
+            ),
             link(Icons.apps_rounded, t('About the app', 'Kuhusu programu'),
                 const AboutAppPage()),
             AboutLink(

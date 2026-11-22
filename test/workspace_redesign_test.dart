@@ -73,14 +73,23 @@ class _ReviewStore extends PosLocalStore {
         quantity < 0 ||
         quantity + otherQuantity > availableStockForProduct(product))
       return false;
+    final firstIndex = _cart.indexWhere((item) =>
+        productKey(item) == productKey(product) &&
+        item.customPrice == matchPrice);
     _cart.removeWhere((item) =>
         productKey(item) == productKey(product) &&
         item.customPrice == matchPrice);
-    if (quantity > 0)
-      _cart.add(product.copyWith(
-          quantity: quantity,
-          customPrice: customPrice,
-          clearCustomPrice: customPrice == null));
+    if (quantity > 0) {
+      final insertAt = firstIndex == -1
+          ? _cart.length
+          : firstIndex.clamp(0, _cart.length);
+      _cart.insert(
+          insertAt,
+          product.copyWith(
+              quantity: quantity,
+              customPrice: customPrice,
+              clearCustomPrice: customPrice == null));
+    }
     notifyListeners();
     return true;
   }
@@ -252,7 +261,10 @@ void main() {
       (tester) async {
     await _mount(tester, const AppShell(), const Size(1024, 900),
         reduceMotion: true);
-    await tester.tap(find.byIcon(Icons.grid_view_outlined));
+    await tester.tap(find.descendant(
+      of: find.byType(NavigationRail),
+      matching: find.byIcon(Icons.grid_view_outlined),
+    ));
     await tester.pump();
     expect(find.byType(MorePage), findsOneWidget);
     expect(find.byType(SalesPage), findsNothing);
@@ -409,7 +421,7 @@ void main() {
     final original = tester.widget<Switch>(toggle).value;
     await tester.tap(toggle);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'Language'));
+    await tester.tap(find.widgetWithText(ListTile, 'Theme & language'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Receipts'));
     await tester.pumpAndSettle();
@@ -567,7 +579,6 @@ void main() {
     ]) {
       expect(find.byKey(ValueKey('more-$id')), findsOneWidget);
     }
-    expect(find.text('Aza POS'), findsNothing);
     expect(find.text('Version 1.0.0'), findsNothing);
     expect(find.text('Rate this app'), findsNothing);
 
@@ -592,7 +603,7 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'Reports');
+    await tester.ensureVisible(find.byKey(const ValueKey('more-reports')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('more-reports')));
     await tester.pumpAndSettle();
@@ -600,13 +611,14 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('More handles unmatched searches and confirms sign out',
+  testWidgets('More renders merchant identity and confirms sign out',
       (tester) async {
     final store = await _mount(
         tester, const MorePage(useSharedShell: true), const Size(390, 900));
-    await tester.enterText(find.byType(TextField), 'no-match-123');
+    expect(find.byKey(const ValueKey('more-customers')), findsOneWidget);
+    expect(find.text('Aza POS'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('more-sign-out')));
     await tester.pumpAndSettle();
-    expect(find.text('No matching tools'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('more-sign-out')));
     await tester.pumpAndSettle();
     expect(
@@ -616,9 +628,7 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(store.logoutCalls, 0);
-    await tester.tap(find.byTooltip('Clear search'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('more-customers')), findsOneWidget);
+    expect(find.byKey(const ValueKey('more-sign-out')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

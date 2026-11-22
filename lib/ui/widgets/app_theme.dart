@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_design.dart';
@@ -104,6 +105,16 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
       backgroundColor: palette.headerSurface,
       foregroundColor: palette.ink,
       surfaceTintColor: Colors.transparent,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness:
+            palette.isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness:
+            palette.isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: palette.headerSurface,
+        systemNavigationBarIconBrightness:
+            palette.isDark ? Brightness.light : Brightness.dark,
+      ),
       elevation: 0,
       scrolledUnderElevation: 0.5,
       shadowColor: palette.border,

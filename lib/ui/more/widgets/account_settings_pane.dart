@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../service/pos_local_store.dart';
 import '../../widgets/app_design.dart';
@@ -16,7 +17,28 @@ class AccountSettingsPane extends StatefulWidget {
 }
 
 class _AccountSettingsPaneState extends State<AccountSettingsPane> {
+  static const _deleteAccountUrl =
+      'https://api.azagroup.co.tz/delete-account.html';
   bool _busy = false;
+
+  Future<void> _openDeleteAccount(String lang) async {
+    final launched = await launchUrl(
+      Uri.parse(_deleteAccountUrl),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      showMarketNotice(
+        context,
+        title: settingsText(lang, 'Error', 'Hitilafu'),
+        message: settingsText(
+          lang,
+          'Could not open browser.',
+          'Imeshindwa kufungua kivinjari.',
+        ),
+        type: MarketNoticeType.error,
+      );
+    }
+  }
 
   Future<void> _confirmSignOut(PosLocalStore store) async {
     setState(() => _busy = true);
@@ -120,37 +142,70 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
         ),
         SettingsCard(
           icon: Icons.logout_rounded,
-          title: t('Session', 'Kikao'),
-          description: t('End your session on this device.',
-              'Maliza kikao chako kwenye kifaa hiki.'),
+          title: t('Session & account', 'Kikao na akaunti'),
+          description: t(
+            'End your session on this device or request permanent account deletion.',
+            'Maliza kikao chako kwenye kifaa hiki au omba kufuta akaunti kabisa.',
+          ),
           children: [
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  foregroundColor: AppColors.kpiDanger,
-                  backgroundColor: AppColors.kpiDangerBg,
-                  side: BorderSide.none,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: AppCorners.control,
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.dangerDeep,
+                      backgroundColor: AppColors.surface,
+                      side: BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                    ),
+                    onPressed: _busy ? null : () => _confirmSignOut(store),
+                    icon: _busy
+                        ? SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.dangerDeep,
+                            ),
+                          )
+                        : const Icon(Icons.logout_rounded, size: 18),
+                    label: Text(
+                      t('Sign out', 'Ondoka'),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
-                onPressed: _busy ? null : () => _confirmSignOut(store),
-                icon: _busy
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.kpiDanger),
-                      )
-                    : const Icon(Icons.logout_rounded, size: 18),
-                label: Text(
-                  t('Sign out', 'Ondoka'),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.dangerDeep,
+                      backgroundColor: AppColors.surface,
+                      side: const BorderSide(color: AppColors.dangerBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                    ),
+                    onPressed: () => _openDeleteAccount(lang),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                    label: Text(
+                      t('Delete account & data', 'Futa akaunti na data'),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
