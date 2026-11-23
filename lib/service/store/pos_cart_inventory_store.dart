@@ -17,6 +17,21 @@ mixin PosCartInventoryStore on ChangeNotifier {
   set _cartTotal(double value);
   StorePreferences get _storePreferences;
   Future<void> writeAutoBackupSnapshot();
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   /// Looks up a sellable product matching a scanned or typed barcode/SKU.
   ProductItem? findProductByBarcode(String rawCode) {
@@ -355,20 +370,113 @@ mixin PosCartInventoryStore on ChangeNotifier {
     await _database.replaceCart(_cartItems, _activeStoreId);
   }
 
+  static final RegExp _autoProductCodePattern =
+      RegExp(r'^P(\d+)$', caseSensitive: false);
+
+  static bool isAutoProductCode(String code) =>
+      _autoProductCodePattern.hasMatch(code.trim());
+
+  /// Computes the next strictly increasing product code (`P001`, `P002`, ...)
+  /// above all existing codes and barcodes so already-added or deleted codes
+  /// never collide.
+  static String computeNextAutoProductCode(
+    Iterable<InventoryProductItem> inventory, {
+    Iterable<String> extraUsedCodes = const <String>[],
+  }) {
+    final used = <String>{};
+    var maxNumber = 0;
+
+    void inspect(String raw) {
+      final normalized = raw.trim().toUpperCase();
+      if (normalized.isEmpty) return;
+      used.add(normalized);
+      final match = _autoProductCodePattern.firstMatch(normalized);
+      if (match != null) {
+        final numVal = int.tryParse(match.group(1) ?? '');
+        if (numVal != null && numVal > maxNumber) {
+          maxNumber = numVal;
+        }
+      }
+    }
+
+    for (final item in inventory) {
+      inspect(item.code);
+      final barcode = item.categoryData['barcode']?.toString();
+      if (barcode != null) inspect(barcode);
+    }
+    for (final code in extraUsedCodes) {
+      inspect(code);
+    }
+
+    var candidateNumber = maxNumber + 1;
+    var candidate = 'P${candidateNumber.toString().padLeft(3, '0')}';
+    while (used.contains(candidate)) {
+      candidateNumber++;
+      candidate = 'P${candidateNumber.toString().padLeft(3, '0')}';
+    }
+    return candidate;
+  }
+
+  String nextAutoProductCode({
+    Iterable<String> extraUsedCodes = const <String>[],
+  }) =>
+      computeNextAutoProductCode(
+        _allInventory,
+        extraUsedCodes: extraUsedCodes,
+      );
+
   Future<InventoryProductItem> addProduct(InventoryProductItem product) async {
     if (!hasPermission('Manage Inventory')) {
       throw StateError('You do not have permission to manage inventory.');
     }
-    if (_allInventory.any((item) => item.code == product.code)) {
+    var resolvedProduct = product;
+    final trimmedCode = product.code.trim();
+    final normalizedUpper = trimmedCode.toUpperCase();
+    final codeExists = trimmedCode.isNotEmpty &&
+        _allInventory.any(
+          (item) => item.code.trim().toUpperCase() == normalizedUpper,
+        );
+    if (trimmedCode.isEmpty ||
+        (codeExists && isAutoProductCode(trimmedCode))) {
+      final autoCode = nextAutoProductCode(
+        extraUsedCodes: trimmedCode.isEmpty
+            ? const <String>[]
+            : <String>[trimmedCode],
+      );
+      resolvedProduct = product.copyWith(code: autoCode);
+    } else if (codeExists) {
       throw StateError(
           'A product with this code already exists. Refresh and try again.');
+    } else if (trimmedCode != product.code) {
+      resolvedProduct = product.copyWith(code: trimmedCode);
     }
-    await _database.upsertInventoryItem(product, _activeStoreId);
-    _allInventory.insert(0, product);
+
+    await _database.upsertInventoryItem(resolvedProduct, _activeStoreId);
+    _allInventory.insert(0, resolvedProduct);
     _syncProductsFromInventory();
     notifyListeners();
     unawaited(writeAutoBackupSnapshot());
-    return product;
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.inventory,
+        action: 'inventory.added',
+        severity: AuditSeverity.info,
+        entityType: 'Product',
+        entityId: resolvedProduct.code,
+        entityLabel: resolvedProduct.name,
+        summary:
+            'Added product ${resolvedProduct.name} (${resolvedProduct.code}) at ${resolvedProduct.sellingPrice.toStringAsFixed(0)} TSh, qty ${formatQuantity(resolvedProduct.stockCount)} ${resolvedProduct.unit}',
+        afterValues: {
+          'Name': resolvedProduct.name,
+          'Category': resolvedProduct.category,
+          'Cost Price': resolvedProduct.purchasePrice.toStringAsFixed(2),
+          'Selling Price': resolvedProduct.sellingPrice.toStringAsFixed(2),
+          'Stock':
+              '${formatQuantity(resolvedProduct.stockCount)} ${resolvedProduct.unit}',
+        },
+      ),
+    );
+    return resolvedProduct;
   }
 
   Future<void> updateProduct(InventoryProductItem product) async {
@@ -377,11 +485,57 @@ mixin PosCartInventoryStore on ChangeNotifier {
     }
     final index = _allInventory.indexWhere((item) => item.code == product.code);
     if (index != -1) {
+      final previous = _allInventory[index];
       await _database.upsertInventoryItem(product, _activeStoreId);
       _allInventory[index] = product;
       _syncProductsFromInventory();
       notifyListeners();
       unawaited(writeAutoBackupSnapshot());
+
+      final before = <String, String>{};
+      final after = <String, String>{};
+      if (previous.name != product.name) {
+        before['Name'] = previous.name;
+        after['Name'] = product.name;
+      }
+      if (previous.category != product.category) {
+        before['Category'] = previous.category;
+        after['Category'] = product.category;
+      }
+      if ((previous.purchasePrice - product.purchasePrice).abs() > 0.001) {
+        before['Cost Price'] = previous.purchasePrice.toStringAsFixed(2);
+        after['Cost Price'] = product.purchasePrice.toStringAsFixed(2);
+      }
+      if ((previous.sellingPrice - product.sellingPrice).abs() > 0.001) {
+        before['Selling Price'] = previous.sellingPrice.toStringAsFixed(2);
+        after['Selling Price'] = product.sellingPrice.toStringAsFixed(2);
+      }
+      if ((previous.stockCount - product.stockCount).abs() > 0.001) {
+        before['Stock'] =
+            '${formatQuantity(previous.stockCount)} ${previous.unit}';
+        after['Stock'] =
+            '${formatQuantity(product.stockCount)} ${product.unit}';
+      }
+      final sensitiveChanged =
+          (previous.sellingPrice - product.sellingPrice).abs() > 0.001 ||
+              (previous.purchasePrice - product.purchasePrice).abs() > 0.001 ||
+              (previous.stockCount - product.stockCount).abs() > 0.001;
+      unawaited(
+        recordAuditEvent(
+          module: AuditModule.inventory,
+          action: 'inventory.updated',
+          severity:
+              sensitiveChanged ? AuditSeverity.warning : AuditSeverity.info,
+          entityType: 'Product',
+          entityId: product.code,
+          entityLabel: product.name,
+          summary: after.isEmpty
+              ? 'Updated product details for ${product.name}'
+              : 'Updated ${product.name}: ${after.keys.join(', ')}',
+          beforeValues: before,
+          afterValues: after,
+        ),
+      );
     }
   }
 
@@ -402,6 +556,26 @@ mixin PosCartInventoryStore on ChangeNotifier {
     if (cartChanged) {
       await _database.replaceCart(_cartItems, _activeStoreId);
     }
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.inventory,
+        action: 'inventory.deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Product',
+        entityId: code,
+        entityLabel: removedItem?.name ?? code,
+        summary:
+            'Deleted product ${removedItem?.name ?? code} (${removedItem == null ? code : 'stock ${formatQuantity(removedItem.stockCount)} ${removedItem.unit}'})',
+        beforeValues: removedItem == null
+            ? const <String, String>{}
+            : {
+                'Name': removedItem.name,
+                'Selling Price': removedItem.sellingPrice.toStringAsFixed(2),
+                'Stock':
+                    '${formatQuantity(removedItem.stockCount)} ${removedItem.unit}',
+              },
+      ),
+    );
 
     final imagePath = removedItem?.imagePath;
     if (cloudApi != null) return;
@@ -422,6 +596,8 @@ mixin PosCartInventoryStore on ChangeNotifier {
     if (adjustments.isEmpty) return;
 
     final applied = <String, double>{};
+    final before = <String, String>{};
+    final after = <String, String>{};
     for (var index = 0; index < _allInventory.length; index++) {
       final item = _allInventory[index];
       final delta = adjustments[item.code];
@@ -435,6 +611,8 @@ mixin PosCartInventoryStore on ChangeNotifier {
         stockState: _deriveStockState(nextStock),
       );
       applied[item.code] = delta.toDouble();
+      before[item.name] = formatQuantity(item.stockCount);
+      after[item.name] = formatQuantity(nextStock);
     }
 
     if (applied.isEmpty) return;
@@ -444,6 +622,18 @@ mixin PosCartInventoryStore on ChangeNotifier {
       applied,
       _activeStoreId,
       lowStockThreshold: _storePreferences.lowStockThreshold,
+    );
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.inventory,
+        action: 'inventory.stock_adjusted',
+        severity: AuditSeverity.warning,
+        entityType: 'Stock Adjustment',
+        entityLabel: '${applied.length} product(s)',
+        summary: 'Adjusted stock levels across ${applied.length} product(s)',
+        beforeValues: before,
+        afterValues: after,
+      ),
     );
   }
 

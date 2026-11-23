@@ -6,6 +6,7 @@ import '../../service/pos_local_store.dart';
 import '../accounting/accounts_page.dart';
 import '../accounting/bank_reconciliation_page.dart';
 import '../accounting/fixed_assets_page.dart';
+import '../audit/audit_trail_page.dart';
 import '../payment/cash_register_page.dart';
 import '../settings/tax_settings_page.dart';
 import '../suppliers/receiving_page.dart';
@@ -93,6 +94,17 @@ class AdvancedFeaturesPage extends StatelessWidget {
             title: strings.staffManagement,
             builder: () => const StaffManagementPage(),
             permission: 'Manage Staff',
+          ),
+        ],
+      ),
+      _AdvGroup(
+        t('Security & audit', 'Usalama na ukaguzi'),
+        [
+          _AdvItem(
+            icon: Icons.verified_user_outlined,
+            title: t('Audit & trail', 'Kumbukumbu za ukaguzi'),
+            builder: () => const AuditTrailPage(),
+            permission: 'View Reports',
           ),
         ],
       ),

@@ -100,10 +100,15 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     final languageCode =
         context.select<PosLocalStore, String>((s) => s.languageCode);
+    final isInsideApp = context.select<PosLocalStore, bool>(
+      (s) => s.hasCompletedOnboarding && s.isLoggedIn,
+    );
     final appTheme = context
         .select<PosLocalStore, String>((s) => s.storePreferences.appTheme);
     final platformBrightness = MediaQuery.platformBrightnessOf(context);
-    final palette = AppThemePalette.resolve(appTheme, platformBrightness);
+    final palette = isInsideApp
+        ? AppThemePalette.resolve(appTheme, platformBrightness)
+        : AppThemePalette.light;
     AppColors.applyPalette(palette);
     Intl.defaultLocale = languageCode;
 
@@ -112,10 +117,12 @@ class App extends StatelessWidget {
       statusBarIconBrightness:
           palette.isDark ? Brightness.light : Brightness.dark,
       statusBarBrightness: palette.isDark ? Brightness.dark : Brightness.light,
-      systemNavigationBarColor: palette.headerSurface,
+      systemNavigationBarColor:
+          isInsideApp ? palette.headerSurface : Colors.white,
       systemNavigationBarIconBrightness:
           palette.isDark ? Brightness.light : Brightness.dark,
-      systemNavigationBarDividerColor: palette.border,
+      systemNavigationBarDividerColor:
+          isInsideApp ? palette.border : const Color(0xFFE5E7EB),
     );
 
     return MaterialApp(

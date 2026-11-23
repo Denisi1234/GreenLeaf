@@ -19,6 +19,21 @@ mixin PosSettingsStore on ChangeNotifier {
   set _profile(AppProfileData value);
   bool hasPermission(String permission);
   Future<void> _recalculateStockStates();
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   Future<void> updateReceiptSettings(ReceiptSettings settings) async {
     if (!hasPermission('System Settings')) {
@@ -27,6 +42,16 @@ mixin PosSettingsStore on ChangeNotifier {
     await _database.saveReceiptSettings(settings);
     _receiptSettings = settings;
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'settings.receipt_updated',
+        severity: AuditSeverity.info,
+        entityType: 'Receipt Settings',
+        entityLabel: 'Receipt layout',
+        summary: 'Updated receipt layout & footer configuration',
+      ),
+    );
   }
 
   TaxSettings get taxSettings => _taxSettings;
@@ -37,9 +62,31 @@ mixin PosSettingsStore on ChangeNotifier {
     if (!hasPermission('System Settings')) {
       throw StateError('You do not have permission to change system settings.');
     }
+    final previous = _taxSettings;
     await _database.saveTaxSettings(settings);
     _taxSettings = settings;
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'settings.tax_updated',
+        severity: AuditSeverity.warning,
+        entityType: 'Tax Settings',
+        entityLabel: settings.taxLabel,
+        summary:
+            'Updated ${settings.taxLabel} tax settings (${settings.enabled ? 'Enabled ${settings.ratePercent.toStringAsFixed(1)}%' : 'Disabled'})',
+        beforeValues: {
+          'Enabled': previous.enabled ? 'Yes' : 'No',
+          'Rate %': previous.ratePercent.toStringAsFixed(2),
+          'Tax ID': previous.taxId,
+        },
+        afterValues: {
+          'Enabled': settings.enabled ? 'Yes' : 'No',
+          'Rate %': settings.ratePercent.toStringAsFixed(2),
+          'Tax ID': settings.taxId,
+        },
+      ),
+    );
   }
 
   Future<void> setLanguageCode(String code) async {
@@ -58,6 +105,36 @@ mixin PosSettingsStore on ChangeNotifier {
       await db.saveLanguagePreference(nextCode);
     }
     notifyListeners();
+  }
+
+  /// Updates the active app theme preference safely for any signed-in user.
+  Future<void> setAppTheme(String themeId) async {
+    final normalized = themeId.trim().toLowerCase();
+    final nextTheme = StorePreferences.themeOptions.contains(normalized)
+        ? normalized
+        : 'whatsapp_dark';
+    final current = _storePreferences;
+    _storePreferences = StorePreferences(
+      lowStockThreshold: current.lowStockThreshold,
+      dateFormat: current.dateFormat,
+      timeFormat: current.timeFormat,
+      autoDailySmsReport: current.autoDailySmsReport,
+      dailySmsTime: current.dailySmsTime,
+      lastDailySmsDate: current.lastDailySmsDate,
+      defaultRegisterName: current.defaultRegisterName,
+      thermalPrinterName: current.thermalPrinterName,
+      thermalPrinterAddress: current.thermalPrinterAddress,
+      thermalPaperWidthMm: current.thermalPaperWidthMm,
+      openCashDrawerOnPrint: current.openCashDrawerOnPrint,
+      enableAdvancedAccounting: current.enableAdvancedAccounting,
+      requireOpenShiftForSales: current.requireOpenShiftForSales,
+      appTheme: nextTheme,
+      themeDefaultVersion: StorePreferences.currentThemeDefaultVersion,
+    );
+    notifyListeners();
+    try {
+      await _writeUiConfig();
+    } catch (_) {}
   }
 
   Future<void> setStorePreferences(StorePreferences preferences) async {
@@ -85,6 +162,7 @@ mixin PosSettingsStore on ChangeNotifier {
 
   Future<void> _loadUiConfig() async {
     _storePreferences = const StorePreferences();
+    var migratedThemeDefault = false;
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/track_mauzo_ui_config.json');
@@ -108,6 +186,11 @@ mixin PosSettingsStore on ChangeNotifier {
         if (savedStoreId != null && savedStoreId.isNotEmpty) {
           _activeStoreId = savedStoreId;
         }
+        final savedThemeVersion =
+            (map['themeDefaultVersion'] as num?)?.toInt() ?? 0;
+        if (savedThemeVersion < StorePreferences.currentThemeDefaultVersion) {
+          migratedThemeDefault = true;
+        }
         _storePreferences = StorePreferences.fromJson(map);
       }
     } catch (_) {
@@ -122,14 +205,35 @@ mixin PosSettingsStore on ChangeNotifier {
           _languageCode = AppStrings.normalize(
             rows.first['languageCode'] as String? ?? _languageCode,
           );
+          final cloudMap = Map<String, dynamic>.from(rows.first);
+          final cloudThemeVersion =
+              (cloudMap['themeDefaultVersion'] as num?)?.toInt() ?? 0;
+          if (cloudThemeVersion < StorePreferences.currentThemeDefaultVersion) {
+            cloudMap.remove('appTheme');
+            cloudMap['themeDefaultVersion'] =
+                StorePreferences.currentThemeDefaultVersion;
+            migratedThemeDefault = true;
+          }
           _storePreferences = StorePreferences.fromJson(
             <String, dynamic>{
               ..._storePreferences.toJson(),
-              ...Map<String, dynamic>.from(rows.first),
+              ...cloudMap,
             },
           );
         }
       } catch (_) {}
+    }
+
+    if (migratedThemeDefault) {
+      await _saveUiConfig();
+      if (_database is PosCloudDatabase) {
+        try {
+          await cloudApi!.put('preferences', '1', <String, Object?>{
+            'languageCode': _languageCode,
+            ..._storePreferences.toJson(),
+          });
+        } catch (_) {}
+      }
     }
   }
 
@@ -167,6 +271,16 @@ mixin PosSettingsStore on ChangeNotifier {
     await _database.saveAppProfile(_profileToMap(profile));
     _profile = profile;
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'settings.profile_updated',
+        severity: AuditSeverity.info,
+        entityType: 'Store Profile',
+        entityLabel: profile.storeName,
+        summary: 'Updated business profile for ${profile.storeName}',
+      ),
+    );
   }
 
   Map<String, Object?> _profileToMap(AppProfileData profile) {

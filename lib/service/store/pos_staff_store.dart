@@ -9,6 +9,21 @@ mixin PosStaffStore on ChangeNotifier {
   PhpApiClient? get cloudApi;
   bool hasPermission(String permission);
   StaffMemberData? get currentUser;
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   List<StaffMemberData> staffMembersForRole(String roleId) {
     return _staffMembers.where((staff) => staff.roleId == roleId).toList();
@@ -45,13 +60,27 @@ mixin PosStaffStore on ChangeNotifier {
     }
     final index = _staffRoles.indexWhere((role) => role.id == roleId);
     if (index == -1) return;
-    _staffRoles[index] = _staffRoles[index].copyWith(
+    final oldRole = _staffRoles[index];
+    _staffRoles[index] = oldRole.copyWith(
       permissions: List<String>.from(permissions),
     );
     notifyListeners();
     await _database.upsertStaffRole(
       _staffRoleToMap(_staffRoles[index]),
       _activeStoreId,
+    );
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.staff,
+        action: 'staff.permissions_updated',
+        severity: AuditSeverity.critical,
+        entityType: 'Staff Role',
+        entityId: roleId,
+        entityLabel: oldRole.title,
+        summary: 'Updated permissions for role ${oldRole.title}',
+        beforeValues: {'Permissions': oldRole.permissions.join(', ')},
+        afterValues: {'Permissions': permissions.join(', ')},
+      ),
     );
   }
 
@@ -60,15 +89,34 @@ mixin PosStaffStore on ChangeNotifier {
       throw StateError('You do not have permission to manage staff.');
     }
     if (_staffMembers.any((staff) => staff.roleId == roleId)) return;
+    StaffRoleData? removed;
+    for (final role in _staffRoles) {
+      if (role.id == roleId) {
+        removed = role;
+        break;
+      }
+    }
     _staffRoles.removeWhere((role) => role.id == roleId);
     notifyListeners();
     await _database.deleteStaffRoleRecord(roleId, _activeStoreId);
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.staff,
+        action: 'staff.role_deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Staff Role',
+        entityId: roleId,
+        entityLabel: removed?.title ?? roleId,
+        summary: 'Deleted staff role ${removed?.title ?? roleId}',
+      ),
+    );
   }
 
   Future<StaffMemberData> saveStaffMember(StaffMemberData staff,
       {String? cloudPassword}) async {
     final existingIndex =
         _staffMembers.indexWhere((item) => item.id == staff.id);
+    final previous = existingIndex == -1 ? null : _staffMembers[existingIndex];
     final isSelf = existingIndex != -1 &&
         staff.id == currentUser?.id &&
         staff.roleId == _staffMembers[existingIndex].roleId;
@@ -92,6 +140,33 @@ mixin PosStaffStore on ChangeNotifier {
       ..clear()
       ..addAll(nextMembers);
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.staff,
+        action: previous == null ? 'staff.added' : 'staff.updated',
+        severity: AuditSeverity.info,
+        entityType: 'Staff Member',
+        entityId: nextStaff.id,
+        entityLabel: nextStaff.name,
+        summary: previous == null
+            ? 'Added staff member ${nextStaff.name} (${nextStaff.phone})'
+            : 'Updated profile for ${nextStaff.name}',
+        beforeValues: previous == null
+            ? const <String, String>{}
+            : {
+                'Name': previous.name,
+                'Role ID': previous.roleId,
+                'Phone': previous.phone,
+                'Status': previous.status.name,
+              },
+        afterValues: {
+          'Name': nextStaff.name,
+          'Role ID': nextStaff.roleId,
+          'Phone': nextStaff.phone,
+          'Status': nextStaff.status.name,
+        },
+      ),
+    );
     return nextStaff;
   }
 
@@ -176,10 +251,25 @@ mixin PosStaffStore on ChangeNotifier {
     }
     final index = _staffMembers.indexWhere((staff) => staff.id == staffId);
     if (index == -1) return;
-    await saveStaffMember(_staffMembers[index].copyWith(
+    final target = _staffMembers[index];
+    await saveStaffMember(target.copyWith(
       status: status,
       updatedAt: DateTime.now().toIso8601String(),
     ));
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.staff,
+        action: 'staff.status_changed',
+        severity: AuditSeverity.warning,
+        entityType: 'Staff Member',
+        entityId: staffId,
+        entityLabel: target.name,
+        summary:
+            'Changed ${target.name} status from ${target.status.name} to ${status.name}',
+        beforeValues: {'Status': target.status.name},
+        afterValues: {'Status': status.name},
+      ),
+    );
   }
 
   bool staffUsernameExists(String username, {String? excludingId}) {
@@ -219,9 +309,27 @@ mixin PosStaffStore on ChangeNotifier {
     if (!hasPermission('Manage Staff')) {
       throw StateError('You do not have permission to manage staff.');
     }
+    StaffMemberData? removed;
+    for (final s in _staffMembers) {
+      if (s.id == staffId) {
+        removed = s;
+        break;
+      }
+    }
     await _database.deleteStaffMember(staffId);
     _staffMembers.removeWhere((staff) => staff.id == staffId);
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.staff,
+        action: 'staff.deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Staff Member',
+        entityId: staffId,
+        entityLabel: removed?.name ?? staffId,
+        summary: 'Removed staff member ${removed?.name ?? staffId}',
+      ),
+    );
   }
 
   Map<String, Object?> _staffRoleToMap(StaffRoleData role) {

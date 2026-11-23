@@ -8,6 +8,7 @@ import '../../../utils/currency_formatter.dart';
 import '../../../utils/quantity_formatter.dart';
 import '../../models/product_item.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/app_theme_palette.dart';
 import '../../widgets/common/product_thumbnail.dart';
 
 String productKey(ProductItem product) => product.code?.isNotEmpty == true
@@ -35,6 +36,7 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final palette = AppThemePalette.of(context);
     final currency = store.profile.currency;
     final lowThreshold = store.storePreferences.lowStockThreshold;
     final inCart = store.cartQuantityForProduct(product);
@@ -50,24 +52,24 @@ class ProductCard extends StatelessWidget {
         product.allowFractional || unit.toLowerCase() != 'pcs';
     TapDownDetails? tapDetails;
 
-    final Color stockDotColor;
+    final priceColor =
+        palette.isDark ? const Color(0xFF34D399) : AppColors.successDeep;
+
     final Color stockTextColor;
     final String stockLabel;
     if (isOutOfStock) {
-      stockDotColor = AppColors.danger;
-      stockTextColor = AppColors.dangerDeep;
+      stockTextColor =
+          palette.isDark ? const Color(0xFFF87171) : AppColors.dangerDeep;
       stockLabel = context.tr('Out of stock');
     } else if (remaining <= 0 && inCart > 0) {
-      stockDotColor = AppColors.primary;
-      stockTextColor = AppColors.primaryDeep;
+      stockTextColor = palette.primary;
       stockLabel = context.tr('All in cart');
     } else if (isLowStock) {
-      stockDotColor = AppColors.warning;
-      stockTextColor = AppColors.kpiAmber;
+      stockTextColor =
+          palette.isDark ? const Color(0xFFFBBF24) : AppColors.kpiAmber;
       stockLabel = '${formatQuantity(remaining)} $unit';
     } else {
-      stockDotColor = AppColors.success;
-      stockTextColor = AppColors.textMuted;
+      stockTextColor = palette.textMuted;
       stockLabel = '${formatQuantity(remaining)} $unit';
     }
 
@@ -85,11 +87,10 @@ class ProductCard extends StatelessWidget {
       child: inCart > 0
           ? Container(
               key: ValueKey('cart-badge-$inCart'),
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: palette.primary,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
-                boxShadow: AppShadows.primary,
               ),
               child: Text(
                 isUnitMeasured
@@ -97,7 +98,7 @@ class ProductCard extends StatelessWidget {
                     : '×${formatQuantity(inCart)}',
                 style: GoogleFonts.manrope(
                   fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: Colors.white,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
@@ -106,33 +107,17 @@ class ProductCard extends StatelessWidget {
           : const SizedBox.shrink(),
     );
 
-    final stockIndicator = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: stockDotColor,
-          ),
-        ),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(
-            stockLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.manrope(
-              fontSize: 11.5,
-              fontWeight:
-                  isOutOfStock || isLowStock ? FontWeight.w700 : FontWeight.w600,
-              color: stockTextColor,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ),
-      ],
+    final stockText = Text(
+      stockLabel,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: GoogleFonts.manrope(
+        fontSize: 11.5,
+        fontWeight:
+            isOutOfStock || isLowStock ? FontWeight.w600 : FontWeight.w500,
+        color: stockTextColor,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
     );
 
     final Widget content;
@@ -142,8 +127,8 @@ class ProductCard extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 50,
-              height: 50,
+              width: 48,
+              height: 48,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: ProductThumbnail(
@@ -164,12 +149,12 @@ class ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.manrope(
                       fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
+                      fontWeight: FontWeight.w600,
+                      color: palette.ink,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  stockIndicator,
+                  const SizedBox(height: 3),
+                  stockText,
                 ],
               ),
             ),
@@ -182,8 +167,8 @@ class ProductCard extends StatelessWidget {
                   price,
                   style: GoogleFonts.manrope(
                     fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.successDeep,
+                    fontWeight: FontWeight.w700,
+                    color: priceColor,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -213,8 +198,8 @@ class ProductCard extends StatelessWidget {
                     style: GoogleFonts.manrope(
                       fontSize: 14,
                       height: 1.2,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
+                      fontWeight: FontWeight.w600,
+                      color: palette.ink,
                     ),
                   ),
                 ),
@@ -231,26 +216,25 @@ class ProductCard extends StatelessWidget {
               child: Text(
                 price,
                 style: GoogleFonts.manrope(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.successDeep,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: priceColor,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ),
-            const SizedBox(height: 4),
-            stockIndicator,
+            const SizedBox(height: 3),
+            stockText,
           ],
         ),
       );
     } else {
-      // Clean Square / Shopify POS product tile: full-bleed photo, crisp name,
-      // bold green price, and quiet stock dot — zero repetitive micro-labels.
+      // Clean native Android / iOS product tile
       content = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: compact ? 88 : 104,
+            height: compact ? 88 : 102,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -284,8 +268,8 @@ class ProductCard extends StatelessWidget {
                     style: GoogleFonts.manrope(
                       fontSize: compact ? 13 : 14,
                       height: 1.2,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
+                      fontWeight: FontWeight.w600,
+                      color: palette.ink,
                     ),
                   ),
                   const Spacer(),
@@ -298,14 +282,14 @@ class ProductCard extends StatelessWidget {
                         price,
                         style: GoogleFonts.manrope(
                           fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.successDeep,
+                          fontWeight: FontWeight.w700,
+                          color: priceColor,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    stockIndicator,
+                    const SizedBox(height: 2),
+                    stockText,
                   ] else
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -318,9 +302,9 @@ class ProductCard extends StatelessWidget {
                               price,
                               maxLines: 1,
                               style: GoogleFonts.manrope(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.successDeep,
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: priceColor,
                                 fontFeatures: const [
                                   FontFeature.tabularFigures()
                                 ],
@@ -329,7 +313,7 @@ class ProductCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Flexible(child: stockIndicator),
+                        Flexible(child: stockText),
                       ],
                     ),
                 ],
@@ -354,21 +338,12 @@ class ProductCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: AppDurations.fast,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.standard),
           border: Border.all(
-            color: inCart > 0 ? AppColors.primary : AppColors.border,
-            width: inCart > 0 ? 1.8 : 1,
+            color: inCart > 0 ? palette.primary : palette.border,
+            width: inCart > 0 ? 1.6 : 1,
           ),
-          boxShadow: inCart > 0
-              ? AppShadows.primary
-              : const [
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Material(
@@ -388,7 +363,7 @@ class ProductCard extends StatelessWidget {
                   }
                 : null,
             child:
-                isOutOfStock ? Opacity(opacity: 0.56, child: content) : content,
+                isOutOfStock ? Opacity(opacity: 0.52, child: content) : content,
           ),
         ),
       ),

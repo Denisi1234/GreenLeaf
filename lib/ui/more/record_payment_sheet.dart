@@ -191,15 +191,15 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 border: OutlineInputBorder(
-                  borderRadius: AppCorners.control,
+                  borderRadius: AppCorners.input,
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: AppCorners.control,
+                  borderRadius: AppCorners.input,
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: AppCorners.control,
+                  borderRadius: AppCorners.input,
                   borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),
@@ -262,15 +262,15 @@ class _RecordPaymentSheetState extends State<RecordPaymentSheet> {
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 border: OutlineInputBorder(
-                  borderRadius: AppCorners.control,
+                  borderRadius: AppCorners.input,
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: AppCorners.control,
+                  borderRadius: AppCorners.input,
                   borderSide: BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: AppCorners.control,
+                  borderRadius: AppCorners.input,
                   borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),

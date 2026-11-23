@@ -42,11 +42,12 @@ class _SalesCartPanelState extends State<SalesCartPanel> {
       if (!confirmed || !mounted) return;
       await store.clearCart();
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         showMarketNotice(context,
             title: context.tr('Could not clear sale'),
             message: context.tr('Please try again.'),
             type: MarketNoticeType.error);
+      }
     } finally {
       if (mounted) setState(() => _clearing = false);
     }

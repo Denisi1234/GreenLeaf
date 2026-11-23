@@ -15,6 +15,21 @@ mixin PosMultiStore on ChangeNotifier {
   Future<void> initialize();
   Future<void> _saveUiConfig();
   CustomerData _customerFromMap(Map<String, Object?> map);
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   Future<void> _ensureStoresLoaded() async {
     try {
@@ -53,12 +68,24 @@ mixin PosMultiStore on ChangeNotifier {
   }
 
   Future<void> saveStore(Store store) async {
+    final existed = _stores.any((s) => s.id == store.id);
     await _database.upsertStore(store.toMap());
     await _ensureStoresLoaded();
     if (_activeStoreId == store.id) {
       _profile = _profile.copyWith(storeName: store.name);
     }
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'store.saved',
+        severity: AuditSeverity.info,
+        entityType: 'Store',
+        entityId: store.id,
+        entityLabel: store.name,
+        summary: '${existed ? 'Updated' : 'Created'} store ${store.name}',
+      ),
+    );
   }
 
   Future<void> createStore({
@@ -77,7 +104,25 @@ mixin PosMultiStore on ChangeNotifier {
 
   Future<void> deleteStore(String id) async {
     if (id == _defaultStoreId || _stores.length <= 1) return;
+    Store? target;
+    for (final s in _stores) {
+      if (s.id == id) {
+        target = s;
+        break;
+      }
+    }
     await _database.deleteStore(id);
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'store.deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Store',
+        entityId: id,
+        entityLabel: target?.name ?? id,
+        summary: 'Deleted store branch ${target?.name ?? id}',
+      ),
+    );
     if (_activeStoreId == id) {
       _activeStoreId = _defaultStoreId;
       await _saveUiConfig();
@@ -91,6 +136,8 @@ mixin PosMultiStore on ChangeNotifier {
   Future<void> switchStore(String id) async {
     if (id == _activeStoreId) return;
     if (!_stores.any((s) => s.id == id)) return;
+    final prevStoreId = _activeStoreId;
+    final nextName = _stores.firstWhere((s) => s.id == id).name;
     _activeStoreId = id;
     final db = _database;
     if (db is PosHybridDatabase) {
@@ -104,6 +151,17 @@ mixin PosMultiStore on ChangeNotifier {
     }
     await _saveUiConfig();
     await _reloadActiveStoreData();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'store.switched',
+        severity: AuditSeverity.info,
+        entityType: 'Store',
+        entityId: id,
+        entityLabel: nextName,
+        summary: 'Switched active store from $prevStoreId to $nextName',
+      ),
+    );
   }
 
   Future<void> _reloadActiveStoreData() async {

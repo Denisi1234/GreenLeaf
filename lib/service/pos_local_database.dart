@@ -38,7 +38,7 @@ class PosLocalDatabase
     final path = p.join(databasesPath, 'pos_local_storage.db');
     _database = await openDatabase(
       path,
-      version: 32,
+      version: 33,
       onCreate: _createPosDatabaseTables,
       onUpgrade: _upgradePosDatabase,
       onOpen: _onOpenPosDatabase,

@@ -219,15 +219,15 @@ class StaffAppDropdown<T> extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
               border: OutlineInputBorder(
-                borderRadius: AppCorners.control,
+                borderRadius: AppCorners.input,
                 borderSide: BorderSide(color: AppColors.border),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: AppCorners.control,
+                borderRadius: AppCorners.input,
                 borderSide: BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: AppCorners.control,
+                borderRadius: AppCorners.input,
                 borderSide: BorderSide(color: AppColors.primary),
               ),
             ),
@@ -255,12 +255,12 @@ class StaffDateField extends StatelessWidget {
     final hasValue = value.isNotEmpty;
     return InkWell(
       onTap: onTap,
-      borderRadius: AppCorners.control,
+      borderRadius: AppCorners.input,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.surfaceSecondary,
-          borderRadius: AppCorners.control,
+          borderRadius: AppCorners.input,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(

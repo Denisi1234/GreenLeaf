@@ -1,6 +1,6 @@
-import 'package:aza_pos/l10n/app_localization.dart';
 import 'dart:io';
 
+import 'package:aza_pos/l10n/app_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,13 +10,11 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
+import '../widgets/app_theme_palette.dart';
 import '../widgets/common/market_loading_view.dart';
 import 'settings_layout.dart';
 
-/// Business profile form shared by the Settings page.
-///
-/// [showOperations] controls the save button, so the form can also be embedded
-/// in surfaces that save it themselves.
+/// Clean, native Android/iOS business profile form supporting all app themes.
 class StoreProfileForm extends StatefulWidget {
   const StoreProfileForm({
     super.key,
@@ -39,9 +37,7 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
   final _contact = TextEditingController();
   final _email = TextEditingController();
   final _address = TextEditingController();
-  final _taxId = TextEditingController();
   final _owner = TextEditingController();
-  final _role = TextEditingController();
   AppProfileData? _loadedProfile;
   XFile? _logoFile;
   bool _saving = false;
@@ -53,9 +49,7 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
     _contact.dispose();
     _email.dispose();
     _address.dispose();
-    _taxId.dispose();
     _owner.dispose();
-    _role.dispose();
     super.dispose();
   }
 
@@ -69,9 +63,7 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
     _contact.text = profile.contactNumber;
     _email.text = profile.emailAddress;
     _address.text = profile.physicalAddress;
-    _taxId.text = profile.taxId;
     _owner.text = profile.ownerName;
-    _role.text = profile.roleTitle;
     _dirty = false;
   }
 
@@ -105,9 +97,7 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
           contactNumber: _contact.text.trim(),
           emailAddress: _email.text.trim(),
           physicalAddress: _address.text.trim(),
-          taxId: _taxId.text.trim(),
           ownerName: _owner.text.trim(),
-          roleTitle: _role.text.trim(),
           memberSince: profile.memberSince.isEmpty
               ? DateFormat('MMM d, yyyy', 'en').format(DateTime.now())
               : profile.memberSince,
@@ -129,15 +119,49 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
     }
   }
 
+  InputDecoration _inputDecoration(
+    AppThemePalette palette, {
+    String? hint,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: palette.textMuted, fontSize: 14),
+      filled: true,
+      fillColor: palette.pageBackground,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: palette.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: palette.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: palette.primary, width: 1.5),
+      ),
+      errorBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: AppColors.danger),
+      ),
+      focusedErrorBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: AppColors.danger, width: 1.5),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final palette = AppThemePalette.of(context);
+
     if (!store.isInitialized) {
       return Scaffold(
-        backgroundColor: AppColors.pageBackground,
+        backgroundColor: palette.pageBackground,
         body: MarketLoadingView(
           message: context.tr('Loading Store Profile…'),
-          subMessage: 'Retrieving business configuration and assets',
         ),
       );
     }
@@ -154,220 +178,217 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+        padding: const EdgeInsets.fromLTRB(4, 4, 4, 32),
         children: [
-          SettingsCard(
-            icon: Icons.storefront_outlined,
-            title: t('Business details', 'Taarifa za biashara'),
-            description: t(
-              'Shown on receipts, reports and the customer app.',
-              'Huonekana kwenye risiti, ripoti na programu ya wateja.',
-            ),
+          // 1. Business Details
+          _GroupLabel(t('BUSINESS DETAILS', 'TAARIFA ZA BIASHARA'), palette),
+          _NativeCard(
+            palette: palette,
             children: [
-              SettingsField(
-                label: strings.storeName,
-                required: true,
-                child: TextFormField(
-                  controller: _storeName,
-                  enabled: !_saving,
-                  textInputAction: TextInputAction.next,
-                  onChanged: (_) => _markDirty(),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? strings.storeNameRequired
-                      : null,
-                ),
-              ),
-              SettingsField(
-                label: strings.storeLogo,
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+              // Clean native logo picker row
+              InkWell(
+                onTap: _saving ? null : () => _pickLogo(strings),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
                     children: [
-                      if (logoPath != null && logoPath.isNotEmpty)
-                        _LogoPreview(path: logoPath),
-                      FilledButton.icon(
-                        onPressed: _saving ? null : () => _pickLogo(strings),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.kpiSkyBg,
-                          foregroundColor: AppColors.kpiSky,
-                          side: BorderSide.none,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: AppCorners.control,
-                          ),
+                      _LogoAvatar(path: logoPath, palette: palette),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              strings.storeLogo,
+                              style: AppTypography.bodyMain.copyWith(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: palette.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              strings.chooseLogo,
+                              style: AppTypography.caption.copyWith(
+                                color: palette.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        icon: const Icon(Icons.upload_outlined, size: 18),
-                        label: Text(
-                          strings.chooseLogo,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: palette.textMuted,
                       ),
                     ],
                   ),
                 ),
               ),
-              SettingsField(
-                label: strings.businessAddress,
-                required: true,
-                child: TextFormField(
-                  controller: _address,
-                  enabled: !_saving,
-                  minLines: 2,
-                  maxLines: 3,
-                  onChanged: (_) => _markDirty(),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? strings.addressRequired
-                      : null,
-                ),
-              ),
-            ],
-          ),
-          SettingsCard(
-            icon: Icons.contact_phone_outlined,
-            title: t('Contact', 'Mawasiliano'),
-            description: t(
-              'How customers and suppliers reach you.',
-              'Jinsi wateja na wasambazaji wanavyokufikia.',
-            ),
-            children: [
-              SettingsField(
-                label: strings.phoneNumber,
-                required: true,
-                child: TextFormField(
-                  controller: _contact,
-                  enabled: !_saving,
-                  keyboardType: TextInputType.phone,
-                  onChanged: (_) => _markDirty(),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? strings.phoneRequired
-                      : null,
-                ),
-              ),
-              SettingsField(
-                label: strings.emailAddress,
-                child: TextFormField(
-                  controller: _email,
-                  enabled: !_saving,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  onChanged: (_) => _markDirty(),
-                  validator: (value) {
-                    final email = value?.trim() ?? '';
-                    if (email.isEmpty) return strings.emailRequired;
-                    if (!_emailPattern.hasMatch(email)) {
-                      return strings.invalidEmail;
-                    }
-                    return null;
-                  },
-                ),
-              ),
-            ],
-          ),
-          SettingsCard(
-            icon: Icons.badge_outlined,
-            title: t('Owner & registration', 'Mmiliki na usajili'),
-            description: t(
-              'Appears on reports and legal documents.',
-              'Huonekana kwenye ripoti na nyaraka rasmi.',
-            ),
-            children: [
-              SettingsField(
-                label: t('Owner name', 'Jina la mmiliki'),
-                child: TextFormField(
-                  controller: _owner,
-                  enabled: !_saving,
-                  textCapitalization: TextCapitalization.words,
-                  onChanged: (_) => _markDirty(),
-                ),
-              ),
-              SettingsField(
-                label: t('Role / title', 'Wajibu'),
-                hint: t('e.g. Owner, Manager', 'mf. Mmiliki, Meneja'),
-                child: TextFormField(
-                  controller: _role,
-                  enabled: !_saving,
-                  textCapitalization: TextCapitalization.words,
-                  onChanged: (_) => _markDirty(),
-                ),
-              ),
-              SettingsField(
-                label: t('Tax registration (TIN)', 'Usajili wa kodi (TIN)'),
-                hint: t(
-                  'Printed on receipts when enabled.',
-                  'Huchapishwa kwenye risiti ukipowasha.',
-                ),
-                child: TextFormField(
-                  controller: _taxId,
-                  enabled: !_saving,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => _markDirty(),
-                ),
-              ),
-            ],
-          ),
-          SettingsCard(
-            icon: Icons.account_balance_wallet_outlined,
-            title: t('Advanced Accounting', 'Uhasibu wa Kina'),
-            description: t(
-              'Show double-entry ledger, bank reconciliation and fixed assets.',
-              'Onyesha daftari la hesabu, upatanishi wa benki na mali za kudumu.',
-            ),
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  t('Enable Advanced Accounting', 'Washa Uhasibu wa Kina'),
-                  style: AppTypography.bodyMain
-                      .copyWith(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  t(
-                    'Keep disabled for a fast, simple retail POS experience.',
-                    'Acha imezimwa kwa matumizi mepesi na ya haraka ya duka.',
-                  ),
-                  style: AppTypography.label,
-                ),
-                value: store.preferences.enableAdvancedAccounting,
-                onChanged: _saving
-                    ? null
-                    : (value) async {
-                        await store.setStorePreferences(
-                          store.preferences
-                              .copyWith(enableAdvancedAccounting: value),
-                        );
-                      },
-              ),
-            ],
-          ),
-          if (widget.showOperations) ...[
-            Row(
-              children: [
-                if (_dirty)
-                  Expanded(
-                    child: Text(
-                      t(
-                        'Unsaved changes',
-                        'Mabadiliko ambayo hayajahifadhiwa',
-                      ),
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.warningDeep,
-                        fontWeight: FontWeight.w700,
-                      ),
+              Divider(height: 1, indent: 16, color: palette.divider),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _FieldLabel('${strings.storeName} *', palette),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _storeName,
+                      enabled: !_saving,
+                      style: TextStyle(color: palette.ink, fontSize: 15),
+                      textInputAction: TextInputAction.next,
+                      decoration: _inputDecoration(palette),
+                      onChanged: (_) => _markDirty(),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? strings.storeNameRequired
+                              : null,
                     ),
-                  )
-                else
-                  const Spacer(),
-                SettingsSaveButton(
-                  label: _saving
-                      ? t('Saving...', 'Inahifadhi...')
-                      : (t('Save changes', 'Hifadhi mabadiliko')),
-                  onPressed: _saving ? null : () => _save(store, strings),
+                    const SizedBox(height: 14),
+                    _FieldLabel('${strings.businessAddress} *', palette),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _address,
+                      enabled: !_saving,
+                      style: TextStyle(color: palette.ink, fontSize: 15),
+                      minLines: 2,
+                      maxLines: 3,
+                      decoration: _inputDecoration(palette),
+                      onChanged: (_) => _markDirty(),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? strings.addressRequired
+                              : null,
+                    ),
+                  ],
                 ),
-              ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 22),
+
+          // 2. Contact
+          _GroupLabel(t('CONTACT', 'MAWASILIANO'), palette),
+          _NativeCard(
+            palette: palette,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _FieldLabel('${strings.phoneNumber} *', palette),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _contact,
+                      enabled: !_saving,
+                      style: TextStyle(color: palette.ink, fontSize: 15),
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      decoration: _inputDecoration(palette),
+                      onChanged: (_) => _markDirty(),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? strings.phoneRequired
+                              : null,
+                    ),
+                    const SizedBox(height: 14),
+                    _FieldLabel(strings.emailAddress, palette),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _email,
+                      enabled: !_saving,
+                      style: TextStyle(color: palette.ink, fontSize: 15),
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: _inputDecoration(palette),
+                      onChanged: (_) => _markDirty(),
+                      validator: (value) {
+                        final email = value?.trim() ?? '';
+                        if (email.isEmpty) return strings.emailRequired;
+                        if (!_emailPattern.hasMatch(email)) {
+                          return strings.invalidEmail;
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 22),
+
+          // 3. Owner
+          _GroupLabel(t('OWNER', 'MMILIKI'), palette),
+          _NativeCard(
+            palette: palette,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _FieldLabel(t('Owner name', 'Jina la mmiliki'), palette),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _owner,
+                      enabled: !_saving,
+                      style: TextStyle(color: palette.ink, fontSize: 15),
+                      textCapitalization: TextCapitalization.words,
+                      decoration: _inputDecoration(palette),
+                      onChanged: (_) => _markDirty(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          if (widget.showOperations) ...[
+            const SizedBox(height: 22),
+            if (_dirty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  t(
+                    'You have unsaved changes',
+                    'Una mabadiliko ambayo hayajahifadhiwa',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.warningDeep,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            SizedBox(
+              height: 48,
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _saving ? null : () => _save(store, strings),
+                style: FilledButton.styleFrom(
+                  backgroundColor: palette.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+                child: Text(
+                  _saving
+                      ? t('Saving...', 'Inahifadhi...')
+                      : t('Save changes', 'Hifadhi mabadiliko'),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
           ],
         ],
@@ -376,31 +397,108 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
   }
 }
 
-class _LogoPreview extends StatelessWidget {
-  const _LogoPreview({required this.path});
-
-  final String path;
+class _GroupLabel extends StatelessWidget {
+  const _GroupLabel(this.text, this.palette);
+  final String text;
+  final AppThemePalette palette;
 
   @override
   Widget build(BuildContext context) {
-    final ImageProvider<Object> image;
-    if (kIsWeb) {
-      image = NetworkImage(path);
-    } else {
-      image = FileImage(File(path));
-    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
+      child: Text(
+        text,
+        style: AppTypography.label.copyWith(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: palette.textMuted,
+        ),
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text, this.palette);
+  final String text;
+  final AppThemePalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: AppTypography.caption.copyWith(
+        color: palette.textMuted,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class _NativeCard extends StatelessWidget {
+  const _NativeCard({required this.palette, required this.children});
+  final AppThemePalette palette;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: 52,
-      height: 52,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: palette.border),
       ),
-      child: Image(
-        image: image,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) =>
-            const Icon(Icons.storefront_outlined),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(children: children),
       ),
+    );
+  }
+}
+
+class _LogoAvatar extends StatelessWidget {
+  const _LogoAvatar({required this.path, required this.palette});
+
+  final String? path;
+  final AppThemePalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLogo = path != null && path!.isNotEmpty;
+    final ImageProvider<Object>? image = hasLogo
+        ? (kIsWeb ? NetworkImage(path!) : FileImage(File(path!)))
+            as ImageProvider<Object>
+        : null;
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: palette.surfaceSecondary,
+        shape: BoxShape.circle,
+        border: Border.all(color: palette.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: image != null
+          ? Image(
+              image: image,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.storefront_outlined,
+                size: 22,
+                color: palette.textMuted,
+              ),
+            )
+          : Icon(
+              Icons.storefront_outlined,
+              size: 22,
+              color: palette.textMuted,
+            ),
     );
   }
 }

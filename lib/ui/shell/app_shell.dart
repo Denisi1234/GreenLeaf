@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../service/app_update_service.dart';
 import '../../service/pos_local_store.dart';
 import '../home/sales_page.dart';
 import '../more/more_page.dart';
@@ -12,6 +13,7 @@ import '../widgets/app_theme_palette.dart';
 import '../widgets/market_shared_widgets.dart';
 import '../widgets/market_bottom_nav.dart';
 import '../more/settings_page.dart';
+import '../more/theme_selection_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -36,13 +38,13 @@ class _AppShellState extends State<AppShell>
   late final AnimationController _transitionController;
 
   late final List<Widget> _pages = [
-    DashboardPage(useSharedShell: true),
-    ProductManagementPage(useSharedShell: true),
+    const DashboardPage(useSharedShell: true),
+    const ProductManagementPage(useSharedShell: true),
     SalesPage(
       useSharedShell: true,
       onOpenInventory: () => _handleTabChange(MarketTab.products),
     ),
-    MorePage(useSharedShell: true),
+    const MorePage(useSharedShell: true),
   ];
 
   @override
@@ -194,7 +196,24 @@ class _AppShellState extends State<AppShell>
           titleWeight: FontWeight.w800,
           showBorder: true,
           actions: [
-            if (canOpenSettings)
+            Tooltip(
+              message: store.languageCode == 'sw' ? 'Mandhari' : 'Theme',
+              child: HeaderActionButton(
+                icon: Icons.palette_outlined,
+                background: palette.surface,
+                foreground: palette.ink,
+                borderColor: palette.border,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ThemeSelectionPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (canOpenSettings) ...[
+              const SizedBox(width: 8),
               Tooltip(
                 message: strings.settings,
                 child: HeaderActionButton(
@@ -211,7 +230,63 @@ class _AppShellState extends State<AppShell>
                   },
                 ),
               ),
+            ],
           ],
+        ),
+        ValueListenableBuilder<bool>(
+          valueListenable: AppUpdateService.instance.updateDownloaded,
+          builder: (context, ready, _) {
+            if (!ready) return const SizedBox.shrink();
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: palette.primaryLight,
+                border: Border(bottom: BorderSide(color: palette.divider)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.system_update_rounded,
+                    size: 18,
+                    color: palette.primaryDeep,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      strings.isSwahili
+                          ? 'Sasisho jipya liko tayari'
+                          : 'New update ready',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: palette.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: AppUpdateService.instance.completeUpdate,
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 32),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      strings.isSwahili ? 'Weka sasa' : 'Restart',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: palette.primaryDeep,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
         Expanded(child: contentStack),
       ],

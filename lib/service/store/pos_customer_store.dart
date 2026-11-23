@@ -7,6 +7,21 @@ mixin PosCustomerStore on ChangeNotifier {
   List<CustomerData> get _customers;
   List<CompletedOrder> get _orders;
   PhpApiClient? get cloudApi;
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   List<CustomerData> get customers => _customers;
 
@@ -110,6 +125,20 @@ mixin PosCustomerStore on ChangeNotifier {
           : recordedBy.trim(),
     );
     await _appendDebitEntry(entry);
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.customers,
+        action: 'debit.payment_recorded',
+        severity: AuditSeverity.info,
+        entityType: 'Customer Debt',
+        entityId: customer.id,
+        entityLabel: customer.name,
+        summary:
+            'Collected ${applied.toStringAsFixed(0)} TSh towards debt from ${customer.name}',
+        beforeValues: {'Balance': customer.debitBalance.toStringAsFixed(2)},
+        afterValues: {'Balance': updated.debitBalance.toStringAsFixed(2)},
+      ),
+    );
     return updated;
   }
 
@@ -165,11 +194,30 @@ mixin PosCustomerStore on ChangeNotifier {
   }
 
   Future<void> deleteCustomer(String customerId) async {
+    CustomerData? target;
+    for (final c in _customers) {
+      if (c.id == customerId) {
+        target = c;
+        break;
+      }
+    }
     await _database.deleteCustomerRecord(customerId, _activeStoreId);
     _customers.removeWhere((c) => c.id == customerId);
     _debitEntries.removeWhere((entry) => entry.customerId == customerId);
     await _persistDebitEntries();
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.customers,
+        action: 'customer.deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Customer',
+        entityId: customerId,
+        entityLabel: target?.name ?? customerId,
+        summary:
+            'Deleted customer ${target?.name ?? customerId}${target != null && target.debitBalance > 0 ? ' (balance ${target.debitBalance.toStringAsFixed(0)} TSh)' : ''}',
+      ),
+    );
   }
 
   /// Removes a single ledger entry (for example a mis-recorded payment) and
@@ -195,10 +243,24 @@ mixin PosCustomerStore on ChangeNotifier {
 
     await _persistDebitEntries();
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.customers,
+        action: 'debit.entry_deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Debit Entry',
+        entityId: entry.id,
+        entityLabel: entry.customerName,
+        summary:
+            'Deleted debit ledger entry (${entry.amount.toStringAsFixed(0)} TSh) for ${entry.customerName}',
+      ),
+    );
   }
 
   /// Clears all old debit entries and resets debtor balances across the active store.
   Future<void> clearAllDebits() async {
+    final entryCount = _debitEntries.length;
+    final clearedBalance = outstandingDebit;
     _debitEntries.clear();
     for (var i = 0; i < _customers.length; i++) {
       if (_customers[i].debitBalance > 0) {
@@ -211,6 +273,19 @@ mixin PosCustomerStore on ChangeNotifier {
     }
     await _persistDebitEntries();
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.customers,
+        action: 'debit.cleared_all',
+        severity: AuditSeverity.critical,
+        entityType: 'Debit Ledger',
+        entityLabel: 'All debtors',
+        summary:
+            'Cleared $entryCount debit ledger entries totaling ${clearedBalance.toStringAsFixed(0)} TSh',
+        beforeValues: {'Outstanding Debit': clearedBalance.toStringAsFixed(2)},
+        afterValues: const {'Outstanding Debit': '0.00'},
+      ),
+    );
   }
 
   CustomerData? customerById(String id) {

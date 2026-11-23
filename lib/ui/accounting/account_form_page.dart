@@ -100,15 +100,15 @@ class _AccountFormPageState extends State<AccountFormPage> {
                               decoration: InputDecoration(
                                 labelText: _t('Type', 'Aina'),
                                 border: const OutlineInputBorder(
-                                  borderRadius: AppCorners.control,
+                                  borderRadius: AppCorners.input,
                                 ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderRadius: AppCorners.control,
+                                  borderRadius: AppCorners.input,
                                   borderSide:
                                       BorderSide(color: AppColors.border),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderRadius: AppCorners.control,
+                                  borderRadius: AppCorners.input,
                                   borderSide: BorderSide(
                                       color: AppColors.primary, width: 1.4),
                                 ),

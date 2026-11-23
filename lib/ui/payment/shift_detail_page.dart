@@ -77,7 +77,7 @@ class ShiftDetailPage extends StatelessWidget {
                           _moneyRow(_t('Payouts & drops', 'Malipo na amana'),
                               -summary.cashOut),
                           Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
                             child:
                                 Divider(height: 1, color: AppColors.divider),
                           ),

@@ -6,11 +6,8 @@ import 'package:provider/provider.dart';
 import '../../../l10n/app_strings.dart';
 import '../../../service/pos_local_store.dart';
 import '../../more/about_app_page.dart';
-import '../../more/advanced_features_page.dart';
-import '../../more/customers_page.dart';
-import '../../more/expenses_tracking_page.dart';
 import '../../more/help_support_page.dart';
-import '../../more/settings_page.dart';
+import '../../more/theme_selection_page.dart';
 import '../app_design.dart';
 import '../app_theme_palette.dart';
 import '../business/business_category_widgets.dart';
@@ -29,13 +26,6 @@ class MarketAppDrawer extends StatelessWidget {
   final MarketTab? selectedTab;
   final ValueChanged<MarketTab>? onSelectTab;
 
-  List<_DrawerItemData> _supportItems(AppStrings strings) {
-    return [
-      _DrawerItemData(strings.helpSupport, Icons.support_agent_outlined),
-      _DrawerItemData(strings.aboutApp, Icons.info_outline_rounded),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final drawerWidth =
@@ -44,21 +34,7 @@ class MarketAppDrawer extends StatelessWidget {
     final strings = AppStrings.of(store.languageCode);
     final palette = AppThemePalette.of(context);
     final isSwahili = store.languageCode == 'sw';
-    final canOpenSettings = store.hasPermission('System Settings');
-    final hasAdvancedAccess = const [
-      'Manage Inventory',
-      'Manage Payments',
-      'View Reports',
-      'System Settings',
-      'Manage Staff',
-    ].any(store.hasPermission);
-
-    final navTabs = <(MarketTab, String, IconData)>[
-      (MarketTab.dashboard, strings.dashboard, Icons.bar_chart_rounded),
-      (MarketTab.products, strings.inventory, Icons.inventory_2_outlined),
-      (MarketTab.sales, strings.sales, Icons.point_of_sale_outlined),
-      (MarketTab.more, strings.more, Icons.grid_view_outlined),
-    ];
+    final activePreset = AppThemePreset.byId(store.storePreferences.appTheme);
 
     return Drawer(
       width: drawerWidth,
@@ -68,205 +44,73 @@ class MarketAppDrawer extends StatelessWidget {
         child: Column(
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl,
-                  AppSpacing.xl, AppSpacing.md),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.xl,
+                AppSpacing.xl,
+                AppSpacing.md,
+              ),
               child: _DrawerProfileHeader(),
             ),
             Divider(color: palette.divider, height: 1),
             Expanded(
-              child: SingleChildScrollView(
+              child: ListView(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (onSelectTab != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                        child: Text(
-                          (isSwahili ? 'URAMBAZAJI' : 'NAVIGATION'),
-                          style: AppTypography.label.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                            color: palette.textMuted,
-                          ),
-                        ),
-                      ),
-                      for (final (tab, label, icon) in navTabs)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: _DrawerActionTile(
-                            icon: icon,
-                            label: label,
-                            isSelected: selectedTab == tab,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              onSelectTab!(tab);
-                            },
-                          ),
-                        ),
-                      if (hasAdvancedAccess)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: _DrawerActionTile(
-                            icon: Icons.tune_rounded,
-                            label: isSwahili
-                                ? 'Vipengele vya juu'
-                                : 'Advanced tools',
-                            isSelected: false,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const AdvancedFeaturesPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      if (canOpenSettings)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: _DrawerActionTile(
-                            icon: Icons.settings_outlined,
-                            label: strings.settings,
-                            isSelected: false,
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const SettingsPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      const SizedBox(height: AppSpacing.md),
-                      Divider(color: palette.divider, height: 1),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                      child: Text(
-                        (isSwahili ? 'MANDHARI' : 'THEME'),
-                        style: AppTypography.label.copyWith(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: palette.textMuted,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: AppThemePreset.presets.map((preset) {
-                          final active =
-                              store.storePreferences.appTheme == preset.id;
-                          return ChoiceChip(
-                            label: Text(
-                              isSwahili ? preset.nameSw : preset.nameEn,
-                              style: AppTypography.helperText.copyWith(
-                                color: active ? Colors.white : palette.ink,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            avatar: Icon(
-                              preset.icon,
-                              size: 15,
-                              color: active ? Colors.white : palette.textMuted,
-                            ),
-                            selected: active,
-                            showCheckmark: false,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            labelPadding: const EdgeInsets.only(right: 4),
-                            selectedColor: palette.primary,
-                            backgroundColor: palette.surfaceSecondary,
-                            side: BorderSide(
-                              color: active ? palette.primary : palette.border,
-                            ),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            onSelected: (_) {
-                              if (active) return;
-                              store.setStorePreferences(
-                                store.storePreferences
-                                    .copyWith(appTheme: preset.id),
-                              );
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Divider(color: palette.divider, height: 1),
-                    const SizedBox(height: AppSpacing.md),
-                    _DrawerSection(
-                      items: _supportItems(strings),
-                      selectedItem: selectedItem,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Divider(color: palette.divider, height: 1),
-                    const SizedBox(height: AppSpacing.lg),
-                    const _LogoutButton(),
-                  ],
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DrawerActionTile extends StatelessWidget {
-  const _DrawerActionTile({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppThemePalette.of(context);
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.standard),
-      onTap: onTap,
-      child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: isSelected ? palette.primaryLight : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.standard),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? palette.primary : palette.textMuted,
-              size: 22,
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodyMain.copyWith(
-                  color: isSelected ? palette.primary : palette.ink,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                ),
+                children: [
+                  _DrawerMenuTile(
+                    icon: Icons.palette_outlined,
+                    label: isSwahili ? 'Mandhari' : 'Theme',
+                    trailingText:
+                        isSwahili ? activePreset.nameSw : activePreset.nameEn,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ThemeSelectionPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _DrawerMenuTile(
+                    icon: Icons.support_agent_outlined,
+                    label: strings.helpSupport,
+                    isSelected: strings.helpSupport == selectedItem,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      if (strings.helpSupport == selectedItem) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const HelpSupportPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _DrawerMenuTile(
+                    icon: Icons.info_outline_rounded,
+                    label: strings.aboutApp,
+                    isSelected: strings.aboutApp == selectedItem,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      if (strings.aboutApp == selectedItem) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const AboutAppPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Divider(color: palette.divider, height: 1),
+                  const SizedBox(height: AppSpacing.lg),
+                  const _LogoutButton(),
+                ],
               ),
             ),
           ],
@@ -306,32 +150,32 @@ class _DrawerProfileHeader extends StatelessWidget {
             border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
           ),
           child: CircleAvatar(
-            radius: 44,
+            radius: 36,
             backgroundColor: AppColors.surface,
             child: profile.logoPath == null
                 ? Icon(
                     Icons.storefront_rounded,
                     color: AppColors.primary,
-                    size: 40,
+                    size: 34,
                   )
                 : ClipOval(
                     child: Image.file(
                       File(profile.logoPath!),
-                      width: 88,
-                      height: 88,
+                      width: 72,
+                      height: 72,
                       fit: BoxFit.cover,
                     ),
                   ),
           ),
         ),
-        const SizedBox(width: AppSpacing.lg),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 ownerName,
-                style: AppTypography.h3.copyWith(fontSize: 18),
+                style: AppTypography.h3.copyWith(fontSize: 17),
               ),
               const SizedBox(height: 2),
               BusinessCategoryBadge(
@@ -339,7 +183,7 @@ class _DrawerProfileHeader extends StatelessWidget {
                 label: role,
               ),
               if (storeDetail.isNotEmpty) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   storeDetail,
                   style: AppTypography.bodySmall.copyWith(
@@ -358,120 +202,73 @@ class _DrawerProfileHeader extends StatelessWidget {
   }
 }
 
-class _DrawerSection extends StatelessWidget {
-  const _DrawerSection({
-    required this.items,
-    required this.selectedItem,
+class _DrawerMenuTile extends StatelessWidget {
+  const _DrawerMenuTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.trailingText,
+    this.isSelected = false,
   });
 
-  final List<_DrawerItemData> items;
-  final String selectedItem;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: items
-          .map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-              child: _DrawerTile(
-                item: item,
-                isSelected: item.label == selectedItem,
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-}
-
-class _DrawerTile extends StatelessWidget {
-  const _DrawerTile({
-    required this.item,
-    required this.isSelected,
-  });
-
-  final _DrawerItemData item;
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final String? trailingText;
   final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemePalette.of(context);
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.standard),
-      onTap: () {
-        Navigator.of(context).pop();
-        if (isSelected) {
-          return;
-        }
-        final route = _routeForLabel(item.label);
-        if (route != null) {
-          Navigator.of(context).push(route);
-        }
-      },
+      onTap: onTap,
       child: Container(
-        height: 56,
+        height: 52,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryLight : Colors.transparent,
+          color: isSelected ? palette.primaryLight : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.standard),
         ),
         child: Row(
           children: [
             Icon(
-              item.icon,
-              color: isSelected ? AppColors.primary : AppColors.textLight,
-              size: 24,
+              icon,
+              color: isSelected ? palette.primary : palette.textMuted,
+              size: 22,
             ),
-            const SizedBox(width: AppSpacing.lg),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
-                item.label,
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodyMain.copyWith(
-                  color: isSelected ? AppColors.primary : AppColors.textMain,
+                  color: isSelected ? palette.primary : palette.ink,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
             ),
-            if (isSelected)
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+            if (trailingText != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                trailingText!,
+                style: AppTypography.caption.copyWith(
+                  color: palette.textMuted,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+            ],
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: palette.textMuted,
+            ),
           ],
         ),
       ),
     );
-  }
-}
-
-Route<void>? _routeForLabel(String label) {
-  switch (label) {
-    case 'Customers':
-    case 'Wateja':
-      return MaterialPageRoute<void>(
-        builder: (context) => const CustomersPage(),
-      );
-    case 'Expenses Tracking':
-    case 'Ufuatiliaji wa Matumizi':
-      return MaterialPageRoute<void>(
-        builder: (context) => const ExpensesTrackingPage(),
-      );
-    case 'Help & Support':
-    case 'Msaada na Usaidizi':
-      return MaterialPageRoute<void>(
-        builder: (context) => const HelpSupportPage(),
-      );
-    case 'About App':
-    case 'Kuhusu Programu':
-      return MaterialPageRoute<void>(
-        builder: (context) => const AboutAppPage(),
-      );
-    default:
-      return null;
   }
 }
 
@@ -481,44 +278,32 @@ class _LogoutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context.read<PosLocalStore>().languageCode);
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.standard),
-      onTap: () async {
-        Navigator.of(context).pop();
-        await showLogoutConfirmationDialog(context);
-      },
-      child: Container(
-        height: 60,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.circular(AppRadius.standard),
+    final palette = AppThemePalette.of(context);
+    return SizedBox(
+      height: 48,
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () async {
+          Navigator.of(context).pop();
+          await showLogoutConfirmationDialog(context);
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.dangerDeep,
+          backgroundColor: palette.surface,
+          side: BorderSide(color: palette.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.logout_rounded,
-              color: AppColors.ink,
-              size: 24,
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            Text(
-              strings.logout,
-              style: AppTypography.bodyMain.copyWith(
-                color: AppColors.ink,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+        icon: const Icon(Icons.logout_rounded, size: 19),
+        label: Text(
+          strings.logout,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
   }
-}
-
-class _DrawerItemData {
-  const _DrawerItemData(this.label, this.icon);
-
-  final String label;
-  final IconData icon;
 }

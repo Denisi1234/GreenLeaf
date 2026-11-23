@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../service/app_update_service.dart';
 import '../../../service/pos_local_store.dart';
 import '../../widgets/app_design.dart';
 import '../../widgets/market_shared_widgets.dart';
@@ -20,6 +21,51 @@ class AboutSettingsPane extends StatelessWidget {
   static const _privacyPolicyUrl = 'https://api.azagroup.co.tz/privacy.html';
   static const _deleteAccountUrl =
       'https://api.azagroup.co.tz/delete-account.html';
+
+  Future<void> _checkForUpdates(BuildContext context, String lang) async {
+    final res = await AppUpdateService.instance
+        .checkForAutoUpdate(bypassThrottle: true);
+    if (!context.mounted) return;
+    final (String title, String message, MarketNoticeType type) = switch (res) {
+      AppUpdateCheckResult.upToDate => (
+          settingsText(lang, 'Up to date', 'Imesasishwa'),
+          settingsText(
+            lang,
+            'You are already using the latest version.',
+            'Tayari unatumia toleo la hivi karibuni.',
+          ),
+          MarketNoticeType.success,
+        ),
+      AppUpdateCheckResult.downloading => (
+          settingsText(lang, 'Downloading update', 'Inapakua sasisho'),
+          settingsText(
+            lang,
+            'A new version is downloading automatically in the background.',
+            'Toleo jipya linapakuliwa moja kwa moja chinichini.',
+          ),
+          MarketNoticeType.info,
+        ),
+      AppUpdateCheckResult.installing => (
+          settingsText(lang, 'Installing update', 'Inaweka sasisho'),
+          settingsText(
+            lang,
+            'Update installation has started.',
+            'Uwekaji wa sasisho umeanza.',
+          ),
+          MarketNoticeType.success,
+        ),
+      AppUpdateCheckResult.unavailable => (
+          settingsText(lang, 'Updates unavailable', 'Masasisho hayapatikani'),
+          settingsText(
+            lang,
+            'Automatic updates require Google Play on an Android device.',
+            'Masasisho otomatiki yanahitaji Google Play kwenye simu ya Android.',
+          ),
+          MarketNoticeType.warning,
+        ),
+    };
+    showMarketNotice(context, title: title, message: message, type: type);
+  }
 
   Future<void> _openExternalLink(
     BuildContext context,
@@ -106,6 +152,11 @@ class AboutSettingsPane extends StatelessWidget {
           title: t('Help & legal', 'Msaada na sheria'),
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
           children: [
+            AboutLink(
+              icon: Icons.system_update_outlined,
+              label: t('Check for updates', 'Angalia masasisho'),
+              onTap: () => _checkForUpdates(context, lang),
+            ),
             AboutLink(
               icon: Icons.star_outline_rounded,
               label: t('Rate & review Aza POS', 'Kadiria Aza POS'),

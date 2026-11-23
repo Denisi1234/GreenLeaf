@@ -34,13 +34,14 @@ final class Api
         array $body,
         string $token,
         ?int $version,
-        string $ip = 'local'
+        string $ip = 'local',
+        ?string $requestedStoreId = null
     ): array {
         $parts = array_map('rawurldecode', array_values(array_filter(explode('/', trim($path, '/')), 'strlen')));
 
         if ($method === 'GET' && ($parts === [] || $parts === ['health'])) {
             $this->db->rows('SELECT id FROM stores LIMIT 1');
-            return ['data' => ['status' => 'ok', 'service' => 'TrackMauzo PHP API']];
+            return ['data' => ['status' => 'ok', 'service' => 'Aza POS PHP API']];
         }
 
         // Public authentication & OTP routes
@@ -68,8 +69,30 @@ final class Api
         // Authenticated session
         $session = $this->auth->authenticate($token);
         $user = $session['user'];
-        $storeId = $user['store_id'];
+        $storeId = $this->resources->resolveAccessibleStoreId($user, $requestedStoreId);
+        $user['store_id'] = $storeId;
         $cartResource = $session['cartResource'];
+
+        // Real-time lightweight revision check for multi-device sync (~200 bytes)
+        if ($parts === ['sync', 'revision'] && $method === 'GET') {
+            return [
+                'data' => [
+                    'store_id' => $storeId,
+                    'revision' => $this->resources->storeRevision($storeId),
+                    'versions' => $this->resources->allVersions($storeId),
+                    'server_time' => gmdate('c'),
+                ],
+            ];
+        }
+
+        // Real multi-store branch listing & creation
+        if ($parts === ['stores'] && $method === 'GET') {
+            return $this->resources->listOwnerStores($session['user']);
+        }
+        if ($parts === ['stores'] && $method === 'POST') {
+            $this->auth->requireOwner($session['user']);
+            return $this->resources->createBranchStore($session['user'], $body);
+        }
 
         if ($parts === ['sms', 'send'] && $method === 'POST') {
             $this->auth->throttle('sms_send:' . $ip);
@@ -176,19 +199,42 @@ final class Api
             throw new ApiError(404, 'API endpoint not found.');
         }
 
-        $publicRead = $method === 'GET' && in_array($resource, ['products', 'profile', 'receipt-settings', 'tax-settings', 'customers', 'debit-entries'], true);
+        // Immutable append-only audit trail across all devices
+        if ($resource === 'audit-logs') {
+            if ($method === 'GET') {
+                $this->auth->requireAny($user, ['View Reports', 'Manage Staff', 'System Settings']);
+                $rows = $this->resources->resourceRows($storeId, 'audit-logs');
+                return $this->resources->collection($storeId, 'audit-logs', $rows);
+            }
+            if ($method === 'POST' && count($parts) === 1) {
+                return $this->resources->mutate($storeId, function () use ($user, $storeId, $body) {
+                    $id = trim((string) ($body['id'] ?? ''));
+                    if ($id === '') {
+                        $id = 'AUD-' . bin2hex(random_bytes(10));
+                        $body['id'] = $id;
+                    }
+                    $this->resources->put($user, 'audit-logs', $id, $body);
+                    $this->resources->bump($storeId, 'audit-logs');
+                    return ['data' => $body, 'version' => $this->resources->version($storeId, 'audit-logs')];
+                });
+            }
+            throw new ApiError(405, 'Audit logs are append-only and cannot be modified or deleted.');
+        }
+
+        $publicRead = $method === 'GET' && in_array($resource, ['products', 'profile', 'receipt-settings', 'tax-settings', 'customers', 'debit-entries', 'suspended-sales', 'stores'], true);
         if ($method === 'GET' && $resource === 'expenses') {
             $this->auth->requireAny($user, ['View Reports', 'Manage Payments']);
             $publicRead = true;
         }
         if (!$publicRead && !in_array($resource, ['cart', 'preferences'], true)) {
             $permission = match ($resource) {
-                'products', 'suppliers', 'receivings' => 'Manage Inventory',
+                'products', 'suppliers', 'receivings', 'receiving-lines' => 'Manage Inventory',
                 'staff' => 'Manage Staff',
                 'roles' => $method === 'GET' ? 'Manage Staff' : 'System Settings',
-                'customers', 'debit-entries', 'expenses' => 'Manage Payments',
-                'register-shifts', 'cash-movements' => 'View Sales',
-                'profile', 'receipt-settings', 'tax-settings' => 'System Settings',
+                'customers', 'debit-entries', 'expenses', 'bank-transactions' => 'Manage Payments',
+                'register-shifts', 'cash-movements', 'suspended-sales' => 'View Sales',
+                'profile', 'receipt-settings', 'tax-settings', 'stores' => 'System Settings',
+                'accounts', 'journal-entries', 'fixed-assets' => 'View Reports',
                 default => 'View Reports',
             };
             $this->auth->requirePermission($user, $permission);

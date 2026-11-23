@@ -157,24 +157,24 @@ class _AssetFormPageState extends State<AssetFormPage> {
                                   decoration: InputDecoration(
                                     labelText: null,
                                     border: OutlineInputBorder(
-                                      borderRadius: AppCorners.control,
+                                      borderRadius: AppCorners.input,
                                       borderSide:
                                           BorderSide(color: AppColors.border),
                                     ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: AppCorners.control,
+                                      borderRadius: AppCorners.input,
                                       borderSide:
                                           BorderSide(color: AppColors.border),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: AppCorners.control,
+                                      borderRadius: AppCorners.input,
                                       borderSide: BorderSide(
                                           color: AppColors.primary, width: 1.4),
                                     ),
                                     filled: true,
                                     fillColor: AppColors.surface,
                                     isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                         horizontal: 14, vertical: 14),
                                   ),
                                   child: Row(

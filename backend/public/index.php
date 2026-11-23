@@ -11,7 +11,7 @@ $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $config['origins'], true)) {
     header('Access-Control-Allow-Origin: ' . $origin);
     header('Vary: Origin');
-    header('Access-Control-Allow-Headers: Authorization, Content-Type, If-Match');
+    header('Access-Control-Allow-Headers: Authorization, Content-Type, If-Match, X-Store-Id, X-Idempotency-Key');
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 }
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -34,6 +34,7 @@ try {
     $authorization = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
     $token = str_starts_with($authorization, 'Bearer ') ? substr($authorization, 7) : '';
     $version = isset($_SERVER['HTTP_IF_MATCH']) ? filter_var(trim($_SERVER['HTTP_IF_MATCH'], '"'), FILTER_VALIDATE_INT) : null;
+    $requestedStoreId = isset($_SERVER['HTTP_X_STORE_ID']) ? trim((string) $_SERVER['HTTP_X_STORE_ID']) : null;
     $api = new Api(new Database($config), $config);
     $result = $api->dispatch(
         $_SERVER['REQUEST_METHOD'],
@@ -41,7 +42,8 @@ try {
         $body,
         $token,
         is_int($version) ? $version : null,
-        $_SERVER['REMOTE_ADDR'] ?? 'local'
+        $_SERVER['REMOTE_ADDR'] ?? 'local',
+        $requestedStoreId
     );
     if (isset($result['image'])) {
         header('Content-Type: ' . $result['mime']);

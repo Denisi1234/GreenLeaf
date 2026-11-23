@@ -33,15 +33,15 @@ class DraftLineRow extends StatelessWidget {
       hintText: hint,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       border: OutlineInputBorder(
-        borderRadius: AppCorners.control,
+        borderRadius: AppCorners.input,
         borderSide: BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: AppCorners.control,
+        borderRadius: AppCorners.input,
         borderSide: BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: AppCorners.control,
+        borderRadius: AppCorners.input,
         borderSide: BorderSide(color: AppColors.primary, width: 1.2),
       ),
     );

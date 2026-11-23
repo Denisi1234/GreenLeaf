@@ -7,9 +7,10 @@ import '../../../service/receipt_settings.dart';
 import '../../../service/thermal_printer_service.dart';
 import '../../receipt/thermal_printer_picker_sheet.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/app_theme_palette.dart';
 import '../settings_layout.dart';
 
-/// Receipt configuration pane.
+/// Clean, native Android/iOS Receipt & Bluetooth Thermal Printer settings pane.
 class ReceiptSettingsPane extends StatefulWidget {
   const ReceiptSettingsPane({super.key});
 
@@ -127,16 +128,46 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
     }
   }
 
-  Widget _toggle(
+  InputDecoration _inputDecoration(AppThemePalette palette, {String? hint}) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: palette.textMuted, fontSize: 14),
+      filled: true,
+      fillColor: palette.pageBackground,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: palette.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: palette.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide(color: palette.primary, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _switchRow(
+    AppThemePalette palette,
     String title,
-    String subtitle,
     bool value,
     ValueChanged<bool> onChanged,
   ) {
-    return SettingsSwitchTile(
-      title: title,
-      subtitle: subtitle,
+    return SwitchListTile.adaptive(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      title: Text(
+        title,
+        style: AppTypography.bodyMain.copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: palette.ink,
+        ),
+      ),
       value: value,
+      activeTrackColor: palette.primary,
       onChanged: _saving ? null : onChanged,
     );
   }
@@ -144,266 +175,414 @@ class _ReceiptSettingsPaneState extends State<ReceiptSettingsPane> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final palette = AppThemePalette.of(context);
     final lang = store.languageCode;
     String t(String en, String sw) => settingsText(lang, en, sw);
     final saved = store.receiptSettings;
     if (_loaded != saved && !_saving) _load(saved);
     final dirty = _loaded != _draft;
 
-    final toggles = <Widget>[
-      _toggle(
-        t('Store contact', 'Mawasiliano ya duka'),
-        t('Phone and address under the store name',
-            'Simu na anwani chini ya jina la duka'),
-        _draft.showStoreContact,
-        (value) => _update(_draft.copyWith(showStoreContact: value)),
-      ),
-      _toggle(
-        t('Tax registration (TIN)', 'Usajili wa kodi (TIN)'),
-        t('Show your business tax number', 'Onyesha namba ya kodi ya biashara'),
-        _draft.showTaxId,
-        (value) => _update(_draft.copyWith(showTaxId: value)),
-      ),
-      _toggle(
-        t('Receipt number', 'Namba ya risiti'),
-        t('Print the unique sale reference', 'Chapisha kumbukumbu ya mauzo'),
-        _draft.showOrderNumber,
-        (value) => _update(_draft.copyWith(showOrderNumber: value)),
-      ),
-      _toggle(
-        t('Date and time', 'Tarehe na muda'),
-        t('When the sale was completed', 'Mauzo yalipokamilika'),
-        _draft.showDateTime,
-        (value) => _update(_draft.copyWith(showDateTime: value)),
-      ),
-      _toggle(
-        t('Cashier name', 'Jina la muhudumu'),
-        t('Staff member who handled the sale', 'Mfanyakazi aliyefanya mauzo'),
-        _draft.showCashier,
-        (value) => _update(_draft.copyWith(showCashier: value)),
-      ),
-      _toggle(
-        t('Customer name', 'Jina la mteja'),
-        t('Hide this for anonymous walk-in sales',
-            'Ficha hii kwa mauzo ya wateja wasiojulikana'),
-        _draft.showCustomer,
-        (value) => _update(_draft.copyWith(showCustomer: value)),
-      ),
-      _toggle(
-        t('Payment method', 'Njia ya malipo'),
-        t('Cash, mobile money or card', 'Fedha, pesa za simu au kadi'),
-        _draft.showPaymentMethod,
-        (value) => _update(_draft.copyWith(showPaymentMethod: value)),
-      ),
-      _toggle(
-        t('Item count', 'Idadi ya bidhaa'),
-        t('Total units in the sale summary',
-            'Jumla ya bidhaa kwenye muhtasari'),
-        _draft.showItemCount,
-        (value) => _update(_draft.copyWith(showItemCount: value)),
-      ),
-      _toggle(
-        t('Discount line', 'Mstari wa punguzo'),
-        t('Show the discount label and amount', 'Onyesha punguzo na kiasi'),
-        _draft.showDiscount,
-        (value) => _update(_draft.copyWith(showDiscount: value)),
-      ),
-    ];
-
-    final contentCard = SettingsCard(
-      icon: Icons.receipt_long_outlined,
-      title: t('Receipt content', 'Maudhui ya risiti'),
-      description: t(
-        'Applies to printed, PDF and shared receipts.',
-        'Inahusu risiti za kuchapisha, PDF na kushiriki.',
-      ),
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth < 620) {
-              return Column(children: toggles);
-            }
-            final width = (constraints.maxWidth - 12) / 2;
-            return Wrap(
-              spacing: 12,
-              children: [
-                for (final toggle in toggles)
-                  SizedBox(width: width, child: toggle),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-
-    final messageCard = SettingsCard(
-      icon: Icons.edit_note_rounded,
-      title: t('Printed messages', 'Ujumbe wa risiti'),
-      description: t(
-        'Add a short header and closing note for your customers.',
-        'Ongeza kichwa na ujumbe wa mwisho kwa wateja wako.',
-      ),
-      children: [
-        SettingsField(
-          label: t('Header message', 'Ujumbe wa kichwa'),
-          hint: t(
-              'e.g. welcome note or branch name', 'mf. karibu au jina la tawi'),
-          child: TextField(
-            controller: _header,
-            enabled: !_saving,
-            maxLength: ReceiptSettings.headerLimit,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              hintText: t('Welcome to our store', 'Karibu dukani kwetu'),
-            ),
-            onChanged: (value) =>
-                _update(_draft.copyWith(header: value.trim())),
-          ),
-        ),
-        SettingsField(
-          label: t('Footer message', 'Ujumbe wa chini'),
-          hint: t('e.g. thank-you note or return policy',
-              'mf. shukrani au sera ya kurudisha'),
-          child: TextField(
-            controller: _footer,
-            enabled: !_saving,
-            minLines: 2,
-            maxLines: 4,
-            maxLength: ReceiptSettings.footerLimit,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              hintText: t('Thank you for shopping with us!',
-                  'Asante kwa kununua kwetu!'),
-            ),
-            onChanged: (value) =>
-                _update(_draft.copyWith(footer: value.trim())),
-          ),
-        ),
-      ],
-    );
-
     final prefs = store.storePreferences;
     final hasPrinter = prefs.thermalPrinterAddress.trim().isNotEmpty;
     final printerLabel = hasPrinter
-        ? '${prefs.thermalPrinterName.isEmpty ? 'Bluetooth' : prefs.thermalPrinterName} (${prefs.thermalPrinterAddress})'
-        : t('Not configured', 'Haijawekwa');
+        ? (prefs.thermalPrinterName.isEmpty
+            ? prefs.thermalPrinterAddress
+            : prefs.thermalPrinterName)
+        : t('Not connected', 'Haijaunganishwa');
 
-    final printerCard = SettingsCard(
-      icon: Icons.print_outlined,
-      title:
-          t('Bluetooth thermal printer', 'Printa ya Bluetooth (58mm / 80mm)'),
-      description: t(
-        'Print receipts directly to a paired 58mm or 80mm ESC/POS printer.',
-        'Chapisha risiti moja kwa moja kwenda printa ya Bluetooth (58mm au 80mm).',
+    final toggles = <(String, bool, ValueChanged<bool>)>[
+      (
+        t('Store contact', 'Mawasiliano ya duka'),
+        _draft.showStoreContact,
+        (v) => _update(_draft.copyWith(showStoreContact: v)),
       ),
-      children: [
-        SettingsField(
-          label: t('Selected printer', 'Printa iliyochaguliwa'),
-          hint: printerLabel,
-          child: const SizedBox.shrink(),
-        ),
-        SettingsField(
-          label: t('Paper width', 'Upana wa karatasi'),
-          child: DropdownButtonFormField<int>(
-            initialValue: prefs.thermalPaperWidthMm >= 80 ? 80 : 58,
-            items: const [
-              DropdownMenuItem(value: 58, child: Text('58mm (32 columns)')),
-              DropdownMenuItem(value: 80, child: Text('80mm (48 columns)')),
-            ],
-            onChanged: _saving
-                ? null
-                : (value) {
-                    if (value == null) return;
-                    store.setStorePreferences(
-                      prefs.copyWith(thermalPaperWidthMm: value),
-                    );
-                  },
-          ),
-        ),
-        SettingsSwitchTile(
-          title: t('Open cash drawer on print', 'Fungua droo ya pesa'),
-          subtitle: t(
-            'Send drawer kick pulse after receipt cut',
-            'Tuma amri ya kufungua droo baada ya kuchapisha',
-          ),
-          value: prefs.openCashDrawerOnPrint,
-          onChanged: _saving
-              ? null
-              : (value) => store.setStorePreferences(
-                    prefs.copyWith(openCashDrawerOnPrint: value),
-                  ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            FilledButton.icon(
-              onPressed: _saving ? null : () => _selectThermalPrinter(store),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.kpiSkyBg,
-                foregroundColor: AppColors.kpiSky,
-                side: BorderSide.none,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppCorners.control,
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              icon: const Icon(Icons.bluetooth_searching_rounded, size: 18),
-              label: Text(
-                t('Select printer', 'Chagua printa'),
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: _saving || !hasPrinter
-                  ? null
-                  : () => _testThermalPrinter(store),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                side: BorderSide.none,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppCorners.control,
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              ),
-              icon: const Icon(Icons.print_rounded, size: 18),
-              label: Text(
-                t('Test print', 'Jaribu kuchapisha'),
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+      (
+        t('Tax ID (TIN)', 'Namba ya kodi (TIN)'),
+        _draft.showTaxId,
+        (v) => _update(_draft.copyWith(showTaxId: v)),
+      ),
+      (
+        t('Receipt number', 'Namba ya risiti'),
+        _draft.showOrderNumber,
+        (v) => _update(_draft.copyWith(showOrderNumber: v)),
+      ),
+      (
+        t('Date and time', 'Tarehe na muda'),
+        _draft.showDateTime,
+        (v) => _update(_draft.copyWith(showDateTime: v)),
+      ),
+      (
+        t('Cashier name', 'Jina la muhudumu'),
+        _draft.showCashier,
+        (v) => _update(_draft.copyWith(showCashier: v)),
+      ),
+      (
+        t('Customer name', 'Jina la mteja'),
+        _draft.showCustomer,
+        (v) => _update(_draft.copyWith(showCustomer: v)),
+      ),
+      (
+        t('Payment method', 'Njia ya malipo'),
+        _draft.showPaymentMethod,
+        (v) => _update(_draft.copyWith(showPaymentMethod: v)),
+      ),
+      (
+        t('Item count', 'Idadi ya bidhaa'),
+        _draft.showItemCount,
+        (v) => _update(_draft.copyWith(showItemCount: v)),
+      ),
+      (
+        t('Discount line', 'Mstari wa punguzo'),
+        _draft.showDiscount,
+        (v) => _update(_draft.copyWith(showDiscount: v)),
+      ),
+    ];
 
     return Column(
       children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 28),
             children: [
-              contentCard,
-              messageCard,
-              printerCard,
+              // 1. Bluetooth Thermal Printer
+              _SectionLabel(t('BLUETOOTH PRINTER', 'PRINTA YA BLUETOOTH'), palette),
+              _NativeGroupCard(
+                palette: palette,
+                children: [
+                  InkWell(
+                    onTap: _saving ? null : () => _selectThermalPrinter(store),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 54),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 13,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.print_outlined,
+                              size: 22,
+                              color: palette.textMuted,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text(
+                                t('Thermal printer', 'Printa ya risiti'),
+                                style: AppTypography.bodyMain.copyWith(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: palette.ink,
+                                ),
+                              ),
+                            ),
+                            Flexible(
+                              child: Text(
+                                printerLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.caption.copyWith(
+                                  color: palette.textMuted,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 20,
+                              color: palette.textMuted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Divider(height: 1, indent: 16, color: palette.divider),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          t('Paper width', 'Upana wa karatasi'),
+                          style: AppTypography.caption.copyWith(
+                            color: palette.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<int>(
+                          initialValue: prefs.thermalPaperWidthMm >= 80 ? 80 : 58,
+                          isExpanded: true,
+                          dropdownColor: palette.surface,
+                          style: TextStyle(color: palette.ink, fontSize: 15),
+                          decoration: _inputDecoration(palette),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 58,
+                              child: Text(
+                                '58mm (32 columns)',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 80,
+                              child: Text(
+                                '80mm (48 columns)',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                          onChanged: _saving
+                              ? null
+                              : (value) {
+                                  if (value == null) return;
+                                  store.setStorePreferences(
+                                    prefs.copyWith(thermalPaperWidthMm: value),
+                                  );
+                                },
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(height: 1, indent: 16, color: palette.divider),
+                  _switchRow(
+                    palette,
+                    t('Open cash drawer on print', 'Fungua droo ya pesa'),
+                    prefs.openCashDrawerOnPrint,
+                    (v) => store.setStorePreferences(
+                      prefs.copyWith(openCashDrawerOnPrint: v),
+                    ),
+                  ),
+                  if (hasPrinter) ...[
+                    Divider(height: 1, indent: 16, color: palette.divider),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        height: 48,
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _testThermalPrinter(store),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: palette.ink,
+                            backgroundColor: palette.surface,
+                            side: BorderSide(color: palette.border),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
+                            ),
+                          ),
+                          icon: const Icon(Icons.print_rounded, size: 18),
+                          label: Text(
+                            t('Test print', 'Jaribu kuchapisha'),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+
+              const SizedBox(height: 22),
+
+              // 2. Printed Messages
+              _SectionLabel(t('PRINTED MESSAGES', 'UJUMBE WA RISITI'), palette),
+              _NativeGroupCard(
+                palette: palette,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          t('Header message', 'Ujumbe wa kichwa'),
+                          style: AppTypography.caption.copyWith(
+                            color: palette.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _header,
+                          enabled: !_saving,
+                          maxLength: ReceiptSettings.headerLimit,
+                          style: TextStyle(color: palette.ink, fontSize: 15),
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: _inputDecoration(
+                            palette,
+                            hint: t('Welcome to our store', 'Karibu dukani kwetu'),
+                          ),
+                          onChanged: (value) =>
+                              _update(_draft.copyWith(header: value.trim())),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          t('Footer message', 'Ujumbe wa chini'),
+                          style: AppTypography.caption.copyWith(
+                            color: palette.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _footer,
+                          enabled: !_saving,
+                          minLines: 2,
+                          maxLines: 3,
+                          maxLength: ReceiptSettings.footerLimit,
+                          style: TextStyle(color: palette.ink, fontSize: 15),
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: _inputDecoration(
+                            palette,
+                            hint: t(
+                              'Thank you for shopping with us!',
+                              'Asante kwa kununua kwetu!',
+                            ),
+                          ),
+                          onChanged: (value) =>
+                              _update(_draft.copyWith(footer: value.trim())),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 22),
+
+              // 3. Receipt Content Toggles
+              _SectionLabel(t('RECEIPT CONTENT', 'MAUDHUI YA RISITI'), palette),
+              _NativeGroupCard(
+                palette: palette,
+                children: [
+                  for (var i = 0; i < toggles.length; i++) ...[
+                    if (i > 0)
+                      Divider(height: 1, indent: 16, color: palette.divider),
+                    _switchRow(
+                      palette,
+                      toggles[i].$1,
+                      toggles[i].$2,
+                      toggles[i].$3,
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ),
-        SettingsSaveBar(
-          visible: dirty || _saving,
-          busy: _saving,
-          message: t('You have unsaved changes',
-              'Una mabadiliko ambayo hayajahifadhiwa'),
-          saveLabel: t('Save changes', 'Hifadhi'),
-          discardLabel: t('Discard', 'Acha'),
-          onSave: () => _save(store),
-          onDiscard: () => setState(() => _load(saved)),
-        ),
+        if (dirty || _saving)
+          Container(
+            padding: const EdgeInsets.fromLTRB(4, 10, 4, 12),
+            decoration: BoxDecoration(
+              color: palette.pageBackground,
+              border: Border(top: BorderSide(color: palette.border)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: _saving ? null : () => setState(() => _load(saved)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: palette.ink,
+                        backgroundColor: palette.surface,
+                        side: BorderSide(color: palette.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                      ),
+                      child: Text(
+                        t('Discard', 'Acha'),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: _saving ? null : () => _save(store),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: palette.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                      ),
+                      child: Text(
+                        _saving
+                            ? t('Saving...', 'Inahifadhi...')
+                            : t('Save changes', 'Hifadhi'),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text, this.palette);
+  final String text;
+  final AppThemePalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
+      child: Text(
+        text,
+        style: AppTypography.label.copyWith(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: palette.textMuted,
+        ),
+      ),
+    );
+  }
+}
+
+class _NativeGroupCard extends StatelessWidget {
+  const _NativeGroupCard({required this.palette, required this.children});
+  final AppThemePalette palette;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: palette.border),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(children: children),
+      ),
     );
   }
 }

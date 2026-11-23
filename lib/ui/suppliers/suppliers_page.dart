@@ -82,8 +82,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     icon: Icons.account_balance_wallet_outlined,
                     sharp: false,
                     borderless: true,
-                    backgroundColor: AppColors.kpiDangerBg,
-                    color: AppColors.kpiDanger,
+                    backgroundColor: AppColors.surface,
+                    color: AppColors.ink,
                   ),
                 ),
                 SizedBox(
@@ -94,8 +94,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     icon: Icons.local_shipping_outlined,
                     sharp: false,
                     borderless: true,
-                    backgroundColor: AppColors.kpiSkyBg,
-                    color: AppColors.kpiSky,
+                    backgroundColor: AppColors.surface,
+                    color: AppColors.ink,
                   ),
                 ),
                 SizedBox(
@@ -106,8 +106,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     icon: Icons.warning_amber_rounded,
                     sharp: false,
                     borderless: true,
-                    backgroundColor: AppColors.kpiAmberBg,
-                    color: AppColors.kpiAmber,
+                    backgroundColor: AppColors.surface,
+                    color: AppColors.ink,
                   ),
                 ),
                 SizedBox(
@@ -118,8 +118,8 @@ class _SuppliersPageState extends State<SuppliersPage> {
                     icon: Icons.inventory_2_outlined,
                     sharp: false,
                     borderless: true,
-                    backgroundColor: AppColors.kpiSuccessBg,
-                    color: AppColors.kpiSuccess,
+                    backgroundColor: AppColors.surface,
+                    color: AppColors.ink,
                   ),
                 ),
               ],
@@ -139,12 +139,9 @@ class _SuppliersPageState extends State<SuppliersPage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: MarketButton(
+              child: MarketButton.secondary(
                 label: t('Receive goods', 'Pokea bidhaa'),
                 icon: Icons.move_to_inbox_rounded,
-                color: AppColors.kpiSkyBg,
-                foregroundColor: AppColors.kpiSky,
-                borderColor: null,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (context) => const ReceivingPage(),

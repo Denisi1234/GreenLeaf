@@ -78,15 +78,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final isSwahili = store.languageCode == 'sw';
 
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.surface, AppColors.pageBackground],
-          ),
-        ),
+      backgroundColor: Colors.white,
+      body: ColoredBox(
+        color: Colors.white,
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
@@ -213,7 +207,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.primaryDeep, AppColors.primary],
+                          colors: AppColors.isDark
+                              ? [const Color(0xFF008069), AppColors.primary]
+                              : [AppColors.primaryDeep, AppColors.primary],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
@@ -354,7 +350,7 @@ class _TopBar extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: AppColors.border,

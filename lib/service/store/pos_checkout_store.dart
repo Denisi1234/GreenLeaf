@@ -32,6 +32,21 @@ mixin PosCheckoutStore on ChangeNotifier {
   Future<void> _appendDebitEntry(DebitEntry entry);
   Future<void> _persistDebitEntries();
   Future<void> writeAutoBackupSnapshot();
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   Future<CompletedOrder> completeCashSale({
     required List<OrderLineItem> items,
@@ -237,6 +252,34 @@ mixin PosCheckoutStore on ChangeNotifier {
       _updateCartTotals();
       notifyListeners();
       unawaited(writeAutoBackupSnapshot());
+      unawaited(
+        recordAuditEvent(
+          module: AuditModule.sales,
+          action: 'sale.completed',
+          severity: appliedDiscount > 0
+              ? AuditSeverity.warning
+              : AuditSeverity.info,
+          entityType: 'Order',
+          entityId: order.id,
+          entityLabel: '${order.paymentMethod} • ${order.id}',
+          summary:
+              'Completed ${order.paymentMethod} sale for ${order.total.toStringAsFixed(0)} TSh (${order.lines.length} items${appliedDiscount > 0 ? ', discount ${appliedDiscount.toStringAsFixed(0)} TSh' : ''})',
+          afterValues: {
+            'Total': order.total.toStringAsFixed(2),
+            'Payment': order.paymentMethod,
+            'Items': '${order.lines.length}',
+            if (appliedDiscount > 0)
+              'Discount': appliedDiscount.toStringAsFixed(2),
+            if (customerName != null && customerName.trim().isNotEmpty)
+              'Customer': customerName.trim(),
+          },
+          metadata: {
+            'Register': registerName,
+            if (discountLabel != null && discountLabel.isNotEmpty)
+              'Discount Note': discountLabel,
+          },
+        ),
+      );
     } finally {
       _savingCheckout = false;
     }
@@ -250,14 +293,33 @@ mixin PosCheckoutStore on ChangeNotifier {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index == -1) return;
 
+    final order = _orders[index];
     final db = _cloudApi ?? _database;
     if (db is PosCloudDatabase) {
       await db.deleteOrder(orderId);
       await refreshFromServer();
+      unawaited(
+        recordAuditEvent(
+          module: AuditModule.sales,
+          action: 'sale.voided',
+          severity: AuditSeverity.critical,
+          entityType: 'Order',
+          entityId: order.id,
+          entityLabel: order.id,
+          summary:
+              'Voided ${order.paymentMethod} sale ${order.id} (${order.total.toStringAsFixed(0)} TSh)',
+          beforeValues: {
+            'Status': order.status,
+            'Total': order.total.toStringAsFixed(2),
+            'Payment': order.paymentMethod,
+            'Items': '${order.lines.length}',
+          },
+          afterValues: const {'Status': 'Voided'},
+        ),
+      );
       return;
     }
 
-    final order = _orders[index];
     final restoredDeltas = <String, double>{};
 
     // Restore stock
@@ -293,6 +355,27 @@ mixin PosCheckoutStore on ChangeNotifier {
       );
       await database.deleteOrder(orderId);
     }
+
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.sales,
+        action: 'sale.voided',
+        severity: AuditSeverity.critical,
+        entityType: 'Order',
+        entityId: order.id,
+        entityLabel: order.id,
+        summary:
+            'Voided ${order.paymentMethod} sale ${order.id} (${order.total.toStringAsFixed(0)} TSh) and restored stock',
+        beforeValues: {
+          'Status': order.status,
+          'Total': order.total.toStringAsFixed(2),
+          'Payment': order.paymentMethod,
+          if (order.customerName != null && order.customerName!.isNotEmpty)
+            'Customer': order.customerName!,
+        },
+        afterValues: const {'Status': 'Voided'},
+      ),
+    );
   }
 
   /// Removes the ledger charge created by a credit sale that is being voided
@@ -338,6 +421,19 @@ mixin PosCheckoutStore on ChangeNotifier {
               : null;
       addToCartQuantity(product, line.quantity, customPrice: customPrice);
     }
+
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.sales,
+        action: 'sale.reopened',
+        severity: AuditSeverity.warning,
+        entityType: 'Order',
+        entityId: order.id,
+        entityLabel: order.id,
+        summary:
+            'Reopened sale ${order.id} (${order.total.toStringAsFixed(0)} TSh) back into active cart',
+      ),
+    );
 
     // 3. Void the original order
     await voidOrder(orderId);

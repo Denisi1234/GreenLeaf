@@ -4,11 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../service/pos_local_store.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/app_theme_palette.dart';
 import '../../widgets/market_shared_widgets.dart';
 import '../change_password_page.dart';
 import '../settings_layout.dart';
 
-/// User account and device session settings pane.
+/// Clean, native Android/iOS Account settings pane supporting all app themes.
 class AccountSettingsPane extends StatefulWidget {
   const AccountSettingsPane({super.key});
 
@@ -40,7 +41,7 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
     }
   }
 
-  Future<void> _confirmSignOut(PosLocalStore store) async {
+  Future<void> _confirmSignOut() async {
     setState(() => _busy = true);
     try {
       final success = await showLogoutConfirmationDialog(context);
@@ -70,15 +71,14 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final palette = AppThemePalette.of(context);
     final lang = store.languageCode;
     String t(String en, String sw) => settingsText(lang, en, sw);
     final profile = store.profile;
+
     final owner = profile.ownerName.trim().isEmpty
         ? t('Not set', 'Haijawekwa')
         : profile.ownerName;
-    final role = profile.roleTitle.trim().isEmpty
-        ? t('Business owner', 'Mmiliki wa biashara')
-        : profile.roleTitle;
     final storeName = profile.storeName.trim().isEmpty
         ? t('Not set', 'Haijawekwa')
         : profile.storeName;
@@ -89,127 +89,228 @@ class _AccountSettingsPaneState extends State<AccountSettingsPane> {
         ? t('Not set', 'Haijawekwa')
         : profile.emailAddress;
 
+    final dangerColor =
+        palette.isDark ? const Color(0xFFF87171) : AppColors.dangerDeep;
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 28),
       children: [
-        SettingsCard(
-          icon: Icons.badge_outlined,
-          title: t('Signed-in profile', 'Wasifu uliounganishwa'),
-          description: t('Details linked to this device session.',
-              'Taarifa zinazohusiana na kikao cha kifaa hiki.'),
+        _SectionLabel(t('PROFILE', 'WASIFU'), palette),
+        _NativeGroupCard(
+          palette: palette,
           children: [
-            SettingsInfoRow(label: t('Owner', 'Mmiliki'), value: owner),
-            const Divider(height: 1),
-            SettingsInfoRow(label: t('Role', 'Wajibu'), value: role),
-            const Divider(height: 1),
-            SettingsInfoRow(label: t('Store', 'Duka'), value: storeName),
-            const Divider(height: 1),
-            SettingsInfoRow(label: t('Phone', 'Simu'), value: phone),
-            const Divider(height: 1),
-            SettingsInfoRow(label: t('Email', 'Barua pepe'), value: email),
+            _InfoRow(palette: palette, label: t('Owner', 'Mmiliki'), value: owner),
+            Divider(height: 1, indent: 16, color: palette.divider),
+            _InfoRow(palette: palette, label: t('Store', 'Duka'), value: storeName),
+            Divider(height: 1, indent: 16, color: palette.divider),
+            _InfoRow(palette: palette, label: t('Phone', 'Simu'), value: phone),
+            Divider(height: 1, indent: 16, color: palette.divider),
+            _InfoRow(palette: palette, label: t('Email', 'Barua pepe'), value: email),
           ],
         ),
-        SettingsCard(
-          icon: Icons.lock_outline_rounded,
-          title: t('Password & security', 'Nenosiri na usalama'),
-          description: t(
-            'Use a password with at least 6 characters.',
-            'Tumia nenosiri lenye herufi 6 au zaidi.',
-          ),
+
+        const SizedBox(height: 22),
+
+        _SectionLabel(t('SECURITY', 'USALAMA'), palette),
+        _NativeGroupCard(
+          palette: palette,
           children: [
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: FilledButton.icon(
-                onPressed: () => _changePassword(store),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.kpiSkyBg,
-                  foregroundColor: AppColors.kpiSky,
-                  side: BorderSide.none,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: AppCorners.control,
-                  ),
-                ),
-                icon: const Icon(Icons.key_rounded, size: 18),
-                label: Text(
-                  t('Change password', 'Badilisha nenosiri'),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+            _ActionRow(
+              palette: palette,
+              icon: Icons.key_outlined,
+              title: t('Change password', 'Badilisha nenosiri'),
+              onTap: () => _changePassword(store),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 22),
+
+        _SectionLabel(t('SESSION & ACCOUNT', 'KIKAO NA AKAUNTI'), palette),
+        _NativeGroupCard(
+          palette: palette,
+          children: [
+            _ActionRow(
+              palette: palette,
+              icon: Icons.logout_rounded,
+              title: t('Sign out', 'Ondoka'),
+              textColor: dangerColor,
+              iconColor: dangerColor,
+              busy: _busy,
+              onTap: _busy ? null : _confirmSignOut,
+            ),
+            Divider(height: 1, indent: 52, color: palette.divider),
+            _ActionRow(
+              palette: palette,
+              icon: Icons.delete_outline_rounded,
+              title: t('Delete account & data', 'Futa akaunti na data'),
+              textColor: dangerColor,
+              iconColor: dangerColor,
+              external: true,
+              onTap: () => _openDeleteAccount(lang),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text, this.palette);
+  final String text;
+  final AppThemePalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
+      child: Text(
+        text,
+        style: AppTypography.label.copyWith(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: palette.textMuted,
+        ),
+      ),
+    );
+  }
+}
+
+class _NativeGroupCard extends StatelessWidget {
+  const _NativeGroupCard({required this.palette, required this.children});
+  final AppThemePalette palette;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: palette.border),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(children: children),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.palette,
+    required this.label,
+    required this.value,
+  });
+
+  final AppThemePalette palette;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 50),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: AppTypography.bodyMain.copyWith(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: palette.ink,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodySmall.copyWith(
+                  color: palette.textMuted,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ],
         ),
-        SettingsCard(
-          icon: Icons.logout_rounded,
-          title: t('Session & account', 'Kikao na akaunti'),
-          description: t(
-            'End your session on this device or request permanent account deletion.',
-            'Maliza kikao chako kwenye kifaa hiki au omba kufuta akaunti kabisa.',
+      ),
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.palette,
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.textColor,
+    this.iconColor,
+    this.external = false,
+    this.busy = false,
+  });
+
+  final AppThemePalette palette;
+  final IconData icon;
+  final String title;
+  final VoidCallback? onTap;
+  final Color? textColor;
+  final Color? iconColor;
+  final bool external;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 54),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: iconColor ?? palette.textMuted),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.bodyMain.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: textColor ?? palette.ink,
+                  ),
+                ),
+              ),
+              if (busy)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: textColor ?? palette.primary,
+                  ),
+                )
+              else
+                Icon(
+                  external
+                      ? Icons.open_in_new_rounded
+                      : Icons.chevron_right_rounded,
+                  size: external ? 18 : 20,
+                  color: palette.textMuted,
+                ),
+            ],
           ),
-          children: [
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                SizedBox(
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.dangerDeep,
-                      backgroundColor: AppColors.surface,
-                      side: BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                    ),
-                    onPressed: _busy ? null : () => _confirmSignOut(store),
-                    icon: _busy
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.dangerDeep,
-                            ),
-                          )
-                        : const Icon(Icons.logout_rounded, size: 18),
-                    label: Text(
-                      t('Sign out', 'Ondoka'),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.dangerDeep,
-                      backgroundColor: AppColors.surface,
-                      side: const BorderSide(color: AppColors.dangerBorder),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                    ),
-                    onPressed: () => _openDeleteAccount(lang),
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                    label: Text(
-                      t('Delete account & data', 'Futa akaunti na data'),
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
-      ],
+      ),
     );
   }
 }

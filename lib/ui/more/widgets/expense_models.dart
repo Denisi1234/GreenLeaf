@@ -57,14 +57,14 @@ class CategoryStyle {
     'Operations': CategoryStyle(Icons.settings_outlined, AppColors.primary),
     'Inventory': CategoryStyle(Icons.inventory_2_outlined, AppColors.toneTeal),
     'Rent': CategoryStyle(Icons.home_work_outlined, AppColors.ink),
-    'Utilities': CategoryStyle(Icons.bolt_outlined, AppColors.warning),
+    'Utilities': const CategoryStyle(Icons.bolt_outlined, AppColors.warning),
     'Marketing': CategoryStyle(Icons.campaign_outlined, AppColors.toneIndigo),
     'Transport':
         CategoryStyle(Icons.local_shipping_outlined, AppColors.toneViolet),
     'Office':
         CategoryStyle(Icons.business_center_outlined, AppColors.primaryDeep),
     'Supplies':
-        CategoryStyle(Icons.shopping_basket_outlined, AppColors.success),
+        const CategoryStyle(Icons.shopping_basket_outlined, AppColors.success),
     'Maintenance': CategoryStyle(Icons.build_outlined, AppColors.textMuted),
   };
 

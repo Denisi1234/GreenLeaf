@@ -271,8 +271,8 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                 height: 4,
                 decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius:
-                        BorderRadius.all(Radius.circular(AppRadius.pill)))),
+                    borderRadius: const BorderRadius.all(
+                        Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Sort by', 'Panga kwa'),
                 style: AppTypography.cardHeader),
@@ -316,8 +316,8 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                 height: 4,
                 decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius:
-                        BorderRadius.all(Radius.circular(AppRadius.pill)))),
+                    borderRadius: const BorderRadius.all(
+                        Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Export expenses', 'Hamisha matumizi'),
                 style: AppTypography.cardHeader),
@@ -442,8 +442,8 @@ class _ExpensesTrackingPageState extends State<ExpensesTrackingPage> {
                 height: 4,
                 decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius:
-                        BorderRadius.all(Radius.circular(AppRadius.pill)))),
+                    borderRadius: const BorderRadius.all(
+                        Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(expenseDual(strings, 'Select period', 'Chagua kipindi'),
                 style: AppTypography.cardHeader),

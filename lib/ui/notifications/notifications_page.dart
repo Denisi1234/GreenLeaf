@@ -59,8 +59,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _NotificationItem(
           id: id,
           icon: Icons.payments_outlined,
-          iconColor: AppColors.success,
-          iconBackground: AppColors.kpiSuccessBg,
+          iconColor: AppColors.ink,
+          iconBackground: AppColors.surfaceSecondary,
           title: context.tr('Sale #{p0}', args: {'p0': order.id}),
           message: context.tr('Sh {p0} completed by {p1}', args: {'p0': formatCurrency(order.total), 'p1': order.cashierName}),
           timeLabel: _formatTime(parsedDate),
@@ -80,8 +80,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _NotificationItem(
           id: id,
           icon: Icons.cancel_outlined,
-          iconColor: AppColors.danger,
-          iconBackground: AppColors.kpiDangerBg,
+          iconColor: AppColors.ink,
+          iconBackground: AppColors.surfaceSecondary,
           title: context.tr('Out of Stock: {p0}', args: {'p0': item.name}),
           message: context.tr('{p0} has reached 0 units in stock. Restock needed.', args: {'p0': item.name}),
           timeLabel: context.tr('Alert'),
@@ -101,8 +101,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _NotificationItem(
           id: id,
           icon: Icons.warning_amber_rounded,
-          iconColor: AppColors.warning,
-          iconBackground: AppColors.kpiAmberBg,
+          iconColor: AppColors.ink,
+          iconBackground: AppColors.surfaceSecondary,
           title: context.tr('Low Stock: {p0}', args: {'p0': item.name}),
           message: context.tr('Only {p0} unit(s) remaining for {p1}.', args: {
             'p0': formatStockWithUnit(item.stockCount, item.unit),
@@ -125,8 +125,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         _NotificationItem(
           id: id,
           icon: Icons.account_balance_wallet_outlined,
-          iconColor: AppColors.kpiSky,
-          iconBackground: AppColors.kpiSkyBg,
+          iconColor: AppColors.ink,
+          iconBackground: AppColors.surfaceSecondary,
           title: context.tr('Pending Debt: {p0}', args: {'p0': customer.name}),
           message: context.tr('{p0} owes Sh {p1} in unpaid credit.', args: {'p0': customer.name, 'p1': formatCurrency(customer.debitBalance)}),
           timeLabel: 'Pending',

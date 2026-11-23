@@ -345,7 +345,7 @@ class _ChocolateArt extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [AppColors.ink, AppColors.primary],
                   ),
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     bottomRight: Radius.circular(AppRadius.sharp),
                   ),

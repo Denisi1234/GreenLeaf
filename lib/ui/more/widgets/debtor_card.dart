@@ -98,8 +98,8 @@ class DebtorCard extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: AppColors.surfaceSecondary,
-                      borderRadius:
-                          BorderRadius.all(Radius.circular(AppRadius.sharp)),
+                      borderRadius: const BorderRadius.all(
+                          Radius.circular(AppRadius.sharp)),
                     ),
                     child: Text(
                       customer.initials,
@@ -334,7 +334,7 @@ class LedgerMetric extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.all(Radius.circular(AppRadius.sharp)),
+        borderRadius: const BorderRadius.all(Radius.circular(AppRadius.sharp)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

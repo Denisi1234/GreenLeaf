@@ -77,7 +77,7 @@ class ReportToolbar extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surfaceSecondary,
                   borderRadius:
-                      BorderRadius.all(Radius.circular(AppRadius.input)),
+                      const BorderRadius.all(Radius.circular(AppRadius.input)),
                 ),
                 child: IconButton(
                   tooltip: context.tr('Show columns'),
@@ -108,8 +108,8 @@ class ReportToolbar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceSecondary,
-                        borderRadius:
-                            BorderRadius.all(Radius.circular(AppRadius.input)),
+                        borderRadius: const BorderRadius.all(
+                            Radius.circular(AppRadius.input)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -174,7 +174,7 @@ class ReportToolbar extends StatelessWidget {
                             borderRadius: BorderRadius.all(
                                 Radius.circular(AppRadius.input))),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(
+                          borderRadius: const BorderRadius.all(
                               Radius.circular(AppRadius.input)),
                           borderSide: BorderSide(color: AppColors.border),
                         ),

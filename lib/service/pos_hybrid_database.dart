@@ -30,10 +30,40 @@ class PosHybridDatabase extends PosLocalDatabase {
   bool _syncAgain = false;
   bool _prepared = false;
   bool _disposed = false;
+  int _lastKnownRevision = -1;
 
   void Function()? onSynced;
 
   bool get isSyncing => _syncing;
+
+  /// Lightweight real-time sync check (~200 bytes): pulls only when another
+  /// device bumped the store revision, or flushes pending local writes.
+  Future<bool> pollRevisionAndSync() async {
+    if (_disposed || _syncing) return false;
+    if (api.token == null || api.token!.isEmpty) return false;
+    api.activeStoreId = storeId;
+    await prepare();
+
+    final hasPending = await pendingCount() > 0;
+    final status = await api.fetchSyncRevision();
+    if (status == null) {
+      if (hasPending) {
+        await syncNow(pull: false);
+      }
+      return false;
+    }
+
+    final changed =
+        _lastKnownRevision >= 0 && status.revision != _lastKnownRevision;
+    final firstCheck = _lastKnownRevision < 0;
+    _lastKnownRevision = status.revision;
+
+    if (hasPending || changed || firstCheck) {
+      await syncNow(pull: changed || firstCheck);
+      return changed;
+    }
+    return false;
+  }
 
   Future<void> prepare() async {
     if (_prepared) return;
@@ -325,6 +355,14 @@ class PosHybridDatabase extends PosLocalDatabase {
           await _uploadImages(row),
           idempotencyKey: idempotencyKey,
         );
+      case 'post':
+        final row = Map<String, Object?>.from(payload as Map);
+        await api.request(
+          'POST',
+          resource!,
+          body: row,
+          idempotencyKey: idempotencyKey,
+        );
       case 'delete':
         await api.delete(
           resource!,
@@ -506,6 +544,31 @@ class PosHybridDatabase extends PosLocalDatabase {
         storeId,
       );
     });
+    await pullOptional('audit-logs', _mergeAuditLogsLocal);
+  }
+
+  Future<void> _mergeAuditLogsLocal(List<Map<String, Object?>> rows) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      for (final r in rows) {
+        await txn.insert(
+          'audit_logs',
+          {...r, 'store_id': storeId},
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+    });
+  }
+
+  @override
+  Future<void> insertAuditLog(Map<String, Object?> row) async {
+    await super.insertAuditLog(row);
+    await _enqueue(
+      kind: 'post',
+      resource: 'audit-logs',
+      recordId: row['id']?.toString(),
+      payload: row,
+    );
   }
 
   Future<void> _replaceSuppliersLocal(List<Map<String, Object?>> rows) async {

@@ -58,7 +58,7 @@ class CustomerCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surfaceSecondary,
                   borderRadius:
-                      BorderRadius.all(Radius.circular(AppRadius.sharp)),
+                      const BorderRadius.all(Radius.circular(AppRadius.sharp)),
                 ),
                 child: Text(
                   customer.initials,
@@ -201,7 +201,7 @@ class _MetricChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(
           color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.all(Radius.circular(6)),
+          borderRadius: const BorderRadius.all(Radius.circular(6)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

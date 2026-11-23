@@ -1,17 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
+import '../widgets/app_theme_palette.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'widgets/rate_app_dialog.dart';
 
-/// Production-grade Help & Support center with direct merchant support
-/// channels, real expandable POS guides, and one-tap diagnostic reporting.
+/// Clean, native Android/iOS Help & Support screen supporting all app themes.
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
 
@@ -31,39 +30,35 @@ class HelpSupportPage extends StatelessWidget {
     }
   }
 
-  String _buildDiagnosticSummary(PosLocalStore store) {
+  String _diagnosticSummary(PosLocalStore store) {
     final storeName = store.profile.storeName.trim().isNotEmpty
         ? store.profile.storeName.trim()
         : 'Aza POS Store';
-    final syncMode = store.cloudApi != null ? 'Cloud + Local' : 'Local Only';
     return [
-      'Aza POS Support Diagnostics',
-      'App Version: $_appVersion',
-      'Platform: ${_platformLabel()}',
+      'Aza POS v$_appVersion (${_platformLabel()})',
       'Store: $storeName',
-      'Sync: $syncMode',
-      'Items: ${store.inventory.length} | Sales: ${store.orders.length} | Customers: ${store.customers.length}',
+      'Items: ${store.inventory.length} | Sales: ${store.orders.length}',
     ].join('\n');
   }
 
-  Future<void> _openWhatsAppSupport(
+  Future<void> _openWhatsApp(
     BuildContext context,
     PosLocalStore store,
     bool isSwahili, {
-    bool includeDiagnostics = false,
+    bool reportIssue = false,
   }) async {
     final storeName = store.profile.storeName.trim();
-    final intro = isSwahili
-        ? 'Habari timu ya msaada ya Aza POS${storeName.isNotEmpty ? ' ($storeName)' : ''}, nahitaji msaada:'
-        : 'Hello Aza POS Support${storeName.isNotEmpty ? ' ($storeName)' : ''}, I need assistance:';
-    final text = includeDiagnostics
-        ? '$intro\n\n${_buildDiagnosticSummary(store)}'
-        : intro;
+    final intro = reportIssue
+        ? (isSwahili
+            ? 'Habari Aza POS, naripoti tatizo:'
+            : 'Hello Aza POS Support, I would like to report an issue:')
+        : (isSwahili
+            ? 'Habari timu ya msaada ya Aza POS${storeName.isNotEmpty ? ' ($storeName)' : ''}, nahitaji msaada:'
+            : 'Hello Aza POS Support${storeName.isNotEmpty ? ' ($storeName)' : ''}, I need help:');
+    final text =
+        reportIssue ? '$intro\n\n${_diagnosticSummary(store)}' : intro;
     final uri = Uri.https('wa.me', '/$_supportWhatsApp', {'text': text});
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && context.mounted) {
       showMarketNotice(
         context,
@@ -76,7 +71,7 @@ class HelpSupportPage extends StatelessWidget {
     }
   }
 
-  Future<void> _openEmailSupport(
+  Future<void> _openEmail(
     BuildContext context,
     PosLocalStore store,
     bool isSwahili,
@@ -84,25 +79,21 @@ class HelpSupportPage extends StatelessWidget {
     final storeName = store.profile.storeName.trim();
     final subject = storeName.isNotEmpty
         ? 'Aza POS Support — $storeName'
-        : 'Aza POS Support Request';
-    final body =
-        '${isSwahili ? 'Eleza tatizo au swali lako hapa:' : 'Describe your issue or question here:'}\n\n\n---\n${_buildDiagnosticSummary(store)}';
+        : 'Aza POS Support';
+    final body = '\n\n---\n${_diagnosticSummary(store)}';
     final uri = Uri(
       scheme: 'mailto',
       path: _supportEmail,
       query:
           'subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}',
     );
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && context.mounted) {
       showMarketNotice(
         context,
         title: isSwahili ? 'Hitilafu' : 'Error',
         message: isSwahili
-            ? 'Imeshindwa kufungua programu ya barua pepe.'
+            ? 'Imeshindwa kufungua barua pepe.'
             : 'Could not open email app.',
         type: MarketNoticeType.error,
       );
@@ -120,106 +111,88 @@ class HelpSupportPage extends StatelessWidget {
         title: isSwahili ? 'Hitilafu' : 'Error',
         message: isSwahili
             ? 'Imeshindwa kufungua kipiga simu.'
-            : 'Could not open phone dialer.',
+            : 'Could not open dialer.',
         type: MarketNoticeType.error,
       );
     }
   }
 
-  Future<void> _copyDiagnostics(
-    BuildContext context,
-    PosLocalStore store,
-    bool isSwahili,
-  ) async {
-    await Clipboard.setData(
-      ClipboardData(text: _buildDiagnosticSummary(store)),
-    );
-    if (!context.mounted) return;
-    showMarketNotice(
-      context,
-      title: isSwahili ? 'Imenakiliwa' : 'Copied',
-      message: isSwahili
-          ? 'Taarifa za uchunguzi zimenakiliwa.'
-          : 'Diagnostic details copied to clipboard.',
-      type: MarketNoticeType.success,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final palette = AppThemePalette.of(context);
     final isSwahili = store.languageCode == 'sw';
     String t(String en, String sw) => isSwahili ? sw : en;
 
-    final guides = <_FaqItem>[
-      _FaqItem(
+    final topics = <_HelpTopic>[
+      _HelpTopic(
         question: t(
-          'How do I sell items by weight or measurement (kg, L, m)?',
-          'Ninawezaje kuuza bidhaa kwa kipimo (kg, L, m)?',
+          'Selling by weight or measurement (kg, L, m)',
+          'Kuuza kwa kipimo (kg, L, m)',
         ),
         answer: t(
-          'When adding or editing an item in the Items tab, choose its unit (e.g. kg, L, m) and enable fractional selling. On the Sales screen, tapping that item opens a quick measurement calculator where you can enter either quantity or customer budget.',
-          'Unapoongeza au kuhariri bidhaa kwenye ukurasa wa Bidhaa, chagua kipimo chake (mf. kg, L, m) na uwashe uuzaji wa sehemu. Kwenye ukurasa wa Mauzo, kugusa bidhaa hiyo hufungua kikokotoo cha haraka cha kipimo au kiasi cha fedha.',
+          'When adding or editing an item, choose its unit (kg, L, m) and enable fractional selling. Tapping the item on the Sales screen opens a quick calculator for quantity or price.',
+          'Unapoongeza au kuhariri bidhaa, chagua kipimo chake (kg, L, m) na uwashe uuzaji wa sehemu. Kugusa bidhaa hiyo kwenye Mauzo hufungua kikokotoo cha kipimo au bei.',
         ),
       ),
-      _FaqItem(
+      _HelpTopic(
         question: t(
-          'How do I connect a Bluetooth thermal receipt printer?',
-          'Ninawezaje kuunganisha printa ya risiti ya Bluetooth?',
+          'Connecting a Bluetooth thermal printer',
+          'Kuunganisha printa ya Bluetooth',
         ),
         answer: t(
-          'First pair your 58mm or 80mm thermal printer in your Android Bluetooth settings (usually PIN 0000 or 1234). Then open any completed sale or Settings → Receipts, tap Print, grant Bluetooth permission when prompted, and select your paired printer.',
-          'Kwanza unganisha (pair) printa yako ya 58mm au 80mm kwenye mipangilio ya Bluetooth ya simu (PIN mara nyingi ni 0000 au 1234). Kisha fungua mauzo au Mipangilio → Risiti, gusa Chapisha, ruhusu Bluetooth, na chagua printa yako.',
+          'Pair your 58mm or 80mm thermal printer in Android Bluetooth settings first (PIN is usually 0000 or 1234). Then tap Print on any receipt and pick your paired printer.',
+          'Unganisha (pair) printa yako ya 58mm au 80mm kwenye Bluetooth ya simu kwanza (PIN mara nyingi ni 0000 au 1234). Kisha gusa Chapisha kwenye risiti na chagua printa yako.',
         ),
       ),
-      _FaqItem(
+      _HelpTopic(
         question: t(
-          'What happens if my internet goes offline while selling?',
-          'Nini hutokea mtandao ukikatika wakati ninauza?',
+          'Offline sales & automatic backup',
+          'Mauzo bila mtandao na hifadhi ya kiotomatiki',
         ),
         answer: t(
-          'Aza POS works 100% offline. Every sale, stock change, and customer payment is saved immediately to your phone’s local database and automatically synced in the background as soon as internet returns.',
-          'Aza POS inafanya kazi bila mtandao kwa asilimia 100. Kila mauzo, mabadiliko ya stoo, na malipo ya wateja huhifadhiwa mara moja kwenye simu na kusawazishwa kiotomatiki mtandao ukirudi.',
+          'Aza POS works fully offline. Every sale and stock update saves locally right away and syncs automatically in the background once internet returns.',
+          'Aza POS inafanya kazi bila mtandao. Kila mauzo na mabadiliko ya stoo huhifadhiwa kwenye simu mara moja na kusawazishwa kiotomatiki mtandao ukirudi.',
         ),
       ),
-      _FaqItem(
+      _HelpTopic(
         question: t(
-          'How do I record credit sales and customer repayments?',
-          'Ninawezaje kurekodi mauzo ya mkopo na malipo ya madeni?',
+          'Credit sales & customer repayments',
+          'Mauzo ya mkopo na malipo ya madeni',
         ),
         answer: t(
-          'During checkout on the Sales screen, attach the customer and choose Credit as the payment method. To record partial or full repayments later, go to More → Debtors and select the customer.',
-          'Wakati wa malipo kwenye Mauzo, chagua mteja na chagua Mkopo kama njia ya malipo. Kurekodi malipo ya deni baadaye, nenda Zaidi → Wadaiwa na chagua mteja husika.',
+          'Attach a customer during checkout and choose Credit as the payment method. Record repayments anytime under More → Debtors.',
+          'Chagua mteja wakati wa malipo na chagua Mkopo. Rekodi malipo ya madeni wakati wowote chini ya Zaidi → Wadaiwa.',
         ),
       ),
-      _FaqItem(
+      _HelpTopic(
         question: t(
-          'How do I set up the automatic Daily SMS Sales Report?',
-          'Ninawezaje kuwasha Ripoti ya SMS ya Mauzo ya kila siku?',
+          'Daily SMS sales summary',
+          'Ripoti ya SMS ya mauzo ya kila siku',
         ),
         answer: t(
-          'Go to Settings → Data → Daily SMS report, enter the owner’s phone number, choose your preferred evening delivery time (EAT), and switch on Send automatically. You can also tap Send daily report via SMS anytime.',
-          'Nenda Mipangilio → Data → Ripoti ya SMS ya kila siku, weka namba ya simu ya mmiliki, chagua muda wa jioni (EAT), kisha washa Tuma kiotomatiki. Unaweza pia kutuma ripoti mara moja wakati wowote.',
+          'Open Settings → Data → Daily SMS report to set the owner phone number, choose an evening time, and enable automatic sending.',
+          'Fungua Mipangilio → Data → Ripoti ya SMS ya kila siku kuweka namba ya mmiliki, muda wa jioni, na kuwasha utumaji wa kiotomatiki.',
         ),
       ),
-      _FaqItem(
+      _HelpTopic(
         question: t(
-          'How do I manage cash register shifts and daily closing?',
-          'Ninawezaje kusimamia zamu za kasha na kufunga siku?',
+          'Cash register shifts & closing',
+          'Zamu za kasha na kufunga siku',
         ),
         answer: t(
-          'Open More → Advanced tools → Cash register to start a shift with your opening float, record cash-in or cash-out movements during the day, and close the shift to see expected vs. counted cash variance.',
-          'Fungua Zaidi → Vipengele vya juu → Kasha la pesa kuanza zamu na salio la kuanzia, rekodi pesa inayoingia au kutoka, na funga zamu mwisho wa siku kuona tofauti ya hesabu.',
+          'Go to More → Advanced tools → Cash register to open a shift with your starting cash, log cash movements, and review variance at closing.',
+          'Nenda Zaidi → Vipengele vya juu → Kasha la pesa kufungua zamu, kurekodi miamala ya pesa, na kuona tofauti wakati wa kufunga.',
         ),
       ),
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
+      backgroundColor: palette.pageBackground,
       body: Column(
         children: [
           MarketPageHeader(
-            title: t('Help & Support', 'Msaada na Huduma'),
+            title: t('Help & Support', 'Msaada'),
             showBackButton: true,
             centerTitle: false,
             titleSize: 20,
@@ -231,218 +204,83 @@ class HelpSupportPage extends StatelessWidget {
               top: false,
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 680),
+                  constraints: const BoxConstraints(maxWidth: 640),
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
                     children: [
-                      // 1. Direct Contact Channels
-                      _SectionLabel(t('CONTACT SUPPORT', 'WASILIANA NA MSAADA')),
-                      _GroupedCard(
+                      _GroupHeader(t('SUPPORT', 'MSAADA'), palette),
+                      _NativeCard(
+                        palette: palette,
                         children: [
-                          _ActionRow(
+                          _NativeRow(
+                            palette: palette,
                             icon: Icons.chat_bubble_outline_rounded,
-                            title: t('WhatsApp Support', 'Msaada wa WhatsApp'),
-                            trailingText: _supportPhoneDisplay,
-                            onTap: () => _openWhatsAppSupport(
-                              context,
-                              store,
-                              isSwahili,
-                            ),
+                            title: 'WhatsApp',
+                            detail: _supportPhoneDisplay,
+                            onTap: () =>
+                                _openWhatsApp(context, store, isSwahili),
                           ),
-                          Divider(
-                            height: 1,
-                            indent: 52,
-                            color: AppColors.divider,
-                          ),
-                          _ActionRow(
+                          _IndentedDivider(palette),
+                          _NativeRow(
+                            palette: palette,
                             icon: Icons.call_outlined,
-                            title: t('Call Support Desk', 'Piga Simu Msaada'),
-                            trailingText: _supportPhoneDial,
+                            title: t('Call', 'Piga simu'),
+                            detail: _supportPhoneDial,
                             onTap: () => _callSupport(context, isSwahili),
                           ),
-                          Divider(
-                            height: 1,
-                            indent: 52,
-                            color: AppColors.divider,
-                          ),
-                          _ActionRow(
+                          _IndentedDivider(palette),
+                          _NativeRow(
+                            palette: palette,
                             icon: Icons.email_outlined,
-                            title: t('Email Support', 'Tuma Barua Pepe'),
-                            trailingText: _supportEmail,
-                            onTap: () => _openEmailSupport(
+                            title: t('Email', 'Barua pepe'),
+                            detail: _supportEmail,
+                            onTap: () => _openEmail(context, store, isSwahili),
+                          ),
+                          _IndentedDivider(palette),
+                          _NativeRow(
+                            palette: palette,
+                            icon: Icons.bug_report_outlined,
+                            title: t('Report a problem', 'Ripoti tatizo'),
+                            onTap: () => _openWhatsApp(
                               context,
                               store,
                               isSwahili,
+                              reportIssue: true,
                             ),
                           ),
-                          Divider(
-                            height: 1,
-                            indent: 52,
-                            color: AppColors.divider,
-                          ),
-                          _ActionRow(
+                          _IndentedDivider(palette),
+                          _NativeRow(
+                            palette: palette,
                             icon: Icons.star_outline_rounded,
-                            title: t(
-                              'Rate & Review Aza POS',
-                              'Kadiria Aza POS',
-                            ),
+                            title: t('Rate & review', 'Kadiria programu'),
                             onTap: () => showRateAppDialog(context),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 22),
 
-                      // 2. Real Merchant Knowledge Base / Troubleshooting
-                      _SectionLabel(
-                        t('COMMON QUESTIONS & GUIDES', 'MASWALI NA MWONGOZO'),
-                      ),
-                      _GroupedCard(
+                      _GroupHeader(t('HELP TOPICS', 'MWONGOZO'), palette),
+                      _NativeCard(
+                        palette: palette,
                         children: [
-                          for (var i = 0; i < guides.length; i++) ...[
-                            if (i > 0)
-                              Divider(
-                                height: 1,
-                                color: AppColors.divider,
-                              ),
-                            _FaqTile(item: guides[i]),
+                          for (var i = 0; i < topics.length; i++) ...[
+                            if (i > 0) Divider(height: 1, color: palette.divider),
+                            _TopicTile(topic: topics[i], palette: palette),
                           ],
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 22),
 
-                      // 3. Report an Issue with Real Diagnostics
-                      _SectionLabel(
-                        t('TROUBLESHOOTING & DIAGNOSTICS', 'UCHUNGUZI NA TATIZO'),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.standard),
-                          border: Border.all(color: AppColors.border),
-                          boxShadow: AppShadows.soft,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              t(
-                                'Need technical help?',
-                                'Unahitaji msaada wa kiufundi?',
-                              ),
-                              style: AppTypography.bodyMain.copyWith(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              t(
-                                'Send a problem report with your app version and store diagnostics so our team can resolve it faster.',
-                                'Tuma ripoti ya tatizo pamoja na taarifa za programu ili timu yetu ikusaidie haraka zaidi.',
-                              ),
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textMuted,
-                                height: 1.45,
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 48,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () => _copyDiagnostics(
-                                        context,
-                                        store,
-                                        isSwahili,
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: AppColors.ink,
-                                        backgroundColor: AppColors.surface,
-                                        side: BorderSide(
-                                          color: AppColors.border,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.pill,
-                                          ),
-                                        ),
-                                      ),
-                                      icon: const Icon(
-                                        Icons.copy_outlined,
-                                        size: 18,
-                                      ),
-                                      label: Text(
-                                        t('Copy info', 'Nakili taarifa'),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 14.5,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 48,
-                                    child: FilledButton.icon(
-                                      onPressed: () => _openWhatsAppSupport(
-                                        context,
-                                        store,
-                                        isSwahili,
-                                        includeDiagnostics: true,
-                                      ),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.pill,
-                                          ),
-                                        ),
-                                      ),
-                                      icon: const Icon(
-                                        Icons.bug_report_outlined,
-                                        size: 18,
-                                      ),
-                                      label: Text(
-                                        t('Report issue', 'Ripoti tatizo'),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 14.5,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Quiet support hours footer
                       Text(
                         t(
-                          'Support hours: Monday – Saturday, 08:00 – 20:00 EAT (UTC+3)\nAza POS v$_appVersion',
-                          'Saa za msaada: Jumatatu – Jumamosi, 08:00 – 20:00 EAT (UTC+3)\nAza POS v$_appVersion',
+                          'Mon – Sat · 08:00 – 20:00 EAT\nAza POS v$_appVersion',
+                          'Jumatatu – Jumamosi · 08:00 – 20:00 EAT\nAza POS v$_appVersion',
                         ),
                         textAlign: TextAlign.center,
                         style: AppTypography.caption.copyWith(
-                          color: AppColors.textMuted,
+                          color: palette.textMuted,
                           height: 1.5,
                         ),
                       ),
@@ -458,29 +296,31 @@ class HelpSupportPage extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-  final String text;
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader(this.label, this.palette);
+  final String label;
+  final AppThemePalette palette;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
       child: Text(
-        text,
+        label,
         style: AppTypography.label.copyWith(
           fontSize: 11.5,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
-          color: AppColors.textMuted,
+          color: palette.textMuted,
         ),
       ),
     );
   }
 }
 
-class _GroupedCard extends StatelessWidget {
-  const _GroupedCard({required this.children});
+class _NativeCard extends StatelessWidget {
+  const _NativeCard({required this.palette, required this.children});
+  final AppThemePalette palette;
   final List<Widget> children;
 
   @override
@@ -488,10 +328,9 @@ class _GroupedCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.standard),
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppShadows.soft,
+        border: Border.all(color: palette.border),
       ),
       child: Material(
         color: Colors.transparent,
@@ -501,17 +340,29 @@ class _GroupedCard extends StatelessWidget {
   }
 }
 
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
+class _IndentedDivider extends StatelessWidget {
+  const _IndentedDivider(this.palette);
+  final AppThemePalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Divider(height: 1, indent: 52, color: palette.divider);
+  }
+}
+
+class _NativeRow extends StatelessWidget {
+  const _NativeRow({
+    required this.palette,
     required this.icon,
     required this.title,
     required this.onTap,
-    this.trailingText,
+    this.detail,
   });
 
+  final AppThemePalette palette;
   final IconData icon;
   final String title;
-  final String? trailingText;
+  final String? detail;
   final VoidCallback onTap;
 
   @override
@@ -521,30 +372,30 @@ class _ActionRow extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 54),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: AppColors.textMain),
+              Icon(icon, size: 22, color: palette.textMuted),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   title,
                   style: AppTypography.bodyMain.copyWith(
                     fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
+                    fontWeight: FontWeight.w500,
+                    color: palette.ink,
                   ),
                 ),
               ),
-              if (trailingText != null) ...[
+              if (detail != null) ...[
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    trailingText!,
+                    detail!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.caption.copyWith(
-                      color: AppColors.textMuted,
+                      color: palette.textMuted,
                     ),
                   ),
                 ),
@@ -553,7 +404,7 @@ class _ActionRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.textLight,
+                color: palette.textMuted,
               ),
             ],
           ),
@@ -563,15 +414,16 @@ class _ActionRow extends StatelessWidget {
   }
 }
 
-class _FaqItem {
-  const _FaqItem({required this.question, required this.answer});
+class _HelpTopic {
+  const _HelpTopic({required this.question, required this.answer});
   final String question;
   final String answer;
 }
 
-class _FaqTile extends StatelessWidget {
-  const _FaqTile({required this.item});
-  final _FaqItem item;
+class _TopicTile extends StatelessWidget {
+  const _TopicTile({required this.topic, required this.palette});
+  final _HelpTopic topic;
+  final AppThemePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -579,15 +431,15 @@ class _FaqTile extends StatelessWidget {
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        iconColor: AppColors.primaryDeep,
-        collapsedIconColor: AppColors.textLight,
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+        iconColor: palette.primary,
+        collapsedIconColor: palette.textMuted,
         title: Text(
-          item.question,
+          topic.question,
           style: AppTypography.bodyMedium.copyWith(
             fontSize: 14.5,
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink,
+            fontWeight: FontWeight.w500,
+            color: palette.ink,
             height: 1.3,
           ),
         ),
@@ -595,9 +447,9 @@ class _FaqTile extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              item.answer,
+              topic.answer,
               style: AppTypography.bodySmall.copyWith(
-                color: AppColors.textBody,
+                color: palette.textBody,
                 height: 1.5,
               ),
             ),

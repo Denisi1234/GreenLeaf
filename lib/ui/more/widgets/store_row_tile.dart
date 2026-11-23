@@ -64,7 +64,7 @@ class StoreRowTile extends StatelessWidget {
                                 horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: AppColors.kpiSuccessBg,
-                              borderRadius: BorderRadius.all(
+                              borderRadius: const BorderRadius.all(
                                   Radius.circular(AppRadius.pill)),
                             ),
                             child: Text(

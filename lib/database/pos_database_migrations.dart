@@ -292,6 +292,11 @@ Future<void> _upgradePosDatabase(
   if (oldVersion < 32) {
     await _ensureMeasurementColumns(db);
   }
+  if (oldVersion < 33) {
+    await db.execute(_auditLogsSchema);
+    await db.execute(_auditLogsSeqIndex);
+    await db.execute(_auditLogsTsIndex);
+  }
 }
 
 Future<void> _ensureMeasurementColumns(Database db) async {
@@ -367,6 +372,9 @@ Future<void> _onOpenPosDatabase(Database db) async {
   await db.execute(_fixedAssetsSchema);
   await db.execute(_bankTransactionsSchema);
   await db.execute(_suspendedSalesSchema);
+  await db.execute(_auditLogsSchema);
+  await db.execute(_auditLogsSeqIndex);
+  await db.execute(_auditLogsTsIndex);
   await _ensureMeasurementColumns(db);
 }
 

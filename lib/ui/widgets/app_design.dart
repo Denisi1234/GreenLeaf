@@ -5,10 +5,11 @@ import '../business_category_config.dart';
 import 'app_theme_palette.dart';
 
 /// Shared visual language for sales, management and reporting workspaces.
-/// Driven dynamically by the active [AppThemePalette] so all 4 themes
-/// (Crisp Light, Cool Slate, Warm Paper, Dark Shift) apply app-wide.
+/// Driven dynamically by the active [AppThemePalette] (defaulting to
+/// WhatsApp Dark, with Crisp Light, Cool Slate, Warm Paper, Forest Mint,
+/// Dark Shift, True Black, and Auto System selectable app-wide).
 class AppColors {
-  static AppThemePalette _palette = AppThemePalette.light;
+  static AppThemePalette _palette = AppThemePalette.whatsappDark;
 
   static AppThemePalette get activePalette => _palette;
   static bool get isDark => _palette.isDark;
@@ -280,13 +281,14 @@ class AppRadius {
   static const dashCard = extraRounded;
   static const kpiCard = rounded;
   static const button = pill;
-  static const input = standard;
+  static const input = 0.0; // sharp square inputs app-wide
   static const iconBox = 11.0; // .dash-kpi-icon
 }
 
 /// Constant shapes shared by forms, action sheets and management controls.
 class AppCorners {
-  static const control = BorderRadius.all(Radius.circular(AppRadius.input));
+  static const control = BorderRadius.all(Radius.circular(AppRadius.standard));
+  static const input = BorderRadius.zero;
 }
 
 class AppShadows {

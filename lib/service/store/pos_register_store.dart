@@ -7,6 +7,21 @@ mixin PosRegisterStore on ChangeNotifier {
   List<RegisterShift> get _registerShifts;
   List<CashMovement> get _cashMovements;
   List<CompletedOrder> get _orders;
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   Future<void> _reloadRegister() async {
     final storedShifts = await _database.loadRegisterShifts(_activeStoreId);
@@ -81,10 +96,28 @@ mixin PosRegisterStore on ChangeNotifier {
     await _reloadRegister();
 
     notifyListeners();
-    return _registerShifts.firstWhere(
+    final created = _registerShifts.firstWhere(
       (item) => item.id == id,
       orElse: () => shift,
     );
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.register,
+        action: 'register.shift_opened',
+        severity: AuditSeverity.info,
+        entityType: 'Register Shift',
+        entityId: '$id',
+        entityLabel: register,
+        summary:
+            'Opened shift on $register with float ${openingFloat.toStringAsFixed(0)} TSh',
+        afterValues: {
+          'Register': register,
+          'Opening Float': openingFloat.toStringAsFixed(2),
+          'Opened By': openedBy,
+        },
+      ),
+    );
+    return created;
   }
 
   /// Closes the given shift with the counted cash total.
@@ -94,6 +127,13 @@ mixin PosRegisterStore on ChangeNotifier {
     required String closedBy,
     String notes = '',
   }) async {
+    RegisterShift? targetShift;
+    for (final s in _registerShifts) {
+      if (s.id == shiftId) {
+        targetShift = s;
+        break;
+      }
+    }
     await _database.updateRegisterShift(shiftId, {
       'closed_at': DateTime.now().toIso8601String(),
       'closed_by': closedBy,
@@ -103,6 +143,40 @@ mixin PosRegisterStore on ChangeNotifier {
     await _reloadRegister();
 
     notifyListeners();
+    RegisterShift? updatedShift;
+    for (final s in _registerShifts) {
+      if (s.id == shiftId) {
+        updatedShift = s;
+        break;
+      }
+    }
+    final summaryInfo =
+        updatedShift == null ? null : cashUpFor(updatedShift);
+    final variance = summaryInfo?.variance ?? 0;
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.register,
+        action: 'register.shift_closed',
+        severity:
+            variance.abs() > 0.01 ? AuditSeverity.warning : AuditSeverity.info,
+        entityType: 'Register Shift',
+        entityId: '$shiftId',
+        entityLabel: targetShift?.register ?? 'Shift #$shiftId',
+        summary: summaryInfo == null
+            ? 'Closed shift #$shiftId with counted cash ${countedCash.toStringAsFixed(0)} TSh'
+            : 'Closed ${updatedShift?.register ?? 'Shift #$shiftId'}: counted ${countedCash.toStringAsFixed(0)} vs expected ${summaryInfo.expected.toStringAsFixed(0)} TSh (variance ${variance.toStringAsFixed(0)})',
+        beforeValues: summaryInfo == null
+            ? const <String, String>{}
+            : {'Expected Cash': summaryInfo.expected.toStringAsFixed(2)},
+        afterValues: {
+          'Counted Cash': countedCash.toStringAsFixed(2),
+          if (summaryInfo != null) 'Variance': variance.toStringAsFixed(2),
+        },
+        metadata: notes.trim().isNotEmpty
+            ? {'Notes': notes.trim()}
+            : const <String, String>{},
+      ),
+    );
   }
 
   Future<void> reopenShift(int shiftId) async {
@@ -114,6 +188,17 @@ mixin PosRegisterStore on ChangeNotifier {
     await _reloadRegister();
 
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.register,
+        action: 'register.shift_reopened',
+        severity: AuditSeverity.warning,
+        entityType: 'Register Shift',
+        entityId: '$shiftId',
+        entityLabel: 'Shift #$shiftId',
+        summary: 'Reopened closed register shift #$shiftId',
+      ),
+    );
   }
 
   /// Records a manual drawer movement against the open shift.
@@ -137,14 +222,51 @@ mixin PosRegisterStore on ChangeNotifier {
     await _reloadRegister();
 
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.register,
+        action: 'register.cash_movement_added',
+        severity:
+            type.isOutflow ? AuditSeverity.warning : AuditSeverity.info,
+        entityType: 'Cash Movement',
+        entityId: '${shift.id}',
+        entityLabel: '${type.label} (${amount.toStringAsFixed(0)} TSh)',
+        summary:
+            'Recorded drawer ${type.label}: ${amount.toStringAsFixed(0)} TSh${reason.trim().isEmpty ? '' : ' (${reason.trim()})'}',
+        afterValues: {
+          'Type': type.label,
+          'Amount': amount.toStringAsFixed(2),
+          if (reason.trim().isNotEmpty) 'Reason': reason.trim(),
+        },
+      ),
+    );
   }
 
   Future<void> deleteCashMovement(int id) async {
+    CashMovement? removed;
+    for (final m in _cashMovements) {
+      if (m.id == id) {
+        removed = m;
+        break;
+      }
+    }
     await _database.deleteCashMovement(id);
     _cashMovements.removeWhere((movement) => movement.id == id);
     await _reloadRegister();
 
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.register,
+        action: 'register.cash_movement_deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Cash Movement',
+        entityId: '$id',
+        entityLabel: removed?.type.label ?? 'Movement #$id',
+        summary:
+            'Deleted drawer cash movement #$id${removed == null ? '' : ' (${removed.amount.toStringAsFixed(0)} TSh)'}',
+      ),
+    );
   }
 
   double cashSalesBetween(DateTime start, DateTime end) {

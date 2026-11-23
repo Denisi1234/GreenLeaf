@@ -125,8 +125,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                       icon: Icons.people_alt_outlined,
                                       sharp: false,
                                       borderless: true,
-                                      backgroundColor: AppColors.kpiSkyBg,
-                                      color: AppColors.kpiSky,
+                                      backgroundColor: AppColors.surface,
+                                      color: AppColors.ink,
                                     ),
                                   ),
                                   SizedBox(
@@ -138,8 +138,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                       icon: Icons.shopping_bag_outlined,
                                       sharp: false,
                                       borderless: true,
-                                      backgroundColor: AppColors.kpiRoseBg,
-                                      color: AppColors.kpiRose,
+                                      backgroundColor: AppColors.surface,
+                                      color: AppColors.ink,
                                     ),
                                   ),
                                   SizedBox(
@@ -152,8 +152,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                       icon: Icons.trending_up_rounded,
                                       sharp: false,
                                       borderless: true,
-                                      backgroundColor: AppColors.kpiSuccessBg,
-                                      color: AppColors.kpiSuccess,
+                                      backgroundColor: AppColors.surface,
+                                      color: AppColors.ink,
                                     ),
                                   ),
                                   SizedBox(
@@ -167,8 +167,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                           Icons.account_balance_wallet_outlined,
                                       sharp: false,
                                       borderless: true,
-                                      backgroundColor: AppColors.kpiDangerBg,
-                                      color: AppColors.kpiDanger,
+                                      backgroundColor: AppColors.surface,
+                                      color: AppColors.ink,
                                     ),
                                   ),
                                 ],
@@ -463,8 +463,8 @@ class _CustomersPageState extends State<CustomersPage> {
                 height: 4,
                 decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius:
-                        BorderRadius.all(Radius.circular(AppRadius.pill)))),
+                    borderRadius: const BorderRadius.all(
+                        Radius.circular(AppRadius.pill)))),
             const SizedBox(height: 12),
             Text(_dual(strings, 'Sort customers by', 'Panga wateja kwa'),
                 style: AppTypography.cardHeader),

@@ -22,6 +22,7 @@ class MainActivity: FlutterFragmentActivity() {
         SecureTokenChannel.register(messenger, this)
         ThermalPrinterChannel.register(messenger, this)
         BarcodeScannerChannel.register(messenger, this)
+        AppUpdateChannel.register(messenger, this)
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -256,6 +257,16 @@ class MainActivity: FlutterFragmentActivity() {
             Log.e("ReportShare", "Unable to share report PDF", error)
             result.error("share_failed", error.message, null)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        AppUpdateChannel.onResume(this)
+    }
+
+    override fun onDestroy() {
+        AppUpdateChannel.onDestroy()
+        super.onDestroy()
     }
 
     override fun onRequestPermissionsResult(

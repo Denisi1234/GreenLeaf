@@ -108,15 +108,15 @@ class _ImportStatementPageState extends State<ImportStatementPage> {
                                   .tr('2026-01-31, M-Pesa deposit, 150000'),
                               alignLabelWithHint: true,
                               border: OutlineInputBorder(
-                                borderRadius: AppCorners.control,
+                                borderRadius: AppCorners.input,
                                 borderSide: BorderSide(color: AppColors.border),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: AppCorners.control,
+                                borderRadius: AppCorners.input,
                                 borderSide: BorderSide(color: AppColors.border),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: AppCorners.control,
+                                borderRadius: AppCorners.input,
                                 borderSide: BorderSide(
                                     color: AppColors.primary, width: 1.4),
                               ),

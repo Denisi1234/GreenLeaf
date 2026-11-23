@@ -194,7 +194,7 @@ class CashRegisterOpenView extends StatelessWidget {
               _line(_t('Cash in', 'Pesa kuingia'), summary.cashIn),
               _line(_t('Payouts & drops', 'Malipo na amana'), -summary.cashOut),
               Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Divider(height: 1, color: AppColors.divider),
               ),
               _line(_t('Expected in drawer', 'Inayotarajiwa'), summary.expected, strong: true),

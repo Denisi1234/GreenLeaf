@@ -275,15 +275,15 @@ class _RateAppDialogState extends State<_RateAppDialog> {
                   fillColor: AppColors.pageBackground,
                   contentPadding: const EdgeInsets.all(12),
                   border: OutlineInputBorder(
-                    borderRadius: AppCorners.control,
+                    borderRadius: AppCorners.input,
                     borderSide: BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: AppCorners.control,
+                    borderRadius: AppCorners.input,
                     borderSide: BorderSide(color: AppColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: AppCorners.control,
+                    borderRadius: AppCorners.input,
                     borderSide: BorderSide(
                       color: AppColors.primary,
                       width: 1.5,

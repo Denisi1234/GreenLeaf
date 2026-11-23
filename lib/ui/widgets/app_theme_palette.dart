@@ -23,6 +23,15 @@ class AppThemePreset {
 
   static const presets = <AppThemePreset>[
     AppThemePreset(
+      id: 'whatsapp_dark',
+      nameEn: 'WhatsApp Dark',
+      nameSw: 'Giza (WhatsApp)',
+      subtitleEn: 'Default comfortable dark mode',
+      subtitleSw: 'Giza laini la kawaida',
+      icon: Icons.dark_mode_rounded,
+      palette: AppThemePalette.whatsappDark,
+    ),
+    AppThemePreset(
       id: 'system',
       nameEn: 'Auto (System)',
       nameSw: 'Otomatiki',
@@ -93,7 +102,7 @@ class AppThemePreset {
     for (final preset in presets) {
       if (preset.id == normalized) return preset;
     }
-    return presets[1]; // Default fallback to Crisp Light
+    return presets.first; // Default fallback to WhatsApp Dark
   }
 }
 
@@ -131,6 +140,23 @@ class AppThemePalette extends ThemeExtension<AppThemePalette> {
   final Color textMuted;
 
   bool get isDark => brightness == Brightness.dark;
+
+  static const whatsappDark = AppThemePalette(
+    id: 'whatsapp_dark',
+    brightness: Brightness.dark,
+    primary: Color(0xFF00A884),
+    primaryDeep: Color(0xFF25D366),
+    primaryLight: Color(0xFF103529),
+    pageBackground: Color(0xFF0B141A),
+    surface: Color(0xFF111B21),
+    surfaceSecondary: Color(0xFF202C33),
+    headerSurface: Color(0xFF1F2C34),
+    border: Color(0xFF2A3942),
+    divider: Color(0xFF222E35),
+    ink: Color(0xFFE9EDEF),
+    textBody: Color(0xFFD1D7DB),
+    textMuted: Color(0xFF8696A0),
+  );
 
   static const light = AppThemePalette(
     id: 'light',
@@ -237,15 +263,15 @@ class AppThemePalette extends ThemeExtension<AppThemePalette> {
   static AppThemePalette resolve(String id, Brightness platformBrightness) {
     final normalized = id.trim().toLowerCase();
     if (normalized == 'system') {
-      return platformBrightness == Brightness.dark ? dark : light;
+      return platformBrightness == Brightness.dark ? whatsappDark : light;
     }
     return AppThemePreset.byId(normalized).palette;
   }
 
-  static AppThemePalette forId(String id) => resolve(id, Brightness.light);
+  static AppThemePalette forId(String id) => resolve(id, Brightness.dark);
 
   static AppThemePalette of(BuildContext context) {
-    return Theme.of(context).extension<AppThemePalette>() ?? light;
+    return Theme.of(context).extension<AppThemePalette>() ?? whatsappDark;
   }
 
   @override

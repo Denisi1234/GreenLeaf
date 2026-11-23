@@ -196,6 +196,35 @@ const _suspendedSalesSchema = '''
         )
 ''';
 
+const _auditLogsSchema = '''
+        CREATE TABLE IF NOT EXISTS audit_logs (
+          id TEXT PRIMARY KEY,
+          store_id TEXT NOT NULL,
+          sequence INTEGER NOT NULL,
+          timestamp TEXT NOT NULL,
+          module TEXT NOT NULL,
+          action TEXT NOT NULL,
+          severity TEXT NOT NULL,
+          actor_id TEXT NOT NULL DEFAULT '',
+          actor_name TEXT NOT NULL DEFAULT '',
+          actor_role TEXT NOT NULL DEFAULT '',
+          entity_type TEXT NOT NULL DEFAULT '',
+          entity_id TEXT NOT NULL DEFAULT '',
+          entity_label TEXT NOT NULL DEFAULT '',
+          summary TEXT NOT NULL DEFAULT '',
+          before_json TEXT NOT NULL DEFAULT '{}',
+          after_json TEXT NOT NULL DEFAULT '{}',
+          metadata_json TEXT NOT NULL DEFAULT '{}',
+          prev_hash TEXT NOT NULL DEFAULT 'GENESIS',
+          entry_hash TEXT NOT NULL DEFAULT ''
+        )
+''';
+
+const _auditLogsSeqIndex =
+    'CREATE INDEX IF NOT EXISTS idx_audit_logs_store_seq ON audit_logs (store_id, sequence DESC)';
+const _auditLogsTsIndex =
+    'CREATE INDEX IF NOT EXISTS idx_audit_logs_store_ts ON audit_logs (store_id, timestamp DESC)';
+
 Future<void> _createPosDatabaseTables(Database db, int version) async {
   await db.execute(_receiptSettingsSchema);
   await db.execute('''
@@ -380,4 +409,7 @@ Future<void> _createPosDatabaseTables(Database db, int version) async {
   await db.execute(_fixedAssetsSchema);
   await db.execute(_bankTransactionsSchema);
   await db.execute(_suspendedSalesSchema);
+  await db.execute(_auditLogsSchema);
+  await db.execute(_auditLogsSeqIndex);
+  await db.execute(_auditLogsTsIndex);
 }

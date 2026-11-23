@@ -25,7 +25,7 @@ class AuthShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
+      backgroundColor: Colors.white,
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= wideBreakpoint) {
@@ -88,7 +88,7 @@ class _FormPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppColors.pageBackground,
+      color: Colors.white,
       child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 44),
@@ -131,21 +131,25 @@ class _BrandPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.drawerHeader, AppColors.ink],
+          colors: AppColors.isDark
+              ? [AppColors.headerSurface, AppColors.pageBackground]
+              : [AppColors.drawerHeader, const Color(0xFF111827)],
         ),
       ),
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          const Positioned(
+          Positioned(
             top: -150,
             right: -130,
-            child: _Glow(color: Color(0x3822B8C4), size: 440),
+            child: _Glow(
+                color: AppColors.primary.withValues(alpha: 0.22), size: 440),
           ),
-          const Positioned(
+          Positioned(
             bottom: -170,
             left: -120,
-            child: _Glow(color: Color(0x261B9BA6), size: 400),
+            child: _Glow(
+                color: AppColors.primary.withValues(alpha: 0.14), size: 400),
           ),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -176,8 +180,8 @@ class _BrandPanel extends StatelessWidget {
                       constraints: const BoxConstraints(maxWidth: 380),
                       child: Text(
                         strings.authHeroSubtitle,
-                        style: TextStyle(
-                          color: AppColors.borderInput,
+                        style: const TextStyle(
+                          color: Color(0xFFD1D7DB),
                           fontSize: 15,
                           height: 1.6,
                           fontWeight: FontWeight.w500,
@@ -203,20 +207,20 @@ class _BrandPanel extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
+                        const Padding(
                           padding: EdgeInsets.only(top: 1),
                           child: Icon(
                             Icons.lock_outline_rounded,
                             size: 15,
-                            color: AppColors.primarySoft,
+                            color: Color(0xFFA7B7C0),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             strings.authSecureSync,
-                            style: TextStyle(
-                              color: AppColors.primarySoft,
+                            style: const TextStyle(
+                              color: Color(0xFFA7B7C0),
                               fontSize: 12,
                               height: 1.4,
                               fontWeight: FontWeight.w500,
@@ -290,7 +294,7 @@ class _BrandLockup extends StatelessWidget {
             Text(
               context.tr('POINT OF SALE'),
               style: TextStyle(
-                color: light ? AppColors.primarySoft : AppColors.textMuted,
+                color: light ? const Color(0xFFA7B7C0) : AppColors.textMuted,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2.0,
@@ -372,8 +376,8 @@ class _BrandFeature extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
-              color: AppColors.kpiSuccessBg,
+            style: const TextStyle(
+              color: Color(0xFFE9EDEF),
               fontSize: 14,
               height: 1.4,
               fontWeight: FontWeight.w500,

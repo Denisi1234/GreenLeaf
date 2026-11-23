@@ -9,6 +9,7 @@ import '../widgets/market_shared_widgets.dart';
 import '../widgets/workspace_widgets.dart';
 import 'add_product_page.dart';
 import 'inventory_product_item.dart';
+import 'widgets/add_product_controller.dart';
 import 'widgets/product_cards.dart';
 import 'widgets/inventory_kpi_metrics.dart';
 import 'widgets/inventory_data_table.dart';
@@ -62,8 +63,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
       );
       return;
     }
-    final nextCode =
-        'P${(store.inventory.length + 1).toString().padLeft(3, '0')}';
+    final nextCode = AddProductController.generateNextCode(store.inventory);
     final created = await Navigator.of(context).push<InventoryProductItem>(
       MaterialPageRoute<InventoryProductItem>(
         builder: (context) => AddProductPage(nextCode: nextCode),
@@ -247,8 +247,8 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
               decoration: InputDecoration(
                 labelText: t('New stock quantity', 'Idadi mpya stoo'),
                 suffixText: product.unit,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                border: const OutlineInputBorder(
+                  borderRadius: AppCorners.input,
                 ),
               ),
             ),
@@ -470,16 +470,20 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                     child: IconButton.outlined(
                                       tooltip: context.tr('Export CSV'),
                                       style: OutlinedButton.styleFrom(
-                                        backgroundColor: AppColors.kpiSkyBg,
+                                        backgroundColor: AppColors.surface,
                                         padding: EdgeInsets.zero,
                                         shape: const CircleBorder(),
-                                        side: BorderSide.none,
+                                        side: BorderSide(
+                                          color: AppColors.border,
+                                        ),
                                       ),
                                       onPressed: () =>
                                           ProductCsvService.exportInventoryCsv(
                                               filtered),
-                                      icon: Icon(Icons.download_rounded,
-                                          color: AppColors.kpiSky),
+                                      icon: Icon(
+                                        Icons.download_rounded,
+                                        color: AppColors.ink,
+                                      ),
                                     ),
                                   ),
                                   if (canManageInventory) ...[
@@ -490,14 +494,18 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                                       child: IconButton.outlined(
                                         tooltip: context.tr('Import CSV'),
                                         style: OutlinedButton.styleFrom(
-                                          backgroundColor: AppColors.kpiVioletBg,
+                                          backgroundColor: AppColors.surface,
                                           padding: EdgeInsets.zero,
                                           shape: const CircleBorder(),
-                                          side: BorderSide.none,
+                                          side: BorderSide(
+                                            color: AppColors.border,
+                                          ),
                                         ),
                                         onPressed: _handleImportCsv,
-                                        icon: Icon(Icons.upload_file_rounded,
-                                            color: AppColors.kpiViolet),
+                                        icon: Icon(
+                                          Icons.upload_file_rounded,
+                                          color: AppColors.ink,
+                                        ),
                                       ),
                                     ),
                                   ],

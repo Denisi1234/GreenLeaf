@@ -3,20 +3,19 @@ import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
 import '../widgets/app_design.dart';
+import '../widgets/app_theme_palette.dart';
 import '../widgets/market_shared_widgets.dart';
-import '../widgets/workspace_widgets.dart';
 import 'settings_layout.dart';
-import 'widgets/about_settings_pane.dart';
 import 'widgets/account_settings_pane.dart';
 import 'widgets/business_settings_pane.dart';
 import 'widgets/data_sync_settings_pane.dart';
 import 'widgets/language_settings_pane.dart';
 import 'widgets/receipt_settings_pane.dart';
 
-/// Professional settings workspace.
+/// Clean, native Android/iOS Settings screen supporting all app themes.
 ///
-/// Six sections in a searchable sidebar on desktop and a section list on mobile.
-/// Section state is preserved while switching tabs, including unsaved edits.
+/// Five focused sections in a clean grouped list on mobile and a split sidebar
+/// on tablets/desktops. Section state is preserved across tab switches.
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key, this.initialSection});
 
@@ -26,7 +25,7 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-enum SettingsSection { business, receipt, language, data, account, about }
+enum SettingsSection { business, receipt, language, data, account }
 
 class _SectionInfo {
   const _SectionInfo(this.section, this.icon, this.label);
@@ -55,26 +54,19 @@ List<_SectionInfo> _tabs(String lang) {
     ),
     _SectionInfo(
       SettingsSection.data,
-      Icons.cloud_sync_outlined,
-      t('Data', 'Data'),
+      Icons.sms_outlined,
+      t('Data & SMS', 'Data na SMS'),
     ),
     _SectionInfo(
       SettingsSection.account,
       Icons.manage_accounts_outlined,
       t('Account', 'Akaunti'),
     ),
-    _SectionInfo(
-      SettingsSection.about,
-      Icons.info_outline_rounded,
-      t('About', 'Kuhusu'),
-    ),
   ];
 }
 
 class _SettingsPageState extends State<SettingsPage> {
   SettingsSection? _selectedSection;
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
   final Set<SettingsSection> _visited = {SettingsSection.business};
 
   @override
@@ -82,12 +74,6 @@ class _SettingsPageState extends State<SettingsPage> {
     super.initState();
     _selectedSection = widget.initialSection;
     if (widget.initialSection != null) _visited.add(widget.initialSection!);
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   void _openDetail(SettingsSection section) {
@@ -109,52 +95,17 @@ class _SettingsPageState extends State<SettingsPage> {
         return const DataSyncSettingsPane();
       case SettingsSection.account:
         return const AccountSettingsPane();
-      case SettingsSection.about:
-        return const AboutSettingsPane();
     }
-  }
-
-  String _description(SettingsSection section, String lang) {
-    final (en, sw) = switch (section) {
-      SettingsSection.business => (
-          'Business details, currency and daily reports',
-          'Taarifa za biashara, sarafu na ripoti za kila siku'
-        ),
-      SettingsSection.receipt => (
-          'Receipt layout, branding and printing',
-          'Mpangilio wa risiti, nembo na uchapishaji'
-        ),
-      SettingsSection.language => (
-          'App theme, language and regional preferences',
-          'Mandhari ya programu, lugha na mipangilio ya eneo'
-        ),
-      SettingsSection.data => (
-          'Daily SMS reports and backups',
-          'Ripoti za SMS na nakala za akiba'
-        ),
-      SettingsSection.account => (
-          'Profile, password and security',
-          'Wasifu, nenosiri na usalama'
-        ),
-      SettingsSection.about => (
-          'App information, support and policies',
-          'Taarifa za programu, msaada na sera'
-        ),
-    };
-    return settingsText(lang, en, sw);
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<PosLocalStore>().languageCode;
+    final palette = AppThemePalette.of(context);
     final tabs = _tabs(lang);
-    final filtered = tabs
-        .where((tab) => '${tab.label} ${_description(tab.section, lang)}'
-            .toLowerCase()
-            .contains(_searchQuery.trim().toLowerCase()))
-        .toList();
     final selected = _selectedSection ?? SettingsSection.business;
     final current = tabs.firstWhere((tab) => tab.section == selected);
+
     final panes = IndexedStack(
       index: selected.index,
       children: [
@@ -163,119 +114,89 @@ class _SettingsPageState extends State<SettingsPage> {
               ? KeyedSubtree(
                   key: ValueKey(tab.section),
                   child: TickerMode(
-                      enabled: tab.section == selected,
-                      child: _buildPane(tab.section)))
-              : const SizedBox.shrink()
+                    enabled: tab.section == selected,
+                    child: _buildPane(tab.section),
+                  ),
+                )
+              : const SizedBox.shrink(),
       ],
     );
-    final search = MarketSearchField(
-      controller: _searchController,
-      hintText: settingsText(lang, 'Search settings', 'Tafuta mipangilio'),
-      onChanged: (value) => setState(() => _searchQuery = value),
-      onClear: () => setState(() {
-        _searchController.clear();
-        _searchQuery = '';
-      }),
-    );
-    Widget menu(bool wide) =>
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          search,
-          const SizedBox(height: 16),
-          Expanded(
-              child: filtered.isEmpty
-                  ? Center(
-                      child: Text(
-                          settingsText(lang, 'No matching settings',
-                              'Hakuna mipangilio inayolingana'),
-                          style: AppTypography.bodySmall))
-                  : WorkspacePanel(
-                      padding: EdgeInsets.zero,
-                      child: ListView.separated(
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) =>
-                            Divider(height: 1, color: AppColors.borderLight),
-                        itemBuilder: (context, index) {
-                          final tab = filtered[index];
-                          final active = wide && tab.section == selected;
-                          return Material(
-                            color: active
-                                ? AppColors.surfaceSecondary
-                                : Colors.transparent,
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              leading: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: active
-                                      ? AppColors.primaryLight
-                                      : AppColors.surfaceSecondary,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                alignment: Alignment.center,
-                                child: Icon(
-                                  tab.icon,
-                                  size: 20,
-                                  color: active
-                                      ? AppColors.primary
-                                      : AppColors.ink,
-                                ),
-                              ),
-                              title: Text(tab.label,
-                                  style: AppTypography.bodyMedium
-                                      .copyWith(fontWeight: FontWeight.w700)),
-                              subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(_description(tab.section, lang),
-                                      style: AppTypography.label)),
-                              trailing: wide
-                                  ? null
-                                  : Icon(Icons.chevron_right_rounded,
-                                      size: 20, color: AppColors.textMuted),
-                              onTap: () => _openDetail(tab.section),
-                            ),
-                          );
-                        },
-                      ),
-                    )),
-        ]);
-    final detail =
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
-          child: WorkspaceHeading(
-            title: current.label,
-            subtitle: _description(selected, lang),
-          )),
-      Expanded(
-          child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1000),
-                child: panes,
-              ))),
-    ]);
+
+    Widget buildMenu(bool wide) {
+      final listCard = Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: palette.surface,
+          borderRadius: BorderRadius.circular(AppRadius.standard),
+          border: Border.all(color: palette.border),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < tabs.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    indent: 52,
+                    color: palette.divider,
+                  ),
+                _SettingsMenuRow(
+                  tab: tabs[i],
+                  palette: palette,
+                  active: wide && tabs[i].section == selected,
+                  showChevron: !wide,
+                  onTap: () => _openDetail(tabs[i].section),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+
+      if (wide) {
+        return SingleChildScrollView(child: listCard);
+      }
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
+            children: [listCard],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      body: ManagementViewport(
-          maxWidth: 1280,
-          child: SafeArea(child: LayoutBuilder(builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 900;
-            return PopScope(
-              canPop: wide || _selectedSection == null,
-              onPopInvokedWithResult: (didPop, result) {
-                if (!didPop && !wide) setState(() => _selectedSection = null);
-              },
-              child: Column(children: [
+      backgroundColor: palette.pageBackground,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 900;
+          final showingDetailOnMobile = !wide && _selectedSection != null;
+          final headerTitle = showingDetailOnMobile
+              ? current.label
+              : settingsText(lang, 'Settings', 'Mipangilio');
+
+          return PopScope(
+            canPop: wide || _selectedSection == null,
+            onPopInvokedWithResult: (didPop, result) {
+              if (!didPop && !wide) {
+                setState(() => _selectedSection = null);
+              }
+            },
+            child: Column(
+              children: [
                 MarketPageHeader(
-                  title: settingsText(lang, 'Settings', 'Mipangilio'),
-                  subtitle: settingsText(
-                      lang,
-                      'Manage your business preferences',
-                      'Dhibiti mapendeleo ya biashara yako'),
+                  title: headerTitle,
+                  showBackButton: true,
+                  centerTitle: false,
+                  titleSize: 20,
+                  titleWeight: FontWeight.w800,
+                  showBorder: true,
                   onBack: () {
-                    if (!wide && _selectedSection != null) {
+                    if (showingDetailOnMobile) {
                       setState(() => _selectedSection = null);
                     } else {
                       Navigator.of(context).maybePop();
@@ -283,28 +204,113 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
                 Expanded(
-                    child: Padding(
-                  padding: EdgeInsets.all(wide ? 24 : 16),
-                  child: wide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                              SizedBox(width: 270, child: menu(true)),
-                              const SizedBox(width: 24),
-                              Expanded(child: detail),
-                            ])
-                      : IndexedStack(
-                          index: _selectedSection == null ? 0 : 1,
-                          children: [
-                              menu(false),
+                  child: SafeArea(
+                    top: false,
+                    child: wide
+                        ? Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 1120),
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      width: 260,
+                                      child: buildMenu(true),
+                                    ),
+                                    const SizedBox(width: 24),
+                                    Expanded(child: panes),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        : IndexedStack(
+                            index: _selectedSection == null ? 0 : 1,
+                            children: [
+                              buildMenu(false),
                               TickerMode(
-                                  enabled: _selectedSection != null,
-                                  child: detail)
-                            ]),
-                )),
-              ]),
-            );
-          }))),
+                                enabled: _selectedSection != null,
+                                child: Center(
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 640),
+                                    child: Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        12,
+                                        14,
+                                        12,
+                                        0,
+                                      ),
+                                      child: panes,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SettingsMenuRow extends StatelessWidget {
+  const _SettingsMenuRow({
+    required this.tab,
+    required this.palette,
+    required this.active,
+    required this.showChevron,
+    required this.onTap,
+  });
+
+  final _SectionInfo tab;
+  final AppThemePalette palette;
+  final bool active;
+  final bool showChevron;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 54),
+        color: active ? palette.primaryLight : Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            Icon(
+              tab.icon,
+              size: 22,
+              color: active ? palette.primary : palette.textMuted,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                tab.label,
+                style: AppTypography.bodyMain.copyWith(
+                  fontSize: 15,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: active ? palette.primary : palette.ink,
+                ),
+              ),
+            ),
+            if (showChevron)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: palette.textMuted,
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

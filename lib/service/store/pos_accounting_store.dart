@@ -16,6 +16,21 @@ mixin PosAccountingStore on ChangeNotifier {
   List<Supplier> get _suppliers;
   List<RegisterShift> get _registerShifts;
   TaxSettings get _taxSettings;
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   List<Account> get accounts => List.unmodifiable(_accounts);
 
@@ -101,9 +116,27 @@ mixin PosAccountingStore on ChangeNotifier {
   }
 
   Future<void> deleteAccount(int id) async {
+    Account? removed;
+    for (final a in _accounts) {
+      if (a.id == id) {
+        removed = a;
+        break;
+      }
+    }
     await _database.deleteAccount(id);
     await _reloadAccounting();
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.accounting,
+        action: 'accounting.account_deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Ledger Account',
+        entityId: '$id',
+        entityLabel: removed?.name ?? 'Account #$id',
+        summary: 'Deleted ledger account ${removed?.name ?? '#$id'}',
+      ),
+    );
   }
 
   Future<void> saveJournalEntry(JournalEntry entry) async {
@@ -125,12 +158,36 @@ mixin PosAccountingStore on ChangeNotifier {
     }
     await _reloadAccounting();
     notifyListeners();
+    final memo = entry.memo.trim();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.accounting,
+        action: 'accounting.journal_saved',
+        severity: AuditSeverity.info,
+        entityType: 'Journal Entry',
+        entityId: '$id',
+        entityLabel: memo.isEmpty ? 'JE-$id' : memo,
+        summary:
+            'Posted journal entry ${memo.isEmpty ? '#$id' : memo} (${entry.lines.length} lines)',
+      ),
+    );
   }
 
   Future<void> deleteJournalEntry(int id) async {
     await _database.deleteJournalEntry(id);
     await _reloadAccounting();
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.accounting,
+        action: 'accounting.journal_deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Journal Entry',
+        entityId: '$id',
+        entityLabel: 'JE-$id',
+        summary: 'Deleted manual journal entry #$id',
+      ),
+    );
   }
 
   Future<void> saveFixedAsset(FixedAsset asset) async {

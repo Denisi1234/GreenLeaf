@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
@@ -6,6 +7,7 @@ import '../../service/pos_local_store.dart';
 import '../reports/report_hub_page.dart';
 import '../sales/order_history_page.dart';
 import '../widgets/app_design.dart';
+import '../widgets/app_theme_palette.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'advanced_features_page.dart';
 import 'customers_page.dart';
@@ -35,11 +37,40 @@ class _MorePageState extends State<MorePage> {
     }
   }
 
+  String _formatMemberSince(String raw, String lang) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return DateFormat('MMMM yyyy', lang).format(DateTime.now());
+    }
+    // Try parsing common stored formats like "Nov 13, 2026" or ISO dates
+    final parsed = DateTime.tryParse(trimmed) ??
+        (() {
+          for (final pattern in const [
+            'MMM d, yyyy',
+            'MMMM d, yyyy',
+            'd MMM yyyy',
+            'MMMM yyyy',
+            'MMM yyyy',
+          ]) {
+            try {
+              return DateFormat(pattern, 'en').parse(trimmed);
+            } catch (_) {}
+          }
+          return null;
+        })();
+    if (parsed != null) {
+      return DateFormat('MMMM yyyy', lang).format(parsed);
+    }
+    return trimmed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final palette = AppThemePalette.of(context);
     final strings = AppStrings.of(store.languageCode);
-    String t(String en, String sw) => store.languageCode == 'sw' ? sw : en;
+    final lang = store.languageCode;
+    String t(String en, String sw) => lang == 'sw' ? sw : en;
     final hasAdvancedAccess = const [
       'Manage Inventory',
       'Manage Payments',
@@ -48,13 +79,14 @@ class _MorePageState extends State<MorePage> {
       'Manage Staff',
     ].any(store.hasPermission);
 
-    final storeName = store.profile.storeName.trim().isNotEmpty
+    final rawStoreName = store.profile.storeName.trim().isNotEmpty
         ? store.profile.storeName.trim()
-        : 'Aza POS';
-    final ownerName = store.profile.ownerName.trim();
-    final roleTitle = store.profile.roleTitle.trim();
-    final isCloudConnected = store.cloudApi != null;
-    final initial = storeName.isNotEmpty ? storeName[0].toUpperCase() : 'A';
+        : store.activeStoreName.trim();
+    final storeName = rawStoreName.isNotEmpty
+        ? rawStoreName
+        : t('My Store', 'Duka Langu');
+    final memberSince = _formatMemberSince(store.profile.memberSince, lang);
+    final initial = storeName.isNotEmpty ? storeName[0].toUpperCase() : 'S';
 
     final sections = <_MenuGroup>[
       _MenuGroup(
@@ -140,7 +172,7 @@ class _MorePageState extends State<MorePage> {
 
     return Scaffold(
       drawer: widget.useSharedShell ? null : const MarketAppDrawer(),
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: palette.pageBackground,
       body: SafeArea(
         top: !widget.useSharedShell,
         child: Center(
@@ -149,32 +181,31 @@ class _MorePageState extends State<MorePage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               children: [
-                // Calm merchant identity strip (Square / Shopify POS style)
+                // Clean store identity header: Store Name | Member since [Month Year]
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: palette.surface,
                     borderRadius: BorderRadius.circular(AppRadius.standard),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: AppShadows.soft,
+                    border: Border.all(color: palette.border),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 42,
+                        height: 42,
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: palette.primaryLight,
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           initial,
                           style: AppTypography.bodyMain.copyWith(
-                            color: Colors.white,
+                            color: palette.primary,
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                           ),
@@ -182,8 +213,10 @@ class _MorePageState extends State<MorePage> {
                       ),
                       const SizedBox(width: 14),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 2,
                           children: [
                             Text(
                               storeName,
@@ -191,41 +224,26 @@ class _MorePageState extends State<MorePage> {
                               overflow: TextOverflow.ellipsis,
                               style: AppTypography.bodyMain.copyWith(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.ink,
+                                fontWeight: FontWeight.w700,
+                                color: palette.ink,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Container(
-                                  width: 7,
-                                  height: 7,
-                                  decoration: BoxDecoration(
-                                    color: isCloudConnected
-                                        ? AppColors.success
-                                        : AppColors.textMuted,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    [
-                                      if (ownerName.isNotEmpty) ownerName,
-                                      if (roleTitle.isNotEmpty) roleTitle,
-                                      isCloudConnected
-                                          ? t('Cloud synced', 'Wingu hai')
-                                          : t('Local device', 'Hifadhi kifaa'),
-                                    ].join(' · '),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.caption.copyWith(
-                                      color: AppColors.textMuted,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              '|',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: palette.border,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              t(
+                                'Member since $memberSince',
+                                'Mwanachama tangu $memberSince',
+                              ),
+                              style: AppTypography.caption.copyWith(
+                                color: palette.textMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
@@ -236,10 +254,12 @@ class _MorePageState extends State<MorePage> {
                 const SizedBox(height: 22),
                 for (var i = 0; i < visibleSections.length; i++) ...[
                   if (i > 0) const SizedBox(height: 22),
-                  _MenuGroupCard(group: visibleSections[i]),
+                  _MenuGroupCard(
+                    group: visibleSections[i],
+                    palette: palette,
+                  ),
                 ],
                 const SizedBox(height: 26),
-                // Signature full-width pill Sign Out button
                 SizedBox(
                   height: 48,
                   width: double.infinity,
@@ -248,8 +268,8 @@ class _MorePageState extends State<MorePage> {
                     onPressed: _signingOut ? null : _signOut,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.dangerDeep,
-                      backgroundColor: AppColors.surface,
-                      side: BorderSide(color: AppColors.border),
+                      backgroundColor: palette.surface,
+                      side: BorderSide(color: palette.border),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
@@ -276,9 +296,13 @@ class _MorePageState extends State<MorePage> {
 }
 
 class _MenuGroupCard extends StatelessWidget {
-  const _MenuGroupCard({required this.group});
+  const _MenuGroupCard({
+    required this.group,
+    required this.palette,
+  });
 
   final _MenuGroup group;
+  final AppThemePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -293,17 +317,16 @@ class _MenuGroupCard extends StatelessWidget {
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
-              color: AppColors.textMuted,
+              color: palette.textMuted,
             ),
           ),
         ),
         Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: palette.surface,
             borderRadius: BorderRadius.circular(AppRadius.standard),
-            border: Border.all(color: AppColors.border),
-            boxShadow: AppShadows.soft,
+            border: Border.all(color: palette.border),
           ),
           child: Material(
             color: Colors.transparent,
@@ -314,9 +337,9 @@ class _MenuGroupCard extends StatelessWidget {
                     Divider(
                       height: 1,
                       indent: 52,
-                      color: AppColors.divider,
+                      color: palette.divider,
                     ),
-                  _MenuRow(item: group.items[i]),
+                  _MenuRow(item: group.items[i], palette: palette),
                 ],
               ],
             ),
@@ -328,9 +351,13 @@ class _MenuGroupCard extends StatelessWidget {
 }
 
 class _MenuRow extends StatelessWidget {
-  const _MenuRow({required this.item});
+  const _MenuRow({
+    required this.item,
+    required this.palette,
+  });
 
   final _MenuItem item;
+  final AppThemePalette palette;
 
   @override
   Widget build(BuildContext context) {
@@ -356,7 +383,7 @@ class _MenuRow extends StatelessWidget {
               Icon(
                 item.icon,
                 size: 22,
-                color: AppColors.textMain,
+                color: palette.textMuted,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -364,15 +391,15 @@ class _MenuRow extends StatelessWidget {
                   item.title,
                   style: AppTypography.bodyMain.copyWith(
                     fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
+                    fontWeight: FontWeight.w500,
+                    color: palette.ink,
                   ),
                 ),
               ),
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.textLight,
+                color: palette.textMuted,
               ),
             ],
           ),

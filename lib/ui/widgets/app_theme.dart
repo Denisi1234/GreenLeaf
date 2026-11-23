@@ -6,9 +6,12 @@ import 'app_design.dart';
 import 'app_theme_palette.dart';
 
 /// Shared POS theme: neutral surfaces, restrained accents and consistent controls.
-ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
+ThemeData buildOsposTheme(TextTheme textTheme,
+    {String themeId = 'whatsapp_dark'}) {
   final palette = AppThemePalette.forId(themeId);
+  AppColors.applyPalette(palette);
   const controlRadius = BorderRadius.all(Radius.circular(AppRadius.standard));
+  const inputRadius = AppCorners.input;
   const pillRadius = BorderRadius.all(Radius.circular(AppRadius.pill));
   final fontFamily = GoogleFonts.manrope().fontFamily;
 
@@ -44,7 +47,7 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
 
   OutlineInputBorder inputBorder(Color color, [double width = 1]) =>
       OutlineInputBorder(
-        borderRadius: controlRadius,
+        borderRadius: inputRadius,
         borderSide: BorderSide(color: color, width: width),
       );
 
@@ -138,7 +141,7 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
+        borderRadius: const BorderRadius.all(Radius.circular(AppRadius.card)),
         side: BorderSide(color: AppColors.border),
       ),
     ),
@@ -173,7 +176,7 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
       modalBarrierColor: AppColors.backdrop,
       showDragHandle: true,
       dragHandleColor: AppColors.border,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(AppRadius.extraRounded)),
       ),
@@ -186,13 +189,13 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
       scrimColor: AppColors.backdrop,
       width: 285,
       elevation: 0,
-      shape: RoundedRectangleBorder(),
+      shape: const RoundedRectangleBorder(),
     ),
 
-    // .form-control – white, 1px slate border, 10px radius, 42px+ tall
+    // .form-control – adaptive fill, 1px slate border, 10px radius, 42px+ tall
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: palette.isDark ? palette.surfaceSecondary : palette.surface,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       constraints: const BoxConstraints(minHeight: AppSpacing.controlHeight),
@@ -288,7 +291,7 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
       focusElevation: 2,
       hoverElevation: 3,
       highlightElevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: pillRadius),
+      shape: const RoundedRectangleBorder(borderRadius: pillRadius),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
@@ -475,7 +478,7 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
     menuTheme: MenuThemeData(
       style: MenuStyle(
         backgroundColor: WidgetStatePropertyAll(AppColors.surface),
-        surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
+        surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(
             borderRadius: controlRadius,
@@ -497,7 +500,7 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected)
-            ? AppColors.surface
+            ? Colors.white
             : AppColors.textLight,
       ),
       trackColor: WidgetStateProperty.resolveWith(
@@ -570,13 +573,13 @@ ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'light'}) {
     datePickerTheme: DatePickerThemeData(
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(AppRadius.modal)),
       ),
     ),
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: AppColors.primary,
-      selectionColor: Color(0x3822B8C4),
+      selectionColor: palette.primary.withValues(alpha: 0.28),
       selectionHandleColor: AppColors.primary,
     ),
   );

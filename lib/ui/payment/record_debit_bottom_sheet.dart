@@ -32,7 +32,7 @@ class RecordDebitBottomSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppRadius.extraRounded),
         ),
       ),

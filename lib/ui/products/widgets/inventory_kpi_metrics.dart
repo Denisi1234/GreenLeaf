@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:aza_pos/l10n/app_localization.dart';
-import '../../widgets/app_design.dart';
+import 'package:flutter/material.dart';
+
+import '../../widgets/app_theme_palette.dart';
 import '../../widgets/workspace_widgets.dart';
 import 'product_cards.dart';
 
@@ -20,10 +21,13 @@ class InventoryKpiMetrics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppThemePalette.of(context);
+
     return LayoutBuilder(
       builder: (context, metricConstraints) {
         final columns = metricConstraints.maxWidth >= 760 ? 4 : 2;
-        final width = (metricConstraints.maxWidth - (columns - 1) * 12) / columns;
+        final width =
+            (metricConstraints.maxWidth - (columns - 1) * 12) / columns;
         return Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -36,8 +40,8 @@ class InventoryKpiMetrics extends StatelessWidget {
                 icon: Icons.inventory_2_outlined,
                 sharp: false,
                 borderless: true,
-                backgroundColor: AppColors.kpiRoseBg,
-                color: AppColors.kpiRose,
+                backgroundColor: palette.surface,
+                color: palette.ink,
               ),
             ),
             SizedBox(
@@ -48,8 +52,8 @@ class InventoryKpiMetrics extends StatelessWidget {
                 icon: Icons.account_balance_wallet_outlined,
                 sharp: false,
                 borderless: true,
-                backgroundColor: AppColors.kpiSkyBg,
-                color: AppColors.kpiSky,
+                backgroundColor: palette.surface,
+                color: palette.ink,
               ),
             ),
             SizedBox(
@@ -60,8 +64,8 @@ class InventoryKpiMetrics extends StatelessWidget {
                 icon: Icons.trending_down_rounded,
                 sharp: false,
                 borderless: true,
-                backgroundColor: AppColors.kpiAmberBg,
-                color: AppColors.kpiAmber,
+                backgroundColor: palette.surface,
+                color: palette.ink,
               ),
             ),
             SizedBox(
@@ -72,8 +76,8 @@ class InventoryKpiMetrics extends StatelessWidget {
                 icon: Icons.inventory_outlined,
                 sharp: false,
                 borderless: true,
-                backgroundColor: AppColors.kpiDangerBg,
-                color: AppColors.kpiDanger,
+                backgroundColor: palette.surface,
+                color: palette.ink,
               ),
             ),
           ],

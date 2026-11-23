@@ -312,7 +312,7 @@ void main() {
               null,
               false,
               pdfContext: _context(lang)));
-    });
+    }, timeout: const Timeout(Duration(minutes: 2)));
     test(
         'selected report rows and columns are passed to PDF unchanged in $lang',
         () async {

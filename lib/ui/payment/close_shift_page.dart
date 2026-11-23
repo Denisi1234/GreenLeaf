@@ -126,7 +126,7 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                           _row(_t('Payouts & drops', 'Malipo na amana'),
                               -s.cashOut),
                           Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
                             child:
                                 Divider(height: 1, color: AppColors.divider),
                           ),
@@ -311,17 +311,17 @@ class _CloseShiftPageState extends State<CloseShiftPage> {
                       textAlign: TextAlign.center,
                       decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(
+                        contentPadding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 8),
                         hintText: '0',
                         filled: true,
                         fillColor: AppColors.surface,
                         border: OutlineInputBorder(
-                          borderRadius: AppCorners.control,
+                          borderRadius: AppCorners.input,
                           borderSide: BorderSide(color: AppColors.border),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: AppCorners.control,
+                          borderRadius: AppCorners.input,
                           borderSide: BorderSide(color: AppColors.border),
                         ),
                       ),

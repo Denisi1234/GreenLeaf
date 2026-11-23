@@ -223,6 +223,48 @@ class AddProductController {
     }
   }
 
+  static final RegExp _sequentialCodePattern = RegExp(r'^P(\d+)$', caseSensitive: false);
+
+  /// Generates the next strictly increasing product code (`P001`, `P002`, ...)
+  /// above all existing codes so deleted or already-used codes are never reused.
+  static String generateNextCode(
+    List<InventoryProductItem> inventory, {
+    Iterable<String> extraUsedCodes = const [],
+  }) {
+    final used = <String>{};
+    var maxNumber = 0;
+
+    void inspect(String raw) {
+      final code = raw.trim().toUpperCase();
+      if (code.isEmpty) return;
+      used.add(code);
+      final match = _sequentialCodePattern.firstMatch(code);
+      if (match != null) {
+        final numVal = int.tryParse(match.group(1) ?? '');
+        if (numVal != null && numVal > maxNumber) {
+          maxNumber = numVal;
+        }
+      }
+    }
+
+    for (final item in inventory) {
+      inspect(item.code);
+      final barcode = item.categoryData['barcode']?.toString();
+      if (barcode != null) inspect(barcode);
+    }
+    for (final code in extraUsedCodes) {
+      inspect(code);
+    }
+
+    var candidateNumber = maxNumber + 1;
+    var candidate = 'P${candidateNumber.toString().padLeft(3, '0')}';
+    while (used.contains(candidate)) {
+      candidateNumber++;
+      candidate = 'P${candidateNumber.toString().padLeft(3, '0')}';
+    }
+    return candidate;
+  }
+
   InventoryProductItem? buildProduct() {
     final form = formKey.currentState;
     if (form == null || !form.validate()) {
@@ -265,9 +307,28 @@ class AddProductController {
     metadata['unit'] = selectedUnit;
     metadata['allow_fractional'] = allowFractional;
 
+    final store = context.read<PosLocalStore>();
+    String resolvedCode;
+    if (existingProduct != null) {
+      resolvedCode = existingProduct!.code;
+    } else {
+      final existingCodes = store.inventory
+          .map((item) => item.code.trim().toUpperCase())
+          .toSet();
+      final candidate = enteredCode.isNotEmpty ? enteredCode : nextCode;
+      if (candidate.isEmpty ||
+          existingCodes.contains(candidate.trim().toUpperCase())) {
+        resolvedCode = generateNextCode(
+          store.inventory,
+          extraUsedCodes: [candidate],
+        );
+      } else {
+        resolvedCode = candidate;
+      }
+    }
+
     return InventoryProductItem(
-      code: existingProduct?.code ??
-          (enteredCode.isNotEmpty ? enteredCode : nextCode),
+      code: resolvedCode,
       name: nameController.text.trim(),
       category: selectedCategory ?? 'General',
       purchasePrice: purchasePrice,

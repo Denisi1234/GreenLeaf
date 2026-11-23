@@ -15,6 +15,8 @@
 
 # Ignore optional Flutter deferred-components Play Core references
 -dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.appupdate.** { *; }
+-keep class com.google.android.play.core.install.** { *; }
 
 # Preserve line numbers and source file names for Play Console deobfuscation
 -keepattributes SourceFile,LineNumberTable

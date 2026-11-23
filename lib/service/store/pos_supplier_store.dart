@@ -8,9 +8,27 @@ mixin PosSupplierStore on ChangeNotifier {
   List<Receiving> get _receivings;
   List<InventoryProductItem> get _allInventory;
   InventoryStockState _deriveStockState(double stockCount);
+  String nextAutoProductCode({
+    Iterable<String> extraUsedCodes = const <String>[],
+  });
   Future<InventoryProductItem> addProduct(InventoryProductItem product);
   Future<void> updateProduct(InventoryProductItem product);
   PhpApiClient? get cloudApi;
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   List<Supplier> get suppliers => List.unmodifiable(_suppliers);
 
@@ -96,6 +114,26 @@ mixin PosSupplierStore on ChangeNotifier {
     }
     await _reloadSuppliers();
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.inventory,
+        action: 'receiving.recorded',
+        severity: AuditSeverity.info,
+        entityType: 'Goods Receiving',
+        entityId: '$id',
+        entityLabel: receiving.supplierName.isEmpty
+            ? 'Invoice ${receiving.invoiceNo}'
+            : receiving.supplierName,
+        summary:
+            'Received ${receiving.lines.length} line(s) from ${receiving.supplierName.isEmpty ? 'supplier' : receiving.supplierName} totaling ${receiving.total.toStringAsFixed(0)} TSh',
+        afterValues: {
+          'Supplier': receiving.supplierName,
+          'Invoice #': receiving.invoiceNo,
+          'Total': receiving.total.toStringAsFixed(2),
+          'Lines': '${receiving.lines.length}',
+        },
+      ),
+    );
     return receiving.id == id
         ? receiving
         : Receiving(
@@ -141,8 +179,7 @@ mixin PosSupplierStore on ChangeNotifier {
     }
 
     // If product doesn't exist in catalog yet, auto-create it (OSPOS quick-add receiving)
-    final nextCode =
-        'P${(_allInventory.length + 1).toString().padLeft(3, '0')}';
+    final nextCode = nextAutoProductCode();
     final newItem = InventoryProductItem(
       code: nextCode,
       name: line.productName.trim(),
@@ -158,9 +195,30 @@ mixin PosSupplierStore on ChangeNotifier {
   }
 
   Future<void> deleteReceiving(int id) async {
+    Receiving? target;
+    for (final r in _receivings) {
+      if (r.id == id) {
+        target = r;
+        break;
+      }
+    }
     await _database.deleteReceiving(id);
     await _reloadSuppliers();
     notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.inventory,
+        action: 'receiving.deleted',
+        severity: AuditSeverity.critical,
+        entityType: 'Goods Receiving',
+        entityId: '$id',
+        entityLabel: target?.supplierName.isNotEmpty == true
+            ? target!.supplierName
+            : 'Receiving #$id',
+        summary:
+            'Deleted goods receiving #$id${target == null ? '' : ' (${target.total.toStringAsFixed(0)} TSh)'}',
+      ),
+    );
   }
 
   /// Outstanding payable per supplier from opening balances and receipts.

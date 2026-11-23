@@ -62,8 +62,8 @@ class ProductCsvService {
               decoration:  InputDecoration(
                 hintText:
                     context.tr('Milk 1L, Dairy, 2000, 2500, 30\nBread, Bakery, 1500, 1800, 20'),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.standard),
+                border: const OutlineInputBorder(
+                  borderRadius: AppCorners.input,
                 ),
               ),
             ),
@@ -113,8 +113,7 @@ class ProductCsvService {
             parts.length >= 8 && parts[7].isNotEmpty ? parts[7] : null;
         final packSize =
             parts.length >= 9 ? double.tryParse(parts[8]) : null;
-        final nextCode =
-            'P${(store.inventory.length + addedCount + 1).toString().padLeft(3, '0')}';
+        final nextCode = store.nextAutoProductCode();
 
         try {
           await store.addProduct(

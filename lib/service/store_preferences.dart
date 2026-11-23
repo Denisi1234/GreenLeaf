@@ -1,4 +1,6 @@
 class StorePreferences {
+  static const int currentThemeDefaultVersion = 1;
+
   const StorePreferences({
     this.lowStockThreshold = 20,
     this.dateFormat = 'MMM d, yyyy',
@@ -13,10 +15,12 @@ class StorePreferences {
     this.openCashDrawerOnPrint = false,
     this.enableAdvancedAccounting = false,
     this.requireOpenShiftForSales = false,
-    this.appTheme = 'light',
+    this.appTheme = 'whatsapp_dark',
+    this.themeDefaultVersion = currentThemeDefaultVersion,
   });
 
   static const themeOptions = <String>[
+    'whatsapp_dark',
     'system',
     'light',
     'slate',
@@ -50,6 +54,7 @@ class StorePreferences {
   final bool enableAdvancedAccounting;
   final bool requireOpenShiftForSales;
   final String appTheme;
+  final int themeDefaultVersion;
 
   bool get uses24HourTime => timeFormat == '24h';
 
@@ -68,6 +73,7 @@ class StorePreferences {
     bool? enableAdvancedAccounting,
     bool? requireOpenShiftForSales,
     String? appTheme,
+    int? themeDefaultVersion,
   }) {
     return StorePreferences(
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
@@ -88,6 +94,7 @@ class StorePreferences {
       requireOpenShiftForSales:
           requireOpenShiftForSales ?? this.requireOpenShiftForSales,
       appTheme: appTheme ?? this.appTheme,
+      themeDefaultVersion: themeDefaultVersion ?? this.themeDefaultVersion,
     );
   }
 
@@ -99,7 +106,13 @@ class StorePreferences {
     final openDrawer = json['openCashDrawerOnPrint'];
     final advAcc = json['enableAdvancedAccounting'];
     final reqShift = json['requireOpenShiftForSales'];
-    final rawTheme = (json['appTheme'] as String? ?? 'light').trim().toLowerCase();
+    final savedThemeVersion =
+        (json['themeDefaultVersion'] as num?)?.toInt() ?? 0;
+    final rawTheme =
+        (json['appTheme'] as String? ?? 'whatsapp_dark').trim().toLowerCase();
+    final resolvedTheme = savedThemeVersion < currentThemeDefaultVersion
+        ? 'whatsapp_dark'
+        : (themeOptions.contains(rawTheme) ? rawTheme : 'whatsapp_dark');
     return StorePreferences(
       lowStockThreshold:
           ((json['lowStockThreshold'] as num?)?.toInt() ?? 20).clamp(0, 100000),
@@ -130,7 +143,8 @@ class StorePreferences {
           reqShift == 1 ||
           reqShift == '1' ||
           (reqShift is String && reqShift.toLowerCase() == 'true'),
-      appTheme: themeOptions.contains(rawTheme) ? rawTheme : 'light',
+      appTheme: resolvedTheme,
+      themeDefaultVersion: currentThemeDefaultVersion,
     );
   }
 
@@ -149,5 +163,6 @@ class StorePreferences {
         'enableAdvancedAccounting': enableAdvancedAccounting,
         'requireOpenShiftForSales': requireOpenShiftForSales,
         'appTheme': appTheme,
+        'themeDefaultVersion': themeDefaultVersion,
       };
 }

@@ -412,4 +412,41 @@ mixin PosOperationsDatabaseMixin {
     final db = await database;
     await db.delete('stores', where: 'id = ?', whereArgs: <Object?>[storeId]);
   }
+
+  /// Appends an immutable audit entry; updates and deletes are intentionally omitted.
+  Future<void> insertAuditLog(Map<String, Object?> row) async {
+    final db = await database;
+    await db.insert(
+      'audit_logs',
+      row,
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  Future<List<Map<String, Object?>>> loadAuditLogs(
+    String storeId, {
+    int limit = 2000,
+  }) async {
+    final db = await database;
+    return db.query(
+      'audit_logs',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+      orderBy: 'sequence DESC, timestamp DESC',
+      limit: limit,
+    );
+  }
+
+  Future<Map<String, Object?>?> loadLatestAuditLog(String storeId) async {
+    final db = await database;
+    final rows = await db.query(
+      'audit_logs',
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+      orderBy: 'sequence DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.first;
+  }
 }

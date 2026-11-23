@@ -128,7 +128,7 @@ class ExpenseFormDropdown extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: AppCorners.control,
+        borderRadius: AppCorners.input,
         border: Border.all(color: AppColors.border),
       ),
       child: Row(

@@ -6,12 +6,118 @@ final class ResourceRepository
     public const RESOURCES = [
         'profile', 'receipt-settings', 'tax-settings', 'roles', 'staff',
         'customers', 'debit-entries', 'expenses', 'register-shifts',
-        'cash-movements', 'suppliers', 'receivings',
+        'cash-movements', 'suppliers', 'receivings', 'receiving-lines',
+        'suspended-sales', 'accounts', 'journal-entries', 'fixed-assets',
+        'bank-transactions', 'audit-logs', 'stores',
         'recovery-sessions', 'learning-rules', 'cart', 'preferences',
     ];
 
     public function __construct(private Database $db)
     {
+    }
+
+    public function storeRevision(string $storeId): int
+    {
+        $rows = $this->db->rows('SELECT revision FROM stores WHERE id = ?', [$storeId]);
+        return (int) ($rows[0]['revision'] ?? 0);
+    }
+
+    public function allVersions(string $storeId): array
+    {
+        $rows = $this->db->rows(
+            'SELECT resource, version FROM resource_versions WHERE store_id = ?',
+            [$storeId]
+        );
+        $versions = [];
+        foreach ($rows as $row) {
+            $versions[(string) $row['resource']] = (int) $row['version'];
+        }
+        return $versions;
+    }
+
+    public function resolveAccessibleStoreId(array $user, ?string $requestedStoreId): string
+    {
+        $primaryStoreId = (string) $user['store_id'];
+        $candidate = trim((string) ($requestedStoreId ?? ''));
+        if ($candidate === '' || $candidate === $primaryStoreId || $candidate === 'store-default') {
+            return $primaryStoreId;
+        }
+        if (($user['role'] ?? '') !== 'owner') {
+            throw new ApiError(403, 'Only store owners can switch store branches.');
+        }
+        // Verify branch belongs to this owner's primary store registry
+        $branches = $this->resourceRows($primaryStoreId, 'stores');
+        foreach ($branches as $branch) {
+            if ((string) ($branch['id'] ?? '') === $candidate) {
+                $this->ensureStoreRow($candidate, (string) ($branch['name'] ?? 'Branch'));
+                return $candidate;
+            }
+        }
+        throw new ApiError(403, 'Store branch not found or not accessible.');
+    }
+
+    public function ensureStoreRow(string $storeId, string $name = 'Store'): void
+    {
+        $exists = $this->db->rows('SELECT id FROM stores WHERE id = ?', [$storeId]);
+        if ($exists !== []) {
+            return;
+        }
+        $now = gmdate('c');
+        $this->db->execute(
+            'INSERT INTO stores (id, name, revision, created_at) VALUES (?, ?, 1, ?)',
+            [$storeId, $name !== '' ? $name : 'Store', $now]
+        );
+    }
+
+    public function listOwnerStores(array $user): array
+    {
+        $primaryStoreId = (string) $user['store_id'];
+        $primaryRow = $this->db->rows('SELECT id, name FROM stores WHERE id = ?', [$primaryStoreId]);
+        $primaryName = (string) ($primaryRow[0]['name'] ?? 'Main Store');
+        $branches = $this->resourceRows($primaryStoreId, 'stores');
+        $hasPrimary = false;
+        foreach ($branches as $b) {
+            if ((string) ($b['id'] ?? '') === $primaryStoreId) {
+                $hasPrimary = true;
+                break;
+            }
+        }
+        if (!$hasPrimary) {
+            array_unshift($branches, [
+                'id' => $primaryStoreId,
+                'name' => $primaryName,
+                'address' => '',
+                'contact' => '',
+                'is_primary' => true,
+            ]);
+        }
+        return $this->collection($primaryStoreId, 'stores', $branches);
+    }
+
+    public function createBranchStore(array $user, array $body): array
+    {
+        $primaryStoreId = (string) $user['store_id'];
+        $name = trim((string) ($body['name'] ?? ''));
+        if ($name === '') {
+            throw new ApiError(422, 'Provide a store name.');
+        }
+        $id = trim((string) ($body['id'] ?? ''));
+        if ($id === '' || strlen($id) > 100) {
+            $id = 'store-' . bin2hex(random_bytes(8));
+        }
+        $record = [
+            'id' => $id,
+            'name' => $name,
+            'address' => trim((string) ($body['address'] ?? '')),
+            'contact' => trim((string) ($body['contact'] ?? '')),
+            'created_at' => gmdate('c'),
+        ];
+        return $this->mutate($primaryStoreId, function () use ($user, $primaryStoreId, $id, $name, $record) {
+            $this->ensureStoreRow($id, $name);
+            $this->put($user, 'stores', $id, $record);
+            $this->bump($primaryStoreId, 'stores');
+            return $this->listOwnerStores($user);
+        });
     }
 
     public function mutate(string $storeId, callable $operation): array

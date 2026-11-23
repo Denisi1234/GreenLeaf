@@ -18,6 +18,7 @@ import 'pos_local_database.dart';
 import 'pos_cloud_database.dart';
 import 'php_api_client.dart';
 import 'pos_order_models.dart';
+import 'audit_log_model.dart';
 import 'receipt_settings.dart';
 import 'store_models.dart';
 import 'store_preferences.dart';
@@ -38,12 +39,14 @@ import 'services/auth_service.dart';
 import 'services/inventory_service.dart';
 import 'services/sales_service.dart';
 
+export 'audit_log_model.dart';
 export 'models/staff_models.dart';
 export 'services/accounting_service.dart';
 export 'services/auth_service.dart';
 export 'services/inventory_service.dart';
 export 'services/sales_service.dart';
 
+part 'store/pos_audit_store.dart';
 part 'store/pos_accounting_store.dart';
 part 'store/pos_auth_store.dart';
 part 'store/pos_supplier_store.dart';
@@ -89,6 +92,7 @@ const _demoProducts = <String, String>{
 class PosLocalStore extends ChangeNotifier
     with
         WidgetsBindingObserver,
+        PosAuditStore,
         PosAccountingStore,
         PosAuthStore,
         PosSupplierStore,
@@ -162,6 +166,8 @@ class PosLocalStore extends ChangeNotifier
   final List<Receiving> _receivings = <Receiving>[];
   @override
   final List<SuspendedSale> _suspendedSales = <SuspendedSale>[];
+  @override
+  final List<AuditLogEntry> _auditLogs = <AuditLogEntry>[];
   @override
   AppProfileData _profile = AppProfileData.empty();
   @override
@@ -369,6 +375,12 @@ class PosLocalStore extends ChangeNotifier
   }
 
   @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
     _disposed = true;
     try {
@@ -444,6 +456,7 @@ class PosLocalStore extends ChangeNotifier
     _journalEntries.clear();
     _fixedAssets.clear();
     _bankTransactions.clear();
+    _auditLogs.clear();
 
     final storedInventory = await _database.loadInventory(_activeStoreId);
     _allInventory
@@ -520,6 +533,8 @@ class PosLocalStore extends ChangeNotifier
       ..addAll(storedSuspended.map(SuspendedSale.fromJson));
     await _reloadAccounting();
     await _recalculateStockStates();
+    await _reloadAuditLogs();
+    if (_disposed) return;
 
     _updateCartTotals();
     _scheduleMidnightRefresh();
@@ -529,19 +544,26 @@ class PosLocalStore extends ChangeNotifier
     notifyListeners();
   }
 
-  /// Runs silent, automatic background cloud sync every 2 minutes when online
-  /// and authenticated — no manual sync button required.
+  /// Runs near-real-time multi-device revision polling every 8 seconds when
+  /// online and authenticated, pulling immediately whenever another device
+  /// (Device A ↔ Device B) writes a sale, stock change, or audit event.
   void _scheduleAutoSync() {
     _autoSyncTimer?.cancel();
-    _autoSyncTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+    var ticks = 0;
+    _autoSyncTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       if (!_isInitialized || _disposed) return;
       final db = _cloudApi ?? _database;
       if (db is PosHybridDatabase &&
           db.api.token != null &&
           db.api.token!.isNotEmpty) {
-        unawaited(
-          db.retryFailed().then((_) => db.syncNow(pull: true)).catchError((_) {}),
-        );
+        db.storeId = _activeStoreId;
+        db.api.activeStoreId = _activeStoreId;
+        ticks++;
+        if (ticks % 15 == 0) {
+          // Every ~2 minutes, also retry any previously failed outbox items
+          unawaited(db.retryFailed().catchError((_) {}));
+        }
+        unawaited(db.pollRevisionAndSync().catchError((_) => false));
       }
     });
   }
@@ -557,7 +579,7 @@ class PosLocalStore extends ChangeNotifier
     ).subtract(_eastAfricaOffset);
     final delay = nextMidnightUtc.difference(nowUtc);
     _midnightRefreshTimer = Timer(delay, () {
-      if (!_isInitialized) return;
+      if (!_isInitialized || _disposed) return;
       notifyListeners();
       _scheduleMidnightRefresh();
       _checkAndSendDailySms();
@@ -674,6 +696,7 @@ class PosLocalStore extends ChangeNotifier
   double _cartTotal = 0;
   double get cartTotal => _cartTotal;
 
+  @override
   StaffRoleData? staffRoleById(String roleId) {
     for (final role in _staffRoles) {
       if (role.id == roleId) return role;

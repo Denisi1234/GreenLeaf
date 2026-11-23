@@ -12,9 +12,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../service/daily_sales_report_service.dart';
 import '../../../service/pos_local_store.dart';
 import '../../widgets/app_design.dart';
+import '../../widgets/app_theme_palette.dart';
 import '../settings_layout.dart';
 
-/// Daily SMS reports, backups, and maintenance pane.
+/// Clean, native Android/iOS Data settings pane (Daily SMS report & backups).
 /// Cloud sync runs silently and automatically in the background.
 class DataSyncSettingsPane extends StatefulWidget {
   const DataSyncSettingsPane({super.key});
@@ -51,8 +52,6 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
     if (!mounted) return;
     setState(() => _busy = false);
 
-    // If not delivered by the backend SMS gateway, open the native SMS app
-    // pre-filled with the recipient and today's sales summary.
     if (!result.deliveredByServer &&
         result.targetPhone != null &&
         result.smsText != null) {
@@ -163,7 +162,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                   'title': e.title,
                   'amount': e.amount,
                   'category': e.category,
-                  'date': e.date,
+                  'date': e.date.toIso8601String(),
                 })
             .toList(),
         'staff': store.staffMembers
@@ -171,9 +170,11 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
             .toList(),
       };
 
-      final bytes = Uint8List.fromList(
-        utf8.encode(const JsonEncoder.withIndent('  ').convert(payload)),
+      final encoder = JsonEncoder.withIndent(
+        '  ',
+        (obj) => obj is DateTime ? obj.toIso8601String() : obj.toString(),
       );
+      final bytes = Uint8List.fromList(utf8.encode(encoder.convert(payload)));
       final directory = await getApplicationDocumentsDirectory();
       final stamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
       final file = File('${directory.path}/azapos_backup_$stamp.json');
@@ -197,6 +198,7 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<PosLocalStore>();
+    final palette = AppThemePalette.of(context);
     final lang = store.languageCode;
     String t(String en, String sw) => settingsText(lang, en, sw);
 
@@ -206,33 +208,30 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
       _phoneInitialized = true;
     }
 
-    final previewMessage =
-        DailySalesReportService.buildDailyReportMessage(store: store);
-
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 28),
       children: [
-        SettingsCard(
-          icon: Icons.sms_outlined,
-          title: t('Daily SMS report', 'Ripoti ya SMS ya kila siku'),
-          description: t(
-            'Send an end-of-day sales summary to the owner by SMS.',
-            'Tuma muhtasari wa mauzo wa jioni kwa mmiliki kwa SMS.',
-          ),
-          trailing: SettingsStatusPill(
-            label: store.storePreferences.autoDailySmsReport
-                ? t('On', 'Imewashwa')
-                : t('Off', 'Imezimwa'),
-            positive: store.storePreferences.autoDailySmsReport,
-          ),
+        _SectionLabel(t('DAILY SMS REPORT', 'RIPOTI YA SMS YA KILA SIKU'), palette),
+        _NativeGroupCard(
+          palette: palette,
           children: [
-            SettingsSwitchTile(
-              title: t('Send automatically', 'Tuma kiotomatiki'),
-              subtitle: t(
-                'Runs every evening in East Africa Time (UTC+3).',
-                'Hufanya kazi kila jioni kwa saa za Afrika Mashariki (UTC+3).',
+            SwitchListTile.adaptive(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              title: Text(
+                t('Send automatically', 'Tuma kiotomatiki'),
+                style: AppTypography.bodyMain.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: palette.ink,
+                ),
+              ),
+              subtitle: Text(
+                t('Every evening (EAT)', 'Kila jioni (EAT)'),
+                style: AppTypography.caption.copyWith(color: palette.textMuted),
               ),
               value: store.storePreferences.autoDailySmsReport,
+              activeTrackColor: palette.primary,
               onChanged: _busy
                   ? null
                   : (value) async {
@@ -248,213 +247,275 @@ class _DataSyncSettingsPaneState extends State<DataSyncSettingsPane> {
                       }
                     },
             ),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            SettingsField(
-              label: t('Owner phone number', 'Namba ya simu ya mmiliki'),
-              hint: t(
-                'e.g. 0712345678 or +255712345678',
-                'mf. 0712345678 au +255712345678',
-              ),
-              child: TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  hintText: '0712345678',
-                  filled: true,
-                  fillColor: AppColors.pageBackground,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SettingsField(
-              label: t('Delivery time', 'Muda wa kutuma'),
-              hint: t('24-hour clock, e.g. 21:00', 'Saa 24, mf. 21:00'),
-              child: DropdownButtonFormField<String>(
-                key: ValueKey(
-                  'sms-${store.storePreferences.dailySmsTime}-$lang',
-                ),
-                initialValue: store.storePreferences.dailySmsTime,
-                items: [
-                  for (final time in const [
-                    '18:00',
-                    '19:00',
-                    '20:00',
-                    '21:00',
-                    '22:00',
-                  ])
-                    DropdownMenuItem(value: time, child: Text(time)),
-                ],
-                onChanged: _busy
-                    ? null
-                    : (value) {
-                        if (value == null) return;
-                        store.setStorePreferences(
-                          store.storePreferences.copyWith(dailySmsTime: value),
-                        );
-                      },
-              ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.pageBackground,
-                borderRadius: BorderRadius.circular(AppRadius.sharp),
-                border: Border.all(color: AppColors.border),
-              ),
+            Divider(height: 1, indent: 16, color: palette.divider),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    t('Live SMS preview', 'Mfano wa SMS ya leo'),
-                    style: AppTypography.label.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMuted,
+                    t('Owner phone number', 'Namba ya simu ya mmiliki'),
+                    style: AppTypography.caption.copyWith(
+                      color: palette.textMuted,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: TextStyle(color: palette.ink, fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: '0712345678',
+                      hintStyle: TextStyle(color: palette.textMuted),
+                      filled: true,
+                      fillColor: palette.pageBackground,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(color: palette.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(color: palette.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(
+                          color: palette.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   Text(
-                    previewMessage,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.ink,
-                      height: 1.45,
+                    t('Delivery time', 'Muda wa kutuma'),
+                    style: AppTypography.caption.copyWith(
+                      color: palette.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    key: ValueKey(
+                      'sms-${store.storePreferences.dailySmsTime}-$lang',
+                    ),
+                    initialValue: store.storePreferences.dailySmsTime,
+                    dropdownColor: palette.surface,
+                    style: TextStyle(color: palette.ink, fontSize: 15),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: palette.pageBackground,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(color: palette.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(color: palette.border),
+                      ),
+                    ),
+                    items: [
+                      for (final time in const [
+                        '18:00',
+                        '19:00',
+                        '20:00',
+                        '21:00',
+                        '22:00',
+                      ])
+                        DropdownMenuItem(value: time, child: Text(time)),
+                    ],
+                    onChanged: _busy
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            store.setStorePreferences(
+                              store.storePreferences
+                                  .copyWith(dailySmsTime: value),
+                            );
+                          },
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 48,
+                    child: FilledButton.icon(
+                      onPressed: _busy ? null : () => _sendDailySms(store),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: palette.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                      ),
+                      icon: _busy
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send_rounded, size: 18),
+                      label: Text(
+                        t('Send daily report via SMS', 'Tuma ripoti kwa SMS'),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 48,
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _busy ? null : () => _sendDailySms(store),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                ),
-                icon: _busy
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.send_rounded, size: 18),
-                label: Text(
-                  t('Send daily report via SMS', 'Tuma ripoti kwa SMS'),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
-        SettingsCard(
-          icon: Icons.backup_outlined,
-          title: t('Backup & export', 'Hifadhi nakala na hamisha'),
-          description: t(
-            'Save a backup copy of your shop data to this device.',
-            'Pakua nakala ya akiba ya data ya duka lako.',
-          ),
+
+        const SizedBox(height: 22),
+
+        _SectionLabel(t('BACKUP & MAINTENANCE', 'NAKALA NA MATENGENEZO'), palette),
+        _NativeGroupCard(
+          palette: palette,
           children: [
-            SettingsInfoRow(
-              label: t('Includes', 'Inajumuisha'),
-              value: t(
-                'Profile, sales, stock, customers, credit ledger, expenses, staff',
-                'Wasifu, mauzo, hisa, wateja, madeni, matumizi, wafanyakazi',
-              ),
+            _NativeActionRow(
+              palette: palette,
+              icon: Icons.ios_share_rounded,
+              title: t('Export backup', 'Hamisha nakala'),
+              busy: _busy,
+              onTap: _busy ? null : () => _exportBackup(store),
             ),
-            const SizedBox(height: 14),
-            SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: _busy ? null : () => _exportBackup(store),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.ink,
-                  backgroundColor: AppColors.surface,
-                  side: BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                ),
-                icon: const Icon(Icons.ios_share_rounded, size: 18),
-                label: Text(
-                  t('Export backup', 'Hamisha nakala'),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        SettingsCard(
-          icon: Icons.build_circle_outlined,
-          title: t('Maintenance', 'Matengenezo'),
-          description: t(
-            'Refresh local records without changing your saved data.',
-            'Sasisha kumbukumbu za ndani bila kubadilisha data yako.',
-          ),
-          children: [
-            SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: _busy
-                    ? null
-                    : () => _run(
-                          store.reloadFromLocal,
-                          t(
-                            'Local data refreshed',
-                            'Data ya ndani imesasishwa',
-                          ),
+            Divider(height: 1, indent: 52, color: palette.divider),
+            _NativeActionRow(
+              palette: palette,
+              icon: Icons.refresh_rounded,
+              title: t('Reload local data', 'Pakia data upya'),
+              busy: _busy,
+              onTap: _busy
+                  ? null
+                  : () => _run(
+                        store.reloadFromLocal,
+                        t(
+                          'Local data refreshed',
+                          'Data ya ndani imesasishwa',
                         ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.ink,
-                  backgroundColor: AppColors.surface,
-                  side: BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                ),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(
-                  t('Reload local data', 'Pakia data upya'),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+                      ),
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text, this.palette);
+  final String text;
+  final AppThemePalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
+      child: Text(
+        text,
+        style: AppTypography.label.copyWith(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: palette.textMuted,
+        ),
+      ),
+    );
+  }
+}
+
+class _NativeGroupCard extends StatelessWidget {
+  const _NativeGroupCard({required this.palette, required this.children});
+  final AppThemePalette palette;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.standard),
+        border: Border.all(color: palette.border),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(children: children),
+      ),
+    );
+  }
+}
+
+class _NativeActionRow extends StatelessWidget {
+  const _NativeActionRow({
+    required this.palette,
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.busy = false,
+  });
+
+  final AppThemePalette palette;
+  final IconData icon;
+  final String title;
+  final VoidCallback? onTap;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 54),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: palette.textMuted),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.bodyMain.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: palette.ink,
+                  ),
+                ),
+              ),
+              if (busy)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: palette.primary,
+                  ),
+                )
+              else
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: palette.textMuted,
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

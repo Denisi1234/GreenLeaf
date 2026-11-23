@@ -7,6 +7,7 @@ import 'package:aza_pos/ui/products/add_product_page.dart';
 void main() {
   testWidgets('AddProductPage renders without crashing', (WidgetTester tester) async {
     final store = PosLocalStore();
+    addTearDown(store.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -19,7 +20,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify the page rendered and the form is visible
-    expect(find.text('New Item Details'), findsOneWidget);
+    expect(find.text('Add item'), findsOneWidget);
+    expect(find.text('ITEM DETAILS'), findsOneWidget);
     expect(find.text('Item Name *', findRichText: true), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

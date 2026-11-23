@@ -71,8 +71,9 @@ class _ReviewStore extends PosLocalStore {
         .fold<double>(0, (sum, item) => sum + item.quantity);
     if (!quantity.isFinite ||
         quantity < 0 ||
-        quantity + otherQuantity > availableStockForProduct(product))
+        quantity + otherQuantity > availableStockForProduct(product)) {
       return false;
+    }
     final firstIndex = _cart.indexWhere((item) =>
         productKey(item) == productKey(product) &&
         item.customPrice == matchPrice);
@@ -298,7 +299,12 @@ void main() {
           tester, const SalesPage(useSharedShell: true), Size(width, 900));
       await tester.tap(find.byTooltip('Catalog view'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Compact tiles'));
+      await tester.tap(
+        find.widgetWithText(
+          CheckedPopupMenuItem<ProductCardLayout>,
+          'Compact tiles',
+        ),
+      );
       await tester.pumpAndSettle();
       expect(
           tester
@@ -314,7 +320,12 @@ void main() {
       expect(store.cartCount, 1);
       await tester.tap(find.byTooltip('Catalog view'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('List view'));
+      await tester.tap(
+        find.widgetWithText(
+          CheckedPopupMenuItem<ProductCardLayout>,
+          'List view',
+        ),
+      );
       await tester.pumpAndSettle();
       expect(tester.widget<ProductCard>(find.byType(ProductCard)).layout,
           ProductCardLayout.list);
@@ -415,17 +426,23 @@ void main() {
       'desktop settings preserves unsaved receipt edits across sections',
       (tester) async {
     await _mount(tester, const SettingsPage(), const Size(1440, 1000));
-    await tester.tap(find.widgetWithText(ListTile, 'Receipts'));
+    await tester.tap(find.widgetWithText(InkWell, 'Receipts'));
     await tester.pumpAndSettle();
-    final toggle = find.byType(Switch).first;
-    final original = tester.widget<Switch>(toggle).value;
+    final toggle = find.widgetWithText(SwitchListTile, 'Store contact');
+    await tester.scrollUntilVisible(
+      toggle,
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    final original = tester.widget<SwitchListTile>(toggle).value;
     await tester.tap(toggle);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'Theme & language'));
+    await tester.tap(find.widgetWithText(InkWell, 'Theme & language'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'Receipts'));
+    await tester.tap(find.widgetWithText(InkWell, 'Receipts'));
     await tester.pumpAndSettle();
-    expect(tester.widget<Switch>(find.byType(Switch).first).value, !original);
+    expect(tester.widget<SwitchListTile>(toggle).value, !original);
     expect(tester.takeException(), isNull);
   });
   const checkout = PaymentPage(items: [
@@ -616,7 +633,7 @@ void main() {
     final store = await _mount(
         tester, const MorePage(useSharedShell: true), const Size(390, 900));
     expect(find.byKey(const ValueKey('more-customers')), findsOneWidget);
-    expect(find.text('Aza POS'), findsOneWidget);
+    expect(find.textContaining('Member since'), findsOneWidget);
     await tester.ensureVisible(find.byKey(const ValueKey('more-sign-out')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('more-sign-out')));

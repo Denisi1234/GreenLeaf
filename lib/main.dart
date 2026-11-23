@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'service/pos_local_store.dart';
 import 'service/app_notification_service.dart';
+import 'service/app_update_service.dart';
 import 'app.dart';
 import 'ui/widgets/app_design.dart';
 
@@ -28,10 +29,11 @@ Future<void> main() async {
       child: AppBootstrapper(store: store),
     ),
   );
-  // Initialize local notifications after the first frame so permission dialogs
-  // or OEM notification quirks can never block or crash app startup.
+  // Initialize local notifications and silent Play In-App Updates after the
+  // first frame so neither can block or crash app startup.
   WidgetsBinding.instance.addPostFrameCallback((_) {
     AppNotificationService.instance.initialize();
+    AppUpdateService.instance.initialize();
   });
 }
 

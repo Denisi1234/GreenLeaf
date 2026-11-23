@@ -36,6 +36,7 @@ class PhpApiClient {
   final Map<String, String> _uploads = {};
   Future<void> _pending = Future.value();
   String? _token;
+  String? activeStoreId;
   Map<String, dynamic> user = {};
   void Function()? onSignedOut;
 
@@ -86,6 +87,11 @@ class PhpApiClient {
       final request = http.Request(method, Uri.parse('$baseUrl/$path'));
       request.headers['Content-Type'] = 'application/json';
       if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
+      if (activeStoreId != null &&
+          activeStoreId!.isNotEmpty &&
+          activeStoreId != 'store-default') {
+        request.headers['X-Store-Id'] = activeStoreId!;
+      }
       if (versionResource != null) {
         request.headers['If-Match'] = '${_versions[versionResource] ?? 0}';
       }
@@ -155,6 +161,27 @@ class PhpApiClient {
     final data = result['data'] as Map<String, dynamic>;
     _token = data['token'] as String;
     user = data['user'] as Map<String, dynamic>;
+  }
+
+  /// Lightweight revision check (~200 bytes) for near-real-time multi-device sync.
+  Future<({int revision, Map<String, int> versions})?> fetchSyncRevision() async {
+    if (_token == null || _token!.isEmpty) return null;
+    try {
+      final result = await request('GET', 'sync/revision');
+      final data = result['data'];
+      if (data is! Map<String, dynamic>) return null;
+      final rev = (data['revision'] as num?)?.toInt() ?? 0;
+      final rawVersions = data['versions'] as Map?;
+      final versions = <String, int>{};
+      if (rawVersions != null) {
+        for (final entry in rawVersions.entries) {
+          versions[entry.key.toString()] = (entry.value as num?)?.toInt() ?? 0;
+        }
+      }
+      return (revision: rev, versions: versions);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<Map<String, Object?>>> rows(String resource) async {

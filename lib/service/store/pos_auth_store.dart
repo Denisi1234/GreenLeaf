@@ -46,6 +46,21 @@ mixin PosAuthStore on ChangeNotifier {
   ({String hash, String salt}) _hashPassword(String password);
   bool get _disposed;
   Future<void> reloadFromLocal();
+  Future<AuditLogEntry> recordAuditEvent({
+    required AuditModule module,
+    required String action,
+    AuditSeverity severity = AuditSeverity.info,
+    required String entityType,
+    String entityId = '',
+    String entityLabel = '',
+    required String summary,
+    Map<String, String> beforeValues = const <String, String>{},
+    Map<String, String> afterValues = const <String, String>{},
+    Map<String, String> metadata = const <String, String>{},
+    String? actorIdOverride,
+    String? actorNameOverride,
+    String? actorRoleOverride,
+  });
 
   bool _verifyPassword(String password, String salt, String hash) {
     return StaffCredentials.verifyPassword(password, salt: salt, hash: hash);
@@ -155,6 +170,17 @@ mixin PosAuthStore on ChangeNotifier {
 
             _isLoggedIn = true;
             notifyListeners();
+            unawaited(
+              recordAuditEvent(
+                module: AuditModule.settings,
+                action: 'auth.login_success',
+                severity: AuditSeverity.info,
+                entityType: 'Session',
+                entityId: _currentUserId ?? '',
+                entityLabel: trimmed,
+                summary: 'Signed in online as $trimmed',
+              ),
+            );
             return true;
           } on ApiException catch (error) {
             if (error.status == 401) {
@@ -162,16 +188,57 @@ mixin PosAuthStore on ChangeNotifier {
             } else {
               _lastAuthError = error.message;
             }
+            unawaited(
+              recordAuditEvent(
+                module: AuditModule.settings,
+                action: 'auth.login_failed',
+                severity: AuditSeverity.critical,
+                entityType: 'Session',
+                entityLabel: trimmed,
+                summary:
+                    'Failed sign-in attempt for $trimmed (${_lastAuthError ?? 'error'})',
+                actorIdOverride: trimmed,
+                actorNameOverride: trimmed,
+                actorRoleOverride: 'Unauthenticated',
+              ),
+            );
             return false;
           } catch (_) {}
         }
 
         _lastAuthError = 'user_not_found';
+        unawaited(
+          recordAuditEvent(
+            module: AuditModule.settings,
+            action: 'auth.login_failed',
+            severity: AuditSeverity.critical,
+            entityType: 'Session',
+            entityLabel: trimmed,
+            summary: 'Failed sign-in attempt for unknown user $trimmed',
+            actorIdOverride: trimmed,
+            actorNameOverride: trimmed,
+            actorRoleOverride: 'Unauthenticated',
+          ),
+        );
         return false;
       }
 
       if (!member.hasLogin || !member.isActive) {
         _lastAuthError = 'account_inactive';
+        unawaited(
+          recordAuditEvent(
+            module: AuditModule.settings,
+            action: 'auth.login_failed',
+            severity: AuditSeverity.critical,
+            entityType: 'Session',
+            entityId: member.id,
+            entityLabel: member.name,
+            summary: 'Blocked sign-in to inactive account ${member.name}',
+            actorIdOverride: member.id,
+            actorNameOverride: member.name,
+            actorRoleOverride: 'Blocked',
+          ),
+        );
         return false;
       }
 
@@ -179,6 +246,20 @@ mixin PosAuthStore on ChangeNotifier {
           _verifyPassword(password, member.passwordSalt, member.passwordHash);
       if (!valid) {
         _lastAuthError = 'invalid_password';
+        unawaited(
+          recordAuditEvent(
+            module: AuditModule.settings,
+            action: 'auth.login_failed',
+            severity: AuditSeverity.critical,
+            entityType: 'Session',
+            entityId: member.id,
+            entityLabel: member.name,
+            summary: 'Incorrect password entered for ${member.name}',
+            actorIdOverride: member.id,
+            actorNameOverride: member.name,
+            actorRoleOverride: 'Unauthenticated',
+          ),
+        );
         return false;
       }
 
@@ -242,6 +323,17 @@ mixin PosAuthStore on ChangeNotifier {
       }
 
       notifyListeners();
+      unawaited(
+        recordAuditEvent(
+          module: AuditModule.settings,
+          action: 'auth.login_success',
+          severity: AuditSeverity.info,
+          entityType: 'Session',
+          entityId: member.id,
+          entityLabel: member.name,
+          summary: 'Signed in as ${member.name}',
+        ),
+      );
       return true;
     }
 
@@ -462,6 +554,17 @@ mixin PosAuthStore on ChangeNotifier {
       );
       await saveStaffMember(updated, cloudPassword: newPassword);
       notifyListeners();
+      unawaited(
+        recordAuditEvent(
+          module: AuditModule.settings,
+          action: 'auth.password_changed',
+          severity: AuditSeverity.critical,
+          entityType: 'Staff Password',
+          entityId: member.id,
+          entityLabel: member.name,
+          summary: 'Changed password for ${member.name}',
+        ),
+      );
       return true;
     }
 
@@ -517,6 +620,17 @@ mixin PosAuthStore on ChangeNotifier {
       }
 
       notifyListeners();
+      unawaited(
+        recordAuditEvent(
+          module: AuditModule.settings,
+          action: 'auth.password_changed',
+          severity: AuditSeverity.critical,
+          entityType: 'Staff Password',
+          entityId: member.id,
+          entityLabel: member.name,
+          summary: 'Reset password for ${member.name}',
+        ),
+      );
       return true;
     }
 
@@ -538,7 +652,22 @@ mixin PosAuthStore on ChangeNotifier {
           // Signing out must also work while the device is offline.
         }
       }
+      final actor = currentUser;
+      final actorName = actor?.name.trim() ?? '';
       await _database.clearSyncSession();
+      await recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'auth.logout',
+        severity: AuditSeverity.info,
+        entityType: 'Session',
+        entityId: actor?.id ?? 'session',
+        entityLabel: actorName.isNotEmpty ? actorName : 'Active Session',
+        summary: actorName.isNotEmpty
+            ? 'Signed out $actorName'
+            : 'Signed out of active session',
+        actorIdOverride: actor?.id,
+        actorNameOverride: actor?.name,
+      );
       final previousBaseUrl = api?.baseUrl;
       _cloudApi?.dispose();
       _cloudApi = PosHybridDatabase(PhpApiClient(previousBaseUrl));

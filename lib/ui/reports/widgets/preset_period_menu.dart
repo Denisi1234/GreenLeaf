@@ -95,7 +95,8 @@ class PresetPeriodMenu extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: AppColors.surfaceSecondary,
-          borderRadius: BorderRadius.all(Radius.circular(AppRadius.input)),
+          borderRadius:
+              const BorderRadius.all(Radius.circular(AppRadius.input)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

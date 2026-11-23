@@ -178,7 +178,7 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppRadius.extraRounded),
         ),
         border: Border(top: BorderSide(color: AppColors.border)),
@@ -275,15 +275,15 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
                     filled: true,
                     fillColor: AppColors.surface,
                     border: OutlineInputBorder(
-                      borderRadius: AppCorners.control,
+                      borderRadius: AppCorners.input,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: AppCorners.control,
+                      borderRadius: AppCorners.input,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: AppCorners.control,
+                      borderRadius: AppCorners.input,
                       borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                     ),
                   ),
@@ -346,15 +346,15 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
                       filled: true,
                       fillColor: AppColors.surface,
                       border: OutlineInputBorder(
-                        borderRadius: AppCorners.control,
+                        borderRadius: AppCorners.input,
                         borderSide: BorderSide(color: AppColors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: AppCorners.control,
+                        borderRadius: AppCorners.input,
                         borderSide: BorderSide(color: AppColors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: AppCorners.control,
+                        borderRadius: AppCorners.input,
                         borderSide:
                             BorderSide(color: AppColors.primary, width: 1.5),
                       ),
@@ -391,15 +391,15 @@ class _MeasurementSaleSheetState extends State<MeasurementSaleSheet> {
                     filled: true,
                     fillColor: AppColors.surface,
                     border: OutlineInputBorder(
-                      borderRadius: AppCorners.control,
+                      borderRadius: AppCorners.input,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: AppCorners.control,
+                      borderRadius: AppCorners.input,
                       borderSide: BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: AppCorners.control,
+                      borderRadius: AppCorners.input,
                       borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                     ),
                   ),

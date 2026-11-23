@@ -126,7 +126,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ),
             ],
             bottom: PreferredSize(
-              preferredSize: Size.fromHeight(1),
+              preferredSize: const Size.fromHeight(1),
               child: Divider(height: 1, color: AppColors.divider),
             ),
           ),
@@ -304,7 +304,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               elevation: 0,
               scrolledUnderElevation: 0,
               bottom: PreferredSize(
-                preferredSize: Size.fromHeight(1),
+                preferredSize: const Size.fromHeight(1),
                 child: Divider(height: 1, color: AppColors.divider),
               ),
             ),
@@ -364,15 +364,15 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         vertical: 11,
                       ),
                       border: const OutlineInputBorder(
-                        borderRadius: AppCorners.control,
+                        borderRadius: AppCorners.input,
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: const OutlineInputBorder(
-                        borderRadius: AppCorners.control,
+                        borderRadius: AppCorners.input,
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: AppCorners.control,
+                        borderRadius: AppCorners.input,
                         borderSide: BorderSide(color: AppColors.primary, width: 1.5),
                       ),
                     ),

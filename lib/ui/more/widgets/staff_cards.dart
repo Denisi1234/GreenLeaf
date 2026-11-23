@@ -236,7 +236,7 @@ class StaffMiniTag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.surfaceSecondary,
-        borderRadius: BorderRadius.all(Radius.circular(6)),
+        borderRadius: const BorderRadius.all(Radius.circular(6)),
       ),
       child: Text(
         label,
