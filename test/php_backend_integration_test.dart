@@ -15,13 +15,13 @@ void main() {
     final api = PhpApiClient(endpoint);
     final secondApi = PhpApiClient(endpoint);
     final staffApi = PhpApiClient(endpoint);
-    final email = 'integration-$suffix@example.test';
+    final phone = '070000000$suffix';
     const password = 'Integration-password-123';
     PosLocalStore? owner;
     PosLocalStore? second;
     PosLocalStore? cashier;
     try {
-      await api.authenticate(email: email, password: password, register: true,
+      await api.authenticate(phone: phone, password: password, register: true,
         name: 'Owner', storeName: 'Integration shop');
       owner = PosLocalStore(database: PosCloudDatabase(api));
       await owner.initialize();
@@ -48,7 +48,7 @@ void main() {
       expect(owner.inventory.single.stockCount, 3);
       expect(owner.customers.single.debitBalance, 0);
 
-      await secondApi.authenticate(email: email, password: password, register: false);
+      await secondApi.authenticate(phone: phone, password: password, register: false);
       second = PosLocalStore(database: PosCloudDatabase(secondApi));
       await second.initialize();
       expect(second.inventory.single.code, 'P1');
@@ -59,13 +59,13 @@ void main() {
       );
       await second.refreshFromServer();
       expect(second.inventory.single.stockCount, 4);
-      final staffEmail = 'cashier-$suffix@example.test';
+      final staffPhone = '070000000${(suffix % 1000).toString().padLeft(3, '0')}';
       final staff = await owner.addStaffMember(
-        name: 'Cashier', email: staffEmail, phone: '0700000001',
+        name: 'Cashier', email: 'cashier-$suffix@example.test', phone: staffPhone,
         roleId: owner.staffRoles.last.id, username: 'cashier-$suffix',
         password: password,
       );
-      await staffApi.authenticate(email: staffEmail, password: password, register: false);
+      await staffApi.authenticate(phone: staffPhone, password: password, register: false);
       cashier = PosLocalStore(database: PosCloudDatabase(staffApi));
       await cashier.initialize();
       expect(cashier.inventory.single.stockCount, 4);

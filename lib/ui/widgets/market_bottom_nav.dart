@@ -115,7 +115,7 @@ class _NavItemButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppThemePalette.of(context);
     final iconColor = selected ? palette.primaryDeep : palette.textMuted;
-    final labelColor = selected ? palette.primaryDeep : palette.textBody;
+    final labelColor = selected ? palette.ink : palette.textMuted;
 
     return Semantics(
       selected: selected,
@@ -125,18 +125,27 @@ class _NavItemButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          hoverColor: Colors.transparent,
-          focusColor: Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          splashColor: palette.primary.withValues(alpha: 0.12),
+          highlightColor: palette.primary.withValues(alpha: 0.08),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  height: 26,
+                // Material 3 pill container for the active tab
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  width: 58,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? palette.primaryLight.withValues(alpha: 0.85)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
                   child: Center(
                     child: Stack(
                       clipBehavior: Clip.none,
@@ -144,11 +153,11 @@ class _NavItemButton extends StatelessWidget {
                         Icon(
                           selected ? item.activeIcon : item.icon,
                           color: iconColor,
-                          size: 24,
+                          size: 22,
                         ),
                         if (item.badgeCount > 0)
                           Positioned(
-                            top: -5,
+                            top: -4,
                             right: -10,
                             child: Container(
                               constraints: const BoxConstraints(
@@ -162,7 +171,7 @@ class _NavItemButton extends StatelessWidget {
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.pill),
                                 border: Border.all(
-                                  color: AppColors.surface,
+                                  color: palette.headerSurface,
                                   width: 1.5,
                                 ),
                               ),
@@ -184,14 +193,14 @@ class _NavItemButton extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   item.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.caption.copyWith(
                     color: labelColor,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 11.5,
                     letterSpacing: 0.1,
                   ),

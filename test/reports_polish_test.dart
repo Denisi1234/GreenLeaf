@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -18,14 +20,17 @@ import 'package:aza_pos/ui/reports/pos_report_catalog.dart';
 import 'package:aza_pos/ui/reports/advanced_reports_page.dart';
 import 'package:aza_pos/ui/reports/reports_catalog_page.dart';
 import 'package:aza_pos/ui/reports/widgets/trend_chart.dart';
+import 'package:aza_pos/ui/reports/widgets/report_data_table.dart';
 import 'package:aza_pos/ui/widgets/app_theme.dart';
 import 'support/ui_test_fonts.dart';
 
 class _ReportStore extends PosLocalStore {
+  _ReportStore({this.locale = 'en'});
+  final String locale;
   @override
   bool get isInitialized => true;
   @override
-  String get languageCode => 'en';
+  String get languageCode => locale;
   @override
   List<InventoryProductItem> get inventory => List.generate(
       32,
@@ -89,15 +94,34 @@ class _ReportStore extends PosLocalStore {
       ];
 }
 
-Future<void> _mount(WidgetTester tester, Widget page, double width) async {
+Future<void> _mount(WidgetTester tester, Widget page, double width,
+    {String languageCode = 'en',
+    double textScale = 1,
+    TargetPlatform platform = TargetPlatform.android}) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = Size(width, 900);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
   await tester.binding.setSurfaceSize(Size(width, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  final store = _ReportStore();
+  final store = _ReportStore(locale: languageCode);
   addTearDown(store.dispose);
   await tester.pumpWidget(ChangeNotifierProvider<PosLocalStore>.value(
       value: store,
       child: MaterialApp(
-          theme: buildOsposTheme(ThemeData.light().textTheme),
+          locale: Locale(languageCode),
+          supportedLocales: const [Locale('en'), Locale('sw')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate
+          ],
+          builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!),
+          theme: buildOsposTheme(ThemeData.light().textTheme)
+              .copyWith(platform: platform),
           home: RepaintBoundary(
               key: const ValueKey('report-preview'), child: page))));
   await tester.pumpAndSettle();
@@ -121,7 +145,10 @@ Future<void> _capture(WidgetTester tester, String name) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(configureUiTestFonts);
+  setUpAll(() async {
+    await initializeDateFormatting();
+    await configureUiTestFonts();
+  });
 
   testWidgets('directory lists all 79 reports once without decorative badges',
       (tester) async {
@@ -147,7 +174,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  for (final width in [360.0, 1440.0]) {
+  for (final width in [320.0, 768.0, 1440.0]) {
     testWidgets('all 79 reports render at ${width.toInt()}px', (tester) async {
       await _mount(tester, const ReportsCatalogPage(), width);
       await _capture(tester, 'reports-directory-${width.toInt()}');
@@ -170,6 +197,88 @@ void main() {
       }
     });
   }
+
+  testWidgets(
+      'phone records open full details and retain sorting, columns and table view',
+      (tester) async {
+    final report = posReports
+        .firstWhere((r) => r.data == ReportData.inventory && !r.chart);
+    await _mount(tester, EnhancedReportPage(report: report), 320);
+    expect(find.byType(DataTable), findsNothing);
+    expect(find.byKey(const ValueKey('report-record-0')), findsOneWidget);
+    await _capture(tester, 'native-report-phone');
+    await tester.tap(find.byKey(const ValueKey('report-record-0')));
+    await tester.pumpAndSettle();
+    expect(find.text('Record details'), findsOneWidget);
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is SelectableText && w.data == 'Product 00'),
+        findsOneWidget);
+    await _capture(tester, 'native-report-details');
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    for (final ascending in [true, false]) {
+      await tester.tap(find.byTooltip('Sort records'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(PopupMenuItem<int>, 'In stock'));
+      await tester.pumpAndSettle();
+      final widget =
+          tester.widget<ReportDataTable>(find.byType(ReportDataTable));
+      expect(widget.sortAscending, ascending);
+      expect(widget.pageRows.first[widget.sortColumn!], ascending ? 0 : 31);
+    }
+    await tester.tap(find.byTooltip('Table view'));
+    await tester.pumpAndSettle();
+    expect(
+        tester.widget<DataTable>(find.byType(DataTable)).rows, hasLength(25));
+    await tester.tap(find.byTooltip('List view'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DataTable), findsNothing);
+    await tester.tap(find.byTooltip('Next page'));
+    await tester.pumpAndSettle();
+    expect(
+        tester.widget<ReportDataTable>(find.byType(ReportDataTable)).pageRows,
+        hasLength(7));
+    await tester.enterText(find.byType(TextField), 'Product 01');
+    await tester.pumpAndSettle();
+    expect(
+        tester.widget<ReportDataTable>(find.byType(ReportDataTable)).pageRows,
+        hasLength(1));
+    await tester.tap(find.byTooltip('Show columns'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(CheckboxListTile).first);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('report-record-0')));
+    await tester.pumpAndSettle();
+    expect(find.byWidgetPredicate((w) => w is SelectableText && w.data == 'P1'),
+        findsNothing);
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Export'));
+    await tester.pumpAndSettle();
+    expect(find.text('${report.title} • 1 record'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('iOS-style report sheets fit Kiswahili and large text',
+      (tester) async {
+    final report = posReports
+        .firstWhere((r) => r.data == ReportData.inventory && !r.chart);
+    await _mount(tester, EnhancedReportPage(report: report), 320,
+        languageCode: 'sw', textScale: 1.3, platform: TargetPlatform.iOS);
+    await _capture(tester, 'native-report-ios-swahili');
+    await tester.tap(find.byKey(const ValueKey('report-record-0')));
+    await tester.pumpAndSettle();
+    expect(find.text('Maelezo ya rekodi'), findsOneWidget);
+    expect(find.byType(SelectableText), findsWidgets);
+    await _capture(tester, 'native-report-ios-details');
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets(
       'tables search, sort, page and export only visible matching columns',

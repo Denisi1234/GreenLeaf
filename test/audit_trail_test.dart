@@ -482,6 +482,8 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.text('SECURITY & AUDIT'), findsOneWidget);
+      await tester.ensureVisible(tile);
+      await tester.pumpAndSettle();
       await tester.tap(tile);
       await tester.pumpAndSettle();
 

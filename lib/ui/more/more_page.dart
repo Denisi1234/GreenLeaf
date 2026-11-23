@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -7,6 +8,7 @@ import '../../service/pos_local_store.dart';
 import '../reports/report_hub_page.dart';
 import '../sales/order_history_page.dart';
 import '../widgets/app_design.dart';
+import '../widgets/app_image.dart';
 import '../widgets/app_theme_palette.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'advanced_features_page.dart';
@@ -181,74 +183,124 @@ class _MorePageState extends State<MorePage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               children: [
-                // Clean store identity header: Store Name | Member since [Month Year]
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                // Native Material 3 Android store identity card: Logo/Avatar, Store Name, Member Since badge & edit shortcut
+                Material(
+                  color: palette.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    side: BorderSide(color: palette.border),
                   ),
-                  decoration: BoxDecoration(
-                    color: palette.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.standard),
-                    border: Border.all(color: palette.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: palette.primaryLight,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          initial,
-                          style: AppTypography.bodyMain.copyWith(
-                            color: palette.primary,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const SettingsPage(
+                            initialSection: SettingsSection.business,
                           ),
                         ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 2,
-                          children: [
-                            Text(
-                              storeName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.bodyMain.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: palette.ink,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: palette.primaryLight,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: palette.border.withValues(alpha: 0.5),
                               ),
                             ),
-                            Text(
-                              '|',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: palette.border,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            clipBehavior: Clip.antiAlias,
+                            alignment: Alignment.center,
+                            child: store.profile.logoPath != null &&
+                                    store.profile.logoPath!.isNotEmpty
+                                ? Image(
+                                    image: appImageProvider(
+                                      context,
+                                      store.profile.logoPath!,
+                                    ),
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Text(
+                                      initial,
+                                      style: AppTypography.bodyMain.copyWith(
+                                        color: palette.primary,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    initial,
+                                    style: AppTypography.bodyMain.copyWith(
+                                      color: palette.primary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  storeName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.bodyMain.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: palette.ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.verified_outlined,
+                                      size: 13,
+                                      color: palette.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        t(
+                                          'Member since $memberSince',
+                                          'Mwanachama tangu $memberSince',
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTypography.caption.copyWith(
+                                          color: palette.textMuted,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                            Text(
-                              t(
-                                'Member since $memberSince',
-                                'Mwanachama tangu $memberSince',
-                              ),
-                              style: AppTypography.caption.copyWith(
-                                color: palette.textMuted,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: palette.textMuted,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 22),
@@ -259,22 +311,22 @@ class _MorePageState extends State<MorePage> {
                     palette: palette,
                   ),
                 ],
-                const SizedBox(height: 26),
+                const SizedBox(height: 28),
+                // Native Material 3 tonal destructive sign-out button
                 SizedBox(
                   height: 48,
                   width: double.infinity,
-                  child: OutlinedButton.icon(
+                  child: FilledButton.tonalIcon(
                     key: const ValueKey('more-sign-out'),
                     onPressed: _signingOut ? null : _signOut,
-                    style: OutlinedButton.styleFrom(
+                    style: FilledButton.styleFrom(
                       foregroundColor: AppColors.dangerDeep,
-                      backgroundColor: palette.surface,
-                      side: BorderSide(color: palette.border),
+                      backgroundColor: AppColors.danger.withValues(alpha: 0.1),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        borderRadius: BorderRadius.circular(AppRadius.standard),
                       ),
                     ),
-                    icon: const Icon(Icons.logout_rounded, size: 19),
+                    icon: const Icon(Icons.logout_rounded, size: 20),
                     label: Text(
                       _signingOut
                           ? t('Signing out…', 'Inaondoka…')
@@ -325,7 +377,7 @@ class _MenuGroupCard extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: palette.surface,
-            borderRadius: BorderRadius.circular(AppRadius.standard),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: palette.border),
           ),
           child: Material(
@@ -336,7 +388,7 @@ class _MenuGroupCard extends StatelessWidget {
                   if (i > 0)
                     Divider(
                       height: 1,
-                      indent: 52,
+                      indent: 62,
                       color: palette.divider,
                     ),
                   _MenuRow(item: group.items[i], palette: palette),
@@ -364,6 +416,7 @@ class _MenuRow extends StatelessWidget {
     return InkWell(
       key: ValueKey('more-${item.id}'),
       onTap: () {
+        HapticFeedback.lightImpact();
         if (item.onTap != null) {
           item.onTap!();
           return;
@@ -375,15 +428,24 @@ class _MenuRow extends StatelessWidget {
         }
       },
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 54),
+        constraints: const BoxConstraints(minHeight: 56),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(
-                item.icon,
-                size: 22,
-                color: palette.textMuted,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: palette.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(AppRadius.sharp),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  item.icon,
+                  size: 20,
+                  color: palette.primary,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -391,7 +453,7 @@ class _MenuRow extends StatelessWidget {
                   item.title,
                   style: AppTypography.bodyMain.copyWith(
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: palette.ink,
                   ),
                 ),

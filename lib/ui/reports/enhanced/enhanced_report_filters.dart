@@ -122,6 +122,7 @@ extension _EnhancedReportFilters on _EnhancedReportPageState {
     if (!mounted || range == null) return;
     _updateState(() {
       _range = range;
+      _selectedPreset = null;
       _selection = null;
       _page = 0;
     });

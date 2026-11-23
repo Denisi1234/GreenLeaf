@@ -7,12 +7,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/pos_local_store.dart';
+import '../../utils/local_image_store.dart';
 import '../widgets/app_design.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'widgets/staff_credentials_share_dialog.dart';
 import 'widgets/staff_form_widgets.dart';
 import 'widgets/staff_form_tabs.dart';
-
 
 class AddEditStaffPage extends StatefulWidget {
   const AddEditStaffPage({
@@ -73,6 +73,11 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
 
   StaffMemberData? get _member => widget.member;
 
+  List<StaffRoleData> get _availableRoles {
+    final liveRoles = context.read<PosLocalStore>().staffRoles;
+    return liveRoles.isNotEmpty ? liveRoles : widget.roles;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -107,6 +112,15 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final roles = _availableRoles;
+    if (roles.isNotEmpty && !roles.any((role) => role.id == _selectedRoleId)) {
+      _selectedRoleId = roles.first.id;
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
@@ -127,7 +141,7 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
   }
 
   StaffRoleData? get _selectedRole {
-    for (final role in widget.roles) {
+    for (final role in _availableRoles) {
       if (role.id == _selectedRoleId) return role;
     }
     return null;
@@ -148,7 +162,9 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
         imageQuality: 88,
       );
       if (!mounted || file == null) return;
-      setState(() => _avatarPath = file.path);
+      final saved = await persistPickedImage(file, 'avatar');
+      if (!mounted) return;
+      setState(() => _avatarPath = saved);
     } catch (_) {
       if (!mounted) return;
       showMarketNotice(
@@ -212,17 +228,19 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
     if (username.isEmpty) {
       _setError('username', context.tr('Username is required'));
     } else if (username.length < 5) {
-      _setError('username', context.tr('Username must be at least 5 characters'));
+      _setError(
+          'username', context.tr('Username must be at least 5 characters'));
     }
 
     final password = _passwordController.text;
-    final minimumLength =
-        context.read<PosLocalStore>().cloudApi == null ? 8 : 10;
+    const minimumLength = 10;
     if (!widget.isEditing && password.isEmpty) {
       _setError('password', context.tr('Password is required'));
     } else if (password.isNotEmpty && password.length < minimumLength) {
       _setError(
-          'password', context.tr('Password must be at least {p0} characters', args: {'p0': minimumLength}));
+          'password',
+          context.tr('Password must be at least {p0} characters',
+              args: {'p0': minimumLength}));
     }
     if (password.isNotEmpty && _confirmPasswordController.text != password) {
       _setError('confirm', context.tr('Passwords do not match'));
@@ -235,7 +253,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
         employeeNumber,
         excludingId: _member?.id,
       )) {
-        _setError('employeeNumber', context.tr('Employee number is already in use'));
+        _setError(
+            'employeeNumber', context.tr('Employee number is already in use'));
       }
     }
 
@@ -269,6 +288,13 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
       return false;
     }
     return true;
+  }
+
+  void _continueSetup() {
+    FocusScope.of(context).unfocus();
+    if (_selectedTab < _tabs.length - 1) {
+      setState(() => _selectedTab += 1);
+    }
   }
 
   Future<void> _save() async {
@@ -366,6 +392,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild the form when roles arrive from local/cloud storage.
+    context.watch<PosLocalStore>().staffRoles;
     final baseTheme = Theme.of(context);
     final manropeTheme = baseTheme.copyWith(
       textTheme: GoogleFonts.manropeTextTheme(baseTheme.textTheme),
@@ -384,7 +412,9 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
             child: Column(
               children: [
                 MarketPageHeader(
-                  title: widget.isEditing ? context.tr('Edit Staff') : context.tr('Add Staff'),
+                  title: widget.isEditing
+                      ? context.tr('Edit Staff')
+                      : context.tr('Add Staff'),
                   subtitle: widget.isEditing
                       ? context.tr('Update profile, employment, and access')
                       : context.tr('Create a professional staff profile'),
@@ -415,6 +445,12 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
                 StaffSaveBar(
                   isSaving: _isSaving,
                   isEditing: widget.isEditing,
+                  isFinalStep: _selectedTab == _tabs.length - 1,
+                  canGoBack: _selectedTab > 0,
+                  onBack: _selectedTab == 0
+                      ? null
+                      : () => setState(() => _selectedTab -= 1),
+                  onContinue: _isSaving ? null : _continueSetup,
                   onSave: _isSaving ? null : _save,
                 ),
               ],
@@ -441,7 +477,8 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
           errors: _errors,
           onPickHireDate: _pickHireDate,
           onClearHireDate: () => setState(() => _hireDate = ''),
-          onEmploymentTypeChanged: (type) => setState(() => _employmentType = type),
+          onEmploymentTypeChanged: (type) =>
+              setState(() => _employmentType = type),
           onClearError: (field) => setState(() => _errors.remove(field)),
         );
       case 2:
@@ -453,13 +490,15 @@ class _AddEditStaffPageState extends State<AddEditStaffPage> {
           obscurePassword: _obscurePassword,
           obscureConfirm: _obscureConfirm,
           errors: _errors,
-          onToggleObscurePassword: () => setState(() => _obscurePassword = !_obscurePassword),
-          onToggleObscureConfirm: () => setState(() => _obscureConfirm = !_obscureConfirm),
+          onToggleObscurePassword: () =>
+              setState(() => _obscurePassword = !_obscurePassword),
+          onToggleObscureConfirm: () =>
+              setState(() => _obscureConfirm = !_obscureConfirm),
           onClearError: (field) => setState(() => _errors.remove(field)),
         );
       case 3:
         return StaffAccessTab(
-          roles: widget.roles,
+          roles: _availableRoles,
           selectedRoleId: _selectedRoleId,
           selectedRole: _selectedRole,
           errors: _errors,

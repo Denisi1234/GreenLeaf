@@ -1894,5 +1894,13 @@
   "Stock changed": "Stock changed",
   "Review the available quantity and try again.": "Review the available quantity and try again.",
   "{p0} each": "{p0} each",
-  "Remove item": "Remove item"
+  "Remove item": "Remove item",
+  "Record details": "Record details",
+  "Table view": "Table view",
+  "Sort records": "Sort records",
+  "Tap a record for details": "Tap a record for details",
+  "Custom range": "Custom range",
+  "Loading reports from your stores.": "Loading reports from your stores.",
+  "Check your connection and try again.": "Check your connection and try again.",
+  "Swipe to see all columns": "Swipe to see all columns"
 }

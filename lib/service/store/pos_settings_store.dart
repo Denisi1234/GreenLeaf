@@ -112,7 +112,7 @@ mixin PosSettingsStore on ChangeNotifier {
     final normalized = themeId.trim().toLowerCase();
     final nextTheme = StorePreferences.themeOptions.contains(normalized)
         ? normalized
-        : 'whatsapp_dark';
+        : StorePreferences.defaultAppTheme;
     final current = _storePreferences;
     _storePreferences = StorePreferences(
       lowStockThreshold: current.lowStockThreshold,
@@ -209,7 +209,11 @@ mixin PosSettingsStore on ChangeNotifier {
           final cloudThemeVersion =
               (cloudMap['themeDefaultVersion'] as num?)?.toInt() ?? 0;
           if (cloudThemeVersion < StorePreferences.currentThemeDefaultVersion) {
-            cloudMap.remove('appTheme');
+            final savedTheme =
+                (cloudMap['appTheme'] as String?)?.trim().toLowerCase();
+            if (!StorePreferences.themeOptions.contains(savedTheme)) {
+              cloudMap.remove('appTheme');
+            }
             cloudMap['themeDefaultVersion'] =
                 StorePreferences.currentThemeDefaultVersion;
             migratedThemeDefault = true;

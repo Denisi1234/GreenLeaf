@@ -23,6 +23,7 @@ class ReportEmptyState extends StatelessWidget {
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
         child: MarketEmptyState(
+          showCard: false,
           icon: hasFilters
               ? Icons.filter_alt_off_outlined
               : Icons.insights_rounded,
@@ -40,9 +41,7 @@ class ReportEmptyState extends StatelessWidget {
           actionLabel: hasFilters
               ? context.tr('Reset all filters')
               : (setupAction != null ? context.tr(setupAction!.$2) : null),
-          actionIcon: hasFilters
-              ? Icons.refresh_rounded
-              : setupAction?.$3,
+          actionIcon: hasFilters ? Icons.refresh_rounded : setupAction?.$3,
           onAction: hasFilters
               ? onClearFilters
               : (setupAction != null

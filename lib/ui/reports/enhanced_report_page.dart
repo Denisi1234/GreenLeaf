@@ -79,7 +79,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
   bool _loadingSnapshots = false;
   String? _snapshotsError;
 
-  PresetPeriod _selectedPreset = PresetPeriod.thisMonth;
+  PresetPeriod? _selectedPreset = PresetPeriod.thisMonth;
 
   @override
   void initState() {
@@ -129,6 +129,15 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
 
   void _updateState(VoidCallback fn) => setState(fn);
 
+  AppBar _reportAppBar({Widget? action}) => AppBar(
+        title: Text(context.tr(widget.report.title),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.sectionHeader),
+        toolbarHeight: 64,
+        actions: action == null ? null : [action, const SizedBox(width: 8)],
+      );
+
   @override
   Widget build(BuildContext context) {
     if (!context.watch<PosLocalStore>().hasPermission('View Reports')) {
@@ -143,65 +152,30 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
       if (_loadingSnapshots) {
         return Scaffold(
           backgroundColor: AppColors.pageBackground,
-          body: SafeArea(
-            child: Column(
-              children: [
-                MarketPageHeader(
-                  title: context.tr(widget.report.title),
-                  subtitle: context.tr('Loading all stores…'),
-                  transparentBackButton: true,
-                  onBack: () => Navigator.of(context).maybePop(),
-                ),
-                Expanded(
-                  child: MarketLoadingView(
-                    message: context.tr('Aggregating Store Analytics…'),
-                    subMessage:
-                        'Retrieving real-time data across all store branches',
-                  ),
-                ),
-              ],
-            ),
+          appBar: _reportAppBar(),
+          body: MarketLoadingView(
+            message: context.tr('Loading all stores…'),
+            subMessage: context.tr('Loading reports from your stores.'),
           ),
         );
       }
       if (_snapshotsError != null) {
         return Scaffold(
           backgroundColor: AppColors.pageBackground,
-          body: SafeArea(
-            child: Column(
-              children: [
-                MarketPageHeader(
-                  title: context.tr(widget.report.title),
-                  subtitle: context.tr('Could not load stores'),
-                  transparentBackButton: true,
-                  onBack: () => Navigator.of(context).maybePop(),
-                ),
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_snapshotsError!,
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodySmall
-                                  .copyWith(color: AppColors.danger)),
-                          const SizedBox(height: 16),
-                          MarketButton(
-                            label: context.tr('Retry'),
-                            icon: Icons.refresh_rounded,
-                            isFullWidth: false,
-                            onTap: _loadSnapshots,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          appBar: _reportAppBar(),
+          body: Center(
+              child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: MarketEmptyState(
+              icon: Icons.cloud_off_outlined,
+              title: context.tr('Could not load stores'),
+              message: context.tr('Check your connection and try again.'),
+              actionLabel: context.tr('Retry'),
+              actionIcon: Icons.refresh_rounded,
+              onAction: _loadSnapshots,
+              showCard: false,
             ),
-          ),
+          )),
         );
       }
     }
@@ -250,14 +224,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(
-        title: Text(context.tr(report.title),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.sectionHeader),
-        toolbarHeight: 72,
-        actions: [_buildExportButton(exportTable), const SizedBox(width: 12)],
-      ),
+      appBar: _reportAppBar(action: _buildExportButton(exportTable)),
       body: SafeArea(
         top: false,
         child: Column(
@@ -292,8 +259,7 @@ class _EnhancedReportPageState extends State<EnhancedReportPage> {
             Expanded(
               child: pageRows.isEmpty
                   ? ReportEmptyState(
-                      hasFilters:
-                          _searchQuery.isNotEmpty || _selection != null,
+                      hasFilters: _searchQuery.isNotEmpty || _selection != null,
                       note: table.note,
                       setupAction: _setupAction,
                       onClearFilters: _clearFilters,

@@ -11,58 +11,40 @@ extension _EnhancedReportSheets on _EnhancedReportPageState {
         ].join(' | '),
       );
 
-  Widget _buildExportButton(ReportTable table) => InkWell(
-        onTap: _exporting
-            ? null
-            : () {
-                if (table.rows.isEmpty) {
-                  showMarketNotice(
-                    context,
-                    title: context.tr('Nothing to export'),
-                    message: context.tr(
-                      'No records found for this report period.',
-                    ),
-                    type: MarketNoticeType.info,
-                  );
-                  return;
-                }
-                _showExportSheet(table);
-              },
-        child: Container(
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSecondary,
-            borderRadius: AppCorners.control,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_exporting) ...[
-                SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.ink)),
-                const SizedBox(width: 8),
-              ] else ...[
-                Icon(Icons.ios_share_outlined,
-                    size: 16, color: AppColors.ink),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                context.tr('Export'),
-                style: AppTypography.label.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color:
-                      table.rows.isEmpty ? AppColors.textLight : AppColors.ink,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+  Widget _buildExportButton(ReportTable table) {
+    void export() {
+      if (table.rows.isEmpty) {
+        showMarketNotice(context,
+            title: context.tr('Nothing to export'),
+            message: context.tr('No records found for this report period.'),
+            type: MarketNoticeType.info);
+        return;
+      }
+      _showExportSheet(table);
+    }
+
+    final icon = _exporting
+        ? SizedBox(
+            width: 18,
+            height: 18,
+            child:
+                CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink))
+        : Icon(
+            Theme.of(context).platform == TargetPlatform.iOS
+                ? Icons.ios_share_outlined
+                : Icons.file_download_outlined,
+            size: 22);
+    if (MediaQuery.sizeOf(context).width < 700) {
+      return IconButton(
+          tooltip: context.tr('Export'),
+          onPressed: _exporting ? null : export,
+          icon: icon);
+    }
+    return TextButton.icon(
+        onPressed: _exporting ? null : export,
+        icon: icon,
+        label: Text(context.tr('Export')));
+  }
 
   Future<void> _showExportSheet(ReportTable table) async {
     await showModalBottomSheet<void>(

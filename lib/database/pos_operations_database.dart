@@ -134,13 +134,34 @@ mixin PosOperationsDatabaseMixin {
   Future<void> replaceStaffMembers(
       List<Map<String, Object?>> members, String storeId) async {
     final db = await database;
+    final existing = await db.query(
+      'staff_members',
+      columns: <String>['id', 'password_hash', 'password_salt'],
+      where: 'store_id = ?',
+      whereArgs: <Object?>[storeId],
+    );
+    final cachedCredentials = <String, Map<String, Object?>>{
+      for (final row in existing)
+        if (row['id'] is String &&
+            (row['password_hash'] as String? ?? '')
+                .startsWith('pbkdf2_sha256\$'))
+          row['id'] as String: row,
+    };
     final batch = db.batch();
     batch.delete('staff_members',
         where: 'store_id = ?', whereArgs: <Object?>[storeId]);
     for (final member in members) {
+      final row = Map<String, Object?>.from(member);
+      final cached = cachedCredentials['${member['id']}'];
+      if (cached != null) {
+        // The server only stores a non-verifiable placeholder hash, so keep
+        // this device's cached hash to allow offline sign-in after a pull.
+        row['password_hash'] = cached['password_hash'];
+        row['password_salt'] = cached['password_salt'];
+      }
       batch.insert(
         'staff_members',
-        {...member, 'store_id': storeId},
+        {...row, 'store_id': storeId},
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     }

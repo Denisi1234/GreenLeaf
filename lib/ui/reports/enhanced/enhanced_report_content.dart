@@ -33,23 +33,23 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
       ),
       if (table.note != null)
         SliverToBoxAdapter(
-          child: Container(
-            width: double.infinity,
-            color: AppColors.surfaceSecondary,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                  color: AppColors.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(12)),
+              child:
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Icon(Icons.info_outline_rounded,
-                    size: 16, color: AppColors.textMuted),
-                const SizedBox(width: 8),
+                    size: 18, color: AppColors.textMuted),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    table.note!,
-                    style: AppTypography.bodySmall
-                        .copyWith(fontSize: 12, color: AppColors.ink),
-                  ),
-                ),
-              ],
+                    child: Text(context.strings.paragraph(table.note!),
+                        style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.textBody, height: 1.45))),
+              ]),
             ),
           ),
         ),
@@ -74,8 +74,8 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Column(
-              children: widget.additionalSectionsBuilder!(
-                      context, table, data, _range)
+              children: widget.additionalSectionsBuilder!
+                      (context, table, data, _range)
                   .map((w) => Padding(
                       padding: const EdgeInsets.only(bottom: 16), child: w))
                   .toList(),
@@ -86,8 +86,8 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: widget.customBuilder!(
-                context, table, data, _range, _selection),
+            child:
+                widget.customBuilder!(context, table, data, _range, _selection),
           ),
         ),
       if (widget.report.chart &&
@@ -197,9 +197,8 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
             const SizedBox(width: 8),
             IconButton(
               tooltip: context.tr('Previous page'),
-              onPressed: page == 0
-                  ? null
-                  : () => _updateState(() => _page = page - 1),
+              onPressed:
+                  page == 0 ? null : () => _updateState(() => _page = page - 1),
               icon: const Icon(Icons.chevron_left_rounded),
             ),
             Text('${page + 1}/${lastPage + 1}', style: AppTypography.label),
@@ -214,58 +213,21 @@ extension _EnhancedReportContent on _EnhancedReportPageState {
         ),
       );
 
-  Widget _buildMissingDataView(String missing) {
-    return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            MarketPageHeader(
-              title: context.tr(widget.report.title),
-              transparentBackButton: true,
-              onBack: () => Navigator.of(context).pop(),
-            ),
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: AppColors.warningLight,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.construction_outlined,
-                            size: 44, color: AppColors.warning),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(context.tr('Report Unavailable'),
-                          style: AppTypography.h3.copyWith(fontSize: 20)),
-                      const SizedBox(height: 10),
-                      Text(
-                        missing,
-                        textAlign: TextAlign.center,
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.textMuted, height: 1.5),
-                      ),
-                      const SizedBox(height: 20),
-                      MarketButton(
-                        label: context.tr('Back to Reports'),
-                        icon: Icons.arrow_back_rounded,
-                        isFullWidth: false,
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildMissingDataView(String missing) => Scaffold(
+        backgroundColor: AppColors.pageBackground,
+        appBar: _reportAppBar(),
+        body: Center(
+            child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: MarketEmptyState(
+            icon: Icons.info_outline_rounded,
+            title: context.tr('Report Unavailable'),
+            message: context.strings.paragraph(missing),
+            actionLabel: context.tr('Back to Reports'),
+            actionIcon: Icons.arrow_back_rounded,
+            onAction: () => Navigator.of(context).maybePop(),
+            showCard: false,
+          ),
+        )),
+      );
 }

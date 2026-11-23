@@ -60,9 +60,11 @@ class _PaymentPageState extends State<PaymentPage> {
   String? get _selectedCustomer => _vm.selectedCustomer;
   set _selectedCustomer(String? value) => _vm.setCustomer(value);
   double get _discountAmount => _vm.discountAmount;
-  set _discountAmount(double value) => _vm.setDiscount(value, _vm.discountLabel);
+  set _discountAmount(double value) =>
+      _vm.setDiscount(value, _vm.discountLabel);
   String? get _discountLabel => _vm.discountLabel;
-  set _discountLabel(String? value) => _vm.setDiscount(_vm.discountAmount, value);
+  set _discountLabel(String? value) =>
+      _vm.setDiscount(_vm.discountAmount, value);
   double? get _cashReceived => _vm.cashReceived;
   set _cashReceived(double? value) => _vm.setCashReceived(value);
   String get _paymentMethod => _vm.paymentMethod;
@@ -92,8 +94,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
   void _increaseQuantity(OrderLineItem line) {
     if (_savingSale) return;
-    final step =
-        stepForUnit(line.product.unit, line.product.allowFractional);
+    final step = stepForUnit(line.product.unit, line.product.allowFractional);
     final didAdd = context.read<PosLocalStore>().addToCartQuantity(
           line.product,
           step,
@@ -116,10 +117,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
   void _decreaseQuantity(OrderLineItem line) {
     if (_savingSale) return;
-    final step =
-        stepForUnit(line.product.unit, line.product.allowFractional);
-    final removeQty =
-        line.quantity <= step + 0.0001 ? line.quantity : step;
+    final step = stepForUnit(line.product.unit, line.product.allowFractional);
+    final removeQty = line.quantity <= step + 0.0001 ? line.quantity : step;
     final didRemove = context.read<PosLocalStore>().removeQuantityFromCart(
           line.product,
           removeQty,
@@ -137,8 +136,8 @@ class _PaymentPageState extends State<PaymentPage> {
   Future<void> _editLineQuantity(OrderLineItem line) async {
     if (_savingSale) return;
     final store = context.read<PosLocalStore>();
-    final availableForThisLine =
-        roundQuantity(store.availableStockForProduct(line.product) + line.quantity);
+    final availableForThisLine = roundQuantity(
+        store.availableStockForProduct(line.product) + line.quantity);
     final selection = await MeasurementSaleSheet.show(
       context,
       product: line.product,
@@ -223,14 +222,15 @@ class _PaymentPageState extends State<PaymentPage> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
               leading: const Icon(Icons.people_outline),
-              title:  Text(context.tr('Select existing customer')),
-              subtitle:  Text(context.tr('Find a customer already in your records')),
+              title: Text(context.tr('Select existing customer')),
+              subtitle:
+                  Text(context.tr('Find a customer already in your records')),
               onTap: () => Navigator.pop(context, false)),
           ListTile(
               leading: const Icon(Icons.person_add_alt_outlined),
-              title:  Text(context.tr('Create new customer')),
-              subtitle:  Text(
-                  context.tr('Save customer details and attach them to this sale')),
+              title: Text(context.tr('Create new customer')),
+              subtitle: Text(context
+                  .tr('Save customer details and attach them to this sale')),
               onTap: () => Navigator.pop(context, true)),
         ]),
       )),
@@ -358,12 +358,15 @@ class _PaymentPageState extends State<PaymentPage> {
         showMarketNotice(
           context,
           title: context.tr('Remaining Balance'),
-          message: context.tr('Please add payment for remaining TSh{p0}', args: {'p0': _amount(_remainingDue)}),
+          message: context.tr('Please add payment for remaining TSh{p0}',
+              args: {'p0': _amount(_remainingDue)}),
           type: MarketNoticeType.warning,
         );
         return;
       }
-      final methodsSummary = _splitPayments.map((p) => '${p.method} (${_amount(p.amount)})').join(' + ');
+      final methodsSummary = _splitPayments
+          .map((p) => '${p.method} (${_amount(p.amount)})')
+          .join(' + ');
       await _completeSale(paymentMethod: 'Split: $methodsSummary');
       return;
     }
@@ -389,7 +392,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
     for (final line in _orderLines) {
       final code = line.product.code?.trim() ?? '';
-      final key = code.isNotEmpty ? 'code:$code' : 'name:${line.product.name.trim()}';
+      final key =
+          code.isNotEmpty ? 'code:$code' : 'name:${line.product.name.trim()}';
       requestedByKey[key] =
           roundQuantity((requestedByKey[key] ?? 0) + line.quantity);
       nameByKey[key] = line.product.name;
@@ -409,7 +413,8 @@ class _PaymentPageState extends State<PaymentPage> {
         message: context.tr(
             'Only {p0} unit(s) of {p1} are left. Reduce the quantity before charging.',
             args: {
-              'p0': formatStockWithUnit(availableStock, unitByKey[key] ?? 'Pcs'),
+              'p0':
+                  formatStockWithUnit(availableStock, unitByKey[key] ?? 'Pcs'),
               'p1': nameByKey[key] ?? '',
             }),
         type: MarketNoticeType.warning,
@@ -429,7 +434,8 @@ class _PaymentPageState extends State<PaymentPage> {
       showMarketNotice(
         context,
         title: context.tr('Cart Is Empty'),
-        message: context.tr('Add at least one product before charging this order'),
+        message:
+            context.tr('Add at least one product before charging this order'),
         type: MarketNoticeType.warning,
       );
       return;
@@ -444,7 +450,8 @@ class _PaymentPageState extends State<PaymentPage> {
       showMarketNotice(
         context,
         title: context.tr('Insufficient Cash'),
-        message: context.tr('Cash received must be at least TSh{p0}', args: {'p0': _amount(_grandTotal)}),
+        message: context.tr('Cash received must be at least TSh{p0}',
+            args: {'p0': _amount(_grandTotal)}),
         type: MarketNoticeType.warning,
       );
       return;
@@ -538,7 +545,7 @@ class _PaymentPageState extends State<PaymentPage> {
       onPressed:
           !_hasItems || _savingSale || _saleCompleted ? null : _confirmPayment,
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.completionAction,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 54),
         shape: const RoundedRectangleBorder(
@@ -698,8 +705,8 @@ class _PaymentPageState extends State<PaymentPage> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       decoration: BoxDecoration(
                           color: AppColors.surface,
-                          border: Border(
-                              top: BorderSide(color: AppColors.border))),
+                          border:
+                              Border(top: BorderSide(color: AppColors.border))),
                       child: charge,
                     ),
                   ]);

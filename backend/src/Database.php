@@ -18,6 +18,11 @@ final class Database
         }
     }
 
+    public function isMysql(): bool
+    {
+        return $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql';
+    }
+
     public function migrate(): void
     {
         $sql = file_get_contents(__DIR__ . '/../database/schema.sql');

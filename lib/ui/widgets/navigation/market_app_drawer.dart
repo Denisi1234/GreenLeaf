@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +7,7 @@ import '../../more/about_app_page.dart';
 import '../../more/help_support_page.dart';
 import '../../more/theme_selection_page.dart';
 import '../app_design.dart';
+import '../app_image.dart';
 import '../app_theme_palette.dart';
 import '../business/business_category_widgets.dart';
 import '../common/logout_confirmation_dialog.dart';
@@ -152,19 +151,24 @@ class _DrawerProfileHeader extends StatelessWidget {
           child: CircleAvatar(
             radius: 36,
             backgroundColor: AppColors.surface,
-            child: profile.logoPath == null
-                ? Icon(
-                    Icons.storefront_rounded,
-                    color: AppColors.primary,
-                    size: 34,
-                  )
-                : ClipOval(
-                    child: Image.file(
-                      File(profile.logoPath!),
+            child: profile.logoPath?.isNotEmpty == true
+                ? ClipOval(
+                    child: Image(
+                      image: appImageProvider(context, profile.logoPath!),
                       width: 72,
                       height: 72,
                       fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Icons.storefront_rounded,
+                        color: AppColors.primary,
+                        size: 34,
+                      ),
                     ),
+                  )
+                : Icon(
+                    Icons.storefront_rounded,
+                    color: AppColors.primary,
+                    size: 34,
                   ),
           ),
         ),

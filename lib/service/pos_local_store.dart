@@ -88,7 +88,6 @@ const _demoProducts = <String, String>{
   'P009': 'Tide Original',
 };
 
-
 class PosLocalStore extends ChangeNotifier
     with
         WidgetsBindingObserver,
@@ -275,6 +274,8 @@ class PosLocalStore extends ChangeNotifier
     if (user == null) return true;
     final role = staffRoleById(user.roleId);
     if (role == null) return false;
+    // Owner/admin roles always have full access to every feature.
+    if (role.isOwnerAdmin) return true;
     return role.permissions.contains(permission);
   }
 
@@ -366,7 +367,8 @@ class PosLocalStore extends ChangeNotifier
         'suspended_sales': _suspendedSales.map((s) => s.toJson()).toList(),
       };
       final file = File('${directory.path}/azapos_autobackup_latest.json');
-      final tmpFile = File('${directory.path}/azapos_autobackup_latest.json.tmp');
+      final tmpFile =
+          File('${directory.path}/azapos_autobackup_latest.json.tmp');
       await tmpFile.writeAsString(jsonEncode(payload), flush: true);
       await tmpFile.rename(file.path);
     } catch (_) {
@@ -389,6 +391,7 @@ class PosLocalStore extends ChangeNotifier
     _midnightRefreshTimer?.cancel();
     _dailySmsTimer?.cancel();
     _autoSyncTimer?.cancel();
+    _cloudApi?.dispose();
     super.dispose();
   }
 
@@ -475,7 +478,52 @@ class PosLocalStore extends ChangeNotifier
       ..clear()
       ..addAll(await _database.loadOrders(_activeStoreId));
 
-    final storedRoles = await _database.loadStaffRoles(_activeStoreId);
+    var storedRoles = await _database.loadStaffRoles(_activeStoreId);
+    // A staff member can never be assigned access when a new or migrated
+    // store has no roles. Seed practical defaults once, then keep them fully
+    // editable from Staff management.
+    if (storedRoles.isEmpty) {
+      const defaults = <StaffRoleData>[
+        StaffRoleData(
+          id: 'owner',
+          title: 'Owner',
+          subtitle: 'Full access to the business',
+          permissions: _staffPermissionCatalog,
+          sortOrder: 0,
+        ),
+        StaffRoleData(
+          id: 'role-manager',
+          title: 'Manager',
+          subtitle: 'Operations, inventory, and reports',
+          permissions: <String>[
+            'View Sales',
+            'View Reports',
+            'Process Returns',
+            'Discounts',
+            'Manage Inventory',
+            'Manage Payments',
+          ],
+          sortOrder: 1,
+        ),
+        StaffRoleData(
+          id: 'role-cashier',
+          title: 'Cashier',
+          subtitle: 'Register and customer sales',
+          permissions: <String>['View Sales', 'Process Returns', 'Discounts'],
+          sortOrder: 2,
+        ),
+      ];
+      for (final role in defaults) {
+        await _database.upsertStaffRole(<String, Object?>{
+          'id': role.id,
+          'title': role.title,
+          'subtitle': role.subtitle,
+          'permissions_json': jsonEncode(role.permissions),
+          'sort_order': role.sortOrder,
+        }, _activeStoreId);
+      }
+      storedRoles = await _database.loadStaffRoles(_activeStoreId);
+    }
     _staffRoles
       ..clear()
       ..addAll(storedRoles.map(_staffRoleFromMap));

@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:aza_pos/l10n/app_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +6,9 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
 import '../../service/pos_local_store.dart';
+import '../../utils/local_image_store.dart';
 import '../widgets/app_design.dart';
+import '../widgets/app_image.dart';
 import '../widgets/app_theme_palette.dart';
 import '../widgets/common/market_loading_view.dart';
 import 'settings_layout.dart';
@@ -74,8 +73,10 @@ class _StoreProfileFormState extends State<StoreProfileForm> {
         imageQuality: 88,
       );
       if (!mounted || file == null) return;
+      final saved = await persistPickedImage(file, 'logo');
+      if (!mounted) return;
       setState(() {
-        _logoFile = file;
+        _logoFile = XFile(saved);
         _dirty = true;
       });
     } catch (_) {
@@ -467,10 +468,8 @@ class _LogoAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasLogo = path != null && path!.isNotEmpty;
-    final ImageProvider<Object>? image = hasLogo
-        ? (kIsWeb ? NetworkImage(path!) : FileImage(File(path!)))
-            as ImageProvider<Object>
-        : null;
+    final ImageProvider<Object>? image =
+        hasLogo ? appImageProvider(context, path!) : null;
 
     return Container(
       width: 44,

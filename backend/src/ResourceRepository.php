@@ -35,6 +35,27 @@ final class ResourceRepository
         return $versions;
     }
 
+    /**
+     * Every store id the user is allowed to read from. Owners can read the
+     * primary store and all of its branches; staff only their own store.
+     *
+     * @return list<string>
+     */
+    public function accessibleStoreIds(array $user): array
+    {
+        $primaryStoreId = (string) $user['store_id'];
+        $ids = [$primaryStoreId];
+        if (($user['role'] ?? '') === 'owner') {
+            foreach ($this->resourceRows($primaryStoreId, 'stores') as $branch) {
+                $id = (string) ($branch['id'] ?? '');
+                if ($id !== '' && !in_array($id, $ids, true)) {
+                    $ids[] = $id;
+                }
+            }
+        }
+        return $ids;
+    }
+
     public function resolveAccessibleStoreId(array $user, ?string $requestedStoreId): string
     {
         $primaryStoreId = (string) $user['store_id'];

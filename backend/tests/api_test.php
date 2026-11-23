@@ -16,10 +16,10 @@ function check(bool $condition, string $message): void
     }
     $passed++;
 }
-function callApi(string $method, string $path, array $body = [], string $token = '', ?int $version = null): array
+function callApi(string $method, string $path, array $body = [], string $token = '', ?int $version = null, ?string $storeId = null): array
 {
     global $api;
-    return $api->dispatch($method, $path, $body, $token, $version);
+    return $api->dispatch($method, $path, $body, $token, $version, 'local', $storeId);
 }
 function rejected(int $status, callable $operation): void
 {
@@ -145,10 +145,24 @@ $staff['status'] = 'active';
 callApi('POST', 'staff/STAFF-1/account', ['staff' => $staff, 'password' => 'Changed-long-password'], $token);
 check(isset(callApi('POST', 'auth/login', ['email' => 'neema@example.test', 'password' => 'Changed-long-password'])['data']['token']), 'Staff password reset failed.');
 $image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6l0sAAAAASUVORK5CYII=';
-$upload = callApi('POST', 'uploads', ['content' => $image], $token)['data']['id'];
+$uploadResult = callApi('POST', 'uploads', ['content' => $image], $token)['data'];
+$upload = $uploadResult['id'];
+check($uploadResult['path'] === 'uploads/' . $upload, 'Upload response must expose a stable relative path.');
+check(callApi('POST', 'uploads', ['content' => $image], $token)['data']['id'] === $upload, 'Duplicate uploads must be idempotent.');
 check(callApi('GET', 'uploads/' . $upload, [], $token)['image'] === $image, 'Image upload failed.');
 rejected(404, fn () => callApi('GET', 'uploads/' . $upload, [], $otherToken));
 rejected(422, fn () => callApi('POST', 'uploads', ['content' => base64_encode('<?php echo 1;')], $token));
+$branch = callApi('POST', 'stores', ['name' => 'Upload Branch'], $token)['data'];
+$branchId = '';
+foreach ($branch as $row) {
+    if (($row['name'] ?? '') === 'Upload Branch') {
+        $branchId = (string) $row['id'];
+    }
+}
+check($branchId !== '', 'Branch creation for uploads failed.');
+$branchUpload = callApi('POST', 'uploads', ['content' => $image], $token, null, $branchId)['data']['id'];
+check(callApi('GET', 'uploads/' . $branchUpload, [], $token)['image'] === $image, 'Branch images must be readable without an X-Store-Id header.');
+rejected(404, fn () => callApi('GET', 'uploads/' . $branchUpload, [], $otherToken));
 callApi('PUT', 'roles/manager', [
     'id' => 'manager', 'permissions_json' => json_encode(['View Sales', 'Manage Inventory', 'Manage Staff']),
 ], $token);

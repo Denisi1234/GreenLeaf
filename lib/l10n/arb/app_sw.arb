@@ -1894,5 +1894,13 @@
   "Stock changed": "Hifadhi imebadilika",
   "Review the available quantity and try again.": "Kagua kiasi kilichopo kisha ujaribu tena.",
   "{p0} each": "{p0} kila moja",
-  "Remove item": "Ondoa bidhaa"
+  "Remove item": "Ondoa bidhaa",
+  "Record details": "Maelezo ya rekodi",
+  "Table view": "Mwonekano wa jedwali",
+  "Sort records": "Panga rekodi",
+  "Tap a record for details": "Gusa rekodi kuona maelezo",
+  "Custom range": "Kipindi maalum",
+  "Loading reports from your stores.": "Inapakia ripoti za maduka yako.",
+  "Check your connection and try again.": "Kagua muunganisho wako kisha ujaribu tena.",
+  "Swipe to see all columns": "Telezesha kuona safu wima zote"
 }

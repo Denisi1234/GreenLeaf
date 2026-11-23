@@ -1,5 +1,6 @@
 class StorePreferences {
   static const int currentThemeDefaultVersion = 1;
+  static const String defaultAppTheme = 'graphite';
 
   const StorePreferences({
     this.lowStockThreshold = 20,
@@ -15,11 +16,12 @@ class StorePreferences {
     this.openCashDrawerOnPrint = false,
     this.enableAdvancedAccounting = false,
     this.requireOpenShiftForSales = false,
-    this.appTheme = 'whatsapp_dark',
+    this.appTheme = defaultAppTheme,
     this.themeDefaultVersion = currentThemeDefaultVersion,
   });
 
   static const themeOptions = <String>[
+    'graphite',
     'whatsapp_dark',
     'system',
     'light',
@@ -106,13 +108,10 @@ class StorePreferences {
     final openDrawer = json['openCashDrawerOnPrint'];
     final advAcc = json['enableAdvancedAccounting'];
     final reqShift = json['requireOpenShiftForSales'];
-    final savedThemeVersion =
-        (json['themeDefaultVersion'] as num?)?.toInt() ?? 0;
     final rawTheme =
-        (json['appTheme'] as String? ?? 'whatsapp_dark').trim().toLowerCase();
-    final resolvedTheme = savedThemeVersion < currentThemeDefaultVersion
-        ? 'whatsapp_dark'
-        : (themeOptions.contains(rawTheme) ? rawTheme : 'whatsapp_dark');
+        (json['appTheme'] as String? ?? defaultAppTheme).trim().toLowerCase();
+    final resolvedTheme =
+        themeOptions.contains(rawTheme) ? rawTheme : defaultAppTheme;
     return StorePreferences(
       lowStockThreshold:
           ((json['lowStockThreshold'] as num?)?.toInt() ?? 20).clamp(0, 100000),
@@ -127,7 +126,8 @@ class StorePreferences {
               (autoSms is String && autoSms.toLowerCase() == 'true')),
       dailySmsTime: json['dailySmsTime'] as String? ?? '21:00',
       lastDailySmsDate: json['lastDailySmsDate'] as String? ?? '',
-      defaultRegisterName: json['defaultRegisterName'] as String? ?? 'Register 1',
+      defaultRegisterName:
+          json['defaultRegisterName'] as String? ?? 'Register 1',
       thermalPrinterName: json['thermalPrinterName'] as String? ?? '',
       thermalPrinterAddress: json['thermalPrinterAddress'] as String? ?? '',
       thermalPaperWidthMm: paperRaw >= 80 ? 80 : 58,

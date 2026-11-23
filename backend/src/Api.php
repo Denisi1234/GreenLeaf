@@ -114,7 +114,10 @@ final class Api
                 return $this->uploads->upload($storeId, $body);
             }
             if ($method === 'GET' && count($parts) === 2) {
-                return $this->uploads->get($storeId, $parts[1]);
+                return $this->uploads->get(
+                    $this->resources->accessibleStoreIds($session['user']),
+                    $parts[1]
+                );
             }
             throw new ApiError(405, 'Method not allowed.');
         }

@@ -1,7 +1,7 @@
 name: aza_pos
 description: Aza POS - Point of Sale & Business Management Solution
 publish_to: "none"
-version: 1.0.1+3
+version: 1.0.1+5
 
 environment:
   flutter: ">=3.35.0 <3.36.0"

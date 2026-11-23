@@ -225,8 +225,8 @@ class PosCloudDatabase extends PosLocalDatabase {
       api.replace('staff', await _imageRows(members));
 
   @override
-  Future<void> saveStaffMember(Map<String, Object?> member) =>
-      api.put('staff', member['id'] as String, member);
+  Future<void> saveStaffMember(Map<String, Object?> member) async =>
+      api.put('staff', member['id'] as String, await _images(member));
 
   @override
   Future<void> deleteStaffMember(String id) => api.delete('staff', id);

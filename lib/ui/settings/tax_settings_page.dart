@@ -280,6 +280,27 @@ class _TaxSettingsPageState extends State<TaxSettingsPage> {
 
   Future<void> _save() async {
     if (_saving) return;
+    if (_draft.enabled) {
+      final missing = <String>[];
+      if (_draft.taxLabel.trim().isEmpty) {
+        missing.add(_t('tax name', 'jina la kodi'));
+      }
+      if (_draft.ratePercent <= 0) {
+        missing.add(_t('a tax rate above 0%', 'kiwango cha kodi zaidi ya 0%'));
+      }
+      if (missing.isNotEmpty) {
+        showMarketNotice(
+          context,
+          title: _t('Complete tax details', 'Kamilisha maelezo ya kodi'),
+          message: _t(
+            'To charge tax, enter ${missing.join(' and ')}. Turn off “Charge tax on sales” to intentionally save without tax.',
+            'Ili kutoza kodi, weka ${missing.join(' na ')}. Zima “Toza kodi kwenye mauzo” ili kuhifadhi bila kodi kwa makusudi.',
+          ),
+          type: MarketNoticeType.warning,
+        );
+        return;
+      }
+    }
     setState(() => _saving = true);
     final store = context.read<PosLocalStore>();
     final navigator = Navigator.of(context);

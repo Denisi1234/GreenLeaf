@@ -1,5 +1,5 @@
 import '../../widgets/app_design.dart';
-import 'dart:io';
+import '../../widgets/app_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -53,7 +53,13 @@ class PhotoUploadTile extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.standard),
-              child: Image.file(File(imagePath!), fit: BoxFit.cover),
+              child: Image(
+                image: appImageProvider(context, imagePath!),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.broken_image_outlined),
+                ),
+              ),
             ),
             Positioned(
               top: 8,

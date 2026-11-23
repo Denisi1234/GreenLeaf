@@ -253,7 +253,8 @@ class StaffEmploymentTab extends StatelessWidget {
               label: context.tr('Hourly rate (TSh)'),
               hint: '0',
               icon: Icons.payments_outlined,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               errorText: errors['hourlyRate'],
               onChanged: (_) => onClearError('hourlyRate'),
             ),
@@ -339,8 +340,10 @@ class StaffLoginTab extends StatelessWidget {
             ),
             StaffAppTextField(
               controller: passwordController,
-              label: isEditing ? context.tr('New password (optional)') : context.tr('Password'),
-              hint: context.tr('At least 8 characters'),
+              label: isEditing
+                  ? context.tr('New password (optional)')
+                  : context.tr('Password'),
+              hint: context.tr('At least 10 characters'),
               icon: Icons.lock_outline_rounded,
               obscureText: obscurePassword,
               errorText: errors['password'],
@@ -348,7 +351,9 @@ class StaffLoginTab extends StatelessWidget {
               suffix: IconButton(
                 onPressed: onToggleObscurePassword,
                 icon: Icon(
-                  obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
                   color: AppColors.textMuted,
                   size: 22,
                 ),
@@ -365,7 +370,9 @@ class StaffLoginTab extends StatelessWidget {
               suffix: IconButton(
                 onPressed: onToggleObscureConfirm,
                 icon: Icon(
-                  obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  obscureConfirm
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
                   color: AppColors.textMuted,
                   size: 22,
                 ),

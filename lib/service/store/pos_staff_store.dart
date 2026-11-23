@@ -172,7 +172,7 @@ mixin PosStaffStore on ChangeNotifier {
 
   Future<StaffMemberData> addStaffMember({
     required String name,
-    required String email,
+    String email = '',
     required String phone,
     required String roleId,
     String username = '',

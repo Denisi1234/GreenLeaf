@@ -71,7 +71,7 @@ final class AuthService
 
     public function publicUser(array $user): array
     {
-        return array_intersect_key($user, array_flip(['id', 'store_id', 'name', 'email', 'role', 'permissions']));
+        return array_intersect_key($user, array_flip(['id', 'store_id', 'name', 'phone', 'role', 'permissions']));
     }
 
     public function throttle(string $key): void
@@ -94,49 +94,42 @@ final class AuthService
         if (!$this->config['registration']) {
             throw new ApiError(403, 'Account registration is disabled.');
         }
-        [$identifier, $password, $isEmail] = $this->credentials($body);
+        [$phone, $password] = $this->credentials($body);
         $name = ApiValidator::text($body, 'name');
         $storeName = trim((string) ($body['store_name'] ?? '')) ?: ($name . "'s Shop");
         $this->checkPassword($password);
 
-        $phone = $isEmail ? '' : $identifier;
-        $email = $isEmail ? $identifier : ($phone . '@trackmauzo.app');
-
-        if ($this->db->rows('SELECT id FROM users WHERE email = ?', [$email]) !== []) {
+        if ($this->db->rows('SELECT id FROM users WHERE email = ?', [$phone]) !== []) {
             throw new ApiError(409, 'An account with this phone number already exists.');
         }
 
-        if (!$isEmail) {
-            $otpToken = trim((string) ($body['otp_token'] ?? ''));
-            if ($otpToken === '') {
-                throw new ApiError(403, 'Thibitisha namba yako ya simu kwa OTP kwanza kabla ya kusajili.');
-            }
-            $otpRows = $this->db->rows(
-                'SELECT * FROM otp_verifications WHERE phone = ? AND expires_at > ?',
-                [$phone, time()]
-            );
-            $expectedHash = hash('sha256', 'verified:' . $otpToken);
-            if ($otpRows === [] || !hash_equals((string) $otpRows[0]['code_hash'], $expectedHash)) {
-                throw new ApiError(403, 'Uthibitisho wa OTP umeisha muda au si sahihi. Omba OTP mpya.');
-            }
+        $otpToken = trim((string) ($body['otp_token'] ?? ''));
+        if ($otpToken === '') {
+            throw new ApiError(403, 'Thibitisha namba yako ya simu kwa OTP kwanza kabla ya kusajili.');
+        }
+        $otpRows = $this->db->rows(
+            'SELECT * FROM otp_verifications WHERE phone = ? AND expires_at > ?',
+            [$phone, time()]
+        );
+        $expectedHash = hash('sha256', 'verified:' . $otpToken);
+        if ($otpRows === [] || !hash_equals((string) $otpRows[0]['code_hash'], $expectedHash)) {
+            throw new ApiError(403, 'Uthibitisho wa OTP umeisha muda au si sahihi. Omba OTP mpya.');
         }
 
-        $res = $this->db->transaction(function () use ($email, $phone, $password, $name, $storeName, $isEmail) {
-            if (!$isEmail) {
-                $this->db->execute('DELETE FROM otp_verifications WHERE phone = ?', [$phone]);
-            }
+        $res = $this->db->transaction(function () use ($phone, $password, $name, $storeName) {
+            $this->db->execute('DELETE FROM otp_verifications WHERE phone = ?', [$phone]);
             $storeId = bin2hex(random_bytes(16));
             $userId = bin2hex(random_bytes(16));
             $created = gmdate('c');
             $this->db->execute('INSERT INTO stores (id, name, created_at) VALUES (?, ?, ?)', [$storeId, $storeName, $created]);
             $this->db->execute(
                 'INSERT INTO users (id, store_id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [$userId, $storeId, $name, $email, password_hash($password, PASSWORD_DEFAULT), 'owner', $created]
+                [$userId, $storeId, $name, $phone, password_hash($password, PASSWORD_DEFAULT), 'owner', $created]
             );
-            $user = ['id' => $userId, 'store_id' => $storeId, 'name' => $name, 'email' => $email, 'role' => 'owner'];
+            $user = ['id' => $userId, 'store_id' => $storeId, 'name' => $name, 'email' => $phone, 'role' => 'owner'];
             $this->resources->put($user, 'profile', '1', [
                 'store_name' => $storeName, 'owner_name' => $name, 'role_title' => 'Owner',
-                'email_address' => $email, 'contact_number' => $phone, 'physical_address' => '',
+                'email_address' => $phone, 'contact_number' => $phone, 'physical_address' => '',
                 'business_category' => 'Retail', 'member_since' => $created, 'open_24_hours' => 0,
             ]);
             $this->resources->put($user, 'receipt-settings', '1', ['show_store_contact' => 1, 'footer' => '']);
@@ -145,10 +138,10 @@ final class AuthService
             $this->resources->put($user, 'staff', $staffId, [
                 'id' => $staffId,
                 'name' => $name,
-                'email' => $email,
+                'email' => $phone,
                 'phone' => $phone,
                 'role_id' => 'owner',
-                'username' => $phone ?: $email,
+                'username' => $phone,
                 'created_at' => $created,
                 'updated_at' => $created,
                 'status' => 'active',
@@ -173,10 +166,9 @@ final class AuthService
 
     public function login(array $body): array
     {
-        [$identifier, $password, $isEmail] = $this->credentials($body);
-        $email = $isEmail ? $identifier : ($identifier . '@trackmauzo.app');
+        [$phone, $password] = $this->credentials($body);
 
-        $rows = $this->db->rows('SELECT * FROM users WHERE (email = ? OR email = ?) AND active = 1', [$email, $identifier]);
+        $rows = $this->db->rows('SELECT * FROM users WHERE email = ? AND active = 1', [$phone]);
         $hash = $rows[0]['password_hash'] ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
         if (!password_verify($password, $hash) || $rows === []) {
             throw new ApiError(401, 'Namba ya simu au nenosiri si sahihi.');
@@ -192,15 +184,15 @@ final class AuthService
 
     public function createUser(array $ownerUser, array $body): array
     {
-        [$email, $password] = $this->credentials($body);
+        [$phone, $password] = $this->credentials($body);
         $this->checkPassword($password);
         $name = ApiValidator::text($body, 'name');
         $id = bin2hex(random_bytes(16));
         $this->db->execute(
             'INSERT INTO users (id, store_id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [$id, $ownerUser['store_id'], $name, $email, password_hash($password, PASSWORD_DEFAULT), 'cashier', gmdate('c')]
+            [$id, $ownerUser['store_id'], $name, $phone, password_hash($password, PASSWORD_DEFAULT), 'cashier', gmdate('c')]
         );
-        return ['data' => ['id' => $id, 'email' => $email, 'name' => $name, 'role' => 'cashier']];
+        return ['data' => ['id' => $id, 'phone' => $phone, 'name' => $name, 'role' => 'cashier']];
     }
 
     public function sendOtp(array $body): array
@@ -357,15 +349,14 @@ final class AuthService
 
     private function credentials(array $body): array
     {
-        $rawIdentifier = trim((string) ($body['phone'] ?? $body['email'] ?? $body['username'] ?? ''));
+        $rawIdentifier = trim((string) ($body['phone'] ?? $body['username'] ?? ''));
         $password = $body['password'] ?? '';
         if ($rawIdentifier === '' || !is_string($password)) {
             throw new ApiError(422, 'Enter your phone number and password.');
         }
 
-        $isEmail = filter_var($rawIdentifier, FILTER_VALIDATE_EMAIL);
-        $identifier = $isEmail ? strtolower($rawIdentifier) : ApiValidator::formatTanzanianPhone($rawIdentifier);
-        return [$identifier, $password, (bool) $isEmail];
+        $identifier = ApiValidator::formatTanzanianPhone($rawIdentifier);
+        return [$identifier, $password];
     }
 
     private function issueToken(array $user): array

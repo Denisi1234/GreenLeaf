@@ -45,7 +45,6 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> signUp({
     required String name,
-    required String email,
     required String phone,
     required String username,
     required String password,
@@ -54,7 +53,6 @@ class AuthService extends ChangeNotifier {
   }) =>
       _store.register(
         name: name,
-        email: email,
         phone: phone,
         username: username,
         password: password,

@@ -6,10 +6,10 @@ import 'app_theme_palette.dart';
 
 /// Shared visual language for sales, management and reporting workspaces.
 /// Driven dynamically by the active [AppThemePalette] (defaulting to
-/// WhatsApp Dark, with Crisp Light, Cool Slate, Warm Paper, Forest Mint,
+/// Graphite, with WhatsApp Dark, Crisp Light, Cool Slate, Warm Paper, Forest Mint,
 /// Dark Shift, True Black, and Auto System selectable app-wide).
 class AppColors {
-  static AppThemePalette _palette = AppThemePalette.whatsappDark;
+  static AppThemePalette _palette = AppThemePalette.graphite;
 
   static AppThemePalette get activePalette => _palette;
   static bool get isDark => _palette.isDark;
@@ -21,6 +21,8 @@ class AppColors {
   // Brand / action colors
   static Color get primary => _palette.primary;
   static Color get primaryDeep => _palette.primaryDeep;
+  static Color get completionAction =>
+      _palette.id == 'graphite' ? successDeep : primary;
   static const primaryBright = Color(0xFF68CADD);
   static Color get primaryLight => _palette.primaryLight;
   static Color get primarySoft => _palette.surface;
@@ -350,8 +352,7 @@ class AppDecorations {
       );
 
   /// `.dash-kpi-card` – crisp KPI tile with daylight-proof border & soft lift.
-  static BoxDecoration kpi({Color? color}) =>
-      BoxDecoration(
+  static BoxDecoration kpi({Color? color}) => BoxDecoration(
         color: color ?? AppColors.kpiSurface,
         borderRadius: BorderRadius.circular(AppRadius.kpiCard),
         border: Border.all(color: AppColors.border),

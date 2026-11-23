@@ -140,7 +140,7 @@ class PhpApiClient {
   }
 
   Future<void> authenticate({
-    required String email,
+    required String phone,
     required String password,
     required bool register,
     String name = '',
@@ -151,7 +151,7 @@ class PhpApiClient {
       'POST',
       register ? 'auth/register' : 'auth/login',
       body: {
-        'email': email,
+        'phone': phone,
         'password': password,
         'name': name,
         'store_name': storeName,
@@ -279,13 +279,31 @@ class PhpApiClient {
     return (res['data'] as Map)['sent'] == true;
   }
 
-  Map<String, String> imageHeaders(String url) =>
-      url.startsWith('$baseUrl/uploads/') && _token != null
-          ? {'Authorization': 'Bearer $_token'}
-          : {};
+  /// Resolves a stored image reference to a requestable URL.
+  ///
+  /// Records persist a stable `uploads/<id>` reference rather than an absolute
+  /// URL so an image keeps working when the API host changes or when another
+  /// device connects using a different base URL.
+  String imageUrl(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('uploads/')) return '$baseUrl/$path';
+    return path;
+  }
+
+  Map<String, String> imageHeaders(String url) {
+    final resolved = imageUrl(url);
+    return resolved.startsWith('$baseUrl/uploads/') && _token != null
+        ? {'Authorization': 'Bearer $_token'}
+        : {};
+  }
+
+  bool _isStoredImageRef(String path) =>
+      path.startsWith('http://') ||
+      path.startsWith('https://') ||
+      path.startsWith('uploads/');
 
   Future<String?> uploadImage(String? path) async {
-    if (path == null || path.isEmpty || path.startsWith('$baseUrl/uploads/')) {
+    if (path == null || path.isEmpty || _isStoredImageRef(path)) {
       return path;
     }
     if (_uploads.containsKey(path)) {
@@ -297,10 +315,14 @@ class PhpApiClient {
     }
     final result = await request('POST', 'uploads',
         body: {'content': base64Encode(bytes)});
-    final id = (result['data'] as Map)['id'];
-    final url = '$baseUrl/uploads/$id';
-    _uploads[path] = url;
-    return url;
+    final data = result['data'];
+    final id = data is Map ? data['id'] : null;
+    if (id is! String || id.isEmpty) {
+      throw const ApiException('The server did not return an image id.', 500);
+    }
+    final reference = 'uploads/$id';
+    _uploads[path] = reference;
+    return reference;
   }
 
   void close() => _http.close();

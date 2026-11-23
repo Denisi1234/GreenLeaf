@@ -20,20 +20,26 @@ class StaffTabSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18),
-      padding: const EdgeInsets.all(4),
+      height: 58,
       decoration: BoxDecoration(
         color: AppColors.surfaceHover,
         borderRadius: AppCorners.control,
       ),
-      child: Row(
-        children: List.generate(tabs.length, (index) {
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(4),
+        child: Row(
+            children: List.generate(tabs.length, (index) {
           final selected = index == selectedIndex;
-          return Expanded(
+          return Padding(
+            padding: EdgeInsets.only(right: index == tabs.length - 1 ? 0 : 4),
             child: GestureDetector(
               onTap: () => onSelected(index),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: selected ? AppColors.surface : Colors.transparent,
                   borderRadius: AppCorners.control,
@@ -51,7 +57,7 @@ class StaffTabSelector extends StatelessWidget {
               ),
             ),
           );
-        }),
+        })),
       ),
     );
   }
@@ -189,6 +195,7 @@ class StaffAppDropdown<T> extends StatelessWidget {
           StaffFieldLabel(label),
           const SizedBox(height: 8),
           DropdownButtonFormField<T>(
+            key: ValueKey<T?>(value),
             initialValue: value,
             items: items,
             onChanged: onChanged,
@@ -447,11 +454,19 @@ class StaffSaveBar extends StatelessWidget {
     super.key,
     required this.isSaving,
     required this.isEditing,
+    required this.isFinalStep,
+    required this.canGoBack,
+    required this.onBack,
+    required this.onContinue,
     required this.onSave,
   });
 
   final bool isSaving;
   final bool isEditing;
+  final bool isFinalStep;
+  final bool canGoBack;
+  final VoidCallback? onBack;
+  final VoidCallback? onContinue;
   final VoidCallback? onSave;
 
   @override
@@ -469,13 +484,20 @@ class StaffSaveBar extends StatelessWidget {
             Expanded(
               flex: 2,
               child: MarketButton(
-                label: context.tr('Cancel'),
-                color: AppColors.kpiDangerBg,
-                foregroundColor: AppColors.kpiDanger,
-                borderColor: null,
+                label: canGoBack ? context.tr('Back') : context.tr('Cancel'),
+                color: canGoBack
+                    ? AppColors.surfaceSecondary
+                    : AppColors.kpiDangerBg,
+                foregroundColor:
+                    canGoBack ? AppColors.textMain : AppColors.kpiDanger,
+                borderColor: canGoBack ? AppColors.border : null,
                 radius: AppRadius.input,
                 height: 48,
-                onTap: isSaving ? null : () => Navigator.of(context).maybePop(),
+                onTap: isSaving
+                    ? null
+                    : (canGoBack
+                        ? onBack
+                        : () => Navigator.of(context).maybePop()),
               ),
             ),
             const SizedBox(width: 12),
@@ -484,17 +506,21 @@ class StaffSaveBar extends StatelessWidget {
               child: MarketButton(
                 label: isSaving
                     ? context.tr('Saving...')
-                    : (isEditing
-                        ? context.tr('Save Changes')
-                        : context.tr('Create Staff')),
+                    : (!isFinalStep
+                        ? context.tr('Continue')
+                        : (isEditing
+                            ? context.tr('Save Changes')
+                            : context.tr('Create Staff'))),
                 icon: isSaving
                     ? Icons.hourglass_top_rounded
-                    : Icons.save_outlined,
+                    : (isFinalStep
+                        ? Icons.save_outlined
+                        : Icons.arrow_forward_rounded),
                 variant: MarketButtonVariant.primary,
                 borderColor: null,
                 radius: AppRadius.input,
                 height: 48,
-                onTap: onSave ?? () {},
+                onTap: isFinalStep ? (onSave ?? () {}) : (onContinue ?? () {}),
               ),
             ),
           ],

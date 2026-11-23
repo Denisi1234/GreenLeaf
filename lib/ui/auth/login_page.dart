@@ -124,25 +124,37 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Phone Number Field
-                AuthFieldLabel(text: strings.phoneNumber),
+                // A staff member may use the username assigned in Staff setup,
+                // their phone number, or their email address.
+                AuthFieldLabel(
+                  text: strings.isSwahili
+                      ? 'Simu, jina la mtumiaji, au barua pepe'
+                      : 'Phone, username, or email',
+                ),
                 TextFormField(
                   controller: _phoneController,
                   enabled: !_busy,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: TextInputType.text,
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]')),
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'[a-zA-Z0-9@._+\-\s]')),
                   ],
                   textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.telephoneNumber],
+                  autofillHints: const [AutofillHints.username],
                   onChanged: (_) => _clearError(),
                   decoration: InputDecoration(
-                    hintText: strings.enterPhoneNumber,
-                    prefixIcon: const Icon(Icons.phone_outlined),
+                    hintText: strings.isSwahili
+                        ? 'Weka simu, jina la mtumiaji, au barua pepe'
+                        : 'Enter phone, username, or email',
+                    prefixIcon: const Icon(Icons.person_outline_rounded),
                   ),
                   validator: (value) {
                     final v = (value ?? '').trim();
-                    if (v.isEmpty) return strings.phoneRequired;
+                    if (v.isEmpty) {
+                      return strings.isSwahili
+                          ? 'Weka simu, jina la mtumiaji, au barua pepe'
+                          : 'Enter your phone, username, or email';
+                    }
                     return null;
                   },
                 ),

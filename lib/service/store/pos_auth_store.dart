@@ -1,4 +1,4 @@
-﻿part of '../pos_local_store.dart';
+part of '../pos_local_store.dart';
 
 /// Sign-in, registration and password flows for [PosLocalStore].
 mixin PosAuthStore on ChangeNotifier {
@@ -22,7 +22,7 @@ mixin PosAuthStore on ChangeNotifier {
   AppProfileData get profile;
   Future<StaffMemberData> addStaffMember({
     required String name,
-    required String email,
+    String email = '',
     required String phone,
     required String roleId,
     String username = '',
@@ -78,602 +78,725 @@ mixin PosAuthStore on ChangeNotifier {
     return a.endsWith(b) || b.endsWith(a);
   }
 
-    Future<bool> login(String identifier, String password) async {
-      _lastAuthError = null;
-      final trimmed = identifier.trim().replaceAll(RegExp(r'\s+'), '');
-      if (trimmed.isEmpty || password.isEmpty) {
-        _lastAuthError = 'missing_credentials';
-        return false;
+  Future<bool> login(String identifier, String password) async {
+    _lastAuthError = null;
+    final trimmed = identifier.trim().replaceAll(RegExp(r'\s+'), '');
+    if (trimmed.isEmpty || password.isEmpty) {
+      _lastAuthError = 'missing_credentials';
+      return false;
+    }
+
+    StaffMemberData? member;
+    for (final staff in _staffMembers) {
+      final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
+      final staffUser = staff.username.trim().replaceAll(RegExp(r'\s+'), '');
+      if (staffPhone.isNotEmpty && _phoneMatches(staffPhone, trimmed)) {
+        member = staff;
+        break;
       }
-
-      StaffMemberData? member;
-      for (final staff in _staffMembers) {
-        final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
-        final staffUser = staff.username.trim().replaceAll(RegExp(r'\s+'), '');
-        if (staffPhone.isNotEmpty && _phoneMatches(staffPhone, trimmed)) {
-          member = staff;
-          break;
-        }
-        if (staffUser.isNotEmpty &&
-            staffUser.toLowerCase() == trimmed.toLowerCase()) {
-          member = staff;
-          break;
-        }
+      if (staffUser.isNotEmpty &&
+          staffUser.toLowerCase() == trimmed.toLowerCase()) {
+        member = staff;
+        break;
       }
+    }
 
-      if (member == null) {
-        // If user is not yet in local SQLite (e.g. freshly installed app or new device),
-        // attempt online authentication with the server first.
-        final api = cloudApi;
-        if (api != null) {
-          try {
-            await api.authenticate(
-              email: trimmed,
-              password: password,
-              register: false,
-            );
-            await _database.saveSyncSession(
-              endpoint: api.baseUrl,
-              token: api.token ?? '',
-              user: api.user,
-            );
-            if (_cloudApi != null) {
-              _cloudApi!.storeId = _activeStoreId;
-              _cloudApi!.onSynced = () {
-                if (!_disposed && _isInitialized) {
-                  reloadFromLocal();
-                }
-              };
-              _cloudApi!.startAutoSync();
-            }
-            await refreshFromServer();
-
-            final serverUserId = api.user['id'] as String?;
-            final expectedStaffId =
-                serverUserId != null ? 'staff-$serverUserId' : null;
-
-            // After refreshing from server, match the staff member by server ID,
-            // normalized phone number, or username.
-            for (final staff in _staffMembers) {
-              final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
-              final staffUser = staff.username.trim().replaceAll(RegExp(r'\s+'), '');
-              if ((expectedStaffId != null && staff.id == expectedStaffId) ||
-                  (serverUserId != null && staff.id == serverUserId) ||
-                  (staffPhone.isNotEmpty && _phoneMatches(staffPhone, trimmed)) ||
-                  (staffUser.isNotEmpty && staffUser.toLowerCase() == trimmed.toLowerCase())) {
-                member = staff;
-                break;
-              }
-            }
-
-            if (member != null) {
-              // Cache local password hash so offline re-login works on this device.
-              final credentials = _hashPassword(password);
-              final updatedMember = member.copyWith(
-                passwordHash: credentials.hash,
-                passwordSalt: credentials.salt,
-                updatedAt: DateTime.now().toIso8601String(),
-              );
-              final idx =
-                  _staffMembers.indexWhere((s) => s.id == updatedMember.id);
-              if (idx != -1) {
-                _staffMembers[idx] = updatedMember;
-                await _database.saveStaffMember({
-                  ..._staffMemberToMap(updatedMember),
-                  'store_id': _activeStoreId,
-                });
-              }
-              _currentUserId = updatedMember.id;
-            } else {
-              _currentUserId = serverUserId;
-            }
-
-            _isLoggedIn = true;
-            notifyListeners();
-            unawaited(
-              recordAuditEvent(
-                module: AuditModule.settings,
-                action: 'auth.login_success',
-                severity: AuditSeverity.info,
-                entityType: 'Session',
-                entityId: _currentUserId ?? '',
-                entityLabel: trimmed,
-                summary: 'Signed in online as $trimmed',
-              ),
-            );
-            return true;
-          } on ApiException catch (error) {
-            if (error.status == 401) {
-              _lastAuthError = 'invalid_password';
-            } else {
-              _lastAuthError = error.message;
-            }
-            unawaited(
-              recordAuditEvent(
-                module: AuditModule.settings,
-                action: 'auth.login_failed',
-                severity: AuditSeverity.critical,
-                entityType: 'Session',
-                entityLabel: trimmed,
-                summary:
-                    'Failed sign-in attempt for $trimmed (${_lastAuthError ?? 'error'})',
-                actorIdOverride: trimmed,
-                actorNameOverride: trimmed,
-                actorRoleOverride: 'Unauthenticated',
-              ),
-            );
-            return false;
-          } catch (_) {}
-        }
-
-        _lastAuthError = 'user_not_found';
-        unawaited(
-          recordAuditEvent(
-            module: AuditModule.settings,
-            action: 'auth.login_failed',
-            severity: AuditSeverity.critical,
-            entityType: 'Session',
-            entityLabel: trimmed,
-            summary: 'Failed sign-in attempt for unknown user $trimmed',
-            actorIdOverride: trimmed,
-            actorNameOverride: trimmed,
-            actorRoleOverride: 'Unauthenticated',
-          ),
-        );
-        return false;
-      }
-
-      if (!member.hasLogin || !member.isActive) {
-        _lastAuthError = 'account_inactive';
-        unawaited(
-          recordAuditEvent(
-            module: AuditModule.settings,
-            action: 'auth.login_failed',
-            severity: AuditSeverity.critical,
-            entityType: 'Session',
-            entityId: member.id,
-            entityLabel: member.name,
-            summary: 'Blocked sign-in to inactive account ${member.name}',
-            actorIdOverride: member.id,
-            actorNameOverride: member.name,
-            actorRoleOverride: 'Blocked',
-          ),
-        );
-        return false;
-      }
-
-      final valid =
-          _verifyPassword(password, member.passwordSalt, member.passwordHash);
-      if (!valid) {
-        _lastAuthError = 'invalid_password';
-        unawaited(
-          recordAuditEvent(
-            module: AuditModule.settings,
-            action: 'auth.login_failed',
-            severity: AuditSeverity.critical,
-            entityType: 'Session',
-            entityId: member.id,
-            entityLabel: member.name,
-            summary: 'Incorrect password entered for ${member.name}',
-            actorIdOverride: member.id,
-            actorNameOverride: member.name,
-            actorRoleOverride: 'Unauthenticated',
-          ),
-        );
-        return false;
-      }
-
-      if (!member.passwordHash.startsWith(r'pbkdf2_sha256$')) {
-        final upgradedCredentials = _hashPassword(password);
-        final upgradedMember = member.copyWith(
-          passwordHash: upgradedCredentials.hash,
-          passwordSalt: upgradedCredentials.salt,
-          updatedAt: DateTime.now().toIso8601String(),
-        );
-        final memberIndex =
-            _staffMembers.indexWhere((s) => s.id == upgradedMember.id);
-        if (memberIndex != -1) {
-          _staffMembers[memberIndex] = upgradedMember;
-        }
-        await _database.saveStaffMember({
-          ..._staffMemberToMap(upgradedMember),
-          'store_id': _activeStoreId,
-        });
-      }
-
-      _isLoggedIn = true;
-      _currentUserId = member.id;
-
-      // When a cloud API is available, authenticate with the server so the
-      // session token is refreshed and data is pulled from the shared backend.
-      // This is what makes the same credentials work across different devices.
+    if (member == null) {
+      // If user is not yet in local SQLite (e.g. freshly installed app or new device),
+      // attempt online authentication with the server first.
       final api = cloudApi;
       if (api != null) {
-        final loginIdentifier = member.username.trim().isNotEmpty
-            ? member.username.trim()
-            : member.phone.trim().replaceAll(RegExp(r'\s+'), '');
         try {
           await api.authenticate(
-            email: loginIdentifier,
+            phone: trimmed,
             password: password,
             register: false,
           );
-          // Persist the session so the next app launch restores cloud mode
-          // and syncs automatically without requiring the user to log in again.
           await _database.saveSyncSession(
             endpoint: api.baseUrl,
             token: api.token ?? '',
             user: api.user,
           );
-          // Pull the latest data from the shared server so a different device
-          // that made changes shows up immediately after login.
+          if (_cloudApi != null) {
+            _cloudApi!.storeId = _activeStoreId;
+            _cloudApi!.onSynced = () {
+              if (!_disposed && _isInitialized) {
+                reloadFromLocal();
+              }
+            };
+            _cloudApi!.startAutoSync();
+          }
           await refreshFromServer();
+
+          final serverUserId = api.user['id'] as String?;
+          final expectedStaffId =
+              serverUserId != null ? 'staff-$serverUserId' : null;
+
+          // After refreshing from server, match the staff member by server ID,
+          // normalized phone number, or username.
+          for (final staff in _staffMembers) {
+            final staffPhone =
+                staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
+            final staffUser =
+                staff.username.trim().replaceAll(RegExp(r'\s+'), '');
+            if ((expectedStaffId != null && staff.id == expectedStaffId) ||
+                (serverUserId != null && staff.id == serverUserId) ||
+                (staffPhone.isNotEmpty && _phoneMatches(staffPhone, trimmed)) ||
+                (staffUser.isNotEmpty &&
+                    staffUser.toLowerCase() == trimmed.toLowerCase())) {
+              member = staff;
+              break;
+            }
+          }
+
+          if (member != null) {
+            // Cache local password hash so offline re-login works on this device.
+            final credentials = _hashPassword(password);
+            final updatedMember = member.copyWith(
+              passwordHash: credentials.hash,
+              passwordSalt: credentials.salt,
+              updatedAt: DateTime.now().toIso8601String(),
+            );
+            final idx =
+                _staffMembers.indexWhere((s) => s.id == updatedMember.id);
+            if (idx != -1) {
+              _staffMembers[idx] = updatedMember;
+              await _database.saveStaffMember({
+                ..._staffMemberToMap(updatedMember),
+                'store_id': _activeStoreId,
+              });
+            }
+            _currentUserId = updatedMember.id;
+          } else {
+            _currentUserId = serverUserId;
+          }
+
+          _isLoggedIn = true;
+          notifyListeners();
+          unawaited(
+            recordAuditEvent(
+              module: AuditModule.settings,
+              action: 'auth.login_success',
+              severity: AuditSeverity.info,
+              entityType: 'Session',
+              entityId: _currentUserId ?? '',
+              entityLabel: trimmed,
+              summary: 'Signed in online as $trimmed',
+            ),
+          );
+          return true;
         } on ApiException catch (error) {
           if (error.status == 401) {
-            _isLoggedIn = false;
-            _currentUserId = null;
             _lastAuthError = 'invalid_password';
-            notifyListeners();
-            return false;
+          } else {
+            _lastAuthError = error.message;
           }
-          // Network or server errors: keep the local session so the till
-          // still works, but surface the problem for retry.
-          _lastAuthError = error.message;
+          unawaited(
+            recordAuditEvent(
+              module: AuditModule.settings,
+              action: 'auth.login_failed',
+              severity: AuditSeverity.critical,
+              entityType: 'Session',
+              entityLabel: trimmed,
+              summary:
+                  'Failed sign-in attempt for $trimmed (${_lastAuthError ?? 'error'})',
+              actorIdOverride: trimmed,
+              actorNameOverride: trimmed,
+              actorRoleOverride: 'Unauthenticated',
+            ),
+          );
+          return false;
+        } catch (error) {
+          _lastAuthError =
+              'Unable to reach the server. Check your internet connection and try again.';
+          unawaited(
+            recordAuditEvent(
+              module: AuditModule.settings,
+              action: 'auth.login_failed',
+              severity: AuditSeverity.critical,
+              entityType: 'Session',
+              entityLabel: trimmed,
+              summary: 'Failed sign-in attempt for $trimmed (network_error)',
+              actorIdOverride: trimmed,
+              actorNameOverride: trimmed,
+              actorRoleOverride: 'Unauthenticated',
+            ),
+          );
+          return false;
         }
       }
 
-      notifyListeners();
+      _lastAuthError = 'user_not_found';
       unawaited(
         recordAuditEvent(
           module: AuditModule.settings,
-          action: 'auth.login_success',
-          severity: AuditSeverity.info,
+          action: 'auth.login_failed',
+          severity: AuditSeverity.critical,
+          entityType: 'Session',
+          entityLabel: trimmed,
+          summary: 'Failed sign-in attempt for unknown user $trimmed',
+          actorIdOverride: trimmed,
+          actorNameOverride: trimmed,
+          actorRoleOverride: 'Unauthenticated',
+        ),
+      );
+      return false;
+    }
+
+    if (!member.hasLogin || !member.isActive) {
+      _lastAuthError = 'account_inactive';
+      unawaited(
+        recordAuditEvent(
+          module: AuditModule.settings,
+          action: 'auth.login_failed',
+          severity: AuditSeverity.critical,
           entityType: 'Session',
           entityId: member.id,
           entityLabel: member.name,
-          summary: 'Signed in as ${member.name}',
+          summary: 'Blocked sign-in to inactive account ${member.name}',
+          actorIdOverride: member.id,
+          actorNameOverride: member.name,
+          actorRoleOverride: 'Blocked',
         ),
       );
-      return true;
+      return false;
     }
 
-    /// Live server-first registration for the business owner using a verified
-    /// backend OTP token. Never creates a local-only account if the server fails.
-    Future<bool> registerLive({
-      required String name,
-      required String phone,
-      required String password,
-      required String otpToken,
-      String storeName = '',
-    }) async {
-      _lastAuthError = null;
-      final cleanPhone = phone.trim().replaceAll(RegExp(r'\s+'), '');
-      if (cleanPhone.isEmpty) {
-        _lastAuthError = 'phone_required';
-        return false;
-      }
-      if (password.length < 6) {
+    final valid =
+        _verifyPassword(password, member.passwordSalt, member.passwordHash);
+    if (!valid) {
+      // The cached local hash can be missing or stale (for example when a
+      // server pull replaced it with a non-verifiable placeholder). Before
+      // rejecting the sign-in, verify the entered credentials online so the
+      // device recovers and caches a usable hash for offline logins.
+      final api = cloudApi;
+      if (api != null) {
+        final candidates = <String>{
+          trimmed,
+          if (member.email.trim().isNotEmpty) member.email.trim(),
+          if (member.phone.trim().isNotEmpty)
+            member.phone.trim().replaceAll(RegExp(r'\s+'), ''),
+          if (member.username.contains('@')) member.username.trim(),
+        };
+        var authenticated = false;
+        var networkError = false;
+        var rateLimitedMessage = '';
+        for (final candidate in candidates) {
+          try {
+            await api.authenticate(
+              phone: candidate,
+              password: password,
+              register: false,
+            );
+            authenticated = true;
+            break;
+          } on ApiException catch (error) {
+            if (error.status == 401) {
+              continue;
+            }
+            if (error.status == 429) {
+              rateLimitedMessage = error.message;
+            }
+            networkError = error.status >= 500;
+            break;
+          } catch (_) {
+            networkError = true;
+            break;
+          }
+        }
+
+        if (authenticated) {
+          await _database.saveSyncSession(
+            endpoint: api.baseUrl,
+            token: api.token ?? '',
+            user: api.user,
+          );
+          if (_cloudApi != null) {
+            _cloudApi!.storeId = _activeStoreId;
+            _cloudApi!.onSynced = () {
+              if (!_disposed && _isInitialized) {
+                reloadFromLocal();
+              }
+            };
+            _cloudApi!.startAutoSync();
+          }
+          await refreshFromServer();
+          final credentials = _hashPassword(password);
+          final currentMember = member;
+          final refreshed = _staffMembers.firstWhere(
+            (s) => s.id == currentMember.id,
+            orElse: () => currentMember,
+          );
+          final updatedMember = refreshed.copyWith(
+            passwordHash: credentials.hash,
+            passwordSalt: credentials.salt,
+            updatedAt: DateTime.now().toIso8601String(),
+          );
+          final idx = _staffMembers.indexWhere((s) => s.id == updatedMember.id);
+          if (idx != -1) {
+            _staffMembers[idx] = updatedMember;
+          }
+          await _database.saveStaffMember({
+            ..._staffMemberToMap(updatedMember),
+            'store_id': _activeStoreId,
+          });
+          _isLoggedIn = true;
+          _currentUserId = updatedMember.id;
+          notifyListeners();
+          unawaited(
+            recordAuditEvent(
+              module: AuditModule.settings,
+              action: 'auth.login_success',
+              severity: AuditSeverity.info,
+              entityType: 'Session',
+              entityId: updatedMember.id,
+              entityLabel: updatedMember.name,
+              summary: 'Signed in online as ${updatedMember.name}',
+            ),
+          );
+          return true;
+        }
+
+        _lastAuthError = rateLimitedMessage.isNotEmpty
+            ? rateLimitedMessage
+            : networkError
+                ? 'Unable to reach the server. Check your internet connection and try again.'
+                : 'invalid_password';
+      } else {
         _lastAuthError = 'invalid_password';
-        return false;
       }
-      if (otpToken.trim().isEmpty) {
-        _lastAuthError = 'otp_required';
-        return false;
-      }
+      unawaited(
+        recordAuditEvent(
+          module: AuditModule.settings,
+          action: 'auth.login_failed',
+          severity: AuditSeverity.critical,
+          entityType: 'Session',
+          entityId: member.id,
+          entityLabel: member.name,
+          summary: 'Incorrect password entered for ${member.name}',
+          actorIdOverride: member.id,
+          actorNameOverride: member.name,
+          actorRoleOverride: 'Unauthenticated',
+        ),
+      );
+      return false;
+    }
 
-      var api = cloudApi;
-      if (api == null) {
-        api = PhpApiClient();
-        _cloudApi = PosHybridDatabase(api);
+    if (!member.passwordHash.startsWith(r'pbkdf2_sha256$')) {
+      final upgradedCredentials = _hashPassword(password);
+      final upgradedMember = member.copyWith(
+        passwordHash: upgradedCredentials.hash,
+        passwordSalt: upgradedCredentials.salt,
+        updatedAt: DateTime.now().toIso8601String(),
+      );
+      final memberIndex =
+          _staffMembers.indexWhere((s) => s.id == upgradedMember.id);
+      if (memberIndex != -1) {
+        _staffMembers[memberIndex] = upgradedMember;
       }
+      await _database.saveStaffMember({
+        ..._staffMemberToMap(upgradedMember),
+        'store_id': _activeStoreId,
+      });
+    }
 
+    _isLoggedIn = true;
+    _currentUserId = member.id;
+
+    // When a cloud API is available, authenticate with the server so the
+    // session token is refreshed and data is pulled from the shared backend.
+    // This is what makes the same credentials work across different devices.
+    final api = cloudApi;
+    if (api != null) {
+      final loginIdentifier = member.username.trim().isNotEmpty
+          ? member.username.trim()
+          : member.phone.trim().replaceAll(RegExp(r'\s+'), '');
       try {
         await api.authenticate(
-          email: cleanPhone,
+          phone: loginIdentifier,
           password: password,
-          register: true,
-          name: name.trim(),
-          storeName: storeName.trim(),
-          otpToken: otpToken.trim(),
+          register: false,
         );
+        // Persist the session so the next app launch restores cloud mode
+        // and syncs automatically without requiring the user to log in again.
         await _database.saveSyncSession(
           endpoint: api.baseUrl,
           token: api.token ?? '',
           user: api.user,
         );
-        if (_cloudApi != null) {
-          _cloudApi!.storeId = _activeStoreId;
-          _cloudApi!.onSynced = () {
-            if (!_disposed && _isInitialized) {
-              reloadFromLocal();
-            }
-          };
-          _cloudApi!.startAutoSync();
-        }
+        // Pull the latest data from the shared server so a different device
+        // that made changes shows up immediately after login.
         await refreshFromServer();
-
-        // Cache local password hash on the server-created owner staff record so
-        // offline re-login works if the shop later loses internet connectivity.
-        final serverUserId = api.user['id'] as String?;
-        final expectedStaffId =
-            serverUserId != null ? 'staff-$serverUserId' : null;
-        StaffMemberData? ownerMember;
-        for (final staff in _staffMembers) {
-          if ((expectedStaffId != null && staff.id == expectedStaffId) ||
-              staff.phone.trim().replaceAll(RegExp(r'\s+'), '').endsWith(
-                  cleanPhone.length > 9
-                      ? cleanPhone.substring(cleanPhone.length - 9)
-                      : cleanPhone)) {
-            ownerMember = staff;
-            break;
-          }
-        }
-        if (ownerMember != null) {
-          final credentials = _hashPassword(password);
-          final updatedOwner = ownerMember.copyWith(
-            passwordHash: credentials.hash,
-            passwordSalt: credentials.salt,
-            updatedAt: DateTime.now().toIso8601String(),
-          );
-          final idx = _staffMembers.indexWhere((s) => s.id == updatedOwner.id);
-          if (idx != -1) {
-            _staffMembers[idx] = updatedOwner;
-            await _database.saveStaffMember({
-              ..._staffMemberToMap(updatedOwner),
-              'store_id': _activeStoreId,
-            });
-          }
-          _currentUserId = updatedOwner.id;
-        } else {
-          _currentUserId = serverUserId;
-        }
-
-        _isLoggedIn = true;
-        notifyListeners();
-        return true;
       } on ApiException catch (error) {
-        if (error.status == 409) {
-          _lastAuthError = 'phone_taken';
+        if (error.status == 401) {
+          // Cloud rejected the password, but local verification already
+          // succeeded. Keep the local session so the till works offline;
+          // surface the mismatch for the user to resolve.
+          _lastAuthError = 'invalid_password';
         } else {
+          // Network or server errors: keep the local session so the till
+          // still works, but surface the problem for retry.
           _lastAuthError = error.message;
         }
-        return false;
       } catch (_) {
-        _lastAuthError =
-            'Imeshindwa kuwasiliana na seva. Hakikisha una intaneti na ujaribu tena.';
-        return false;
+        // Network unreachable: keep the local session, surface the issue.
+        _lastAuthError = 'Unable to reach the server. Working offline.';
       }
     }
 
-    Future<bool> register({
-      required String name,
-      required String phone,
-      required String password,
-      String? email,
-      String? roleId,
-      String? username,
-    }) async {
-      _lastAuthError = null;
-      final cleanPhone = phone.trim().replaceAll(RegExp(r'\s+'), '');
-      if (cleanPhone.isEmpty) {
-        _lastAuthError = 'phone_required';
-        return false;
-      }
-      if (password.length < 6) {
-        _lastAuthError = 'invalid_password';
-        return false;
-      }
+    notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'auth.login_success',
+        severity: AuditSeverity.info,
+        entityType: 'Session',
+        entityId: member.id,
+        entityLabel: member.name,
+        summary: 'Signed in as ${member.name}',
+      ),
+    );
+    return true;
+  }
 
-      // Check if phone already registered
+  /// Live server-first registration for the business owner using a verified
+  /// backend OTP token. Never creates a local-only account if the server fails.
+  Future<bool> registerLive({
+    required String name,
+    required String phone,
+    required String password,
+    required String otpToken,
+    String storeName = '',
+  }) async {
+    _lastAuthError = null;
+    final cleanPhone = phone.trim().replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.isEmpty) {
+      _lastAuthError = 'phone_required';
+      return false;
+    }
+    if (password.length < 6) {
+      _lastAuthError = 'invalid_password';
+      return false;
+    }
+    if (otpToken.trim().isEmpty) {
+      _lastAuthError = 'otp_required';
+      return false;
+    }
+
+    var api = cloudApi;
+    if (api == null) {
+      api = PhpApiClient();
+      _cloudApi = PosHybridDatabase(api);
+    }
+
+    try {
+      await api.authenticate(
+        phone: cleanPhone,
+        password: password,
+        register: true,
+        name: name.trim(),
+        storeName: storeName.trim(),
+        otpToken: otpToken.trim(),
+      );
+      await _database.saveSyncSession(
+        endpoint: api.baseUrl,
+        token: api.token ?? '',
+        user: api.user,
+      );
+      if (_cloudApi != null) {
+        _cloudApi!.storeId = _activeStoreId;
+        _cloudApi!.onSynced = () {
+          if (!_disposed && _isInitialized) {
+            reloadFromLocal();
+          }
+        };
+        _cloudApi!.startAutoSync();
+      }
+      await refreshFromServer();
+
+      // Cache local password hash on the server-created owner staff record so
+      // offline re-login works if the shop later loses internet connectivity.
+      final serverUserId = api.user['id'] as String?;
+      final expectedStaffId =
+          serverUserId != null ? 'staff-$serverUserId' : null;
+      StaffMemberData? ownerMember;
       for (final staff in _staffMembers) {
-        final existingPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
-        if (existingPhone.isNotEmpty && existingPhone == cleanPhone) {
-          _lastAuthError = 'phone_taken';
-          return false;
+        if ((expectedStaffId != null && staff.id == expectedStaffId) ||
+            staff.phone.trim().replaceAll(RegExp(r'\s+'), '').endsWith(
+                cleanPhone.length > 9
+                    ? cleanPhone.substring(cleanPhone.length - 9)
+                    : cleanPhone)) {
+          ownerMember = staff;
+          break;
         }
       }
-
-      // Auto-assign owner role if available or first role
-      final chosenRoleId = roleId ??
-          (_staffRoles.any((r) => r.id == 'owner')
-              ? 'owner'
-              : (_staffRoles.isNotEmpty ? _staffRoles.first.id : 'owner'));
-
-      final generatedUsername = (username != null && username.trim().isNotEmpty)
-          ? username.trim()
-          : cleanPhone;
-
-      await addStaffMember(
-        name: name.trim(),
-        email: email?.trim() ?? '',
-        phone: cleanPhone,
-        roleId: chosenRoleId,
-        username: generatedUsername,
-        password: password,
-      );
-
-      final ok = await login(cleanPhone, password);
-      if (!ok && _lastAuthError == null) _lastAuthError = 'login_failed';
-      return ok;
-    }
-
-    Future<bool> changeCurrentUserPassword({
-      required String currentPassword,
-      required String newPassword,
-    }) async {
-      _lastAuthError = null;
-      if (newPassword.length < 6) {
-        _lastAuthError = 'password_too_short';
-        return false;
+      if (ownerMember != null) {
+        final credentials = _hashPassword(password);
+        final updatedOwner = ownerMember.copyWith(
+          passwordHash: credentials.hash,
+          passwordSalt: credentials.salt,
+          updatedAt: DateTime.now().toIso8601String(),
+        );
+        final idx = _staffMembers.indexWhere((s) => s.id == updatedOwner.id);
+        if (idx != -1) {
+          _staffMembers[idx] = updatedOwner;
+          await _database.saveStaffMember({
+            ..._staffMemberToMap(updatedOwner),
+            'store_id': _activeStoreId,
+          });
+        }
+        _currentUserId = updatedOwner.id;
+      } else {
+        _currentUserId = serverUserId;
       }
 
-      StaffMemberData? member;
-      final activeId = _currentUserId ?? currentUserId;
-      if (activeId != null) {
+      _isLoggedIn = true;
+      notifyListeners();
+      return true;
+    } on ApiException catch (error) {
+      if (error.status == 409) {
+        _lastAuthError = 'phone_taken';
+      } else {
+        _lastAuthError = error.message;
+      }
+      return false;
+    } catch (_) {
+      _lastAuthError =
+          'Imeshindwa kuwasiliana na seva. Hakikisha una intaneti na ujaribu tena.';
+      return false;
+    }
+  }
+
+  Future<bool> register({
+    required String name,
+    required String phone,
+    required String password,
+    String? roleId,
+    String? username,
+  }) async {
+    _lastAuthError = null;
+    final cleanPhone = phone.trim().replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.isEmpty) {
+      _lastAuthError = 'phone_required';
+      return false;
+    }
+    if (password.length < 6) {
+      _lastAuthError = 'invalid_password';
+      return false;
+    }
+
+    // Check if phone already registered
+    for (final staff in _staffMembers) {
+      final existingPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
+      if (existingPhone.isNotEmpty && existingPhone == cleanPhone) {
+        _lastAuthError = 'phone_taken';
+        return false;
+      }
+    }
+
+    // Auto-assign owner role if available or first role
+    final chosenRoleId = roleId ??
+        (_staffRoles.any((r) => r.id == 'owner')
+            ? 'owner'
+            : (_staffRoles.isNotEmpty ? _staffRoles.first.id : 'owner'));
+
+    final generatedUsername = (username != null && username.trim().isNotEmpty)
+        ? username.trim()
+        : cleanPhone;
+
+    await addStaffMember(
+      name: name.trim(),
+      phone: cleanPhone,
+      roleId: chosenRoleId,
+      username: generatedUsername,
+      password: password,
+    );
+
+    final ok = await login(cleanPhone, password);
+    if (!ok && _lastAuthError == null) _lastAuthError = 'login_failed';
+    return ok;
+  }
+
+  Future<bool> changeCurrentUserPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    _lastAuthError = null;
+    if (newPassword.length < 6) {
+      _lastAuthError = 'password_too_short';
+      return false;
+    }
+
+    StaffMemberData? member;
+    final activeId = _currentUserId ?? currentUserId;
+    if (activeId != null) {
+      for (final staff in _staffMembers) {
+        if (staff.id == activeId) {
+          member = staff;
+          break;
+        }
+      }
+    }
+    if (member == null) {
+      final phone = profile.contactNumber.trim().replaceAll(RegExp(r'\s+'), '');
+      if (phone.isNotEmpty) {
         for (final staff in _staffMembers) {
-          if (staff.id == activeId) {
+          final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
+          if (staffPhone.isNotEmpty &&
+              (staffPhone == phone ||
+                  staffPhone.endsWith(phone) ||
+                  phone.endsWith(staffPhone))) {
             member = staff;
             break;
           }
         }
       }
-      if (member == null) {
-        final phone = profile.contactNumber.trim().replaceAll(RegExp(r'\s+'), '');
-        if (phone.isNotEmpty) {
-          for (final staff in _staffMembers) {
-            final staffPhone = staff.phone.trim().replaceAll(RegExp(r'\s+'), '');
-            if (staffPhone.isNotEmpty &&
-                (staffPhone == phone ||
-                    staffPhone.endsWith(phone) ||
-                    phone.endsWith(staffPhone))) {
-              member = staff;
-              break;
-            }
-          }
-        }
-      }
-
-      if (member == null || !member.hasPassword) {
-        _lastAuthError = 'user_not_found';
-        return false;
-      }
-      if (!_verifyPassword(
-        currentPassword,
-        member.passwordSalt,
-        member.passwordHash,
-      )) {
-        _lastAuthError = 'current_password_incorrect';
-        return false;
-      }
-
-      final credentials = _hashPassword(newPassword);
-      final updated = member.copyWith(
-        passwordHash: credentials.hash,
-        passwordSalt: credentials.salt,
-        updatedAt: DateTime.now().toIso8601String(),
-      );
-      await saveStaffMember(updated, cloudPassword: newPassword);
-      notifyListeners();
-      unawaited(
-        recordAuditEvent(
-          module: AuditModule.settings,
-          action: 'auth.password_changed',
-          severity: AuditSeverity.critical,
-          entityType: 'Staff Password',
-          entityId: member.id,
-          entityLabel: member.name,
-          summary: 'Changed password for ${member.name}',
-        ),
-      );
-      return true;
     }
 
-    Future<bool> resetPassword({
-      required String phone,
-      required String newPassword,
-    }) async {
-      _lastAuthError = null;
-      final cleanPhone = phone.trim().replaceAll(RegExp(r'\s+'), '');
-      if (cleanPhone.isEmpty) {
-        _lastAuthError = 'phone_required';
-        return false;
-      }
-      if (newPassword.length < 6) {
-        _lastAuthError = 'invalid_password';
-        return false;
-      }
-
-      StaffMemberData? member;
-      int index = -1;
-      for (int i = 0; i < _staffMembers.length; i++) {
-        final staffPhone =
-            _staffMembers[i].phone.trim().replaceAll(RegExp(r'\s+'), '');
-        if (staffPhone.isNotEmpty &&
-            (staffPhone == cleanPhone ||
-                staffPhone.endsWith(cleanPhone) ||
-                cleanPhone.endsWith(staffPhone))) {
-          member = _staffMembers[i];
-          index = i;
-          break;
-        }
-      }
-
-      if (member == null || index == -1) {
-        _lastAuthError = 'user_not_found';
-        return false;
-      }
-
-      final credentials = _hashPassword(newPassword);
-      final updated = member.copyWith(
-        passwordHash: credentials.hash,
-        passwordSalt: credentials.salt,
-        updatedAt: DateTime.now().toIso8601String(),
-      );
-
-      await saveStaffMember(updated);
-
-      // If cloud API is enabled, also update cloud password
-      if (cloudApi != null) {
-        try {
-          await cloudApi!.put('staff', updated.id, _staffMemberToMap(updated));
-        } catch (_) {}
-      }
-
-      notifyListeners();
-      unawaited(
-        recordAuditEvent(
-          module: AuditModule.settings,
-          action: 'auth.password_changed',
-          severity: AuditSeverity.critical,
-          entityType: 'Staff Password',
-          entityId: member.id,
-          entityLabel: member.name,
-          summary: 'Reset password for ${member.name}',
-        ),
-      );
-      return true;
+    if (member == null || !member.hasPassword) {
+      _lastAuthError = 'user_not_found';
+      return false;
+    }
+    if (!_verifyPassword(
+      currentPassword,
+      member.passwordSalt,
+      member.passwordHash,
+    )) {
+      _lastAuthError = 'current_password_incorrect';
+      return false;
     }
 
-    Future<void> logout() async {
-      // Flush any pending outbox writes to the server BEFORE clearing session
-      // so logging out never loses unsynced sales or inventory updates.
-      final hybrid = _cloudApi;
-      if (hybrid != null) {
-        try {
-          await hybrid.retryFailed();
-          await hybrid.syncNow(pull: false);
-        } catch (_) {}
-      }
-      final api = cloudApi;
-      if (api != null) {
-        try {
-          await api.logout();
-        } catch (_) {
-          // Signing out must also work while the device is offline.
-        }
-      }
-      final actor = currentUser;
-      final actorName = actor?.name.trim() ?? '';
-      await _database.clearSyncSession();
-      await recordAuditEvent(
+    final credentials = _hashPassword(newPassword);
+    final updated = member.copyWith(
+      passwordHash: credentials.hash,
+      passwordSalt: credentials.salt,
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+    await saveStaffMember(updated, cloudPassword: newPassword);
+    notifyListeners();
+    unawaited(
+      recordAuditEvent(
         module: AuditModule.settings,
-        action: 'auth.logout',
-        severity: AuditSeverity.info,
-        entityType: 'Session',
-        entityId: actor?.id ?? 'session',
-        entityLabel: actorName.isNotEmpty ? actorName : 'Active Session',
-        summary: actorName.isNotEmpty
-            ? 'Signed out $actorName'
-            : 'Signed out of active session',
-        actorIdOverride: actor?.id,
-        actorNameOverride: actor?.name,
-      );
-      final previousBaseUrl = api?.baseUrl;
-      _cloudApi?.dispose();
-      _cloudApi = PosHybridDatabase(PhpApiClient(previousBaseUrl));
-      _isLoggedIn = false;
-      _currentUserId = null;
-      _lastAuthError = null;
-      notifyListeners();
+        action: 'auth.password_changed',
+        severity: AuditSeverity.critical,
+        entityType: 'Staff Password',
+        entityId: member.id,
+        entityLabel: member.name,
+        summary: 'Changed password for ${member.name}',
+      ),
+    );
+    return true;
+  }
+
+  Future<bool> resetPassword({
+    required String phone,
+    required String newPassword,
+  }) async {
+    _lastAuthError = null;
+    final cleanPhone = phone.trim().replaceAll(RegExp(r'\s+'), '');
+    if (cleanPhone.isEmpty) {
+      _lastAuthError = 'phone_required';
+      return false;
     }
+    if (newPassword.length < 6) {
+      _lastAuthError = 'invalid_password';
+      return false;
+    }
+
+    StaffMemberData? member;
+    int index = -1;
+    for (int i = 0; i < _staffMembers.length; i++) {
+      final staffPhone =
+          _staffMembers[i].phone.trim().replaceAll(RegExp(r'\s+'), '');
+      if (staffPhone.isNotEmpty &&
+          (staffPhone == cleanPhone ||
+              staffPhone.endsWith(cleanPhone) ||
+              cleanPhone.endsWith(staffPhone))) {
+        member = _staffMembers[i];
+        index = i;
+        break;
+      }
+    }
+
+    if (member == null || index == -1) {
+      _lastAuthError = 'user_not_found';
+      return false;
+    }
+
+    final credentials = _hashPassword(newPassword);
+    final updated = member.copyWith(
+      passwordHash: credentials.hash,
+      passwordSalt: credentials.salt,
+      updatedAt: DateTime.now().toIso8601String(),
+    );
+
+    await saveStaffMember(updated);
+
+    // If cloud API is enabled, also update cloud password
+    if (cloudApi != null) {
+      try {
+        await cloudApi!.put('staff', updated.id, _staffMemberToMap(updated));
+      } catch (_) {}
+    }
+
+    notifyListeners();
+    unawaited(
+      recordAuditEvent(
+        module: AuditModule.settings,
+        action: 'auth.password_changed',
+        severity: AuditSeverity.critical,
+        entityType: 'Staff Password',
+        entityId: member.id,
+        entityLabel: member.name,
+        summary: 'Reset password for ${member.name}',
+      ),
+    );
+    return true;
+  }
+
+  Future<void> logout() async {
+    // Flush any pending outbox writes to the server BEFORE clearing session
+    // so logging out never loses unsynced sales or inventory updates.
+    final hybrid = _cloudApi;
+    if (hybrid != null) {
+      try {
+        await hybrid.retryFailed();
+        await hybrid.syncNow(pull: false);
+      } catch (_) {}
+    }
+    final api = cloudApi;
+    if (api != null) {
+      try {
+        await api.logout();
+      } catch (_) {
+        // Signing out must also work while the device is offline.
+      }
+    }
+    final actor = currentUser;
+    final actorName = actor?.name.trim() ?? '';
+    await _database.clearSyncSession();
+    await recordAuditEvent(
+      module: AuditModule.settings,
+      action: 'auth.logout',
+      severity: AuditSeverity.info,
+      entityType: 'Session',
+      entityId: actor?.id ?? 'session',
+      entityLabel: actorName.isNotEmpty ? actorName : 'Active Session',
+      summary: actorName.isNotEmpty
+          ? 'Signed out $actorName'
+          : 'Signed out of active session',
+      actorIdOverride: actor?.id,
+      actorNameOverride: actor?.name,
+    );
+    // Keep the local-first database instance after logout. Replacing and
+    // disposing it here can discard the in-memory staff credential cache
+    // before the next sign-in, causing valid credentials to be rejected.
+    // `api.logout()` above already clears the server token.
+    _cloudApi?.stopAutoSync();
+    _cloudApi ??= PosHybridDatabase(PhpApiClient(api?.baseUrl));
+    _isLoggedIn = false;
+    _currentUserId = null;
+    _lastAuthError = null;
+    notifyListeners();
+  }
 }

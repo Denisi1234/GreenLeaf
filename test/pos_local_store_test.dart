@@ -267,7 +267,8 @@ void main() {
         isNull,
       );
 
-      await store.addCustomer(customer(id: 'C2', name: 'Paid up', debitBalance: 0));
+      await store
+          .addCustomer(customer(id: 'C2', name: 'Paid up', debitBalance: 0));
       expect(
         await store.recordDebtPayment(customerId: 'C2', amount: 10),
         isNull,
@@ -302,7 +303,8 @@ void main() {
 
     test('clearing all debits resets entries and balances', () async {
       await store.addCustomer(customer());
-      await store.addCustomer(customer(id: 'C2', name: 'Juma', debitBalance: 20));
+      await store
+          .addCustomer(customer(id: 'C2', name: 'Juma', debitBalance: 20));
       await store.recordDebtPayment(customerId: 'C1', amount: 10);
 
       await store.clearAllDebits();
@@ -501,7 +503,10 @@ void main() {
       expect(created.id, isNotNull);
       expect(store.accounts.single.code, '9999');
       expect(
-        store.ledgerPostings().singleWhere((p) => p.accountCode == '9999').debit,
+        store
+            .ledgerPostings()
+            .singleWhere((p) => p.accountCode == '9999')
+            .debit,
         250,
       );
 
@@ -562,7 +567,10 @@ void main() {
 
       expect(store.fixedAssets, hasLength(1));
       expect(
-        store.ledgerPostings().singleWhere((p) => p.accountCode == '1500').debit,
+        store
+            .ledgerPostings()
+            .singleWhere((p) => p.accountCode == '1500')
+            .debit,
         1200,
       );
 
@@ -631,7 +639,11 @@ void main() {
 
       expect(store.cashOnHand(), 40);
       expect(
-        store.ledgerPostings().where((p) => p.accountCode == '1000').single.debit,
+        store
+            .ledgerPostings()
+            .where((p) => p.accountCode == '1000')
+            .single
+            .debit,
         40,
       );
     });
@@ -658,7 +670,8 @@ void main() {
       expect(store.staffRoles.first.sortOrder, 0);
       expect(store.staffRoles.last.sortOrder, 1);
 
-      await store.updateStaffRolePermissions('cashier', ['View Sales', 'Discounts']);
+      await store
+          .updateStaffRolePermissions('cashier', ['View Sales', 'Discounts']);
       expect(store.staffRoleById('cashier')!.permissions,
           ['View Sales', 'Discounts']);
       expect(store.staffRoleByTitle('Manager')?.id, 'manager');
@@ -686,10 +699,10 @@ void main() {
 
       expect(member.passwordHash, isNotEmpty);
       expect(member.passwordSalt, isNotEmpty);
-      expect(member.passwordHash,
-          isNot('secret123'));
+      expect(member.passwordHash, isNot('secret123'));
       expect(store.staffUsernameExists('JANE'), isTrue);
-      expect(store.staffUsernameExists('JANE', excludingId: member.id), isFalse);
+      expect(
+          store.staffUsernameExists('JANE', excludingId: member.id), isFalse);
       expect(store.staffEmployeeNumberExists('emp-1'), isTrue);
       expect(store.staffMembersForRole('cashier').single.id, member.id);
 
@@ -705,6 +718,30 @@ void main() {
 
       expect(await store.login('', ''), isFalse);
       expect(store.lastAuthError, 'missing_credentials');
+    });
+
+    test('a staff member can sign in again after logout', () async {
+      await store.saveStaffRole(const StaffRoleData(
+        id: 'cashier',
+        title: 'Cashier',
+        subtitle: 'Front desk',
+        permissions: [],
+        sortOrder: 0,
+      ));
+      await store.addStaffMember(
+        name: 'Jane Cashier',
+        email: 'jane@example.test',
+        phone: '0712345678',
+        roleId: 'cashier',
+        username: 'jane.cashier',
+        password: 'secret123',
+      );
+
+      expect(await store.login('jane.cashier', 'secret123'), isTrue);
+      await store.logout();
+
+      expect(store.isLoggedIn, isFalse);
+      expect(await store.login('jane.cashier', 'secret123'), isTrue);
     });
 
     test('inactive staff cannot sign in', () async {
@@ -786,13 +823,15 @@ void main() {
       );
 
       expect(
-        await store.resetPassword(phone: '0700000000', newPassword: 'newsecret'),
+        await store.resetPassword(
+            phone: '0700000000', newPassword: 'newsecret'),
         isFalse,
       );
       expect(store.lastAuthError, 'user_not_found');
 
       expect(
-        await store.resetPassword(phone: '0712345678', newPassword: 'newsecret'),
+        await store.resetPassword(
+            phone: '0712345678', newPassword: 'newsecret'),
         isTrue,
       );
       expect(await store.login('jane', 'newsecret'), isTrue);

@@ -6,8 +6,7 @@ import 'app_design.dart';
 import 'app_theme_palette.dart';
 
 /// Shared POS theme: neutral surfaces, restrained accents and consistent controls.
-ThemeData buildOsposTheme(TextTheme textTheme,
-    {String themeId = 'whatsapp_dark'}) {
+ThemeData buildOsposTheme(TextTheme textTheme, {String themeId = 'graphite'}) {
   final palette = AppThemePalette.forId(themeId);
   AppColors.applyPalette(palette);
   const controlRadius = BorderRadius.all(Radius.circular(AppRadius.standard));

@@ -12,6 +12,8 @@ import 'package:aza_pos/ui/widgets/app_theme_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'support/ui_test_fonts.dart';
 import 'package:provider/provider.dart';
 
 class _ThemeTestStore extends PosLocalStore {
@@ -50,8 +52,13 @@ class _ThemeTestStore extends PosLocalStore {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    await initializeDateFormatting();
+    await configureUiTestFonts();
+  });
   tearDown(() {
-    AppColors.applyPalette(AppThemePalette.whatsappDark);
+    AppColors.applyPalette(AppThemePalette.graphite);
     AppUpdateService.instance.resetForTesting();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -62,13 +69,14 @@ void main() {
 
   test('StorePreferences persists all valid appTheme options safely', () {
     const defaults = StorePreferences();
-    expect(defaults.appTheme, 'whatsapp_dark');
+    expect(defaults.appTheme, 'graphite');
     expect(
       defaults.themeDefaultVersion,
       StorePreferences.currentThemeDefaultVersion,
     );
 
     for (final themeId in [
+      'graphite',
       'whatsapp_dark',
       'system',
       'light',
@@ -91,16 +99,17 @@ void main() {
       'appTheme': 'neon',
       'themeDefaultVersion': StorePreferences.currentThemeDefaultVersion,
     });
-    expect(unknown.appTheme, 'whatsapp_dark');
+    expect(unknown.appTheme, 'graphite');
+    expect(StorePreferences.fromJson({}).appTheme, 'graphite');
   });
 
   test(
-      'StorePreferences enforces whatsapp_dark migration for legacy saved themes',
+      'StorePreferences preserves explicit themes from older saved preferences',
       () {
     final legacyNoVersion = StorePreferences.fromJson(const {
       'appTheme': 'light',
     });
-    expect(legacyNoVersion.appTheme, 'whatsapp_dark');
+    expect(legacyNoVersion.appTheme, 'light');
     expect(
       legacyNoVersion.themeDefaultVersion,
       StorePreferences.currentThemeDefaultVersion,
@@ -110,7 +119,7 @@ void main() {
       'appTheme': 'slate',
       'themeDefaultVersion': 0,
     });
-    expect(legacyZeroVersion.appTheme, 'whatsapp_dark');
+    expect(legacyZeroVersion.appTheme, 'slate');
     expect(
       legacyZeroVersion.themeDefaultVersion,
       StorePreferences.currentThemeDefaultVersion,
@@ -193,8 +202,33 @@ void main() {
     );
   });
 
+  test('Graphite defaults are registered and keep readable action contrast',
+      () {
+    expect(AppThemePreset.presets.map((p) => p.id).toSet(),
+        StorePreferences.themeOptions.toSet());
+    expect(AppThemePreset.byId('unknown').id, 'graphite');
+    expect(AppThemePalette.forId(' GRAPHITE '), AppThemePalette.graphite);
+    AppColors.applyPalette(AppThemePalette.graphite);
+    double contrast(Color a, Color b) {
+      final first = a.computeLuminance();
+      final second = b.computeLuminance();
+      return first > second
+          ? (first + 0.05) / (second + 0.05)
+          : (second + 0.05) / (first + 0.05);
+    }
+
+    expect(
+        contrast(AppColors.primary, Colors.white), greaterThanOrEqualTo(4.5));
+    expect(contrast(AppColors.textMuted, AppColors.surface),
+        greaterThanOrEqualTo(4.5));
+    expect(contrast(AppColors.completionAction, Colors.white),
+        greaterThanOrEqualTo(4.5));
+    expect(AppColors.completionAction, AppColors.successDeep);
+    expect(AppColors.primary, isNot(AppColors.completionAction));
+  });
+
   testWidgets(
-      'Auth screens stay light while in-app switches presets and defaults to WhatsApp Dark',
+      'Auth stays light and signed-in users start with Graphite and can switch presets',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(420, 840));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -216,7 +250,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 1. Onboarding stays pure white even though default appTheme is whatsapp_dark
+    // 1. Auth retains its own light surface.
     expect(find.byType(OnboardingPage), findsOneWidget);
     expect(AppColors.activePalette.id, 'light');
     expect(AppColors.isDark, isFalse);
@@ -273,25 +307,26 @@ void main() {
     expect(authRegion.value.statusBarIconBrightness, Brightness.dark);
     expect(authRegion.value.systemNavigationBarColor, Colors.white);
 
-    // 3. Inside AppShell: reset to default whatsapp_dark and log in
+    // 3. Inside AppShell: use the new default and log in
     await store.setStorePreferences(
-      store.storePreferences.copyWith(appTheme: 'whatsapp_dark'),
+      store.storePreferences
+          .copyWith(appTheme: StorePreferences.defaultAppTheme),
     );
     store.setAuthState(hasCompletedOnboarding: true, isLoggedIn: true);
     await tester.pumpAndSettle();
 
     expect(find.byType(AppShell), findsOneWidget);
-    expect(AppColors.activePalette.id, 'whatsapp_dark');
-    expect(AppColors.isDark, isTrue);
-    expect(AppColors.pageBackground, const Color(0xFF0B141A));
-    expect(AppColors.headerSurface, const Color(0xFF1F2C34));
+    expect(AppColors.activePalette.id, 'graphite');
+    expect(AppColors.isDark, isFalse);
+    expect(AppColors.pageBackground, AppThemePalette.graphite.pageBackground);
+    expect(AppColors.headerSurface, AppThemePalette.graphite.headerSurface);
 
     final initialMaterialApp =
         tester.widget<MaterialApp>(find.byType(MaterialApp));
-    expect(initialMaterialApp.theme?.brightness, Brightness.dark);
+    expect(initialMaterialApp.theme?.brightness, Brightness.light);
     expect(
       initialMaterialApp.theme?.scaffoldBackgroundColor,
-      const Color(0xFF0B141A),
+      AppThemePalette.graphite.pageBackground,
     );
     final darkInputBorder = initialMaterialApp
         .theme?.inputDecorationTheme.border as OutlineInputBorder;
@@ -302,10 +337,10 @@ void main() {
           find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
         )
         .first;
-    expect(initialRegion.value.statusBarIconBrightness, Brightness.light);
+    expect(initialRegion.value.statusBarIconBrightness, Brightness.dark);
     expect(
       initialRegion.value.systemNavigationBarColor,
-      const Color(0xFF1F2C34),
+      AppThemePalette.graphite.headerSurface,
     );
 
     // Switch dynamically across all presets while inside the app

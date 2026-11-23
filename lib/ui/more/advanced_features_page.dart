@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
@@ -226,20 +227,30 @@ class _AdvRow extends StatelessWidget {
     final palette = AppThemePalette.of(context);
     return InkWell(
       onTap: () {
+        HapticFeedback.lightImpact();
         Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => item.builder()),
         );
       },
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 54),
+        constraints: const BoxConstraints(minHeight: 56),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(
-                item.icon,
-                size: 22,
-                color: palette.textBody,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: palette.surfaceSecondary,
+                  borderRadius: BorderRadius.circular(AppRadius.sharp),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  item.icon,
+                  size: 20,
+                  color: palette.primary,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(

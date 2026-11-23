@@ -113,6 +113,7 @@ class PosHybridDatabase extends PosLocalDatabase {
   void dispose() {
     _disposed = true;
     stopAutoSync();
+    api.close();
   }
 
   void _scheduleFlush() {

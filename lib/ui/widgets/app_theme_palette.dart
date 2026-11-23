@@ -23,11 +23,20 @@ class AppThemePreset {
 
   static const presets = <AppThemePreset>[
     AppThemePreset(
+      id: 'graphite',
+      nameEn: 'Graphite',
+      nameSw: 'Grafaiti',
+      subtitleEn: 'Clean neutrals with charcoal actions',
+      subtitleSw: 'Rangi tulivu na vitufe vyeusi',
+      icon: Icons.contrast_rounded,
+      palette: AppThemePalette.graphite,
+    ),
+    AppThemePreset(
       id: 'whatsapp_dark',
       nameEn: 'WhatsApp Dark',
       nameSw: 'Giza (WhatsApp)',
-      subtitleEn: 'Default comfortable dark mode',
-      subtitleSw: 'Giza laini la kawaida',
+      subtitleEn: 'Comfortable dark mode',
+      subtitleSw: 'Giza laini',
       icon: Icons.dark_mode_rounded,
       palette: AppThemePalette.whatsappDark,
     ),
@@ -102,7 +111,7 @@ class AppThemePreset {
     for (final preset in presets) {
       if (preset.id == normalized) return preset;
     }
-    return presets.first; // Default fallback to WhatsApp Dark
+    return presets.first;
   }
 }
 
@@ -140,6 +149,23 @@ class AppThemePalette extends ThemeExtension<AppThemePalette> {
   final Color textMuted;
 
   bool get isDark => brightness == Brightness.dark;
+
+  static const graphite = AppThemePalette(
+    id: 'graphite',
+    brightness: Brightness.light,
+    primary: Color(0xFF171717),
+    primaryDeep: Color(0xFF111111),
+    primaryLight: Color(0xFFE8EAED),
+    pageBackground: Color(0xFFF5F6F8),
+    surface: Color(0xFFFFFFFF),
+    surfaceSecondary: Color(0xFFF0F2F4),
+    headerSurface: Color(0xFFFFFFFF),
+    border: Color(0xFFD9DDE3),
+    divider: Color(0xFFE8EBEF),
+    ink: Color(0xFF111827),
+    textBody: Color(0xFF374151),
+    textMuted: Color(0xFF606975),
+  );
 
   static const whatsappDark = AppThemePalette(
     id: 'whatsapp_dark',
@@ -271,7 +297,7 @@ class AppThemePalette extends ThemeExtension<AppThemePalette> {
   static AppThemePalette forId(String id) => resolve(id, Brightness.dark);
 
   static AppThemePalette of(BuildContext context) {
-    return Theme.of(context).extension<AppThemePalette>() ?? whatsappDark;
+    return Theme.of(context).extension<AppThemePalette>() ?? graphite;
   }
 
   @override
@@ -317,11 +343,16 @@ class AppThemePalette extends ThemeExtension<AppThemePalette> {
       brightness: t < 0.5 ? brightness : other.brightness,
       primary: Color.lerp(primary, other.primary, t) ?? primary,
       primaryDeep: Color.lerp(primaryDeep, other.primaryDeep, t) ?? primaryDeep,
-      primaryLight: Color.lerp(primaryLight, other.primaryLight, t) ?? primaryLight,
-      pageBackground: Color.lerp(pageBackground, other.pageBackground, t) ?? pageBackground,
+      primaryLight:
+          Color.lerp(primaryLight, other.primaryLight, t) ?? primaryLight,
+      pageBackground:
+          Color.lerp(pageBackground, other.pageBackground, t) ?? pageBackground,
       surface: Color.lerp(surface, other.surface, t) ?? surface,
-      surfaceSecondary: Color.lerp(surfaceSecondary, other.surfaceSecondary, t) ?? surfaceSecondary,
-      headerSurface: Color.lerp(headerSurface, other.headerSurface, t) ?? headerSurface,
+      surfaceSecondary:
+          Color.lerp(surfaceSecondary, other.surfaceSecondary, t) ??
+              surfaceSecondary,
+      headerSurface:
+          Color.lerp(headerSurface, other.headerSurface, t) ?? headerSurface,
       border: Color.lerp(border, other.border, t) ?? border,
       divider: Color.lerp(divider, other.divider, t) ?? divider,
       ink: Color.lerp(ink, other.ink, t) ?? ink,
