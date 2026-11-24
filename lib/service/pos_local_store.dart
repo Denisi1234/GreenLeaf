@@ -645,8 +645,12 @@ class PosLocalStore extends ChangeNotifier
     _checkAndSendDailySms();
   }
 
+  bool _sendingDailySms = false;
+
   Future<void> _checkAndSendDailySms() async {
-    if (!_storePreferences.autoDailySmsReport) return;
+    if (_sendingDailySms || !_storePreferences.autoDailySmsReport) return;
+    _sendingDailySms = true;
+    try {
 
     final nowUtc = DateTime.now().toUtc();
     final eatNow = nowUtc.add(_eastAfricaOffset);
@@ -676,6 +680,9 @@ class PosLocalStore extends ChangeNotifier
           _storePreferences.copyWith(lastDailySmsDate: todayStr),
         );
       }
+    }
+    } finally {
+      _sendingDailySms = false;
     }
   }
 

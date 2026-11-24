@@ -31,8 +31,14 @@ class PosHybridDatabase extends PosLocalDatabase {
   bool _prepared = false;
   bool _disposed = false;
   int _lastKnownRevision = -1;
+  bool _forcePull = false;
 
   void Function()? onSynced;
+
+  /// Called when the server rejects a locally recorded sale (for example
+  /// another till sold the last unit first). The local sale has already been
+  /// rolled back when this fires; the message is meant for the cashier.
+  void Function(String message)? onSaleRejected;
 
   bool get isSyncing => _syncing;
 
@@ -53,8 +59,10 @@ class PosHybridDatabase extends PosLocalDatabase {
       return false;
     }
 
-    final changed =
-        _lastKnownRevision >= 0 && status.revision != _lastKnownRevision;
+    final forcePull = _forcePull;
+    _forcePull = false;
+    final changed = forcePull ||
+        (_lastKnownRevision >= 0 && status.revision != _lastKnownRevision);
     final firstCheck = _lastKnownRevision < 0;
     _lastKnownRevision = status.revision;
 

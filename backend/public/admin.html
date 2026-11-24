@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrackMauzo Admin — Real-Time Registrations</title>
+  <style>
+    :root {
+      --bg: #f4f7f6;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --accent: #0f766e;
+      --accent-hover: #0d5e58;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .hidden { display: none !important; }
+
+    /* Login */
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--card);
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      padding: 32px;
+    }
+    .login-card h1 { font-size: 22px; margin-bottom: 6px; }
+    .login-card p { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      font-size: 14px;
+      outline: none;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .btn {
+      width: 100%;
+      padding: 11px 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn-sm {
+      width: auto;
+      padding: 7px 14px;
+      font-size: 13px;
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { background: #f1f5f9; }
+    .error-msg {
+      background: #fef2f2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    /* Dashboard */
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--success);
+      background: #dcfce7;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .last-updated { font-size: 12px; color: var(--muted); }
+
+    main { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      padding: 18px 20px;
+    }
+    .stat-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+    .stat-value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+
+    .table-card {
+      background: var(--card);
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .table-toolbar {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .table-toolbar h2 { font-size: 16px; }
+    .search-input {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      font-size: 13px;
+      width: 260px;
+      max-width: 100%;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    th { background: #f8fafc; font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; }
+    tr:hover td { background: #f8fafc; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-owner { background: #e0f2fe; color: #0369a1; }
+    .badge-staff { background: #f1f5f9; color: #475569; }
+    .badge-active { background: #dcfce7; color: #15803d; }
+    .badge-inactive { background: #fee2e2; color: #b91c1c; }
+  </style>
+</head>
+<body>
+
+  <!-- Login View -->
+  <div id="loginView" class="login-wrap">
+    <form id="loginForm" class="login-card">
+      <h1>TrackMauzo Admin</h1>
+      <p>Sign in to monitor real-time app registrations.</p>
+      <div id="loginError" class="error-msg hidden"></div>
+      <div class="field">
+        <label for="username">Admin Username</label>
+        <input id="username" type="text" required autocomplete="username" placeholder="admin" />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" required autocomplete="current-password" placeholder="••••••••" />
+      </div>
+      <button type="submit" class="btn">Sign In</button>
+    </form>
+  </div>
+
+  <!-- Dashboard View -->
+  <div id="dashboardView" class="hidden">
+    <header>
+      <div class="brand">
+        <span>TrackMauzo Admin</span>
+        <span class="live-pill"><span class="dot"></span> LIVE (5s)</span>
+      </div>
+      <div class="header-actions">
+        <span id="lastUpdated" class="last-updated">Updating...</span>
+        <button id="refreshBtn" class="btn btn-sm btn-outline" type="button">Refresh</button>
+        <button id="logoutBtn" class="btn btn-sm btn-outline" type="button">Logout</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Total Registered Users</div>
+          <div id="statUsers" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Stores</div>
+          <div id="statStores" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Registered Today (UTC)</div>
+          <div id="statToday" class="stat-value">0</div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-toolbar">
+          <h2>Recent Registrations</h2>
+          <input id="searchBox" class="search-input" type="search" placeholder="Search name, phone, or store..." />
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Store Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Registered At</th>
+              </tr>
+            </thead>
+            <tbody id="regBody">
+              <tr><td colspan="7" style="text-align:center;color:#64748b;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = 'admin-api.php';
+    const TOKEN_KEY = 'tm_admin_token';
+    let pollTimer = null;
+    let cachedRows = [];
+
+    const loginView = document.getElementById('loginView');
+    const dashboardView = document.getElementById('dashboardView');
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('loginError');
+    const searchBox = document.getElementById('searchBox');
+    const regBody = document.getElementById('regBody');
+
+    function getToken() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
+    function setToken(t) { sessionStorage.setItem(TOKEN_KEY, t); }
+    function clearToken() { sessionStorage.removeItem(TOKEN_KEY); }
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      return isNaN(d.getTime()) ? iso : d.toLocaleString();
+    }
+
+    function renderRows() {
+      const q = searchBox.value.trim().toLowerCase();
+      const filtered = q
+        ? cachedRows.filter(r =>
+            (r.name || '').toLowerCase().includes(q) ||
+            (r.phone || '').toLowerCase().includes(q) ||
+            (r.store_name || '').toLowerCase().includes(q)
+          )
+        : cachedRows;
+
+      if (filtered.length === 0) {
+        regBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b;">No registrations found.</td></tr>';
+        return;
+      }
+
+      regBody.innerHTML = filtered.map((r, idx) => {
+        const isOwner = (r.role || '').toLowerCase() === 'owner';
+        const isActive = Number(r.active ?? 1) === 1;
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><strong>${escapeHtml(r.name)}</strong></td>
+            <td>${escapeHtml(r.phone)}</td>
+            <td>${escapeHtml(r.store_name || '-')}</td>
+            <td><span class="badge ${isOwner ? 'badge-owner' : 'badge-staff'}">${escapeHtml(r.role)}</span></td>
+            <td><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+            <td>${escapeHtml(formatDate(r.created_at))}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function fetchRegistrations() {
+      const token = getToken();
+      if (!token) return showLogin();
+
+      try {
+        const res = await fetch(`${API_URL}?action=registrations`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401) {
+          clearToken();
+          return showLogin('Session expired. Please sign in again.');
+        }
+        const data = await res.json();
+        document.getElementById('statUsers').textContent = data.stats?.total_users ?? 0;
+        document.getElementById('statStores').textContent = data.stats?.total_stores ?? 0;
+        document.getElementById('statToday').textContent = data.stats?.today_registrations ?? 0;
+        document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+        cachedRows = data.registrations || [];
+        renderRows();
+      } catch (err) {
+        document.getElementById('lastUpdated').textContent = 'Connection error';
+      }
+    }
+
+    function showLogin(msg = '') {
+      clearInterval(pollTimer);
+      pollTimer = null;
+      dashboardView.classList.add('hidden');
+      loginView.classList.remove('hidden');
+      if (msg) {
+        loginError.textContent = msg;
+        loginError.classList.remove('hidden');
+      } else {
+        loginError.classList.add('hidden');
+      }
+    }
+
+    function showDashboard() {
+      loginView.classList.add('hidden');
+      dashboardView.classList.remove('hidden');
+      fetchRegistrations();
+      clearInterval(pollTimer);
+      pollTimer = setInterval(fetchRegistrations, 5000);
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginError.classList.add('hidden');
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch(`${API_URL}?action=login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.token) {
+          loginError.textContent = data.error || 'Login failed.';
+          loginError.classList.remove('hidden');
+          return;
+        }
+        setToken(data.token);
+        showDashboard();
+      } catch {
+        loginError.textContent = 'Network error. Please try again.';
+        loginError.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchRegistrations);
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      clearToken();
+      showLogin();
+    });
+    searchBox.addEventListener('input', renderRows);
+
+    if (getToken()) {
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  </script>
+</body>
+</html>
