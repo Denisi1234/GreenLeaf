@@ -75,7 +75,6 @@ class _LoginPageState extends State<LoginPage> {
     final errorMessage = store.lastAuthError == 'user_not_found'
         ? strings.userNotFound
         : strings.loginFailed;
-    setState(() => _error = errorMessage);
     showMarketNotice(
       context,
       title: strings.isSwahili ? 'Imeshindwa kuingia' : 'Sign in failed',

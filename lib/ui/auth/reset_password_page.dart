@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../service/php_api_client.dart';
 import '../../service/pos_local_store.dart';
 import '../widgets/market_shared_widgets.dart';
 import 'auth_shell.dart';
@@ -106,6 +107,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     // never holds or trusts a code it generated itself.
     final api = store.cloudApi;
     if (api == null) {
+      setState(() => _busy = false);
       _showError(
         isSwahili
             ? 'Kuweka upya nenosiri kunahitaji muunganisho wa mtandao.'
@@ -115,9 +117,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     }
 
     bool sent = false;
+    String? apiError;
     try {
-      final res = await api.sendOtp(rawPhone);
+      final res = await api.sendOtp(rawPhone, purpose: 'reset');
       sent = (res['data'] as Map)['sent'] == true;
+    } on ApiException catch (e) {
+      apiError = e.message;
     } catch (_) {
       sent = false;
     }
@@ -141,9 +146,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       );
     } else {
       _showError(
-        isSwahili
-            ? 'Imeshindwa kutuma SMS. Hakikisha salio au namba ya simu ipo sawa.'
-            : 'Could not send SMS. Please check your phone number and try again.',
+        apiError ??
+            (isSwahili
+                ? 'Imeshindwa kutuma SMS. Hakikisha salio au namba ya simu ipo sawa.'
+                : 'Could not send SMS. Please check your phone number and try again.'),
       );
     }
   }
@@ -169,6 +175,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
     final api = store.cloudApi;
     String? resetToken;
+    String? apiError;
 
     if (api != null) {
       try {
@@ -176,6 +183,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           _phoneController.text.trim(),
           inputOtp,
         );
+      } on ApiException catch (e) {
+        apiError = e.message;
+        resetToken = null;
       } catch (_) {
         resetToken = null;
       }
@@ -204,9 +214,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             ? (isSwahili
                 ? 'Uthibitisho unahitaji muunganisho wa intaneti.'
                 : 'Verification requires an internet connection.')
-            : (isSwahili
-                ? 'Namba ya uthibitisho si sahihi'
-                : 'Incorrect verification code'),
+            : (apiError ??
+                (isSwahili
+                    ? 'Namba ya uthibitisho si sahihi'
+                    : 'Incorrect verification code')),
       );
     }
   }
@@ -243,6 +254,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     final resetToken = _backendResetToken;
 
     bool ok = false;
+    String? apiError;
     if (api != null && resetToken != null) {
       try {
         ok = await api.resetPasswordWithOtp(
@@ -250,6 +262,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           resetToken: resetToken,
           newPassword: newPass,
         );
+      } on ApiException catch (e) {
+        apiError = e.message;
+        ok = false;
       } catch (_) {
         ok = false;
       }
@@ -269,11 +284,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         type: MarketNoticeType.success,
       );
     } else {
-      final strings = AppStrings.of(store.languageCode);
       _showError(
-        store.lastAuthError == 'user_not_found'
-            ? strings.userNotFound
-            : strings.loginFailed,
+        apiError ??
+            (isSwahili
+                ? 'Imeshindwa kubadilisha nenosiri. Jaribu tena.'
+                : 'Could not reset password. Please try again.'),
       );
     }
   }

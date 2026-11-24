@@ -206,11 +206,11 @@ final class AuthService
             if ($this->db->rows('SELECT id FROM users WHERE email = ?', [$email]) !== []) {
                 throw new ApiError(409, 'Namba hii ya simu tayari imesajiliwa. Tafadhali ingia (Sign in).');
             }
+        } else {
+            if (!$this->isPhoneRegistered($phone)) {
+                throw new ApiError(404, 'Namba hii ya simu haijasajiliwa kwenye mfumo.');
+            }
         }
-
-        $code = (string) random_int(100000, 999999);
-        $hash = hash('sha256', $phone . ':' . $code);
-        $expires = time() + 600;
 
         $this->db->execute(
             'CREATE TABLE IF NOT EXISTS otp_verifications (
@@ -221,6 +221,18 @@ final class AuthService
                 created_at VARCHAR(32) NOT NULL
             )'
         );
+
+        $existing = $this->db->rows('SELECT expires_at FROM otp_verifications WHERE phone = ?', [$phone]);
+        if ($existing !== []) {
+            $sentAt = (int) $existing[0]['expires_at'] - 600;
+            if ((time() - $sentAt) < 60) {
+                throw new ApiError(429, 'Tafadhali subiri sekunde 60 kabla ya kuomba namba nyingine ya uthibitisho.');
+            }
+        }
+
+        $code = (string) random_int(100000, 999999);
+        $hash = hash('sha256', $phone . ':' . $code);
+        $expires = time() + 600;
 
         $this->db->execute('DELETE FROM otp_verifications WHERE phone = ? OR expires_at < ?', [$phone, time()]);
         $this->db->execute(
@@ -316,6 +328,19 @@ final class AuthService
         $this->db->execute('DELETE FROM otp_verifications WHERE phone = ?', [$phone]);
 
         $updated = false;
+        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+
+        // Update owner or direct user account matched by phone or synthetic email
+        $userRows = $this->db->rows(
+            'SELECT id FROM users WHERE (email = ? OR email = ?) AND active = 1',
+            [$phone, $phone . '@trackmauzo.app']
+        );
+        foreach ($userRows as $uRow) {
+            $this->db->execute('UPDATE users SET password_hash = ? WHERE id = ?', [$newHash, $uRow['id']]);
+            $updated = true;
+        }
+
+        // Also update any linked staff account
         $staffRows = $this->db->rows("SELECT * FROM records WHERE resource = 'staff'");
         foreach ($staffRows as $sRow) {
             $staff = json_decode($sRow['payload'], true);
@@ -329,12 +354,16 @@ final class AuthService
                     if ($acc !== []) {
                         $this->db->execute(
                             'UPDATE users SET password_hash = ? WHERE id = ?',
-                            [password_hash($newPassword, PASSWORD_DEFAULT), $acc[0]['user_id']]
+                            [$newHash, $acc[0]['user_id']]
                         );
                         $updated = true;
                     }
                 }
             }
+        }
+
+        if (!$updated) {
+            throw new ApiError(404, 'Akaunti yenye namba hii ya simu haikupatikana.');
         }
 
         return [
@@ -357,6 +386,31 @@ final class AuthService
 
         $identifier = ApiValidator::formatTanzanianPhone($rawIdentifier);
         return [$identifier, $password];
+    }
+
+    private function isPhoneRegistered(string $phone): bool
+    {
+        if (
+            $this->db->rows(
+                'SELECT id FROM users WHERE (email = ? OR email = ?) AND active = 1',
+                [$phone, $phone . '@trackmauzo.app']
+            ) !== []
+        ) {
+            return true;
+        }
+
+        $staffRows = $this->db->rows("SELECT payload FROM records WHERE resource = 'staff'");
+        foreach ($staffRows as $sRow) {
+            $staff = json_decode($sRow['payload'], true);
+            if (!is_array($staff)) {
+                continue;
+            }
+            $stPhone = preg_replace('/\D+/', '', (string) ($staff['phone'] ?? ''));
+            if ($stPhone !== '' && (str_ends_with($phone, $stPhone) || str_ends_with($stPhone, substr($phone, 3)))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function issueToken(array $user): array
