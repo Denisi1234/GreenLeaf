@@ -10,7 +10,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 
 $config = require __DIR__ . '/../config.php';
 try {
-    $db = new Database($config['db']);
+    $db = new Database($config['db'] ?? $config);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'DB error: ' . $e->getMessage()]);
