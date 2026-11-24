@@ -9,7 +9,13 @@ header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
 $config = require __DIR__ . '/../config.php';
-$db = new Database($config['db']);
+try {
+    $db = new Database($config['db']);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'DB error: ' . $e->getMessage()]);
+    exit;
+}
 
 $adminUser = (string) (getenv('ADMIN_PORTAL_USER') ?: ($config['admin_user'] ?? 'admin'));
 $adminPass = (string) (getenv('ADMIN_PORTAL_PASS') ?: ($config['admin_pass'] ?? 'TrackMauzo@2026'));
