@@ -15,7 +15,7 @@ $adminUser = (string) (getenv('ADMIN_PORTAL_USER') ?: ($config['admin_user'] ?? 
 $adminPass = (string) (getenv('ADMIN_PORTAL_PASS') ?: ($config['admin_pass'] ?? 'TrackMauzo@2026'));
 $secret = (string) (getenv('ADMIN_PORTAL_SECRET') ?: ($config['admin_secret'] ?? hash('sha256', __DIR__ . $adminPass)));
 
-function jsonResponse(int $status, array $payload): never
+function jsonResponse(int $status, array $payload): void
 {
     http_response_code($status);
     echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
