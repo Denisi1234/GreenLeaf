@@ -273,10 +273,9 @@ mixin PosAuthStore on ChangeNotifier {
       if (api != null) {
         final candidates = <String>{
           trimmed,
-          if (member.email.trim().isNotEmpty) member.email.trim(),
           if (member.phone.trim().isNotEmpty)
             member.phone.trim().replaceAll(RegExp(r'\s+'), ''),
-          if (member.username.contains('@')) member.username.trim(),
+          if (member.username.trim().isNotEmpty) member.username.trim(),
         };
         var authenticated = false;
         var networkError = false;
@@ -291,7 +290,7 @@ mixin PosAuthStore on ChangeNotifier {
             authenticated = true;
             break;
           } on ApiException catch (error) {
-            if (error.status == 401) {
+            if (error.status == 401 || error.status == 422) {
               continue;
             }
             if (error.status == 429) {
@@ -408,9 +407,9 @@ mixin PosAuthStore on ChangeNotifier {
     // This is what makes the same credentials work across different devices.
     final api = cloudApi;
     if (api != null) {
-      final loginIdentifier = member.username.trim().isNotEmpty
-          ? member.username.trim()
-          : member.phone.trim().replaceAll(RegExp(r'\s+'), '');
+      final loginIdentifier = member.phone.trim().isNotEmpty
+          ? member.phone.trim().replaceAll(RegExp(r'\s+'), '')
+          : member.username.trim();
       try {
         await api.authenticate(
           phone: loginIdentifier,

@@ -160,9 +160,11 @@ final class Api
             return $this->notifications->registerDeviceToken($user, $body);
         }
         if ($parts === ['notifications'] && $method === 'GET') {
+            $this->auth->requireAny($user, ['View Reports', 'Manage Staff', 'System Settings']);
             return $this->notifications->getNotifications($storeId);
         }
         if ($parts === ['notifications', 'send'] && $method === 'POST') {
+            $this->auth->requirePermission($user, 'System Settings');
             return $this->notifications->dispatchPushNotification($storeId, $body);
         }
         if ($parts === ['checkout'] && $method === 'POST') {

@@ -3,10 +3,18 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/Database.php';
 require __DIR__ . '/../src/Api.php';
+require __DIR__ . '/../src/Security.php';
 $config = require __DIR__ . '/../config.php';
+$security = $config['security'] ?? [];
+$https = Security::isHttps($_SERVER, (bool) ($security['trust_proxy'] ?? false));
+Security::apply(Security::headers($https, (int) ($security['hsts_max_age'] ?? 31536000)));
+if (Security::requiresHttps((bool) ($security['force_https'] ?? false), $https)) {
+    http_response_code(403);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error' => 'HTTPS is required.']);
+    exit;
+}
 header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
-header('X-Content-Type-Options: nosniff');
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $config['origins'], true)) {
     header('Access-Control-Allow-Origin: ' . $origin);

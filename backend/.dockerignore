@@ -1,0 +1,15 @@
+# Never bake secrets or local databases into the image.
+.env
+.env.*
+!.env.example
+storage/*.sqlite
+storage/*.sqlite-*
+storage/uploads/
+
+# Tests and local tooling are not needed at runtime.
+tests/
+*.md
+.git/
+.gitignore
+Dockerfile
+docker-compose.yml

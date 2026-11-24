@@ -19,6 +19,11 @@ return [
     'origins' => array_map('trim', array_filter(explode(',', getenv('ALLOWED_ORIGINS') ?: 'http://localhost:53000,http://127.0.0.1:53000'))),
     'registration' => (getenv('ALLOW_REGISTRATION') ?: 'true') === 'true',
     'token_hours' => 12,
+    'security' => [
+        'force_https' => (getenv('FORCE_HTTPS') ?: 'false') === 'true',
+        'trust_proxy' => (getenv('TRUST_PROXY') ?: 'false') === 'true',
+        'hsts_max_age' => (int) (getenv('HSTS_MAX_AGE') ?: 31536000),
+    ],
     'sms' => [
         'username' => getenv('NEXTSMS_USERNAME') ?: '',
         'password' => getenv('NEXTSMS_PASSWORD') ?: '',

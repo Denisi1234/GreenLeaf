@@ -21,6 +21,12 @@ outdated: ## Find outdated dependencies
 test: ## Run tests
 	flutter test
 
+.PHONY: test-backend
+test-backend: ## Run PHP backend test suites (core + feature coverage)
+	php backend/tests/api_test.php
+	php backend/tests/feature_test.php
+	php backend/tests/security_test.php
+
 .PHONY: test-coverage
 test-coverage: ## Run tests with coverage
 	flutter test --coverage

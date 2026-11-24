@@ -353,24 +353,23 @@ final class ResourceRepository
         if ($accounts === [] && $password === null) {
             return;
         }
-        $email = strtolower(ApiValidator::text($staff, 'email'));
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new ApiError(422, 'Enter a valid staff email.');
-        }
+        // Sign-in is phone-based, so the staff member's phone number is the
+        // account identifier stored in the users table.
+        $loginId = ApiValidator::formatTanzanianPhone((string) ($staff['phone'] ?? ''));
         $name = ApiValidator::text($staff, 'name');
         $active = ($staff['status'] ?? 'active') === 'active' ? 1 : 0;
         if ($accounts === []) {
             $userId = bin2hex(random_bytes(16));
             $this->db->execute(
                 'INSERT INTO users (id, store_id, name, email, password_hash, role, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [$userId, $storeId, $name, $email, password_hash($password, PASSWORD_DEFAULT), 'cashier', $active, gmdate('c')]
+                [$userId, $storeId, $name, $loginId, password_hash($password, PASSWORD_DEFAULT), 'cashier', $active, gmdate('c')]
             );
             $this->db->execute('INSERT INTO staff_accounts VALUES (?, ?, ?)', [$storeId, $id, $userId]);
         } else {
             $userId = $accounts[0]['user_id'];
             $this->db->execute(
                 'UPDATE users SET name = ?, email = ?, active = ? WHERE id = ?',
-                [$name, $email, $active, $userId]
+                [$name, $loginId, $active, $userId]
             );
             if ($password !== null) {
                 $this->db->execute(

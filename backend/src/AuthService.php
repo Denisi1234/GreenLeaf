@@ -172,8 +172,10 @@ final class AuthService
             'SELECT * FROM users WHERE (email = ? OR email = ?) AND active = 1',
             [$phone, $phone . '@trackmauzo.app']
         );
+        // Always run a hash comparison to keep timing uniform regardless of
+        // whether the identifier exists.
         $hash = $rows[0]['password_hash'] ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
-        if (!password_verify($password, $hash) || $rows === []) {
+        if ($rows === [] || !password_verify($password, $hash)) {
             throw new ApiError(401, 'Namba ya simu au nenosiri si sahihi.');
         }
         return $this->issueToken($rows[0]);

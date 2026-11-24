@@ -35,11 +35,14 @@ DB_USER=your_database_user
 DB_PASSWORD=your_database_password
 ALLOWED_ORIGINS=https://your-frontend.example
 ALLOW_REGISTRATION=true
+FORCE_HTTPS=true
 ```
 
 Run `php backend/bin/migrate.php` with those settings. The schema uses InnoDB for transactional writes. Point the web server's document root at `backend/public`, enable Apache rewriting, and configure HTTPS. The database, configuration, source, and tests belong outside the public document root. A server at `https://pos-api.example` exposes its API at `https://pos-api.example/api`.
 
-After creating the required owner accounts, `ALLOW_REGISTRATION=false` closes public shop registration. The owner can continue creating staff logins through Staff Management. Staff sign in using their email and the password assigned there. Changing their password or disabling their staff record revokes existing access tokens.
+Set `FORCE_HTTPS=true` in production; the API then refuses plain HTTP requests with `403` and sends `Strict-Transport-Security` on secure responses. If a reverse proxy terminates TLS, also set `TRUST_PROXY=true` so `X-Forwarded-Proto: https` is honoured, and ensure the proxy forwards that header. `HSTS_MAX_AGE` controls the HSTS lifetime in seconds (default `31536000`; set `0` to omit the header). Every API response also carries `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a restrictive `Content-Security-Policy`, and `Cache-Control: no-store`.
+
+After creating the required owner accounts, `ALLOW_REGISTRATION=false` closes public shop registration. The owner can continue creating staff logins through Staff Management. Staff sign in using their phone number and the password assigned there. Changing their password or disabling their staff record revokes existing access tokens.
 
 SQLite and MySQL store separate data. Changing the DSN selects another database, and does not copy existing records.
 
@@ -50,8 +53,8 @@ All business endpoints require `Authorization: Bearer <token>`. Every record is 
 | Method | Path under /api | Purpose |
 | --- | --- | --- |
 | GET | /health | Database availability |
-| POST | /auth/register | Create a shop and owner using name, store_name, email, password |
-| POST | /auth/login | Obtain a token using email and password |
+| POST | /auth/register | Create a shop and owner using phone, name, store_name, password and a verified otp_token |
+| POST | /auth/login | Obtain a token using phone and password |
 | GET | /auth/me | Current account |
 | POST | /auth/logout | Revoke the current token |
 | POST | /auth/users | Owner creates a cashier account |
@@ -92,9 +95,11 @@ Uploaded JPEG, PNG, and WebP images are limited to 2 MB and 24 megapixels and ar
 
 ```powershell
 php backend/tests/api_test.php
+php backend/tests/feature_test.php
+php backend/tests/security_test.php
 ```
 
-The test uses an isolated in-memory database and checks authentication, shop isolation, stale-write rejection, stock and customer-credit transactions, duplicate-sale retries, rollback, voiding, settings, expenses, and cashier restrictions.
+`api_test.php` and `feature_test.php` use an isolated in-memory database and no network access. `api_test.php` covers authentication, shop isolation, stale-write rejection, stock and customer-credit transactions, duplicate-sale retries, rollback, voiding, settings, expenses, and cashier restrictions. `feature_test.php` adds end-to-end coverage for registration and OTP, routing and health, every generic resource (including optimistic concurrency and validation), cart and preference isolation, audit-log immutability, role-escalation guards, the full checkout matrix (cash, card, credit, discounts, idempotency, fractional quantities, voiding, summaries), multi-store branches, uploads, notifications, password reset, SMS throttling, and logout revocation. `security_test.php` unit-tests HTTPS detection (including trusted proxies), forced-HTTPS logic, security headers, and HSTS lifetimes. From the repository root, `make test-backend` runs all three.
 
 For the Flutter integration test, start another PHP server against a disposable database and supply its API URL.
 
