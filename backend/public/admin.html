@@ -3,16 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TrackMauzo Admin — Real-Time Registrations</title>
+  <title>Aza POS Admin Portal</title>
   <style>
     :root {
-      --bg: #f4f7f6;
+      --bg: #f1f5f9;
       --card: #ffffff;
+      --sidebar: #0f172a;
+      --sidebar-hover: #1e293b;
       --ink: #0f172a;
       --muted: #64748b;
       --accent: #0f766e;
       --accent-hover: #0d5e58;
-      --border: #e2e8f0;
+      --border: #cbd5e1;
       --danger: #dc2626;
       --success: #16a34a;
     }
@@ -37,7 +39,7 @@
       width: 100%;
       max-width: 400px;
       background: var(--card);
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border);
       border-radius: 2px;
       padding: 32px;
     }
@@ -48,7 +50,7 @@
     .field input {
       width: 100%;
       padding: 10px 12px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border);
       border-radius: 2px;
       font-size: 14px;
       outline: none;
@@ -66,65 +68,107 @@
       cursor: pointer;
     }
     .btn:hover { background: var(--accent-hover); }
-    .btn-sm {
-      width: auto;
-      padding: 7px 14px;
-      font-size: 13px;
-    }
-    .btn-outline {
-      background: transparent;
-      color: var(--ink);
-      border: 1px solid var(--border);
-    }
-    .btn-outline:hover { background: #f1f5f9; }
+    .btn-sm { width: auto; padding: 7px 14px; font-size: 13px; }
+    .btn-outline { background: #fff; color: var(--ink); border: 1px solid var(--border); }
+    .btn-outline:hover { background: #f8fafc; }
     .error-msg {
       background: #fef2f2;
       color: var(--danger);
       border: 1px solid #fecaca;
       padding: 10px 12px;
-      border-radius: 8px;
+      border-radius: 2px;
       font-size: 13px;
       margin-bottom: 16px;
     }
 
-    /* Dashboard */
+    /* App Shell with Sidebar */
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 240px;
+      background: var(--sidebar);
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-brand {
+      padding: 18px 20px;
+      border-bottom: 1px solid #1e293b;
+      font-weight: 700;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-list { padding: 12px 0; flex: 1; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 20px;
+      background: transparent;
+      border: none;
+      border-left: 3px solid transparent;
+      color: #cbd5e1;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+    }
+    .nav-item:hover { background: var(--sidebar-hover); color: #fff; }
+    .nav-item.active {
+      background: var(--sidebar-hover);
+      color: #fff;
+      border-left-color: #14b8a6;
+      font-weight: 600;
+    }
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #1e293b;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .main-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     header {
       background: var(--card);
       border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
+      padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 12px;
     }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+    .page-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
     .live-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       color: var(--success);
       background: #dcfce7;
-      padding: 3px 10px;
-      border-radius: 999px;
+      border: 1px solid #bbf7d0;
+      padding: 2px 8px;
+      border-radius: 2px;
     }
     .dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--success);
       animation: pulse 1.6s infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
-    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
     .header-actions { display: flex; align-items: center; gap: 10px; }
     .last-updated { font-size: 12px; color: var(--muted); }
 
-    main { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+    main { padding: 24px; max-width: 1300px; width: 100%; }
     .stats {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -133,18 +177,19 @@
     }
     .stat-card {
       background: var(--card);
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border);
       border-radius: 2px;
       padding: 18px 20px;
     }
-    .stat-label { font-size: 13px; color: var(--muted); font-weight: 500; }
-    .stat-value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+    .stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; }
+    .stat-value { font-size: 26px; font-weight: 700; margin-top: 6px; }
 
     .table-card {
       background: var(--card);
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border);
       border-radius: 2px;
       overflow: hidden;
+      margin-bottom: 24px;
     }
     .table-toolbar {
       padding: 14px 18px;
@@ -155,31 +200,40 @@
       flex-wrap: wrap;
       gap: 12px;
     }
-    .table-toolbar h2 { font-size: 16px; }
+    .table-toolbar h2 { font-size: 15px; font-weight: 700; }
     .search-input {
       padding: 8px 12px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border);
       border-radius: 2px;
       font-size: 13px;
       width: 260px;
       max-width: 100%;
     }
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    th { background: #f8fafc; font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
     tr:hover td { background: #f8fafc; }
     .badge {
       display: inline-block;
       padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 12px;
+      border-radius: 2px;
+      font-size: 11px;
       font-weight: 600;
     }
     .badge-owner { background: #e0f2fe; color: #0369a1; }
     .badge-staff { background: #f1f5f9; color: #475569; }
     .badge-active { background: #dcfce7; color: #15803d; }
     .badge-inactive { background: #fee2e2; color: #b91c1c; }
+
+    @media (max-width: 768px) {
+      .app-shell { flex-direction: column; }
+      .sidebar { width: 100%; }
+      .nav-list { display: flex; overflow-x: auto; padding: 0; }
+      .nav-item { border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+      .nav-item.active { border-bottom-color: #14b8a6; }
+      .sidebar-footer { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -187,8 +241,14 @@
   <!-- Login View -->
   <div id="loginView" class="login-wrap">
     <form id="loginForm" class="login-card">
-      <h1>TrackMauzo Admin</h1>
-      <p>Sign in to monitor real-time app registrations.</p>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <img src="aza-logo.png" alt="Aza POS" style="width:36px;height:36px;object-fit:contain;" />
+        <div>
+          <h1 style="margin:0;font-size:20px;">Aza POS Admin</h1>
+          <div style="font-size:12px;color:var(--muted);">Enterprise Control Center</div>
+        </div>
+      </div>
+      <p>Sign in to access the real-time system portal.</p>
       <div id="loginError" class="error-msg hidden"></div>
       <div class="field">
         <label for="username">Admin Username</label>
@@ -202,75 +262,238 @@
     </form>
   </div>
 
-  <!-- Dashboard View -->
-  <div id="dashboardView" class="hidden">
-    <header>
-      <div class="brand">
-        <span>TrackMauzo Admin</span>
-        <span class="live-pill"><span class="dot"></span> LIVE (5s)</span>
+  <!-- Dashboard Shell -->
+  <div id="dashboardView" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand" style="justify-content:flex-start;gap:10px;">
+        <img src="aza-logo.png" alt="Aza POS" style="width:26px;height:26px;object-fit:contain;" />
+        <span>Aza POS Admin</span>
       </div>
-      <div class="header-actions">
-        <span id="lastUpdated" class="last-updated">Updating...</span>
-        <button id="refreshBtn" class="btn btn-sm btn-outline" type="button">Refresh</button>
-        <button id="logoutBtn" class="btn btn-sm btn-outline" type="button">Logout</button>
+      <nav class="nav-list">
+        <button class="nav-item active" data-tab="overview">Overview</button>
+        <button class="nav-item" data-tab="registrations">Users &amp; Registrations</button>
+        <button class="nav-item" data-tab="stores">Stores</button>
+        <button class="nav-item" data-tab="orders">Orders &amp; Sales</button>
+        <button class="nav-item" data-tab="support">Bulk SMS &amp; Support</button>
+        <button class="nav-item" data-tab="system">System &amp; SMS Logs</button>
+      </nav>
+      <div class="sidebar-footer">
+        Aza POS Control Center
       </div>
-    </header>
+    </aside>
 
-    <main>
-      <div class="stats">
-        <div class="stat-card">
-          <div class="stat-label">Total Registered Users</div>
-          <div id="statUsers" class="stat-value">0</div>
+    <div class="main-area">
+      <header>
+        <div class="page-title">
+          <span id="pageTitle">Overview</span>
+          <span class="live-pill"><span class="dot"></span> LIVE (5s)</span>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Total Stores</div>
-          <div id="statStores" class="stat-value">0</div>
+        <div class="header-actions">
+          <span id="lastUpdated" class="last-updated">Updating...</span>
+          <button id="refreshBtn" class="btn btn-sm btn-outline" type="button">Refresh</button>
+          <button id="logoutBtn" class="btn btn-sm btn-outline" type="button">Logout</button>
         </div>
-        <div class="stat-card">
-          <div class="stat-label">Registered Today (UTC)</div>
-          <div id="statToday" class="stat-value">0</div>
-        </div>
-      </div>
+      </header>
 
-      <div class="table-card">
-        <div class="table-toolbar">
-          <h2>Recent Registrations</h2>
-          <input id="searchBox" class="search-input" type="search" placeholder="Search name, phone, or store..." />
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Store Name</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Registered At</th>
-              </tr>
-            </thead>
-            <tbody id="regBody">
-              <tr><td colspan="7" style="text-align:center;color:#64748b;">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
+      <main>
+        <!-- Overview Tab -->
+        <section id="tab-overview">
+          <div class="stats">
+            <div class="stat-card">
+              <div class="stat-label">Total Users</div>
+              <div id="statUsers" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Stores</div>
+              <div id="statStores" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Registered Today (UTC)</div>
+              <div id="statToday" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Orders</div>
+              <div id="statOrders" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Revenue (TSh)</div>
+              <div id="statRevenue" class="stat-value">0</div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="table-toolbar">
+              <h2>Latest Registrations</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th><th>Name</th><th>Phone</th><th>Store Name</th><th>Role</th><th>Registered At</th>
+                  </tr>
+                </thead>
+                <tbody id="overviewRegBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Registrations Tab -->
+        <section id="tab-registrations" class="hidden">
+          <div class="table-card">
+            <div class="table-toolbar">
+              <h2>All Registered Users</h2>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input id="searchBox" class="search-input" type="search" placeholder="Search name, phone, or store..." />
+                <button id="exportCsvBtn" class="btn btn-sm btn-outline" type="button">Export CSV</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th><th>Name</th><th>Phone</th><th>Store Name</th><th>Role</th><th>Status</th><th>Registered At</th><th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="regBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stores Tab -->
+        <section id="tab-stores" class="hidden">
+          <div class="table-card">
+            <div class="table-toolbar">
+              <h2>Registered Stores</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th><th>Store Name</th><th>Users</th><th>Orders</th><th>Revenue (TSh)</th><th>Created At</th>
+                  </tr>
+                </thead>
+                <tbody id="storesBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Orders Tab -->
+        <section id="tab-orders" class="hidden">
+          <div class="table-card">
+            <div class="table-toolbar">
+              <h2>Recent Orders</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Order ID</th><th>Store</th><th>Cashier</th><th>Payment</th><th>Total (TSh)</th><th>Status</th><th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="ordersBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bulk SMS & Support Tab -->
+        <section id="tab-support" class="hidden">
+          <div class="stats" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+            <div class="table-card" style="padding:20px;">
+              <h2 style="font-size:15px;margin-bottom:14px;">Bulk SMS Broadcast</h2>
+              <form id="bulkSmsForm">
+                <div class="field">
+                  <label for="smsTarget">Recipients</label>
+                  <select id="smsTarget" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:2px;font-size:14px;background:#fff;">
+                    <option value="all_owners">All Store Owners</option>
+                    <option value="all_users">All Active Users (Owners + Staff)</option>
+                    <option value="single">Single Phone Number</option>
+                  </select>
+                </div>
+                <div id="singlePhoneWrap" class="field hidden">
+                  <label for="smsPhone">Phone Number</label>
+                  <input id="smsPhone" type="text" placeholder="0712345678" />
+                </div>
+                <div class="field">
+                  <label for="smsMessage">Message (max 500 chars)</label>
+                  <textarea id="smsMessage" rows="4" maxlength="500" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:2px;font-size:14px;font-family:inherit;"></textarea>
+                </div>
+                <button type="submit" class="btn">Send Bulk SMS</button>
+                <div id="smsResult" style="margin-top:12px;font-size:13px;"></div>
+              </form>
+            </div>
+
+            <div class="table-card" style="padding:20px;">
+              <h2 style="font-size:15px;margin-bottom:14px;">Support: Reset User Password</h2>
+              <form id="supportResetForm">
+                <div class="field">
+                  <label for="resetUserId">Select User</label>
+                  <select id="resetUserId" required style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:2px;font-size:14px;background:#fff;">
+                    <option value="">-- Load Users tab first or select --</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="resetNewPass">New Password (min 6 chars)</label>
+                  <input id="resetNewPass" type="text" minlength="6" required placeholder="NewPass123" />
+                </div>
+                <button type="submit" class="btn">Reset Password</button>
+                <div id="resetResult" style="margin-top:12px;font-size:13px;"></div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- System Tab -->
+        <section id="tab-system" class="hidden">
+          <div class="stats">
+            <div class="stat-card">
+              <div class="stat-label">PHP Version</div>
+              <div id="sysPhp" class="stat-value">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Active OTPs</div>
+              <div id="sysOtps" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Server Time (UTC)</div>
+              <div id="sysTime" class="stat-value" style="font-size:16px;">-</div>
+            </div>
+          </div>
+          <div class="table-card">
+            <div class="table-toolbar">
+              <h2>Daily SMS Report Logs</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Store ID</th><th>Report Date</th><th>Sent At</th>
+                  </tr>
+                </thead>
+                <tbody id="sysLogsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
 
   <script>
     const API_URL = 'admin-api.php';
     const TOKEN_KEY = 'tm_admin_token';
     let pollTimer = null;
-    let cachedRows = [];
+    let currentTab = 'overview';
+    let cachedRegs = [];
 
     const loginView = document.getElementById('loginView');
     const dashboardView = document.getElementById('dashboardView');
     const loginForm = document.getElementById('loginForm');
     const loginError = document.getElementById('loginError');
     const searchBox = document.getElementById('searchBox');
-    const regBody = document.getElementById('regBody');
 
     function getToken() { return sessionStorage.getItem(TOKEN_KEY) || ''; }
     function setToken(t) { sessionStorage.setItem(TOKEN_KEY, t); }
@@ -288,60 +511,135 @@
       return isNaN(d.getTime()) ? iso : d.toLocaleString();
     }
 
-    function renderRows() {
+    function fmtNum(n) {
+      return Number(n || 0).toLocaleString();
+    }
+
+    async function apiGet(action) {
+      const token = getToken();
+      if (!token) { showLogin(); return null; }
+      const res = await fetch(`${API_URL}?action=${action}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        clearToken();
+        showLogin('Session expired. Please sign in again.');
+        return null;
+      }
+      return res.json();
+    }
+
+    function renderRegistrations() {
       const q = searchBox.value.trim().toLowerCase();
       const filtered = q
-        ? cachedRows.filter(r =>
+        ? cachedRegs.filter(r =>
             (r.name || '').toLowerCase().includes(q) ||
             (r.phone || '').toLowerCase().includes(q) ||
             (r.store_name || '').toLowerCase().includes(q)
           )
-        : cachedRows;
+        : cachedRegs;
 
-      if (filtered.length === 0) {
-        regBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b;">No registrations found.</td></tr>';
-        return;
-      }
+      const regBody = document.getElementById('regBody');
+      regBody.innerHTML = filtered.length === 0
+        ? '<tr><td colspan="8" style="text-align:center;color:#64748b;">No registrations found.</td></tr>'
+        : filtered.map((r, idx) => {
+            const isOwner = (r.role || '').toLowerCase() === 'owner';
+            const isActive = Number(r.active ?? 1) === 1;
+            return `<tr>
+              <td>${idx + 1}</td>
+              <td><strong>${escapeHtml(r.name)}</strong></td>
+              <td>${escapeHtml(r.phone)}</td>
+              <td>${escapeHtml(r.store_name || '-')}</td>
+              <td><span class="badge ${isOwner ? 'badge-owner' : 'badge-staff'}">${escapeHtml(r.role)}</span></td>
+              <td><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+              <td>${escapeHtml(formatDate(r.created_at))}</td>
+              <td><button class="btn btn-sm btn-outline" onclick="toggleUser('${escapeHtml(r.id)}', ${isActive ? 0 : 1})">${isActive ? 'Disable' : 'Enable'}</button></td>
+            </tr>`;
+          }).join('');
 
-      regBody.innerHTML = filtered.map((r, idx) => {
-        const isOwner = (r.role || '').toLowerCase() === 'owner';
-        const isActive = Number(r.active ?? 1) === 1;
-        return `
-          <tr>
-            <td>${idx + 1}</td>
-            <td><strong>${escapeHtml(r.name)}</strong></td>
-            <td>${escapeHtml(r.phone)}</td>
-            <td>${escapeHtml(r.store_name || '-')}</td>
-            <td><span class="badge ${isOwner ? 'badge-owner' : 'badge-staff'}">${escapeHtml(r.role)}</span></td>
-            <td><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Active' : 'Inactive'}</span></td>
-            <td>${escapeHtml(formatDate(r.created_at))}</td>
-          </tr>
-        `;
-      }).join('');
+      const ovBody = document.getElementById('overviewRegBody');
+      ovBody.innerHTML = cachedRegs.slice(0, 10).map((r, idx) => `<tr>
+        <td>${idx + 1}</td>
+        <td><strong>${escapeHtml(r.name)}</strong></td>
+        <td>${escapeHtml(r.phone)}</td>
+        <td>${escapeHtml(r.store_name || '-')}</td>
+        <td><span class="badge ${(r.role || '').toLowerCase() === 'owner' ? 'badge-owner' : 'badge-staff'}">${escapeHtml(r.role)}</span></td>
+        <td>${escapeHtml(formatDate(r.created_at))}</td>
+      </tr>`).join('');
     }
 
-    async function fetchRegistrations() {
-      const token = getToken();
-      if (!token) return showLogin();
-
+    async function refreshCurrentTab() {
       try {
-        const res = await fetch(`${API_URL}?action=registrations`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          clearToken();
-          return showLogin('Session expired. Please sign in again.');
+        if (currentTab === 'overview' || currentTab === 'registrations') {
+          const data = await apiGet('registrations');
+          if (!data) return;
+          document.getElementById('statUsers').textContent = fmtNum(data.stats?.total_users);
+          document.getElementById('statStores').textContent = fmtNum(data.stats?.total_stores);
+          document.getElementById('statToday').textContent = fmtNum(data.stats?.today_registrations);
+          document.getElementById('statOrders').textContent = fmtNum(data.stats?.total_orders);
+          document.getElementById('statRevenue').textContent = fmtNum(data.stats?.total_revenue);
+          cachedRegs = data.registrations || [];
+          renderRegistrations();
+        } else if (currentTab === 'stores') {
+          const data = await apiGet('stores');
+          if (!data) return;
+          const body = document.getElementById('storesBody');
+          body.innerHTML = (data.stores || []).map((s, idx) => `<tr>
+            <td>${idx + 1}</td>
+            <td><strong>${escapeHtml(s.name)}</strong></td>
+            <td>${fmtNum(s.users_count)}</td>
+            <td>${fmtNum(s.orders_count)}</td>
+            <td>${fmtNum(s.revenue)}</td>
+            <td>${escapeHtml(formatDate(s.created_at))}</td>
+          </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#64748b;">No stores found.</td></tr>';
+        } else if (currentTab === 'orders') {
+          const data = await apiGet('orders');
+          if (!data) return;
+          const body = document.getElementById('ordersBody');
+          body.innerHTML = (data.orders || []).map(o => `<tr>
+            <td><strong>${escapeHtml(o.id)}</strong></td>
+            <td>${escapeHtml(o.store_name)}</td>
+            <td>${escapeHtml(o.cashier_name)}</td>
+            <td>${escapeHtml(o.payment_method)}</td>
+            <td>${fmtNum(o.total)}</td>
+            <td><span class="badge ${o.status === 'voided' ? 'badge-inactive' : 'badge-active'}">${escapeHtml(o.status)}</span></td>
+            <td>${escapeHtml(formatDate(o.date_time))}</td>
+          </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#64748b;">No orders found.</td></tr>';
+        } else if (currentTab === 'system') {
+          const data = await apiGet('system');
+          if (!data) return;
+          document.getElementById('sysPhp').textContent = data.php_version || '-';
+          document.getElementById('sysOtps').textContent = fmtNum(data.active_otps);
+          document.getElementById('sysTime').textContent = formatDate(data.server_time);
+          const body = document.getElementById('sysLogsBody');
+          body.innerHTML = (data.daily_report_logs || []).map(l => `<tr>
+            <td>${escapeHtml(l.store_id)}</td>
+            <td>${escapeHtml(l.report_date)}</td>
+            <td>${escapeHtml(formatDate(l.sent_at))}</td>
+          </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:#64748b;">No report logs yet.</td></tr>';
         }
-        const data = await res.json();
-        document.getElementById('statUsers').textContent = data.stats?.total_users ?? 0;
-        document.getElementById('statStores').textContent = data.stats?.total_stores ?? 0;
-        document.getElementById('statToday').textContent = data.stats?.today_registrations ?? 0;
         document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-        cachedRows = data.registrations || [];
-        renderRows();
-      } catch (err) {
+      } catch {
         document.getElementById('lastUpdated').textContent = 'Connection error';
       }
+    }
+
+    function switchTab(tab, label) {
+      currentTab = tab;
+      document.getElementById('pageTitle').textContent = label;
+      document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+      ['overview', 'registrations', 'stores', 'orders', 'support', 'system'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+      });
+      if (tab === 'support') {
+        const sel = document.getElementById('resetUserId');
+        if (cachedRegs.length > 0) {
+          sel.innerHTML = cachedRegs.map(r => `<option value="${escapeHtml(r.id)}">${escapeHtml(r.name)} (${escapeHtml(r.phone)})</option>`).join('');
+        }
+      }
+      refreshCurrentTab();
     }
 
     function showLogin(msg = '') {
@@ -360,10 +658,14 @@
     function showDashboard() {
       loginView.classList.add('hidden');
       dashboardView.classList.remove('hidden');
-      fetchRegistrations();
+      refreshCurrentTab();
       clearInterval(pollTimer);
-      pollTimer = setInterval(fetchRegistrations, 5000);
+      pollTimer = setInterval(refreshCurrentTab, 5000);
     }
+
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn.textContent.trim()));
+    });
 
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -391,12 +693,88 @@
       }
     });
 
-    document.getElementById('refreshBtn').addEventListener('click', fetchRegistrations);
+    window.toggleUser = async function(userId, nextActive) {
+      const token = getToken();
+      if (!token) return;
+      await fetch(`${API_URL}?action=toggle_user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ user_id: userId, active: nextActive })
+      });
+      refreshCurrentTab();
+    };
+
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      const headers = ['Name', 'Phone', 'Store Name', 'Role', 'Status', 'Registered At'];
+      const rows = cachedRegs.map(r => [
+        r.name || '', r.phone || '', r.store_name || '', r.role || '',
+        Number(r.active ?? 1) === 1 ? 'Active' : 'Inactive', r.created_at || ''
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `trackmauzo-users-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    });
+
+    document.getElementById('smsTarget').addEventListener('change', (e) => {
+      document.getElementById('singlePhoneWrap').classList.toggle('hidden', e.target.value !== 'single');
+    });
+
+    document.getElementById('bulkSmsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const out = document.getElementById('smsResult');
+      out.textContent = 'Sending...';
+      const token = getToken();
+      try {
+        const res = await fetch(`${API_URL}?action=bulk_sms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            target: document.getElementById('smsTarget').value,
+            phone: document.getElementById('smsPhone').value.trim(),
+            message: document.getElementById('smsMessage').value.trim(),
+          })
+        });
+        const data = await res.json();
+        out.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+        out.textContent = res.ok ? `Sent: ${data.sent}/${data.total} (Failed: ${data.failed})` : (data.error || 'Failed');
+      } catch {
+        out.style.color = 'var(--danger)';
+        out.textContent = 'Network error.';
+      }
+    });
+
+    document.getElementById('supportResetForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const out = document.getElementById('resetResult');
+      out.textContent = 'Updating...';
+      const token = getToken();
+      try {
+        const res = await fetch(`${API_URL}?action=reset_user_password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            user_id: document.getElementById('resetUserId').value,
+            new_password: document.getElementById('resetNewPass').value,
+          })
+        });
+        const data = await res.json();
+        out.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+        out.textContent = res.ok ? (data.message || 'Password updated.') : (data.error || 'Failed');
+      } catch {
+        out.style.color = 'var(--danger)';
+        out.textContent = 'Network error.';
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', refreshCurrentTab);
     document.getElementById('logoutBtn').addEventListener('click', () => {
       clearToken();
       showLogin();
     });
-    searchBox.addEventListener('input', renderRows);
+    searchBox.addEventListener('input', renderRegistrations);
 
     if (getToken()) {
       showDashboard();
