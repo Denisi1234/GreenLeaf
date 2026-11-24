@@ -15,6 +15,8 @@ final class Database
         if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
             $this->pdo->exec('PRAGMA foreign_keys = ON');
             $this->pdo->exec('PRAGMA busy_timeout = 10000');
+            $this->pdo->exec('PRAGMA journal_mode = WAL');
+            $this->pdo->exec('PRAGMA synchronous = NORMAL');
         }
     }
 
