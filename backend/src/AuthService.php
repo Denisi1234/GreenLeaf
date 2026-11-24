@@ -168,7 +168,10 @@ final class AuthService
     {
         [$phone, $password] = $this->credentials($body);
 
-        $rows = $this->db->rows('SELECT * FROM users WHERE email = ? AND active = 1', [$phone]);
+        $rows = $this->db->rows(
+            'SELECT * FROM users WHERE (email = ? OR email = ?) AND active = 1',
+            [$phone, $phone . '@trackmauzo.app']
+        );
         $hash = $rows[0]['password_hash'] ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
         if (!password_verify($password, $hash) || $rows === []) {
             throw new ApiError(401, 'Namba ya simu au nenosiri si sahihi.');
@@ -202,8 +205,7 @@ final class AuthService
         $purpose = strtolower(trim((string) ($body['purpose'] ?? '')));
 
         if ($purpose === 'register') {
-            $email = $phone . '@trackmauzo.app';
-            if ($this->db->rows('SELECT id FROM users WHERE email = ?', [$email]) !== []) {
+            if ($this->isPhoneRegistered($phone)) {
                 throw new ApiError(409, 'Namba hii ya simu tayari imesajiliwa. Tafadhali ingia (Sign in).');
             }
         } else {
